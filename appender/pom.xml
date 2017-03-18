@@ -20,7 +20,8 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <junit.version>4.10</junit.version>
-        <log4j.version>1.2.12</log4j.version>
+        <kdgcommons.version>1.0.15</kdgcommons.version>
+        <log4j.version>1.2.16</log4j.version>
     </properties>
 
 
@@ -36,6 +37,12 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.sf.kdgcommons</groupId>
+            <artifactId>kdgcommons</artifactId>
+            <version>${kdgcommons.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

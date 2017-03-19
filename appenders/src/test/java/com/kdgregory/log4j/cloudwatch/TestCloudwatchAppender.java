@@ -30,6 +30,7 @@ public class TestCloudwatchAppender
         assertEquals("log stream name", "bargle",   appender.getLogStream());
         assertEquals("batch size",      100,        appender.getBatchSize());
         assertEquals("max delay",       1234L,      appender.getMaxDelay());
+        assertTrue("dry run",                       appender.isDryRun());
     }
 
 
@@ -46,6 +47,7 @@ public class TestCloudwatchAppender
                      "log stream name", "2[0-9]+.[0-9]+",   appender.getLogStream());
         assertEquals("batch size",      10,                 appender.getBatchSize());
         assertEquals("max delay",       4000L,              appender.getMaxDelay());
+        assertFalse("dry run",                              appender.isDryRun());
     }
 
 

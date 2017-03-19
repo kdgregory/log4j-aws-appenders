@@ -21,6 +21,9 @@ import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
 
 
+/**
+ *  Appender that writes to a Cloudwatch log stream.
+ */
 public class CloudwatchAppender extends AppenderSkeleton
 {
     /**
@@ -42,10 +45,30 @@ public class CloudwatchAppender extends AppenderSkeleton
 //  Configuration
 //----------------------------------------------------------------------------
 
+    private boolean dryRun;
     private String  logGroup;
     private String  logStream;
     private int     batchSize;
     private long    maxDelay;
+
+
+    /**
+     *  Sets the "dry run" flag, which prevents writes to Cloudwatch. This
+     *  is intended for testing.
+     */
+    public void setDryRun(boolean value)
+    {
+        dryRun = value;
+    }
+
+
+    /**
+     *  Retrieves the "dry run" flag; see {@link #setDryRun}.
+     */
+    public boolean isDryRun()
+    {
+        return dryRun;
+    }
 
 
     /**

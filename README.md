@@ -52,6 +52,10 @@ The writer thread maintains its own queue of batches, and attempts to send each 
 number of times (with exponential fallback). If unable to send the batch, or if the backlog of unsent
 batches exceeds a configured value, the batch will be dropped.
 
+The writer thread is lazily started on the first call to `append()`. You can disable actual writes by
+setting the `dryRun` configuration parameter. All AWS clients use the default constructor, which
+retrieves credentials via the [DefaultAWSCredentialsProviderChain](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/auth/DefaultAWSCredentialsProviderChain.html).
+
 
 ## Building
 

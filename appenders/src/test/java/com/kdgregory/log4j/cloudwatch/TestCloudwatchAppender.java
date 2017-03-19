@@ -12,8 +12,6 @@ import org.apache.log4j.PropertyConfigurator;
 
 import net.sf.kdgcommons.test.StringAsserts;
 
-import com.kdgregory.log4j.cloudwatch.CloudwatchAppender.LogMessage;
-
 
 public class TestCloudwatchAppender
 {

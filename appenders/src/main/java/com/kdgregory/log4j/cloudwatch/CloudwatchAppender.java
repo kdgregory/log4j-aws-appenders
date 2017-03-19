@@ -1,10 +1,6 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.cloudwatch;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.text.SimpleDateFormat;
@@ -14,14 +10,10 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.log4j.AppenderSkeleton;
-import org.apache.log4j.Layout;
 import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
-
-import com.amazonaws.services.logs.AWSLogsClient;
 
 
 /**
@@ -197,7 +189,7 @@ public class CloudwatchAppender extends AppenderSkeleton
 
         try
         {
-            LogMessage message = new LogMessage(event);
+            LogMessage message = new LogMessage(event, getLayout());
 
             if (message.size() > AWS_MAX_BATCH_BYTES)
             {
@@ -251,9 +243,9 @@ public class CloudwatchAppender extends AppenderSkeleton
     // very fast, so plain-old-synchronization should not cause undue contention
 
     private Object messageQueueLock = new Object();
-    
+
     // this will only be created if we're not in a dry run
-    
+
     private CloudwatchWriter writer;
 
     // the waiting-for-batch queue; these are package-protected for testing
@@ -276,9 +268,9 @@ public class CloudwatchAppender extends AppenderSkeleton
     private boolean preparedToAppend()
     {
         // TODO - check that layout is valid and appender isn't closed
-        if (! isDryRun())
+        if ((writer == null) && (! isDryRun()))
         {
-            writer = new CloudwatchWriter();
+            writer = new CloudwatchWriter(logGroup, logStream);
             Thread writerThread = new Thread(writer);
             writerThread.setPriority(Thread.NORM_PRIORITY);
             writerThread.start();
@@ -316,108 +308,6 @@ public class CloudwatchAppender extends AppenderSkeleton
         if (! isDryRun())
         {
             writer.addBatch(batch);
-        }
-    }
-
-
-    /**
-     *  Holder for an in-queue logging message. This class applies the layout
-     *  to the logging event, storing the result as a byte array so that we
-     *  can calculate total batch size.
-     *  <p>
-     *  Note: instances are <code>Comparable</code> because Cloudwatch requires
-     *  all messages in a batch to be in timestamp order. However, comparison
-     *  is not consistent with equality, as we don't expect instances to be
-     *  use where equality matters.
-     *  <p>
-     *  Note: package protected so available for tests.
-     */
-    class LogMessage
-    implements Comparable<LogMessage>
-    {
-        private long timestamp;
-        private byte[] messageBytes;
-
-        public LogMessage(LoggingEvent event)
-        throws UnsupportedEncodingException, IOException
-        {
-            timestamp = event.getTimeStamp();
-
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            OutputStreamWriter out = new OutputStreamWriter(bos, "UTF-8");
-            out.write(layout.format(event));
-
-            if ((event.getThrowableInformation() != null) && layout.ignoresThrowable())
-            {
-                for (String traceline : event.getThrowableStrRep())
-                {
-                    out.write(traceline);
-                    out.write(Layout.LINE_SEP);
-                }
-            }
-
-            out.close();
-            messageBytes = bos.toByteArray();
-        }
-
-
-        /**
-         *  Returns the timestamp of the original logging event.
-         */
-        public long getTimestamp()
-        {
-            return timestamp;
-        }
-
-        /**
-         *  Returns the size of the message, as it affects the Cloudwatch batch.
-         */
-        public int size()
-        {
-            return messageBytes.length + 26;
-        }
-
-        /**
-         *  Returns the message content as a string (unfortunately, the Cloudwatch
-         *  API doesn't allow us to write raw bytes).
-         */
-        public String getMessage()
-        throws UnsupportedEncodingException
-        {
-            return new String(messageBytes, "UTF-8");
-        }
-
-
-        @Override
-        public int compareTo(LogMessage that)
-        {
-            return (this.timestamp < that.timestamp) ? -1
-                 : (this.timestamp > that.timestamp) ? 1
-                 : 0;
-        }
-    }
-    
-    
-    /**
-     *  This is where all the magic happens.
-     */
-    private class CloudwatchWriter
-    implements Runnable
-    {
-        private AWSLogsClient client = new AWSLogsClient();
-        private ConcurrentLinkedQueue<List<LogMessage>> batchQueue = new ConcurrentLinkedQueue<List<LogMessage>>();
-        
-        
-        public void addBatch(List<LogMessage> batch)
-        {
-            batchQueue.add(batch);
-        }
-        
-        
-        @Override
-        public void run()
-        {
-            throw new UnsupportedOperationException("FIXME - implement");
         }
     }
 }

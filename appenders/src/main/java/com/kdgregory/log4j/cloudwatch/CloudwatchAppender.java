@@ -14,11 +14,14 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.Layout;
 import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
+
+import com.amazonaws.services.logs.AWSLogsClient;
 
 
 /**
@@ -190,7 +193,7 @@ public class CloudwatchAppender extends AppenderSkeleton
     @Override
     protected void append(LoggingEvent event)
     {
-        if (! ableToAppend()) return;
+        if (! preparedToAppend()) return;
 
         try
         {
@@ -226,6 +229,7 @@ public class CloudwatchAppender extends AppenderSkeleton
     {
         // TODO - get footer from layout, push last batch
         // TODO - shut down sender thread
+        // TODO - mark appender as closed
     }
 
 
@@ -247,6 +251,10 @@ public class CloudwatchAppender extends AppenderSkeleton
     // very fast, so plain-old-synchronization should not cause undue contention
 
     private Object messageQueueLock = new Object();
+    
+    // this will only be created if we're not in a dry run
+    
+    private CloudwatchWriter writer;
 
     // the waiting-for-batch queue; these are package-protected for testing
 
@@ -265,10 +273,16 @@ public class CloudwatchAppender extends AppenderSkeleton
      *  Lazily initializes the writer thread, and otherwise verifies that the appender
      *  is able to do its thing. This should wrap any operations in {@link #append}.
      */
-    private boolean ableToAppend()
+    private boolean preparedToAppend()
     {
         // TODO - check that layout is valid and appender isn't closed
-        // TODO - create writer thread
+        if (! isDryRun())
+        {
+            writer = new CloudwatchWriter();
+            Thread writerThread = new Thread(writer);
+            writerThread.setPriority(Thread.NORM_PRIORITY);
+            writerThread.start();
+        }
         return true;
     }
 
@@ -299,7 +313,10 @@ public class CloudwatchAppender extends AppenderSkeleton
 
         lastBatchTimestamp = System.currentTimeMillis();
         lastBatch = batch;
-        // TODO - pass batch to writer
+        if (! isDryRun())
+        {
+            writer.addBatch(batch);
+        }
     }
 
 
@@ -377,6 +394,30 @@ public class CloudwatchAppender extends AppenderSkeleton
             return (this.timestamp < that.timestamp) ? -1
                  : (this.timestamp > that.timestamp) ? 1
                  : 0;
+        }
+    }
+    
+    
+    /**
+     *  This is where all the magic happens.
+     */
+    private class CloudwatchWriter
+    implements Runnable
+    {
+        private AWSLogsClient client = new AWSLogsClient();
+        private ConcurrentLinkedQueue<List<LogMessage>> batchQueue = new ConcurrentLinkedQueue<List<LogMessage>>();
+        
+        
+        public void addBatch(List<LogMessage> batch)
+        {
+            batchQueue.add(batch);
+        }
+        
+        
+        @Override
+        public void run()
+        {
+            throw new UnsupportedOperationException("FIXME - implement");
         }
     }
 }

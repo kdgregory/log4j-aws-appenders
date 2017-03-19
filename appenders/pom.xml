@@ -19,6 +19,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
+        <aws-sdk.version>1.11.0</aws-sdk.version>
         <junit.version>4.10</junit.version>
         <kdgcommons.version>1.0.15</kdgcommons.version>
         <log4j.version>1.2.16</log4j.version>
@@ -26,6 +27,11 @@
 
 
     <dependencies>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-logs</artifactId>
+            <version>${aws-sdk.version}</version>
+        </dependency>
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>

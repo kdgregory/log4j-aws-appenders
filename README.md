@@ -11,6 +11,17 @@ several wheels.
 
 ## Usage
 
+### Dependency Versions
+
+To avoid dependency hell, all dependencies are marked as "provided"; you will need
+to ensure that your project includes necessary dependencies. The minimum dependency
+versions are:
+
+* Log4J: 1.2.16
+* AWS SDK: 1.11.0
+
+
+
 ### Cloudwatch
 
 Your Log4J configuration should look something like this:

@@ -3,6 +3,7 @@ package com.kdgregory.log4j.cloudwatch;
 
 import java.net.URL;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -11,26 +12,68 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 import com.amazonaws.services.logs.AWSLogsClient;
-import com.amazonaws.services.logs.model.DeleteLogGroupRequest;
+import com.amazonaws.services.logs.model.*;
 
 
 
 public class TestCloudwatchAppender
 {
     private final static String LOGGROUP_NAME = "TestCloudwatchAppender";
-    
+    private final static long ASSERTION_TIMEOUT = 1000;
+
     private AWSLogsClient client;
-    
-    
+
+
+    private void lookForMessage(String logStreamName, String message) throws Exception
+    {
+        long start = System.currentTimeMillis();
+        while (System.currentTimeMillis() < start + ASSERTION_TIMEOUT)
+        {
+            GetLogEventsRequest request = new GetLogEventsRequest()
+                                          .withLogGroupName(LOGGROUP_NAME)
+                                          .withLogStreamName(logStreamName);
+            try
+            {
+                GetLogEventsResult logEvents = client.getLogEvents(request);
+                for (OutputLogEvent event : logEvents.getEvents())
+                {
+                    if (event.getMessage().contains(message))
+                        return;
+                }
+            }
+            catch (ResourceNotFoundException ignored)
+            {
+                // eventual consistency means maybe the stream isn't readable yet
+            }
+            Thread.sleep(100);
+        }
+        fail("did not find expected message in stream \"" + logStreamName + "\" before timeout: " + message);
+    }
+
+
     @Before
     public void setUp() throws Exception
     {
         client = new AWSLogsClient();
-        client.deleteLogGroup(new DeleteLogGroupRequest()
-                              .withLogGroupName(LOGGROUP_NAME));
+        try
+        {
+            client.deleteLogGroup(new DeleteLogGroupRequest().withLogGroupName(LOGGROUP_NAME));
+        }
+        catch (ResourceNotFoundException ignored)
+        {
+            // it's OK if the log group doesn't exist when we start running
+        }
+        client.createLogGroup(new CreateLogGroupRequest().withLogGroupName(LOGGROUP_NAME));
     }
-    
-    
+
+
+    @After
+    public void tearDown() throws Exception
+    {
+        client.deleteLogGroup(new DeleteLogGroupRequest().withLogGroupName(LOGGROUP_NAME));
+    }
+
+
     @Test
     public void smoketest() throws Exception
     {
@@ -38,9 +81,11 @@ public class TestCloudwatchAppender
         PropertyConfigurator.configure(config);
 
         Logger logger = Logger.getLogger(getClass());
-        logger.debug("can you hear me now?");
 
-        Thread.sleep(5000);  // FIXME -- add a test in the appender for processing batches
+        String message = "can you hear me now?";
+        logger.debug(message);
+
+        lookForMessage("smoketest", message);
     }
 
 }

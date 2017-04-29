@@ -19,12 +19,12 @@ import com.amazonaws.services.logs.model.*;
 public class TestCloudwatchAppender
 {
     private final static String LOGGROUP_NAME = "TestCloudwatchAppender";
-    private final static long ASSERTION_TIMEOUT = 1000;
+    private final static long ASSERTION_TIMEOUT = 2000;
 
     private AWSLogsClient client;
 
 
-    private void lookForMessage(String logStreamName, String message) throws Exception
+    private OutputLogEvent lookForMessage(String logStreamName, String message) throws Exception
     {
         long start = System.currentTimeMillis();
         while (System.currentTimeMillis() < start + ASSERTION_TIMEOUT)
@@ -38,7 +38,7 @@ public class TestCloudwatchAppender
                 for (OutputLogEvent event : logEvents.getEvents())
                 {
                     if (event.getMessage().contains(message))
-                        return;
+                        return event;
                 }
             }
             catch (ResourceNotFoundException ignored)
@@ -47,7 +47,7 @@ public class TestCloudwatchAppender
             }
             Thread.sleep(100);
         }
-        fail("did not find expected message in stream \"" + logStreamName + "\" before timeout: " + message);
+        return null;
     }
 
 
@@ -85,7 +85,8 @@ public class TestCloudwatchAppender
         String message = "can you hear me now?";
         logger.debug(message);
 
-        lookForMessage("smoketest", message);
+        assertNotNull("unable to find message before timeout",
+                      lookForMessage("smoketest", message));
     }
 
 }

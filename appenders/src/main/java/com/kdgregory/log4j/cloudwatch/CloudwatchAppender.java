@@ -15,6 +15,9 @@ import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
 
+import com.kdgregory.log4j.shared.LogWriter;
+import com.kdgregory.log4j.shared.LogMessage;
+
 
 /**
  *  Appender that writes to a Cloudwatch log stream.
@@ -41,7 +44,7 @@ public class CloudwatchAppender extends AppenderSkeleton
     // the writer is created on first append; it's marked as protected so that tests
     // can replace with a mock implementation
 
-    protected CloudwatchWriter writer;
+    protected LogWriter writer;
 
     // the waiting-for-batch queue; also marked as protected for testing
 
@@ -266,8 +269,8 @@ public class CloudwatchAppender extends AppenderSkeleton
         // this check allows us to use a mock writer
         if (writer == null)
         {
-            writer = new CloudwatchWriterImpl(logGroup, logStream);
-            Thread writerThread = new Thread((CloudwatchWriterImpl)writer);
+            writer = new CloudWatchLogWriter(logGroup, logStream);
+            Thread writerThread = new Thread((CloudWatchLogWriter)writer);
             writerThread.setPriority(Thread.NORM_PRIORITY);
             writerThread.start();
         }

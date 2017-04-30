@@ -11,11 +11,14 @@ import org.apache.log4j.helpers.LogLog;
 import com.amazonaws.services.logs.AWSLogsClient;
 import com.amazonaws.services.logs.model.*;
 
+import com.kdgregory.log4j.shared.LogWriter;
+import com.kdgregory.log4j.shared.LogMessage;
+
 /**
  *  This is where all the magic happens.
  */
-class CloudwatchWriterImpl
-implements CloudwatchWriter, Runnable
+class CloudWatchLogWriter
+implements LogWriter, Runnable
 {
     private String groupName;
     private String streamName;
@@ -27,7 +30,7 @@ implements CloudwatchWriter, Runnable
     private ConcurrentLinkedQueue<List<LogMessage>> batchQueue = new ConcurrentLinkedQueue<List<LogMessage>>();
 
 
-    public CloudwatchWriterImpl(String logGroup, String logStream)
+    public CloudWatchLogWriter(String logGroup, String logStream)
     {
         this.groupName = logGroup;
         this.streamName = logStream;

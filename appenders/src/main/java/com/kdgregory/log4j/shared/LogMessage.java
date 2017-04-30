@@ -1,5 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.log4j.cloudwatch;
+package com.kdgregory.log4j.shared;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

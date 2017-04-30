@@ -4,11 +4,11 @@ package com.kdgregory.log4j.cloudwatch.helpers;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kdgregory.log4j.cloudwatch.CloudwatchWriter;
-import com.kdgregory.log4j.cloudwatch.LogMessage;
+import com.kdgregory.log4j.shared.LogWriter;
+import com.kdgregory.log4j.shared.LogMessage;
 
 public class MockCloudwatchWriter
-implements CloudwatchWriter
+implements LogWriter
 {
     public List<LogMessage> messages = new ArrayList<LogMessage>();
     public List<LogMessage> lastBatch;

@@ -15,6 +15,7 @@ import net.sf.kdgcommons.test.StringAsserts;
 
 import com.kdgregory.log4j.cloudwatch.helpers.HeaderFooterLayout;
 import com.kdgregory.log4j.cloudwatch.helpers.MockCloudwatchWriter;
+import com.kdgregory.log4j.shared.LogMessage;
 
 
 public class TestCloudwatchAppender

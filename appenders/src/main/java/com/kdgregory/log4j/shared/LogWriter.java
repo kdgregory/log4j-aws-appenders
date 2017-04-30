@@ -1,5 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.log4j.cloudwatch;
+package com.kdgregory.log4j.shared;
 
 import java.util.List;
 
@@ -7,7 +7,7 @@ import java.util.List;
  *  Defines the interactions between the appender and writer, allowing mock
  *  implementations for testing.
  */
-public interface CloudwatchWriter
+public interface LogWriter
 {
     /**
      *  Adds a batch of messages to the writer.

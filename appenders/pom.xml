@@ -1,0 +1,71 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.kdgregory.log4j-appenders</groupId>
+    <artifactId>aws-appenders</artifactId>
+    <version>0.0.1</version>
+    <packaging>jar</packaging>
+
+    <name>AWS Log4J Appender</name>
+
+    <description>
+        Appenders for Log4J 1.x that writes log events to various AWS services
+    </description>
+
+
+    <properties>
+        <!-- build configuration props, because Maven can't pick a sensible default -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <aws-sdk.version>1.11.0</aws-sdk.version>
+        <junit.version>4.10</junit.version>
+        <kdgcommons.version>1.0.15</kdgcommons.version>
+        <log4j.version>1.2.16</log4j.version>
+    </properties>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-logs</artifactId>
+            <version>${aws-sdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>${log4j.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.sf.kdgcommons</groupId>
+            <artifactId>kdgcommons</artifactId>
+            <version>${kdgcommons.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                    <debug>true</debug>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

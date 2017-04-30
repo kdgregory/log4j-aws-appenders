@@ -2,35 +2,23 @@
 package com.kdgregory.log4j.cloudwatch;
 
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 import net.sf.kdgcommons.test.StringAsserts;
 
+import com.kdgregory.log4j.cloudwatch.helpers.HeaderFooterLayout;
+import com.kdgregory.log4j.cloudwatch.helpers.MockCloudwatchWriter;
+
 
 public class TestCloudwatchAppender
 {
-    private static class MockCloudwatchWriter
-    implements CloudwatchWriter
-    {
-        public List<LogMessage> messages = new ArrayList<LogMessage>();
-        public List<LogMessage> lastBatch;
-
-        @Override
-        public void addBatch(List<LogMessage> batch)
-        {
-            messages.addAll(batch);
-            lastBatch = batch;
-        }
-    }
-
-
     @Test
     public void testConfiguration() throws Exception
     {
@@ -109,6 +97,46 @@ public class TestCloudwatchAppender
         myLogger.info("this is a third message");
         assertEquals("after message 3, messages in queue",  1, appender.messageQueue.size());
         assertSame("after message 3, last batch hasn't changed", lastBatch, mock.lastBatch);
+    }
+
+
+    @Test(expected=IllegalStateException.class)
+    public void testThrowsIfAppenderClosed() throws Exception
+    {
+        URL config = ClassLoader.getSystemResource("TestCloudwatchAppender.testAppend.properties");
+        PropertyConfigurator.configure(config);
+
+        Logger rootLogger = Logger.getRootLogger();
+        CloudwatchAppender appender = (CloudwatchAppender)rootLogger.getAppender("default");
+
+        MockCloudwatchWriter mock = new MockCloudwatchWriter();
+        appender.writer = mock;
+        appender.close();
+
+        Logger myLogger = Logger.getLogger(getClass());
+        myLogger.error("blah blah blah");
+    }
+
+
+    @Test
+    public void testWriteHeaderAndFooter() throws Exception
+    {
+        URL config = ClassLoader.getSystemResource("TestCloudwatchAppender.testWriteHeaderAndFooter.properties");
+        PropertyConfigurator.configure(config);
+
+        Logger rootLogger = Logger.getRootLogger();
+        CloudwatchAppender appender = (CloudwatchAppender)rootLogger.getAppender("default");
+
+        MockCloudwatchWriter mock = new MockCloudwatchWriter();
+        appender.writer = mock;
+
+        Logger myLogger = Logger.getLogger(getClass());
+        myLogger.debug("blah blah blah");
+        LogManager.shutdown();
+
+        assertEquals("number of messages written to log", 3, mock.messages.size());
+        assertEquals("header is first", HeaderFooterLayout.HEADER, mock.getMessage(0));
+        assertEquals("footer is last",  HeaderFooterLayout.FOOTER, mock.getMessage(2));
     }
 
 }

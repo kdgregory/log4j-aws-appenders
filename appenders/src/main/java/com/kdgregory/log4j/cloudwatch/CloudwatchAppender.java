@@ -27,6 +27,12 @@ public class CloudwatchAppender extends AppenderSkeleton
     private static int AWS_MAX_BATCH_COUNT = 10000;
     private static int AWS_MAX_BATCH_BYTES = 1048576;
 
+    // flag to indicate whether we need to run setup
+    private boolean ready = false;
+
+    // flag to indicate whether we can keep writing; cannot be reset
+    private boolean closed = false;
+
     // this is used to synchronize access to the queue; queue updates are normally
     // very fast, so plain-old-synchronization should not cause undue contention
 
@@ -42,7 +48,6 @@ public class CloudwatchAppender extends AppenderSkeleton
     protected LinkedList<LogMessage> messageQueue = new LinkedList<LogMessage>();
     protected int messageQueueBytes = 0;
     protected long lastBatchTimestamp = System.currentTimeMillis();
-
 
     // all vars below this point are configuration
 
@@ -191,29 +196,23 @@ public class CloudwatchAppender extends AppenderSkeleton
     @Override
     protected void append(LoggingEvent event)
     {
-        if (! preparedToAppend()) return;
+        if (closed)
+        {
+            throw new IllegalStateException("appender is closed");
+        }
 
         try
         {
-            LogMessage message = new LogMessage(event, getLayout());
-
-            if (message.size() > AWS_MAX_BATCH_BYTES)
+            if (! ready)
             {
-                LogLog.warn("attempted to append a message > AWS batch size; ignored");
-                return;
-            }
-
-            synchronized (messageQueueLock)
-            {
-                messageQueue.add(message);
-                messageQueueBytes += message.size();
-                long curDelay = System.currentTimeMillis() - lastBatchTimestamp;
-
-                if ((messageQueue.size() >= batchSize) || (messageQueueBytes >= AWS_MAX_BATCH_BYTES) || (curDelay >= maxDelay))
+                configureAppender();
+                if (layout.getHeader() != null)
                 {
-                    sendBatch();
+                    internalAppend(new LogMessage(layout.getHeader()));
                 }
+
             }
+            internalAppend(new LogMessage(event, getLayout()));
         }
         catch (Exception ex)
         {
@@ -225,9 +224,23 @@ public class CloudwatchAppender extends AppenderSkeleton
     @Override
     public void close()
     {
-        // TODO - get footer from layout, push last batch
-        // TODO - shut down sender thread
-        // TODO - mark appender as closed
+        closed = true;
+
+        try
+        {
+            if (layout.getFooter() != null)
+            {
+                internalAppend(new LogMessage(layout.getFooter()));
+            }
+            sendBatch();
+
+            // TODO - shut down sender thread
+        }
+        catch (Exception ex)
+        {
+            LogLog.error("exception while shutting down appender", ex);
+        }
+
     }
 
 
@@ -248,9 +261,9 @@ public class CloudwatchAppender extends AppenderSkeleton
      *  <p>
      *  Note: marked as protected because we override for testing.
      */
-    protected boolean preparedToAppend()
+    protected void configureAppender()
     {
-        // TODO - check that layout is valid and appender isn't closed
+        // this check allows us to use a mock writer
         if (writer == null)
         {
             writer = new CloudwatchWriterImpl(logGroup, logStream);
@@ -258,7 +271,35 @@ public class CloudwatchAppender extends AppenderSkeleton
             writerThread.setPriority(Thread.NORM_PRIORITY);
             writerThread.start();
         }
-        return true;
+
+
+
+        ready = true;
+    }
+
+
+    /**
+     *  Appends a message to the current batch, and decides whether or not to send the batch.
+     */
+    private void internalAppend(LogMessage message)
+    {
+        if (message.size() > AWS_MAX_BATCH_BYTES)
+        {
+            LogLog.warn("attempted to append a message > AWS batch size; ignored");
+            return;
+        }
+
+        synchronized (messageQueueLock)
+        {
+            messageQueue.add(message);
+            messageQueueBytes += message.size();
+            long curDelay = System.currentTimeMillis() - lastBatchTimestamp;
+
+            if ((messageQueue.size() >= batchSize) || (messageQueueBytes >= AWS_MAX_BATCH_BYTES) || (curDelay >= maxDelay))
+            {
+                sendBatch();
+            }
+        }
     }
 
 

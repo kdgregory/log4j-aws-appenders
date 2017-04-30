@@ -3,11 +3,22 @@
 Appenders for Log4J 1.x that write to various AWS services.
 
 This project started because I couldn't find an appender that would write to CloudWatch.
-That's not strictly true: I found one for Log4J 2.x, and of course there's the AWS Lambda
-Cloudwatch appender (and as it turned out, after starting this project I found one for
-1.x). But, since an appender seemed like an easy weekend project, I decided that I'd
-reinvent a wheel. After thinking about it for a while, I decided that I could reinvent
-several wheels.
+That's not strictly true: I found several for Log4J 2.x, and of course there's the 
+appender that AWS provides for Lambda. And then, after I started this project, I found
+an appender for 1.x.
+
+But, this seemed to be an easy weekend project, and I'd be able to get exactly what I
+wanted if I was willing to reinvent a wheel. After some thought, I expanded the idea:
+why not reinvent several wheels, and be able to write to multiple destinations?
+
+Here are the destinations I plan to support; they'll be checked when in development:
+
+  [x] CloudWatch Logs
+  [ ] Kinesis
+  [ ] SNS (I think there it might be interesting to create an "error watcher")
+  [ ] S3 (as an alternative to an external "logfile mover")
+
+
 
 ## Usage
 
@@ -22,11 +33,29 @@ versions are:
 
 
 
-### Cloudwatch
+### CloudWatch Logs
+
+The CloudWatch implementation provides (will provide) the following features:
+
+  [x] User-specified log-group and log-stream names
+  [ ] Substitution variables to customize log-group and log-stream names
+  [ ] Rolling log streams
+  [ ] Configurable discard in case of network connectivity issues
+
 
 Your Log4J configuration should look something like this:
 
-    insert example
+		log4j.rootLogger=ERROR, default
+		log4j.logger.com.kdgregory.log4j.cloudwatch.TestCloudwatchAppender=DEBUG
+		
+		log4j.appender.default=com.kdgregory.log4j.cloudwatch.CloudwatchAppender
+		log4j.appender.default.layout=org.apache.log4j.PatternLayout
+		log4j.appender.default.layout.ConversionPattern=%d [%t] %-5p %c %x - %m%n
+		
+		log4j.appender.default.logGroup=TestCloudwatchAppender
+		log4j.appender.default.logStream=smoketest
+		log4j.appender.default.batchSize=1
+
 
 The appender provides the following properties (also described in the JavaDoc, where you'll
 see default values):
@@ -40,6 +69,7 @@ Name            | Description
 
 *Beware:* connectivity problems may cause the appender to discard messages. If it's critical that
 you see all messages, configure an alternative appender. 
+
 
 
 ## Design

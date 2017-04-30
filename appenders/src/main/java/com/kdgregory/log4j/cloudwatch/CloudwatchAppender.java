@@ -21,6 +21,12 @@ import org.apache.log4j.spi.LoggingEvent;
  */
 public class CloudwatchAppender extends AppenderSkeleton
 {
+    private final static int DEFAULT_BATCH_SIZE = 16;
+    private final static long DEFAULT_BATCH_TIMEOUT = 4000L;
+
+    private final static int AWS_MAX_BATCH_SIZE = 10000;
+
+
     /**
      *  Base constructor: assigns default values to configuration properties.
      */
@@ -31,8 +37,8 @@ public class CloudwatchAppender extends AppenderSkeleton
         RuntimeMXBean runtimeMx = ManagementFactory.getRuntimeMXBean();
 
         logStream = dateFormat.format(new Date(runtimeMx.getStartTime()));
-        batchSize = 10;
-        maxDelay = 4000L;
+        batchSize = DEFAULT_BATCH_SIZE;
+        maxDelay = DEFAULT_BATCH_TIMEOUT;
     }
 
 
@@ -118,24 +124,25 @@ public class CloudwatchAppender extends AppenderSkeleton
 
 
     /**
-     *  Sets the message batch size for this appender.
-     *  <p>
-     *  To improve performance, messages are sent to CloudWatchin batches. This
-     *  parameter controls the size of the batch: smaller batches mean more calls,
-     *  larger batches mean a higher risk for losing messages if the app crashes.
+     *  Sets the number of messages that will submitted per request. Smaller batch
+     *  sizes mean more calls to AWS, larger batches mean a higher risk for losing
+     *  messages if the program crashes.
      *  <p>
      *  <em>Note:</em> this value is used as a trigger for sending a batch; it
      *  does not guarantee the size of that batch as written to Cloudwatch. The
      *  actual write may contain more or fewer events than are in the batch,
      *  either due to reaching a physical request limit or because additional
-     *  events were added to the batch while the trigger was being processed.
+     *  events were added to the batch while it was being processed.
      *  <p>
      *  The default value is 16, which should be a good tradeoff for non-chatty
-     *  programs.
+     *  programs. The maximum size is 10,000, imposed by AWS.
      */
     public void setBatchSize(int batchSize)
     {
-        // TODO - ensure that we're < AWS allowed batch size
+        if (batchSize > AWS_MAX_BATCH_SIZE)
+        {
+            throw new IllegalArgumentException("AWS limits batch size to " + AWS_MAX_BATCH_SIZE + " messages");
+        }
         this.batchSize = batchSize;
     }
 

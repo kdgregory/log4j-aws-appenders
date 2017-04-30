@@ -12,6 +12,7 @@ implements LogWriter
 {
     public List<LogMessage> messages = new ArrayList<LogMessage>();
     public List<LogMessage> lastBatch;
+    public boolean stopped;
 
 
     @Override
@@ -29,5 +30,12 @@ implements LogWriter
     throws Exception
     {
         return messages.get(msgnum).getMessage();
+    }
+
+
+    @Override
+    public void stop()
+    {
+        stopped = true;
     }
 }

@@ -237,9 +237,15 @@ public class CloudwatchAppender extends AppenderSkeleton
             {
                 internalAppend(new LogMessage(layout.getFooter()));
             }
+
             sendBatch();
 
-            // TODO - shut down sender thread
+            // writer should only be null during testing; we should have complained already in sendBatch(),
+            // and by now it's too late so quietly ignore if null
+            if (writer != null)
+            {
+                writer.stop();
+            }
         }
         catch (Exception ex)
         {

@@ -16,4 +16,10 @@ public interface LogWriter
      *        many messages at it wants.
      */
     void addBatch(List<LogMessage> batch);
+    
+    
+    /**
+     *  Breaks the writer out of any write loops that it might be running.
+     */
+    void stop();
 }

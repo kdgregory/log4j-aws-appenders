@@ -25,8 +25,9 @@ implements LogWriter, Runnable
 
     private AWSLogsClient client;
 
-
     private volatile boolean running = true;
+    private Thread dispatchThread;
+    
     private ConcurrentLinkedQueue<List<LogMessage>> batchQueue = new ConcurrentLinkedQueue<List<LogMessage>>();
 
 
@@ -35,6 +36,10 @@ implements LogWriter, Runnable
         this.groupName = logGroup;
         this.streamName = logStream;
     }
+    
+//----------------------------------------------------------------------------
+//  Implementation of LogWriter
+//----------------------------------------------------------------------------
 
 
     @Override
@@ -42,6 +47,22 @@ implements LogWriter, Runnable
     {
         batchQueue.add(batch);
     }
+    
+
+    @Override
+    public void stop()
+    {
+        running = false;
+        if (dispatchThread != null)
+        {
+            dispatchThread.interrupt();
+        }
+    }
+    
+    
+//----------------------------------------------------------------------------
+//  Implementation of Runnable
+//----------------------------------------------------------------------------
 
 
     @Override
@@ -52,6 +73,8 @@ implements LogWriter, Runnable
         client = new AWSLogsClient();
 
         if (! ensureGroupAndStreamAvailable()) return;
+        
+        dispatchThread = Thread.currentThread();
 
         while (running)
         {

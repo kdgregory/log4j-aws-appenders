@@ -31,10 +31,10 @@ public class CloudwatchAppender extends AppenderSkeleton
     private static int AWS_MAX_BATCH_BYTES = 1048576;
 
     // flag to indicate whether we need to run setup
-    private boolean ready = false;
+    private volatile boolean ready = false;
 
     // flag to indicate whether we can keep writing; cannot be reset
-    private boolean closed = false;
+    private volatile boolean closed = false;
 
     // this is used to synchronize access to the queue; queue updates are normally
     // very fast, so plain-old-synchronization should not cause undue contention
@@ -208,11 +208,7 @@ public class CloudwatchAppender extends AppenderSkeleton
         {
             if (! ready)
             {
-                configureAppender();
-                if (layout.getHeader() != null)
-                {
-                    internalAppend(new LogMessage(layout.getHeader()));
-                }
+                initialize();
 
             }
             internalAppend(new LogMessage(event, getLayout()));
@@ -225,8 +221,14 @@ public class CloudwatchAppender extends AppenderSkeleton
 
 
     @Override
-    public void close()
+    public synchronized void close()
     {
+        if (closed)
+        {
+            // someone already called this
+            return;
+        }
+
         closed = true;
 
         try
@@ -261,23 +263,37 @@ public class CloudwatchAppender extends AppenderSkeleton
     /**
      *  Lazily initializes the writer thread, and otherwise verifies that the appender
      *  is able to do its thing. This should preface any operations in {@link #append}.
-     *  <p>
-     *  Note: marked as protected because we override for testing.
      */
-    protected void configureAppender()
+    private synchronized void initialize()
     {
-        // this check allows us to use a mock writer
-        if (writer == null)
+        if (ready)
         {
-            writer = new CloudWatchLogWriter(logGroup, logStream);
-            Thread writerThread = new Thread((CloudWatchLogWriter)writer);
-            writerThread.setPriority(Thread.NORM_PRIORITY);
-            writerThread.start();
+            // someone else already initialized us
+            return;
         }
 
+        try
+        {
+            // this check allows us to use a mock writer
+            if (writer == null)
+            {
+                writer = new CloudWatchLogWriter(logGroup, logStream);
+                Thread writerThread = new Thread((CloudWatchLogWriter)writer);
+                writerThread.setPriority(Thread.NORM_PRIORITY);
+                writerThread.start();
+            }
 
+            if (layout.getHeader() != null)
+            {
+                internalAppend(new LogMessage(layout.getHeader()));
+            }
 
-        ready = true;
+            ready = true;
+        }
+        catch (Exception ex)
+        {
+            LogLog.error("exception while lazily configuring appender", ex);
+        }
     }
 
 
@@ -331,6 +347,15 @@ public class CloudwatchAppender extends AppenderSkeleton
         }
 
         lastBatchTimestamp = System.currentTimeMillis();
-        writer.addBatch(batch);
+
+        // in normal use, writer will never be null; for testing, however, it might be
+        if (writer == null)
+        {
+            LogLog.warn("appender not properly configured: writer is null");
+        }
+        else
+        {
+            writer.addBatch(batch);
+        }
     }
 }

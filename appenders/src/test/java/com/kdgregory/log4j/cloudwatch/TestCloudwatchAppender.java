@@ -19,14 +19,21 @@ import com.kdgregory.log4j.cloudwatch.helpers.MockCloudwatchWriter;
 
 public class TestCloudwatchAppender
 {
-    @Test
-    public void testConfiguration() throws Exception
+    private CloudwatchAppender initialize(String propsName)
+    throws Exception
     {
-        URL config = ClassLoader.getSystemResource("TestCloudwatchAppender.testConfiguration.properties");
+        URL config = ClassLoader.getSystemResource(propsName);
         PropertyConfigurator.configure(config);
 
         Logger rootLogger = Logger.getRootLogger();
-        CloudwatchAppender appender = (CloudwatchAppender)rootLogger.getAppender("default");
+        return (CloudwatchAppender)rootLogger.getAppender("default");
+    }
+
+
+    @Test
+    public void testConfiguration() throws Exception
+    {
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testConfiguration.properties");
 
         assertEquals("log group name",  "argle",    appender.getLogGroup());
         assertEquals("log stream name", "bargle",   appender.getLogStream());
@@ -38,11 +45,7 @@ public class TestCloudwatchAppender
     @Test
     public void testDefaultConfiguration() throws Exception
     {
-        URL config = ClassLoader.getSystemResource("TestCloudwatchAppender.testDefaultConfiguration.properties");
-        PropertyConfigurator.configure(config);
-
-        Logger rootLogger = Logger.getRootLogger();
-        CloudwatchAppender appender = (CloudwatchAppender)rootLogger.getAppender("default");
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testDefaultConfiguration.properties");
 
         StringAsserts.assertRegex(
                      "log stream name", "2[0-9]+.[0-9]+",   appender.getLogStream());
@@ -54,11 +57,7 @@ public class TestCloudwatchAppender
     @Test
     public void testAppend() throws Exception
     {
-        URL config = ClassLoader.getSystemResource("TestCloudwatchAppender.testAppend.properties");
-        PropertyConfigurator.configure(config);
-
-        Logger rootLogger = Logger.getRootLogger();
-        CloudwatchAppender appender = (CloudwatchAppender)rootLogger.getAppender("default");
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testAppend.properties");
 
         MockCloudwatchWriter mock = new MockCloudwatchWriter();
         appender.writer = mock;
@@ -103,11 +102,7 @@ public class TestCloudwatchAppender
     @Test(expected=IllegalStateException.class)
     public void testThrowsIfAppenderClosed() throws Exception
     {
-        URL config = ClassLoader.getSystemResource("TestCloudwatchAppender.testAppend.properties");
-        PropertyConfigurator.configure(config);
-
-        Logger rootLogger = Logger.getRootLogger();
-        CloudwatchAppender appender = (CloudwatchAppender)rootLogger.getAppender("default");
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testAppend.properties");
 
         MockCloudwatchWriter mock = new MockCloudwatchWriter();
         appender.writer = mock;
@@ -121,11 +116,7 @@ public class TestCloudwatchAppender
     @Test
     public void testWriteHeaderAndFooter() throws Exception
     {
-        URL config = ClassLoader.getSystemResource("TestCloudwatchAppender.testWriteHeaderAndFooter.properties");
-        PropertyConfigurator.configure(config);
-
-        Logger rootLogger = Logger.getRootLogger();
-        CloudwatchAppender appender = (CloudwatchAppender)rootLogger.getAppender("default");
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testWriteHeaderAndFooter.properties");
 
         MockCloudwatchWriter mock = new MockCloudwatchWriter();
         appender.writer = mock;

@@ -2,6 +2,7 @@
 package com.kdgregory.log4j.cloudwatch;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
@@ -15,6 +16,21 @@ import net.sf.kdgcommons.test.StringAsserts;
 
 public class TestCloudwatchAppender
 {
+    private static class MockCloudwatchWriter
+    implements CloudwatchWriter
+    {
+        public List<LogMessage> messages = new ArrayList<LogMessage>();
+        public List<LogMessage> lastBatch;
+
+        @Override
+        public void addBatch(List<LogMessage> batch)
+        {
+            messages.addAll(batch);
+            lastBatch = batch;
+        }
+    }
+
+
     @Test
     public void testConfiguration() throws Exception
     {
@@ -28,7 +44,6 @@ public class TestCloudwatchAppender
         assertEquals("log stream name", "bargle",   appender.getLogStream());
         assertEquals("batch size",      100,        appender.getBatchSize());
         assertEquals("max delay",       1234L,      appender.getMaxDelay());
-        assertTrue("dry run",                       appender.isDryRun());
     }
 
 
@@ -43,9 +58,8 @@ public class TestCloudwatchAppender
 
         StringAsserts.assertRegex(
                      "log stream name", "2[0-9]+.[0-9]+",   appender.getLogStream());
-        assertEquals("batch size",      10,                 appender.getBatchSize());
+        assertEquals("batch size",      16,                 appender.getBatchSize());
         assertEquals("max delay",       4000L,              appender.getMaxDelay());
-        assertFalse("dry run",                              appender.isDryRun());
     }
 
 
@@ -57,6 +71,9 @@ public class TestCloudwatchAppender
 
         Logger rootLogger = Logger.getRootLogger();
         CloudwatchAppender appender = (CloudwatchAppender)rootLogger.getAppender("default");
+
+        MockCloudwatchWriter mock = new MockCloudwatchWriter();
+        appender.writer = mock;
 
         long initialTimestamp = appender.lastBatchTimestamp;
         assertTrue("initial timestamp > 0", initialTimestamp > 0);
@@ -72,8 +89,8 @@ public class TestCloudwatchAppender
         assertEquals("after message 2, bytes in queue",     0, appender.messageQueueBytes);
         assertTrue("after message 2, batch timestamp updated", appender.lastBatchTimestamp > initialTimestamp);
 
-        List<LogMessage> lastBatch = appender.lastBatch;
-        assertEquals("messages in batch",  2, appender.lastBatch.size());
+        List<LogMessage> lastBatch = mock.lastBatch;
+        assertEquals("messages in batch",  2, mock.lastBatch.size());
 
         LogMessage message1 = lastBatch.get(0);
         assertTrue("message 1 timestamp >= initial timestamp", message1.getTimestamp() >= initialTimestamp);
@@ -91,7 +108,7 @@ public class TestCloudwatchAppender
 
         myLogger.info("this is a third message");
         assertEquals("after message 3, messages in queue",  1, appender.messageQueue.size());
-        assertSame("after message 3, last batch hasn't changed", lastBatch, appender.lastBatch);
+        assertSame("after message 3, last batch hasn't changed", lastBatch, mock.lastBatch);
     }
 
 }

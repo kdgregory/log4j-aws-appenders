@@ -3,7 +3,6 @@ package com.kdgregory.log4j.cloudwatch;
 
 import java.net.URL;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -16,7 +15,7 @@ import com.amazonaws.services.logs.model.*;
 
 
 
-public class TestCloudwatchAppender
+public class SmoketestCloudwatchAppender
 {
     private final static String LOGGROUP_NAME = "TestCloudwatchAppender";
     private final static long ASSERTION_TIMEOUT = 2000;
@@ -55,6 +54,7 @@ public class TestCloudwatchAppender
     public void setUp() throws Exception
     {
         client = new AWSLogsClient();
+
         try
         {
             client.deleteLogGroup(new DeleteLogGroupRequest().withLogGroupName(LOGGROUP_NAME));
@@ -64,13 +64,8 @@ public class TestCloudwatchAppender
             // it's OK if the log group doesn't exist when we start running
         }
         client.createLogGroup(new CreateLogGroupRequest().withLogGroupName(LOGGROUP_NAME));
-    }
 
-
-    @After
-    public void tearDown() throws Exception
-    {
-        client.deleteLogGroup(new DeleteLogGroupRequest().withLogGroupName(LOGGROUP_NAME));
+        // note: this log group will remain after the test, for diagnostics
     }
 
 

@@ -67,6 +67,16 @@
                     <debug>true</debug>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>**/Test*.java</include>
+                        <include>**/Smoketest*.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

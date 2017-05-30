@@ -10,6 +10,8 @@ import java.util.TimeZone;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import net.sf.kdgcommons.test.StringAsserts;
+
 
 public class TestSubstitutions
 {
@@ -46,6 +48,28 @@ public class TestSubstitutions
         String expected = formatter.format(new Date(runtimeMxBean.getStartTime()));
 
         assertEquals(expected, subs.perform("{startupTimestamp}"));
+    }
+
+
+    @Test
+    public void testPid() throws Exception
+    {
+        Substitutions subs = new Substitutions();
+
+        // rather than duplicate implementation, I'll just assert that we got something like a PID
+        StringAsserts.assertRegex("[0-9]+", subs.perform("{pid}"));
+    }
+
+
+    @Test
+    public void testHostname() throws Exception
+    {
+        Substitutions subs = new Substitutions();
+
+        // rather than duplicate implementation, I'll just assert that we got something
+        // more-or-less correct that wasn't "unknown" and didn't have punctuation
+        StringAsserts.assertRegex("[A-Za-z][A-Za-z0-9_-]*", subs.perform("{hostname}"));
+        assertFalse("wasn't unknown", subs.perform("{hostname}").equals("unknown"));
     }
 
 

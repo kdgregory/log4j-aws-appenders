@@ -19,6 +19,7 @@ import java.util.TimeZone;
  */
 public class Substitutions
 {
+    private RuntimeMXBean runtimeMx;
     private String date;
     private String timestamp;
     private String startupTimestamp;
@@ -29,8 +30,8 @@ public class Substitutions
      */
     public Substitutions(Date curremtDate)
     {
-        RuntimeMXBean runtimeMx = ManagementFactory.getRuntimeMXBean();
-        
+        runtimeMx = ManagementFactory.getRuntimeMXBean();
+
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         date = dateFormat.format(curremtDate);
@@ -58,7 +59,9 @@ public class Substitutions
     {
         return substituteDate(
                substituteTimestamp(
-               substituteStartupTimestamp(input)));
+               substituteStartupTimestamp(
+               substituteProcessId(
+               substituteHostname(input)))));
     }
 
 
@@ -86,5 +89,35 @@ public class Substitutions
         return (index >= 0)
              ? perform(input.substring(0, index) + startupTimestamp + input.substring(index + 18, input.length()))
              : input;
+    }
+
+
+    private String substituteProcessId(String input)
+    {
+        int index = input.indexOf("{pid}");
+        if (index >= 0)
+        {
+            String vmName = runtimeMx.getName();
+            String pid = (vmName.indexOf('@') > 0)
+                       ? vmName.substring(0, vmName.indexOf('@'))
+                       : "unknown";
+            return perform(input.substring(0, index) + pid + input.substring(index + 5, input.length()));
+        }
+        return input;
+    }
+
+
+    private String substituteHostname(String input)
+    {
+        int index = input.indexOf("{hostname}");
+        if (index >= 0)
+        {
+            String vmName = runtimeMx.getName();
+            String hostname = (vmName.indexOf('@') > 0)
+                       ? vmName.substring(vmName.indexOf('@') + 1, vmName.length())
+                       : "unknown";
+            return perform(input.substring(0, index) + hostname + input.substring(index + 10, input.length()));
+        }
+        return input;
     }
 }

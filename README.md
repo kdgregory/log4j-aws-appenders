@@ -78,8 +78,10 @@ and may appear in any configuration variable that allows substitutions.
 Variable            | Description
 --------------------|----------------------------------------------------------------
 `date`              | Current UTC date: `YYYYMMDD`
-`timestamp`         | Current UTC timestamp: `YYYYMMDDHHMMSS` (note that spaces and colons are not allowed in logstream or loggroup names)
+`timestamp`         | Current UTC timestamp: `YYYYMMDDHHMMSS`
 `startTimestamp`    | UTC timestamp of JVM startup as returned by `RuntimeMxBean`: `YYYYMMDDHHMMSS`
+`pid`               | Process ID (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms; will substitute "unknown" if not available)
+`hostname`          | Unqualified hostname (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms; will substitute "unknown" if not available)
 
 
 ## Design

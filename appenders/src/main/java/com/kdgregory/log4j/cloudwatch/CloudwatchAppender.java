@@ -1,22 +1,18 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.cloudwatch;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.TimeZone;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
 
-import com.kdgregory.log4j.shared.LogWriter;
 import com.kdgregory.log4j.shared.LogMessage;
+import com.kdgregory.log4j.shared.LogWriter;
+import com.kdgregory.log4j.shared.Substitutions;
 
 
 /**
@@ -52,6 +48,9 @@ public class CloudwatchAppender extends AppenderSkeleton
     protected int messageQueueBytes = 0;
     protected long lastBatchTimestamp = System.currentTimeMillis();
 
+    // used when setting the logstream or logroup name
+    private Substitutions substitutions = new Substitutions();
+
     // all vars below this point are configuration
 
     private String  logGroup;
@@ -65,11 +64,7 @@ public class CloudwatchAppender extends AppenderSkeleton
      */
     public CloudwatchAppender()
     {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd-HHmmss");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        RuntimeMXBean runtimeMx = ManagementFactory.getRuntimeMXBean();
-
-        logStream = dateFormat.format(new Date(runtimeMx.getStartTime()));
+        logStream = substitutions.perform("{startupTimestamp}");
         batchSize = DEFAULT_BATCH_SIZE;
         maxDelay = DEFAULT_BATCH_TIMEOUT;
     }
@@ -90,7 +85,7 @@ public class CloudwatchAppender extends AppenderSkeleton
      */
     public void setLogGroup(String value)
     {
-        logGroup = value;
+        logGroup = substitutions.perform(value);
     }
 
 
@@ -116,7 +111,7 @@ public class CloudwatchAppender extends AppenderSkeleton
      */
     public void setLogStream(String value)
     {
-        logStream = value;
+        logStream = substitutions.perform(value);
     }
 
 

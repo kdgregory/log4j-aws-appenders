@@ -1,8 +1,13 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.cloudwatch;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -20,6 +25,17 @@ import com.kdgregory.log4j.shared.LogMessage;
 
 public class TestCloudwatchAppender
 {
+    private RuntimeMXBean runtimeMxBean = ManagementFactory.getRuntimeMXBean();
+    private SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyyMMdd");
+    {
+        dateFormatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+    }
+    private SimpleDateFormat timestampFormatter = new SimpleDateFormat("yyyyMMddHHmmss");
+    {
+        timestampFormatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+    }
+
+
     private CloudwatchAppender initialize(String propsName)
     throws Exception
     {
@@ -46,12 +62,28 @@ public class TestCloudwatchAppender
     @Test
     public void testDefaultConfiguration() throws Exception
     {
+        String startTimestamp = timestampFormatter.format(new Date(runtimeMxBean.getStartTime()));
+
         CloudwatchAppender appender = initialize("TestCloudwatchAppender.testDefaultConfiguration.properties");
 
-        StringAsserts.assertRegex(
-                     "log stream name", "2[0-9]+.[0-9]+",   appender.getLogStream());
-        assertEquals("batch size",      16,                 appender.getBatchSize());
-        assertEquals("max delay",       4000L,              appender.getMaxDelay());
+        // note: this is allowed at time of configuration, would disable logger if we try to append
+        assertNull("log group name",    appender.getLogGroup());
+
+        assertEquals("log stream name", startTimestamp, appender.getLogStream());
+        assertEquals("batch size",      16,             appender.getBatchSize());
+        assertEquals("max delay",       4000L,          appender.getMaxDelay());
+    }
+
+
+    @Test
+    public void testGroupAndStreamSubstitutions() throws Exception
+    {
+        String currentDate = dateFormatter.format(new Date());
+
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testGroupAndStreamSubstitutions.properties");
+
+        assertEquals("log group name",  "MyGroup-" + currentDate + "-123",    appender.getLogGroup());
+        assertEquals("log stream name", "MyStream-" + currentDate + "-456",   appender.getLogStream());
     }
 
 

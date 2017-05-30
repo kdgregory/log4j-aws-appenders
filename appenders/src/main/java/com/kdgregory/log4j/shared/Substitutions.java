@@ -19,10 +19,11 @@ import java.util.TimeZone;
  */
 public class Substitutions
 {
-    private RuntimeMXBean runtimeMx;
     private String date;
     private String timestamp;
     private String startupTimestamp;
+    private String pid;
+    private String hostname;
 
 
     /**
@@ -30,7 +31,16 @@ public class Substitutions
      */
     public Substitutions(Date curremtDate)
     {
-        runtimeMx = ManagementFactory.getRuntimeMXBean();
+        RuntimeMXBean runtimeMx = ManagementFactory.getRuntimeMXBean();
+        String vmName = runtimeMx.getName();
+
+        pid = (vmName.indexOf('@') > 0)
+            ? vmName.substring(0, vmName.indexOf('@'))
+            : "unknown";
+
+        hostname = (vmName.indexOf('@') > 0)
+                 ? vmName.substring(vmName.indexOf('@') + 1, vmName.length())
+                 : "unknown";
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -57,67 +67,23 @@ public class Substitutions
      */
     public String perform(String input)
     {
-        return substituteDate(
-               substituteTimestamp(
-               substituteStartupTimestamp(
-               substituteProcessId(
-               substituteHostname(input)))));
+        String output = substitute("{date}",            date,
+                        substitute("{timestamp}",       timestamp,
+                        substitute("{startupTimestamp}", startupTimestamp,
+                        substitute("{pid}",             pid,
+                        substitute("{hostname}",        hostname,
+                        input)))));
+        return output.equals(input)
+             ? output
+             : perform(output);
     }
 
 
-    private String substituteDate(String input)
+    private String substitute(String tag, String value, String input)
     {
-        int index = input.indexOf("{date}");
+        int index = input.indexOf(tag);
         return (index >= 0)
-             ? perform(input.substring(0, index) + date + input.substring(index + 6, input.length()))
+             ? perform(input.substring(0, index) + value + input.substring(index + tag.length(), input.length()))
              : input;
-    }
-
-
-    private String substituteTimestamp(String input)
-    {
-        int index = input.indexOf("{timestamp}");
-        return (index >= 0)
-             ? perform(input.substring(0, index) + timestamp + input.substring(index + 11, input.length()))
-             : input;
-    }
-
-
-    private String substituteStartupTimestamp(String input)
-    {
-        int index = input.indexOf("{startupTimestamp}");
-        return (index >= 0)
-             ? perform(input.substring(0, index) + startupTimestamp + input.substring(index + 18, input.length()))
-             : input;
-    }
-
-
-    private String substituteProcessId(String input)
-    {
-        int index = input.indexOf("{pid}");
-        if (index >= 0)
-        {
-            String vmName = runtimeMx.getName();
-            String pid = (vmName.indexOf('@') > 0)
-                       ? vmName.substring(0, vmName.indexOf('@'))
-                       : "unknown";
-            return perform(input.substring(0, index) + pid + input.substring(index + 5, input.length()));
-        }
-        return input;
-    }
-
-
-    private String substituteHostname(String input)
-    {
-        int index = input.indexOf("{hostname}");
-        if (index >= 0)
-        {
-            String vmName = runtimeMx.getName();
-            String hostname = (vmName.indexOf('@') > 0)
-                       ? vmName.substring(vmName.indexOf('@') + 1, vmName.length())
-                       : "unknown";
-            return perform(input.substring(0, index) + hostname + input.substring(index + 10, input.length()));
-        }
-        return input;
     }
 }

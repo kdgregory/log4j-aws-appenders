@@ -62,8 +62,8 @@ see default values):
 
 Name            | Description
 ----------------|----------------------------------------------------------------
-`logGroup`      | Name of the Cloudwatch log group where messages are sent. If this group doesn't exist it will be created. May use substitutions.
-`logStream`     | Name of the Cloudwatch log stream where messages are sent. If not specified, we will construct a timestamp-based stream name. May use substitutions.
+`logGroup`      | Name of the Cloudwatch log group where messages are sent; may use substitutions. If this group doesn't exist it will be created. No default.
+`logStream`     | Name of the Cloudwatch log stream where messages are sent; may use substitutions. Defaults to `{startTimestamp}`.
 `batchSize`     | Maximum number of messages that will be accumulated before sending a batch.
 `batchTimeout`  | Maximum time, in milliseconds, that messages will be accumulated. This ensures that low-volume loggers will actually get logged.
 
@@ -75,10 +75,11 @@ from the table below. To use, these must be brace-delimited (eg: or `MyLog-{date
 and may appear in any configuration variable that allows substitutions.
 
 
-Variable        | Description
-----------------|----------------------------------------------------------------
-`date`          | Current UTC date: `YYYYMMDD`
-`timestamp`     | Current UTC timestamp: `YYYYMMDDHHMMSS` (note that spaces and colons are not allowed in logstream or loggroup names)
+Variable            | Description
+--------------------|----------------------------------------------------------------
+`date`              | Current UTC date: `YYYYMMDD`
+`timestamp`         | Current UTC timestamp: `YYYYMMDDHHMMSS` (note that spaces and colons are not allowed in logstream or loggroup names)
+`startTimestamp`    | UTC timestamp of JVM startup as returned by `RuntimeMxBean`: `YYYYMMDDHHMMSS`
 
 
 ## Design

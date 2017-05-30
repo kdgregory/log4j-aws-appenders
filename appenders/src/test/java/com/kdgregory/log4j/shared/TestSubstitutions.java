@@ -1,7 +1,11 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.shared;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -13,7 +17,7 @@ public class TestSubstitutions
 
 
     @Test
-    public void testDateSubstitution() throws Exception
+    public void testDate() throws Exception
     {
         Substitutions subs = new Substitutions(new Date(TEST_TIMESTAMP));
 
@@ -22,11 +26,26 @@ public class TestSubstitutions
 
 
     @Test
-    public void testTimestampSubstitution() throws Exception
+    public void testTimestamp() throws Exception
     {
         Substitutions subs = new Substitutions(new Date(TEST_TIMESTAMP));
 
         assertEquals("20170529182102", subs.perform("{timestamp}"));
+    }
+
+
+    @Test
+    public void testStartupTimestamp() throws Exception
+    {
+        Substitutions subs = new Substitutions();
+
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+        formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+        RuntimeMXBean runtimeMxBean = ManagementFactory.getRuntimeMXBean();
+        String expected = formatter.format(new Date(runtimeMxBean.getStartTime()));
+
+        assertEquals(expected, subs.perform("{startupTimestamp}"));
     }
 
 

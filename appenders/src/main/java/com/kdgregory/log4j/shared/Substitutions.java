@@ -1,6 +1,8 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.shared;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
@@ -19,6 +21,7 @@ public class Substitutions
 {
     private String date;
     private String timestamp;
+    private String startupTimestamp;
 
 
     /**
@@ -26,6 +29,8 @@ public class Substitutions
      */
     public Substitutions(Date curremtDate)
     {
+        RuntimeMXBean runtimeMx = ManagementFactory.getRuntimeMXBean();
+        
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         date = dateFormat.format(curremtDate);
@@ -33,6 +38,7 @@ public class Substitutions
         SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyyMMddHHmmss");
         timestampFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         timestamp = timestampFormat.format(curremtDate);
+        startupTimestamp = timestampFormat.format(new Date(runtimeMx.getStartTime()));
     }
 
 
@@ -51,7 +57,8 @@ public class Substitutions
     public String perform(String input)
     {
         return substituteDate(
-               substituteTimestamp(input));
+               substituteTimestamp(
+               substituteStartupTimestamp(input)));
     }
 
 
@@ -69,6 +76,15 @@ public class Substitutions
         int index = input.indexOf("{timestamp}");
         return (index >= 0)
              ? perform(input.substring(0, index) + timestamp + input.substring(index + 11, input.length()))
+             : input;
+    }
+
+
+    private String substituteStartupTimestamp(String input)
+    {
+        int index = input.indexOf("{startupTimestamp}");
+        return (index >= 0)
+             ? perform(input.substring(0, index) + startupTimestamp + input.substring(index + 18, input.length()))
              : input;
     }
 }

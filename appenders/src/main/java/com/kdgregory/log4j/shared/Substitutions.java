@@ -111,6 +111,9 @@ public class Substitutions
 
         String propName = input.substring(index + 9, index2);
         String propValue = System.getProperty(propName);
+        if (propValue == null)
+            return input;
+        
         return input.substring(0, index) + sanitize(propValue) + input.substring(index2 + 1, input.length());
     }
 

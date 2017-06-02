@@ -77,10 +77,10 @@ public class TestSubstitutions
     public void testSysprop() throws Exception  {
         // note that this property contains things that should be stripped
         System.setProperty("TestSubstitutions.testSysprop", "this-is_/a test!");
-        String expected = "this-is_atest";
 
         Substitutions subs = new Substitutions();
-        assertEquals(expected, subs.perform("{sysprop:TestSubstitutions.testSysprop}"));
+        assertEquals("this-is_atest",        subs.perform("{sysprop:TestSubstitutions.testSysprop}"));
+        assertEquals("{sysprop:frobulator}", subs.perform("{sysprop:frobulator}"));
     }
 
 

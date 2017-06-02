@@ -67,16 +67,20 @@ public class Substitutions
      */
     public String perform(String input)
     {
-        String output = substitute("{date}",            date,
-                        substitute("{timestamp}",       timestamp,
-                        substitute("{startupTimestamp}", startupTimestamp,
-                        substitute("{pid}",             pid,
-                        substitute("{hostname}",        hostname,
-                        substituteSysprop(
-                        input))))));
-        return output.equals(input)
-             ? output
-             : perform(output);
+        String output = input;
+        do
+        {
+            input = output;
+            output = substitute("{date}",            date,
+                     substitute("{timestamp}",       timestamp,
+                     substitute("{startupTimestamp}", startupTimestamp,
+                     substitute("{pid}",             pid,
+                     substitute("{hostname}",        hostname,
+                     substituteSysprop(
+                     input))))));
+        }
+        while (! output.equals(input));
+        return output;
     }
 
 
@@ -87,8 +91,7 @@ public class Substitutions
     {
         int index = input.indexOf(tag);
         return (index >= 0)
-                // FIXME - don't recurse here!
-             ? perform(input.substring(0, index) + value + input.substring(index + tag.length(), input.length()))
+             ? input.substring(0, index) + value + input.substring(index + tag.length(), input.length())
              : input;
     }
 

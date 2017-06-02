@@ -72,18 +72,51 @@ public class Substitutions
                         substitute("{startupTimestamp}", startupTimestamp,
                         substitute("{pid}",             pid,
                         substitute("{hostname}",        hostname,
-                        input)))));
+                        substituteSysprop(
+                        input))))));
         return output.equals(input)
              ? output
              : perform(output);
     }
 
 
+    /**
+     *  Performs simple subsitutions, where the tag fully describes the substitution.
+     */
     private String substitute(String tag, String value, String input)
     {
         int index = input.indexOf(tag);
         return (index >= 0)
+                // FIXME - don't recurse here!
              ? perform(input.substring(0, index) + value + input.substring(index + tag.length(), input.length()))
              : input;
+    }
+
+
+    /**
+     *  Substitutes system properties, where the property depends on the tag.
+     */
+    private String substituteSysprop(String input)
+    {
+        int index = input.indexOf("{sysprop:");
+        if (index < 0)
+            return input;
+
+        int index2 = input.indexOf('}', index);
+        if (index2 < 0)
+            return input;
+
+        String propName = input.substring(index + 9, index2);
+        String propValue = System.getProperty(propName);
+        return input.substring(0, index) + sanitize(propValue) + input.substring(index2 + 1, input.length());
+    }
+
+
+    /**
+     *  Restricts the substitution value to a limited alphabet.
+     */
+    private String sanitize(String value)
+    {
+        return value.replaceAll("[^A-Za-z0-9-_]", "");
     }
 }

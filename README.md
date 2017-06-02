@@ -45,8 +45,19 @@ Variable            | Description
 `date`              | Current UTC date: `YYYYMMDD`
 `timestamp`         | Current UTC timestamp: `YYYYMMDDHHMMSS`
 `startTimestamp`    | UTC timestamp of JVM startup as returned by `RuntimeMxBean`: `YYYYMMDDHHMMSS`
-`pid`               | Process ID (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms; will substitute "unknown" if not available)
-`hostname`          | Unqualified hostname (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms; will substitute "unknown" if not available)
+`pid`               | Process ID (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms
+`hostname`          | Unqualified hostname (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms
+`instanceId`        | EC2 instance ID. Beware that using this outside of EC2 will introduce a several-minute delay, as the appender tries to retrieve the information
+`env:XXX`           | Environment variable `XXX`
+`sysprop:XXX`       | System property `XXX`
+
+If any substitution variable cannot be resolved, then it will be replaced with the name minus braces.
+For example, `MyLog-{pid}` would become `MyLog-pid` (removing the braces is necessary to avoid infinite
+recursion in the substitution code).
+
+Substitution values are limited to alphanumerics (`[A-Za-z0-9]`, hyphens (`-`), and underscore (`_`).
+All other characters are removed, so `env:HOME` would turn into something like `homekgregory` (in this
+case, `env:USER` would have been a better choice anyway).
 
 
 ## Design

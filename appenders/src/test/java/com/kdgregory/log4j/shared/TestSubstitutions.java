@@ -92,25 +92,34 @@ public class TestSubstitutions
     @Test
     public void testEnvar() throws Exception  {
         Substitutions subs = new Substitutions();
-        assertEquals(System.getenv("HOME").replaceAll("/", ""),
-                     subs.perform("{env:HOME}"));
+        assertEquals(System.getenv("HOME"), subs.perform("{env:HOME}"));
         assertEquals("{env:frobulator}", subs.perform("{env:frobulator}"));
     }
 
 
     @Test
     public void testSysprop() throws Exception  {
-        // note that this property contains things that should be stripped
-        System.setProperty("TestSubstitutions.testSysprop", "this-is_/a test!");
+        // contains characters that would be removed for most destinations
+        String value = "this-is_/a test!";
+        System.setProperty("TestSubstitutions.testSysprop", value);
 
         Substitutions subs = new Substitutions();
-        assertEquals("this-is_atest",        subs.perform("{sysprop:TestSubstitutions.testSysprop}"));
+        assertEquals(value,                  subs.perform("{sysprop:TestSubstitutions.testSysprop}"));
         assertEquals("{sysprop:frobulator}", subs.perform("{sysprop:frobulator}"));
     }
 
 
     @Test
     public void testBogusSubstitution() throws Exception
+    {
+        Substitutions subs = new Substitutions(new Date(TEST_TIMESTAMP));
+
+        assertEquals("{date", subs.perform("{date"));
+    }
+
+
+    @Test
+    public void testUnterminatedSubstitution() throws Exception
     {
         Substitutions subs = new Substitutions(new Date(TEST_TIMESTAMP));
 
@@ -125,6 +134,4 @@ public class TestSubstitutions
 
         assertEquals("2017052920170529", subs.perform("{date}{date}"));
     }
-
-
 }

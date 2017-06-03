@@ -103,7 +103,6 @@ public class Substitutions
         if (index < 0)
             return input;
 
-        value = value.replaceAll("[^A-Za-z0-9-_]", "");
         return input.substring(0, index) + value + input.substring(index + tag.length(), input.length());
     }
 

@@ -51,13 +51,12 @@ Variable            | Description
 `env:XXX`           | Environment variable `XXX`
 `sysprop:XXX`       | System property `XXX`
 
-If any substitution variable cannot be resolved, then it will be replaced with the name minus braces.
-For example, `MyLog-{pid}` would become `MyLog-pid` (removing the braces is necessary to avoid infinite
-recursion in the substitution code).
+If unable to replace a substitution variable, the tag will be left in place. This could happen due
+to a bogus or unclosed tag, or an unresolvable system property or environment variable.
 
-Substitution values are limited to alphanumerics (`[A-Za-z0-9]`, hyphens (`-`), and underscore (`_`).
-All other characters are removed, so `env:HOME` would turn into something like `homekgregory` (in this
-case, `env:USER` would have been a better choice anyway).
+Note that a particular destination may not accept all of the characters produced by a substitution,
+and the logger will remove illegal characters. You should try to limit substitution values to
+alphanumeric characters, along with hyphens and underscores.
 
 
 ## Design

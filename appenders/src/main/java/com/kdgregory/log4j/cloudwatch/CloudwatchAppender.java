@@ -12,7 +12,6 @@ import org.apache.log4j.spi.LoggingEvent;
 
 import com.kdgregory.log4j.shared.LogMessage;
 import com.kdgregory.log4j.shared.LogWriter;
-import com.kdgregory.log4j.shared.Substitutions;
 
 
 /**
@@ -48,9 +47,6 @@ public class CloudwatchAppender extends AppenderSkeleton
     protected int messageQueueBytes = 0;
     protected long lastBatchTimestamp = System.currentTimeMillis();
 
-    // used when setting the logstream or logroup name
-    private Substitutions substitutions = new Substitutions();
-
     // all vars below this point are configuration
 
     private String  logGroup;
@@ -64,7 +60,7 @@ public class CloudwatchAppender extends AppenderSkeleton
      */
     public CloudwatchAppender()
     {
-        logStream = substitutions.perform("{startupTimestamp}");
+        logStream = "{startTimestamp}";
         batchSize = DEFAULT_BATCH_SIZE;
         maxDelay = DEFAULT_BATCH_TIMEOUT;
     }
@@ -85,7 +81,7 @@ public class CloudwatchAppender extends AppenderSkeleton
      */
     public void setLogGroup(String value)
     {
-        logGroup = substitutions.perform(value);
+        logGroup = value;
     }
 
 
@@ -111,7 +107,7 @@ public class CloudwatchAppender extends AppenderSkeleton
      */
     public void setLogStream(String value)
     {
-        logStream = substitutions.perform(value);
+        logStream = value;
     }
 
 

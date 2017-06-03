@@ -12,7 +12,9 @@ import com.amazonaws.services.logs.AWSLogsClient;
 import com.amazonaws.services.logs.model.*;
 
 import com.kdgregory.log4j.shared.LogWriter;
+import com.kdgregory.log4j.shared.Substitutions;
 import com.kdgregory.log4j.shared.LogMessage;
+
 
 /**
  *  This is where all the magic happens.
@@ -27,16 +29,17 @@ implements LogWriter, Runnable
 
     private volatile boolean running = true;
     private Thread dispatchThread;
-    
+
     private ConcurrentLinkedQueue<List<LogMessage>> batchQueue = new ConcurrentLinkedQueue<List<LogMessage>>();
 
 
     public CloudWatchLogWriter(String logGroup, String logStream)
     {
-        this.groupName = logGroup;
-        this.streamName = logStream;
+        this.groupName = applySubstitutions(logGroup);
+        this.streamName = applySubstitutions(logStream);
     }
-    
+
+
 //----------------------------------------------------------------------------
 //  Implementation of LogWriter
 //----------------------------------------------------------------------------
@@ -47,7 +50,7 @@ implements LogWriter, Runnable
     {
         batchQueue.add(batch);
     }
-    
+
 
     @Override
     public void stop()
@@ -58,8 +61,8 @@ implements LogWriter, Runnable
             dispatchThread.interrupt();
         }
     }
-    
-    
+
+
 //----------------------------------------------------------------------------
 //  Implementation of Runnable
 //----------------------------------------------------------------------------
@@ -73,7 +76,7 @@ implements LogWriter, Runnable
         client = new AWSLogsClient();
 
         if (! ensureGroupAndStreamAvailable()) return;
-        
+
         dispatchThread = Thread.currentThread();
 
         while (running)
@@ -94,6 +97,19 @@ implements LogWriter, Runnable
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
+
+
+    /**
+     *  Utility function to apply substitutions to a group/stream name and
+     *  sanitize the output
+     */
+    private static String applySubstitutions(String input)
+    {
+        Substitutions subs = new Substitutions();
+        String rawOutput = subs.perform(input);
+        return rawOutput.replaceAll("[^A-Za-z0-9-_]", "");
+    }
+
 
     private void sleepQuietly(long time)
     {

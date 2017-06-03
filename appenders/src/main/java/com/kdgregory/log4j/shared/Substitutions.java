@@ -7,6 +7,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
+import com.amazonaws.util.EC2MetadataUtils;
+
 
 /**
  *  Handles the standard substitution variables.
@@ -76,8 +78,10 @@ public class Substitutions
                      substitute("{startupTimestamp}", startupTimestamp,
                      substitute("{pid}",             pid,
                      substitute("{hostname}",        hostname,
+                     substituteInstanceId(
                      substituteSysprop(
-                     input))))));
+                     substituteEnvar(
+                     input))))))));
         }
         while (! output.equals(input));
         return output;
@@ -93,6 +97,26 @@ public class Substitutions
         return (index >= 0)
              ? input.substring(0, index) + value + input.substring(index + tag.length(), input.length())
              : input;
+    }
+
+
+
+    /**
+     *  Substitutes the EC2 instance ID. If not running on EC2 we won't be able
+     *  to retrieve instance metadata (and it takes a long time to learn that,
+     *  waiting for a timeout) so this isn't handled as a "simple" substitution.
+     */
+    private String substituteInstanceId(String input)
+    {
+        int index = input.indexOf("{instanceId}");
+        if (index < 0)
+            return input;
+
+        String instanceId = EC2MetadataUtils.getInstanceId();
+        if ((instanceId == null) || (instanceId.length() == 0))
+            return input;
+
+        return substitute("{instanceId}", instanceId, input);
     }
 
 
@@ -113,10 +137,31 @@ public class Substitutions
         String propValue = System.getProperty(propName);
         if (propValue == null)
             return input;
-        
+
         return input.substring(0, index) + sanitize(propValue) + input.substring(index2 + 1, input.length());
     }
 
+
+    /**
+     *  Substitutes environment variables, where the variable depends on the tag.
+     */
+    private String substituteEnvar(String input)
+    {
+        int index = input.indexOf("{env:");
+        if (index < 0)
+            return input;
+
+        int index2 = input.indexOf('}', index);
+        if (index2 < 0)
+            return input;
+
+        String propName = input.substring(index + 5, index2);
+        String propValue = System.getenv(propName);
+        if (propValue == null)
+            return input;
+
+        return input.substring(0, index) + sanitize(propValue) + input.substring(index2 + 1, input.length());
+    }
 
     /**
      *  Restricts the substitution value to a limited alphabet.

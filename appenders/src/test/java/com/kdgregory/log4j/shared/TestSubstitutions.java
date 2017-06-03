@@ -7,10 +7,13 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.test.StringAsserts;
+
+import com.amazonaws.util.EC2MetadataUtils;
 
 
 public class TestSubstitutions
@@ -73,6 +76,28 @@ public class TestSubstitutions
     }
 
 
+    // if not running on EC2 this test will take a long time to run and then fail
+    // ... trust me that I've tested it on EC2
+    @Test @Ignore
+    public void testInstanceId() throws Exception
+    {
+        Substitutions subs = new Substitutions();
+
+        assertEquals(EC2MetadataUtils.getInstanceId(), subs.perform("{instanceId}"));
+    }
+
+
+    // this test assumes that you're running on Linux and have the HOME variable
+    // defined; if not, feel free to @Ignore
+    @Test
+    public void testEnvar() throws Exception  {
+        Substitutions subs = new Substitutions();
+        assertEquals(System.getenv("HOME").replaceAll("/", ""),
+                     subs.perform("{env:HOME}"));
+        assertEquals("{env:frobulator}", subs.perform("{env:frobulator}"));
+    }
+
+
     @Test
     public void testSysprop() throws Exception  {
         // note that this property contains things that should be stripped
@@ -82,7 +107,6 @@ public class TestSubstitutions
         assertEquals("this-is_atest",        subs.perform("{sysprop:TestSubstitutions.testSysprop}"));
         assertEquals("{sysprop:frobulator}", subs.perform("{sysprop:frobulator}"));
     }
-
 
 
     @Test

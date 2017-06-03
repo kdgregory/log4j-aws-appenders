@@ -93,12 +93,19 @@ public class Substitutions
      */
     private String substitute(String tag, String value, String input)
     {
-        int index = input.indexOf(tag);
-        return (index >= 0)
-             ? input.substring(0, index) + value + input.substring(index + tag.length(), input.length())
-             : input;
-    }
+        if (input == null)
+            return "";
 
+        if (value == null)
+            return input;
+
+        int index = input.indexOf(tag);
+        if (index < 0)
+            return input;
+
+        value = value.replaceAll("[^A-Za-z0-9-_]", "");
+        return input.substring(0, index) + value + input.substring(index + tag.length(), input.length());
+    }
 
 
     /**
@@ -125,20 +132,11 @@ public class Substitutions
      */
     private String substituteSysprop(String input)
     {
-        int index = input.indexOf("{sysprop:");
-        if (index < 0)
+        String propName = extractPropName("sysprop", input);
+        if (propName == null)
             return input;
 
-        int index2 = input.indexOf('}', index);
-        if (index2 < 0)
-            return input;
-
-        String propName = input.substring(index + 9, index2);
-        String propValue = System.getProperty(propName);
-        if (propValue == null)
-            return input;
-
-        return input.substring(0, index) + sanitize(propValue) + input.substring(index2 + 1, input.length());
+        return substitute("{" + "sysprop" + ":" + propName + "}", System.getProperty(propName), input);
     }
 
 
@@ -147,27 +145,29 @@ public class Substitutions
      */
     private String substituteEnvar(String input)
     {
-        int index = input.indexOf("{env:");
-        if (index < 0)
+        String propName = extractPropName("env", input);
+        if (propName == null)
             return input;
 
-        int index2 = input.indexOf('}', index);
-        if (index2 < 0)
-            return input;
-
-        String propName = input.substring(index + 5, index2);
-        String propValue = System.getenv(propName);
-        if (propValue == null)
-            return input;
-
-        return input.substring(0, index) + sanitize(propValue) + input.substring(index2 + 1, input.length());
+        return substitute("{" + "env" + ":" + propName + "}", System.getenv(propName), input);
     }
 
+
     /**
-     *  Restricts the substitution value to a limited alphabet.
+     *  Extracts the property name for a colon-delimited tag, null if unable to
+     *  do so.
      */
-    private String sanitize(String value)
+    private String extractPropName(String tagType, String input)
     {
-        return value.replaceAll("[^A-Za-z0-9-_]", "");
+        String tagForm = "{" + tagType + ":";
+        int index1 = input.indexOf(tagForm);
+        if (index1 < 0)
+            return null;
+
+        int index2 = input.indexOf("}", index1);
+        if (index2 < 0)
+            return null;
+
+        return input.substring(index1 + tagForm.length(), index2);
     }
 }

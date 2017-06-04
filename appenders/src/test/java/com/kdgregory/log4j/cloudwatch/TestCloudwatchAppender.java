@@ -5,58 +5,66 @@ import java.net.URL;
 import java.util.List;
 
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 import net.sf.kdgcommons.test.StringAsserts;
 
+import com.kdgregory.log4j.cloudwatch.helpers.HeaderFooterLayout;
+import com.kdgregory.log4j.cloudwatch.helpers.MockCloudwatchWriter;
+import com.kdgregory.log4j.shared.LogMessage;
+
 
 public class TestCloudwatchAppender
 {
-    @Test
-    public void testConfiguration() throws Exception
+    private CloudwatchAppender initialize(String propsName)
+    throws Exception
     {
-        URL config = ClassLoader.getSystemResource("TestCloudwatchAppender.testConfiguration.properties");
+        URL config = ClassLoader.getSystemResource(propsName);
         PropertyConfigurator.configure(config);
 
         Logger rootLogger = Logger.getRootLogger();
-        CloudwatchAppender appender = (CloudwatchAppender)rootLogger.getAppender("default");
+        return (CloudwatchAppender)rootLogger.getAppender("default");
+    }
+
+
+    @Test
+    public void testConfiguration() throws Exception
+    {
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testConfiguration.properties");
 
         assertEquals("log group name",  "argle",    appender.getLogGroup());
         assertEquals("log stream name", "bargle",   appender.getLogStream());
         assertEquals("batch size",      100,        appender.getBatchSize());
         assertEquals("max delay",       1234L,      appender.getMaxDelay());
-        assertTrue("dry run",                       appender.isDryRun());
     }
 
 
     @Test
     public void testDefaultConfiguration() throws Exception
     {
-        URL config = ClassLoader.getSystemResource("TestCloudwatchAppender.testDefaultConfiguration.properties");
-        PropertyConfigurator.configure(config);
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testDefaultConfiguration.properties");
 
-        Logger rootLogger = Logger.getRootLogger();
-        CloudwatchAppender appender = (CloudwatchAppender)rootLogger.getAppender("default");
+        // note: this is allowed at time of configuration, would disable logger if we try to append
+        assertNull("log group name",    appender.getLogGroup());
 
-        StringAsserts.assertRegex(
-                     "log stream name", "2[0-9]+.[0-9]+",   appender.getLogStream());
-        assertEquals("batch size",      10,                 appender.getBatchSize());
+        assertEquals("log stream name", "{startTimestamp}", appender.getLogStream());
+        assertEquals("batch size",      16,                 appender.getBatchSize());
         assertEquals("max delay",       4000L,              appender.getMaxDelay());
-        assertFalse("dry run",                              appender.isDryRun());
     }
 
 
     @Test
     public void testAppend() throws Exception
     {
-        URL config = ClassLoader.getSystemResource("TestCloudwatchAppender.testAppend.properties");
-        PropertyConfigurator.configure(config);
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testAppend.properties");
 
-        Logger rootLogger = Logger.getRootLogger();
-        CloudwatchAppender appender = (CloudwatchAppender)rootLogger.getAppender("default");
+        MockCloudwatchWriter mock = new MockCloudwatchWriter();
+        appender.writer = mock;
 
         long initialTimestamp = appender.lastBatchTimestamp;
         assertTrue("initial timestamp > 0", initialTimestamp > 0);
@@ -72,8 +80,8 @@ public class TestCloudwatchAppender
         assertEquals("after message 2, bytes in queue",     0, appender.messageQueueBytes);
         assertTrue("after message 2, batch timestamp updated", appender.lastBatchTimestamp > initialTimestamp);
 
-        List<LogMessage> lastBatch = appender.lastBatch;
-        assertEquals("messages in batch",  2, appender.lastBatch.size());
+        List<LogMessage> lastBatch = mock.lastBatch;
+        assertEquals("messages in batch",  2, mock.lastBatch.size());
 
         LogMessage message1 = lastBatch.get(0);
         assertTrue("message 1 timestamp >= initial timestamp", message1.getTimestamp() >= initialTimestamp);
@@ -91,7 +99,66 @@ public class TestCloudwatchAppender
 
         myLogger.info("this is a third message");
         assertEquals("after message 3, messages in queue",  1, appender.messageQueue.size());
-        assertSame("after message 3, last batch hasn't changed", lastBatch, appender.lastBatch);
+        assertSame("after message 3, last batch hasn't changed", lastBatch, mock.lastBatch);
     }
 
+
+    @Test(expected=IllegalStateException.class)
+    public void testThrowsIfAppenderClosed() throws Exception
+    {
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testAppend.properties");
+
+        MockCloudwatchWriter mock = new MockCloudwatchWriter();
+        appender.writer = mock;
+        appender.close();
+
+        Logger myLogger = Logger.getLogger(getClass());
+        myLogger.error("blah blah blah");
+    }
+
+
+    @Test
+    public void testWriteHeaderAndFooter() throws Exception
+    {
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testWriteHeaderAndFooter.properties");
+
+        MockCloudwatchWriter mock = new MockCloudwatchWriter();
+        appender.writer = mock;
+
+        Logger myLogger = Logger.getLogger(getClass());
+        myLogger.debug("blah blah blah");
+        LogManager.shutdown();
+
+        assertEquals("number of messages written to log", 3, mock.messages.size());
+        assertEquals("header is first", HeaderFooterLayout.HEADER, mock.getMessage(0));
+        assertEquals("footer is last",  HeaderFooterLayout.FOOTER, mock.getMessage(2));
+    }
+
+
+    @Test
+    public void testSubstitution() throws Exception
+    {
+        // note that the property value includes invalid characters
+        System.setProperty("TestCloudwatchAppender.testSubstitution", "foo/bar");
+
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testSubstitution.properties");
+        assertNull("actual log group after construction", appender.getActualLogGroup());
+        assertNull("actual log stream after construction", appender.getActualLogStream());
+
+        MockCloudwatchWriter mock = new MockCloudwatchWriter();
+        appender.writer = mock;
+
+        // need to trigger append to apply substitutions
+        Logger myLogger = Logger.getLogger(getClass());
+        myLogger.debug("doesn't matter what's written");
+
+        // it's easy to check actual value for log group name, but we'll use a regex for stream
+        // so that we don't have to muck with timestamps
+        assertEquals("actual log group after append",
+                     "MyLog-foobar",
+                     appender.getActualLogGroup());
+        StringAsserts.assertRegex("actual log stream after append",
+                                  "MyStream-20\\d{12}-bogus",
+                                  appender.getActualLogStream());
+    }
 }

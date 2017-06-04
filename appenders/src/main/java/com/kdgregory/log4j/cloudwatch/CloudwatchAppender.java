@@ -1,19 +1,19 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.cloudwatch;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.TimeZone;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
+
+import com.kdgregory.log4j.shared.LogMessage;
+import com.kdgregory.log4j.shared.LogWriter;
+import com.kdgregory.log4j.shared.Substitutions;
 
 
 /**
@@ -21,26 +21,44 @@ import org.apache.log4j.spi.LoggingEvent;
  */
 public class CloudwatchAppender extends AppenderSkeleton
 {
-    /**
-     *  Base constructor: assigns default values to configuration properties.
-     */
-    public CloudwatchAppender()
-    {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd-HHmmss");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        RuntimeMXBean runtimeMx = ManagementFactory.getRuntimeMXBean();
+    private final static int DEFAULT_BATCH_SIZE = 16;
+    private final static long DEFAULT_BATCH_TIMEOUT = 4000L;
 
-        logStream = dateFormat.format(new Date(runtimeMx.getStartTime()));
-        batchSize = 10;
-        maxDelay = 4000L;
-    }
+    private final static int AWS_MAX_BATCH_COUNT = 10000;
+    private final static int AWS_MAX_BATCH_BYTES = 1048576;
 
+    private final static Pattern ALLOWED_NAME_REGEX = Pattern.compile("[^A-Za-z0-9-_]");
 
-//----------------------------------------------------------------------------
-//  Configuration
-//----------------------------------------------------------------------------
+    // flag to indicate whether we need to run setup
+    private volatile boolean ready = false;
 
-    private boolean dryRun;
+    // flag to indicate whether we can keep writing; cannot be reset
+    private volatile boolean closed = false;
+
+    // this is used to synchronize access to the queue; queue updates are normally
+    // very fast, so plain-old-synchronization should not cause undue contention
+
+    private Object messageQueueLock = new Object();
+
+    // the writer is created on first append; it's marked as protected so that tests
+    // can replace with a mock implementation
+
+    protected LogWriter writer;
+
+    // the waiting-for-batch queue; also marked as protected for testing
+
+    protected LinkedList<LogMessage> messageQueue = new LinkedList<LogMessage>();
+    protected int messageQueueBytes = 0;
+    protected long lastBatchTimestamp = System.currentTimeMillis();
+
+    // we apply substitutions when creating a new LogWriter; these vars hold the
+    // post-substitution names, and are accessible for testing
+
+    private String  actualLogGroup;
+    private String  actualLogStream;
+
+    // all vars below this point are configuration
+
     private String  logGroup;
     private String  logStream;
     private int     batchSize;
@@ -48,23 +66,19 @@ public class CloudwatchAppender extends AppenderSkeleton
 
 
     /**
-     *  Sets the "dry run" flag, which prevents writes to Cloudwatch. This
-     *  is intended for testing.
+     *  Base constructor: assigns default values to configuration properties.
      */
-    public void setDryRun(boolean value)
+    public CloudwatchAppender()
     {
-        dryRun = value;
+        logStream = "{startTimestamp}";
+        batchSize = DEFAULT_BATCH_SIZE;
+        maxDelay = DEFAULT_BATCH_TIMEOUT;
     }
 
 
-    /**
-     *  Retrieves the "dry run" flag; see {@link #setDryRun}.
-     */
-    public boolean isDryRun()
-    {
-        return dryRun;
-    }
-
+//----------------------------------------------------------------------------
+//  Configuration
+//----------------------------------------------------------------------------
 
     /**
      *  Sets the Cloudwatch Log Group associated with this appender.
@@ -88,6 +102,16 @@ public class CloudwatchAppender extends AppenderSkeleton
     public String getLogGroup()
     {
         return logGroup;
+    }
+
+
+    /**
+     *  Returns the current log group name, post-substitutions. This is lazily
+     *  populated, so will be <code>null</code> until the first message is written.
+     */
+    public String getActualLogGroup()
+    {
+        return actualLogGroup;
     }
 
 
@@ -118,24 +142,35 @@ public class CloudwatchAppender extends AppenderSkeleton
 
 
     /**
-     *  Sets the message batch size for this appender.
-     *  <p>
-     *  To improve performance, messages are sent to CloudWatchin batches. This
-     *  parameter controls the size of the batch: smaller batches mean more calls,
-     *  larger batches mean a higher risk for losing messages if the app crashes.
+     *  Returns the current log stream name, post-substitutions. This is lazily
+     *  populated, so will be <code>null</code> until the first message is written.
+     */
+    public String getActualLogStream()
+    {
+        return actualLogStream;
+    }
+
+
+    /**
+     *  Sets the number of messages that will submitted per request. Smaller batch
+     *  sizes mean more calls to AWS, larger batches mean a higher risk for losing
+     *  messages if the program crashes.
      *  <p>
      *  <em>Note:</em> this value is used as a trigger for sending a batch; it
      *  does not guarantee the size of that batch as written to Cloudwatch. The
      *  actual write may contain more or fewer events than are in the batch,
      *  either due to reaching a physical request limit or because additional
-     *  events were added to the batch while the trigger was being processed.
+     *  events were added to the batch while it was being processed.
      *  <p>
      *  The default value is 16, which should be a good tradeoff for non-chatty
-     *  programs.
+     *  programs. The maximum size is 10,000, imposed by AWS.
      */
     public void setBatchSize(int batchSize)
     {
-        // TODO - ensure that we're < AWS allowed batch size
+        if (batchSize > AWS_MAX_BATCH_COUNT)
+        {
+            throw new IllegalArgumentException("AWS limits batch size to " + AWS_MAX_BATCH_COUNT + " messages");
+        }
         this.batchSize = batchSize;
     }
 
@@ -185,29 +220,19 @@ public class CloudwatchAppender extends AppenderSkeleton
     @Override
     protected void append(LoggingEvent event)
     {
-        if (! preparedToAppend()) return;
+        if (closed)
+        {
+            throw new IllegalStateException("appender is closed");
+        }
 
         try
         {
-            LogMessage message = new LogMessage(event, getLayout());
-
-            if (message.size() > AWS_MAX_BATCH_BYTES)
+            if (! ready)
             {
-                LogLog.warn("attempted to append a message > AWS batch size; ignored");
-                return;
-            }
+                initialize();
 
-            synchronized (messageQueueLock)
-            {
-                messageQueue.add(message);
-                messageQueueBytes += message.size();
-                long curDelay = System.currentTimeMillis() - lastBatchTimestamp;
-
-                if ((messageQueue.size() >= batchSize) || (messageQueueBytes >= AWS_MAX_BATCH_BYTES) || (curDelay >= maxDelay))
-                {
-                    sendBatch();
-                }
             }
+            internalAppend(new LogMessage(event, getLayout()));
         }
         catch (Exception ex)
         {
@@ -217,11 +242,37 @@ public class CloudwatchAppender extends AppenderSkeleton
 
 
     @Override
-    public void close()
+    public synchronized void close()
     {
-        // TODO - get footer from layout, push last batch
-        // TODO - shut down sender thread
-        // TODO - mark appender as closed
+        if (closed)
+        {
+            // someone already called this
+            return;
+        }
+
+        closed = true;
+
+        try
+        {
+            if (layout.getFooter() != null)
+            {
+                internalAppend(new LogMessage(layout.getFooter()));
+            }
+
+            sendBatch();
+
+            // writer should only be null during testing; we should have complained already in sendBatch(),
+            // and by now it's too late so quietly ignore if null
+            if (writer != null)
+            {
+                writer.stop();
+            }
+        }
+        catch (Exception ex)
+        {
+            LogLog.error("exception while shutting down appender", ex);
+        }
+
     }
 
 
@@ -236,46 +287,69 @@ public class CloudwatchAppender extends AppenderSkeleton
 //  Internals
 //----------------------------------------------------------------------------
 
-    private static int AWS_MAX_BATCH_COUNT = 10000;
-    private static int AWS_MAX_BATCH_BYTES = 1048576;
+    /**
+     *  Lazily initializes the writer thread, and otherwise verifies that the appender
+     *  is able to do its thing. This should preface any operations in {@link #append}.
+     */
+    private synchronized void initialize()
+    {
+        if (ready)
+        {
+            // someone else already initialized us
+            return;
+        }
 
-    // this is used to synchronize access to the queue; queue updates are normally
-    // very fast, so plain-old-synchronization should not cause undue contention
+        try
+        {
+            Substitutions subs = new Substitutions();
+            actualLogGroup  = ALLOWED_NAME_REGEX.matcher(subs.perform(logGroup)).replaceAll("");
+            actualLogStream = ALLOWED_NAME_REGEX.matcher(subs.perform(logStream)).replaceAll("");
 
-    private Object messageQueueLock = new Object();
+            // this check allows us to use a mock writer
+            if (writer == null)
+            {
+                writer = new CloudWatchLogWriter(actualLogGroup, actualLogStream);
+                Thread writerThread = new Thread((CloudWatchLogWriter)writer);
+                writerThread.setPriority(Thread.NORM_PRIORITY);
+                writerThread.start();
+            }
 
-    // this will only be created if we're not in a dry run
+            if (layout.getHeader() != null)
+            {
+                internalAppend(new LogMessage(layout.getHeader()));
+            }
 
-    private CloudwatchWriter writer;
-
-    // the waiting-for-batch queue; these are package-protected for testing
-
-    LinkedList<LogMessage> messageQueue = new LinkedList<LogMessage>();
-    int messageQueueBytes = 0;
-    long lastBatchTimestamp = System.currentTimeMillis();
-
-    // this variable is a test hook: each (immutable) batch is saved here when
-    // it's ready for the sender; tests can use it to verify batch size, nobody
-    // else should touch it
-
-    List<LogMessage> lastBatch;
+            ready = true;
+        }
+        catch (Exception ex)
+        {
+            LogLog.error("exception while lazily configuring appender", ex);
+        }
+    }
 
 
     /**
-     *  Lazily initializes the writer thread, and otherwise verifies that the appender
-     *  is able to do its thing. This should wrap any operations in {@link #append}.
+     *  Appends a message to the current batch, and decides whether or not to send the batch.
      */
-    private boolean preparedToAppend()
+    private void internalAppend(LogMessage message)
     {
-        // TODO - check that layout is valid and appender isn't closed
-        if ((writer == null) && (! isDryRun()))
+        if (message.size() > AWS_MAX_BATCH_BYTES)
         {
-            writer = new CloudwatchWriter(logGroup, logStream);
-            Thread writerThread = new Thread(writer);
-            writerThread.setPriority(Thread.NORM_PRIORITY);
-            writerThread.start();
+            LogLog.warn("attempted to append a message > AWS batch size; ignored");
+            return;
         }
-        return true;
+
+        synchronized (messageQueueLock)
+        {
+            messageQueue.add(message);
+            messageQueueBytes += message.size();
+            long curDelay = System.currentTimeMillis() - lastBatchTimestamp;
+
+            if ((messageQueue.size() >= batchSize) || (messageQueueBytes >= AWS_MAX_BATCH_BYTES) || (curDelay >= maxDelay))
+            {
+                sendBatch();
+            }
+        }
     }
 
 
@@ -304,8 +378,13 @@ public class CloudwatchAppender extends AppenderSkeleton
         }
 
         lastBatchTimestamp = System.currentTimeMillis();
-        lastBatch = batch;
-        if (! isDryRun())
+
+        // in normal use, writer will never be null; for testing, however, it might be
+        if (writer == null)
+        {
+            LogLog.warn("appender not properly configured: writer is null");
+        }
+        else
         {
             writer.addBatch(batch);
         }

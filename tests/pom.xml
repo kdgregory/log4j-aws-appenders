@@ -4,7 +4,7 @@
 
     <groupId>com.kdgregory.log4j-appenders</groupId>
     <artifactId>aws-appenders-test</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
     <packaging>jar</packaging>
 
     <name>AWS Log4J Appender Integration Tests</name>
@@ -65,6 +65,16 @@
                     <source>1.6</source>
                     <target>1.6</target>
                     <debug>true</debug>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>**/Test*.java</include>
+                        <include>**/Smoketest*.java</include>
+                    </includes>
                 </configuration>
             </plugin>
         </plugins>

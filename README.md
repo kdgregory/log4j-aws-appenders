@@ -11,9 +11,10 @@ But, this seemed to be an easy weekend project, and I'd be able to get exactly w
 wanted if I was willing to reinvent a wheel. After some thought, I expanded the idea:
 why not reinvent several wheels, and be able to write to multiple destinations?
 
-Here are the destinations I plan to support; they'll be checked when in development:
+Here are the destinations I plan to support. They'll be checked when in development,
+and the link will take you to additional documentation.
 
-  [x] CloudWatch Logs
+  [x] [CloudWatch Logs](Docs/cloudwatch.md)
   [ ] Kinesis
   [ ] SNS (I think there it might be interesting to create an "error watcher")
   [ ] S3 (as an alternative to an external "logfile mover")
@@ -32,58 +33,45 @@ versions are:
 * AWS SDK: 1.11.0
 
 
+## Substitution Variables
 
-### CloudWatch Logs
-
-The CloudWatch implementation provides (will provide) the following features:
-
-  [x] User-specified log-group and log-stream names
-  [ ] Substitution variables to customize log-group and log-stream names
-  [ ] Rolling log streams
-  [ ] Configurable discard in case of network connectivity issues
+Logging destination names (such as a CloudWatch log group or SNS topic) may use substitution variables
+from the table below. To use, these must be brace-delimited (eg: or `MyLog-{date}`, _not_ `MyLog-date`)
+and may appear in any configuration variable that allows substitutions.
 
 
-Your Log4J configuration should look something like this:
+Variable            | Description
+--------------------|----------------------------------------------------------------
+`date`              | Current UTC date: `YYYYMMDD`
+`timestamp`         | Current UTC timestamp: `YYYYMMDDHHMMSS`
+`startTimestamp`    | UTC timestamp of JVM startup as returned by `RuntimeMxBean`: `YYYYMMDDHHMMSS`
+`pid`               | Process ID (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms
+`hostname`          | Unqualified hostname (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms
+`instanceId`        | EC2 instance ID. Beware that using this outside of EC2 will introduce a several-minute delay, as the appender tries to retrieve the information
+`env:XXX`           | Environment variable `XXX`
+`sysprop:XXX`       | System property `XXX`
 
-		log4j.rootLogger=ERROR, default
-		log4j.logger.com.kdgregory.log4j.cloudwatch.TestCloudwatchAppender=DEBUG
-		
-		log4j.appender.default=com.kdgregory.log4j.cloudwatch.CloudwatchAppender
-		log4j.appender.default.layout=org.apache.log4j.PatternLayout
-		log4j.appender.default.layout.ConversionPattern=%d [%t] %-5p %c %x - %m%n
-		
-		log4j.appender.default.logGroup=TestCloudwatchAppender
-		log4j.appender.default.logStream=smoketest
-		log4j.appender.default.batchSize=1
+If unable to replace a substitution variable, the tag will be left in place. This could happen due
+to a bogus or unclosed tag, or an unresolvable system property or environment variable.
 
-
-The appender provides the following properties (also described in the JavaDoc, where you'll
-see default values):
-
-Name            | Description
-----------------|----------------------------------------------------------------
-`logGroup`      | Name of the Cloudwatch log group where messages are sent. If this group doesn't exist it will be created.
-`logStream`     | Name of the Cloudwatch log stream where messages are sent. If not specified, we will construct a timestamp-based stream name.
-`batchSize`     | Maximum number of messages that will be accumulated before sending a batch.
-`batchTimeout`  | Maximum time, in milliseconds, that messages will be accumulated. This ensures that low-volume loggers will actually get logged.
-
-*Beware:* connectivity problems may cause the appender to discard messages. If it's critical that
-you see all messages, configure an alternative appender. 
-
+Note that a particular destination may not accept all of the characters produced by a substitution,
+and the logger will remove illegal characters. You should try to limit substitution values to
+alphanumeric characters, along with hyphens and underscores.
 
 
 ## Design
 
 The primary design constraints are these:
 
-* We may receive logging events on any thread, and don't want to block the thread will sending to AWS.
+* We may receive logging events on any thread, and don't want to block the thread while communicating
+  with the service.
 * We generally want to batch individual messages to improve throughput, although the service may have
   constraints on either number of messages or bytes in a batch.
 * Services may reject our requests, either temporarily or permanently.
 
-To meet these constraints, we maintain an internal message queue; each call to `append()` adds to this
-queue. At present this queue is a simple `LinkedList`, and access to the queue is synchronized. While
-this presents a point of contention, in normal use it should be minimal: adding an item to a linked
+To meet these constraints, we maintain an internal message queue, and each call to `append()` adds to
+this queue. At present this queue is a simple `LinkedList`, and access to the queue is synchronized.
+While this presents a point of contention, in normal use it should be minimal: adding an item to a linked
 list is very fast.
 
 When the messages on the internal queue reach a configured batch size, or a batch timeout occurs, the

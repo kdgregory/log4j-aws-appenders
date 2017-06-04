@@ -1,5 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.log4j.cloudwatch;
+package com.kdgregory.log4j.shared;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -28,6 +28,23 @@ implements Comparable<LogMessage>
     private long timestamp;
     private byte[] messageBytes;
 
+
+    /**
+     *  Constructor for arbitrary strings. Timestamp is current time.
+     * @throws UnsupportedEncodingException
+     */
+    public LogMessage(String message)
+    throws UnsupportedEncodingException
+    {
+        timestamp = System.currentTimeMillis();
+        messageBytes = message.getBytes("UTF-8");
+    }
+
+
+    /**
+     *  Constructor for Log4J events. Applies layout to generate message text, and
+     *  retrieves timestamp from event.
+     */
     public LogMessage(LoggingEvent event, Layout layout)
     throws UnsupportedEncodingException, IOException
     {

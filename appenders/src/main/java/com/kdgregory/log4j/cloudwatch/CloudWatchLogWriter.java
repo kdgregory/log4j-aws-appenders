@@ -11,33 +11,60 @@ import org.apache.log4j.helpers.LogLog;
 import com.amazonaws.services.logs.AWSLogsClient;
 import com.amazonaws.services.logs.model.*;
 
+import com.kdgregory.log4j.shared.LogWriter;
+import com.kdgregory.log4j.shared.LogMessage;
+
+
 /**
  *  This is where all the magic happens.
  */
-class CloudwatchWriter
-implements Runnable
+class CloudWatchLogWriter
+implements LogWriter, Runnable
 {
     private String groupName;
     private String streamName;
 
     private AWSLogsClient client;
 
-
     private volatile boolean running = true;
+    private Thread dispatchThread;
+
     private ConcurrentLinkedQueue<List<LogMessage>> batchQueue = new ConcurrentLinkedQueue<List<LogMessage>>();
 
 
-    public CloudwatchWriter(String logGroup, String logStream)
+    public CloudWatchLogWriter(String logGroup, String logStream)
     {
         this.groupName = logGroup;
         this.streamName = logStream;
     }
 
 
+//----------------------------------------------------------------------------
+//  Implementation of LogWriter
+//----------------------------------------------------------------------------
+
+
+    @Override
     public void addBatch(List<LogMessage> batch)
     {
         batchQueue.add(batch);
     }
+
+
+    @Override
+    public void stop()
+    {
+        running = false;
+        if (dispatchThread != null)
+        {
+            dispatchThread.interrupt();
+        }
+    }
+
+
+//----------------------------------------------------------------------------
+//  Implementation of Runnable
+//----------------------------------------------------------------------------
 
 
     @Override
@@ -48,6 +75,8 @@ implements Runnable
         client = new AWSLogsClient();
 
         if (! ensureGroupAndStreamAvailable()) return;
+
+        dispatchThread = Thread.currentThread();
 
         while (running)
         {
@@ -63,6 +92,10 @@ implements Runnable
         }
     }
 
+
+//----------------------------------------------------------------------------
+//  Internals
+//----------------------------------------------------------------------------
 
     private void sleepQuietly(long time)
     {

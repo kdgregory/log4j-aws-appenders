@@ -22,6 +22,23 @@ public class TestSubstitutions
 
 
     @Test
+    public void testNullInput() throws Exception
+    {
+        Substitutions subs = new Substitutions();
+        assertEquals("", subs.perform(null));
+    }
+
+
+    @Test
+    public void testEmptyInput() throws Exception
+    {
+        Substitutions subs = new Substitutions();
+        assertEquals("", subs.perform(""));
+    }
+
+
+
+    @Test
     public void testDate() throws Exception
     {
         Substitutions subs = new Substitutions(new Date(TEST_TIMESTAMP));

@@ -69,6 +69,9 @@ public class Substitutions
      */
     public String perform(String input)
     {
+        if (input == null)
+            return "";
+
         String output = input;
         do
         {

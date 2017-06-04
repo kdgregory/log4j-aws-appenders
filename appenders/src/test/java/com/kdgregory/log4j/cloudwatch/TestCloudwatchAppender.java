@@ -134,4 +134,31 @@ public class TestCloudwatchAppender
         assertEquals("footer is last",  HeaderFooterLayout.FOOTER, mock.getMessage(2));
     }
 
+
+    @Test
+    public void testSubstitution() throws Exception
+    {
+        // note that the property value includes invalid characters
+        System.setProperty("TestCloudwatchAppender.testSubstitution", "foo/bar");
+
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testSubstitution.properties");
+        assertNull("actual log group after construction", appender.getActualLogGroup());
+        assertNull("actual log stream after construction", appender.getActualLogStream());
+
+        MockCloudwatchWriter mock = new MockCloudwatchWriter();
+        appender.writer = mock;
+
+        // need to trigger append to apply substitutions
+        Logger myLogger = Logger.getLogger(getClass());
+        myLogger.debug("doesn't matter what's written");
+
+        // it's easy to check actual value for log group name, but we'll use a regex for stream
+        // so that we don't have to muck with timestamps
+        assertEquals("actual log group after append",
+                     "MyLog-foobar",
+                     appender.getActualLogGroup());
+        StringAsserts.assertRegex("actual log stream after append",
+                                  "MyStream-20\\d{12}-bogus",
+                                  appender.getActualLogStream());
+    }
 }

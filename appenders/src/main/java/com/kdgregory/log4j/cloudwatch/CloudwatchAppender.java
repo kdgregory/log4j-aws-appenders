@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
@@ -12,6 +13,7 @@ import org.apache.log4j.spi.LoggingEvent;
 
 import com.kdgregory.log4j.shared.LogMessage;
 import com.kdgregory.log4j.shared.LogWriter;
+import com.kdgregory.log4j.shared.Substitutions;
 
 
 /**
@@ -22,8 +24,10 @@ public class CloudwatchAppender extends AppenderSkeleton
     private final static int DEFAULT_BATCH_SIZE = 16;
     private final static long DEFAULT_BATCH_TIMEOUT = 4000L;
 
-    private static int AWS_MAX_BATCH_COUNT = 10000;
-    private static int AWS_MAX_BATCH_BYTES = 1048576;
+    private final static int AWS_MAX_BATCH_COUNT = 10000;
+    private final static int AWS_MAX_BATCH_BYTES = 1048576;
+
+    private final static Pattern ALLOWED_NAME_REGEX = Pattern.compile("[^A-Za-z0-9-_]");
 
     // flag to indicate whether we need to run setup
     private volatile boolean ready = false;
@@ -46,6 +50,12 @@ public class CloudwatchAppender extends AppenderSkeleton
     protected LinkedList<LogMessage> messageQueue = new LinkedList<LogMessage>();
     protected int messageQueueBytes = 0;
     protected long lastBatchTimestamp = System.currentTimeMillis();
+
+    // we apply substitutions when creating a new LogWriter; these vars hold the
+    // post-substitution names, and are accessible for testing
+
+    private String  actualLogGroup;
+    private String  actualLogStream;
 
     // all vars below this point are configuration
 
@@ -96,6 +106,16 @@ public class CloudwatchAppender extends AppenderSkeleton
 
 
     /**
+     *  Returns the current log group name, post-substitutions. This is lazily
+     *  populated, so will be <code>null</code> until the first message is written.
+     */
+    public String getActualLogGroup()
+    {
+        return actualLogGroup;
+    }
+
+
+    /**
      *  Sets the Cloudwatch Log Stream associated with this appender.
      *  <p>
      *  You typically create a separate log stream for each instance of the
@@ -118,6 +138,16 @@ public class CloudwatchAppender extends AppenderSkeleton
     public String getLogStream()
     {
         return logStream;
+    }
+
+
+    /**
+     *  Returns the current log stream name, post-substitutions. This is lazily
+     *  populated, so will be <code>null</code> until the first message is written.
+     */
+    public String getActualLogStream()
+    {
+        return actualLogStream;
     }
 
 
@@ -271,10 +301,14 @@ public class CloudwatchAppender extends AppenderSkeleton
 
         try
         {
+            Substitutions subs = new Substitutions();
+            actualLogGroup  = ALLOWED_NAME_REGEX.matcher(subs.perform(logGroup)).replaceAll("");
+            actualLogStream = ALLOWED_NAME_REGEX.matcher(subs.perform(logStream)).replaceAll("");
+
             // this check allows us to use a mock writer
             if (writer == null)
             {
-                writer = new CloudWatchLogWriter(logGroup, logStream);
+                writer = new CloudWatchLogWriter(actualLogGroup, actualLogStream);
                 Thread writerThread = new Thread((CloudWatchLogWriter)writer);
                 writerThread.setPriority(Thread.NORM_PRIORITY);
                 writerThread.start();

@@ -12,7 +12,6 @@ import com.amazonaws.services.logs.AWSLogsClient;
 import com.amazonaws.services.logs.model.*;
 
 import com.kdgregory.log4j.shared.LogWriter;
-import com.kdgregory.log4j.shared.Substitutions;
 import com.kdgregory.log4j.shared.LogMessage;
 
 
@@ -35,8 +34,8 @@ implements LogWriter, Runnable
 
     public CloudWatchLogWriter(String logGroup, String logStream)
     {
-        this.groupName = applySubstitutions(logGroup);
-        this.streamName = applySubstitutions(logStream);
+        this.groupName = logGroup;
+        this.streamName = logStream;
     }
 
 
@@ -97,19 +96,6 @@ implements LogWriter, Runnable
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
-
-
-    /**
-     *  Utility function to apply substitutions to a group/stream name and
-     *  sanitize the output
-     */
-    private static String applySubstitutions(String input)
-    {
-        Substitutions subs = new Substitutions();
-        String rawOutput = subs.perform(input);
-        return rawOutput.replaceAll("[^A-Za-z0-9-_]", "");
-    }
-
 
     private void sleepQuietly(long time)
     {

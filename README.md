@@ -95,22 +95,6 @@ There are two child projects in this repository:
   desired, rather than as part of every build.
 
 
-## Versions
-
-I follow the standard `MAJOR.MINOR.PATCH` versioning scheme:
-
-* `MAJOR` will track the Log4J major version number (eventually I'll release a version for Log4J 2.x)
-* `MINOR` will be incremented for each destination, when that destination is minimally available
-* `PATCH` will be incremented as support is extended for a destination, as well as for bugfixes
-  (bugfixes will be backported to the version that introduced that destination)
-
-The `master` branch is intended to contain released artifacts only (ie, no snapshot builds). It may,
-however, contain commits that aren't strictly releases (eg, documentation updates).
-
-I do not plan to upload all releases to Maven Central; just the "final" ones for each destination
-(where "final" may include backports). These releases will be tagged with the name `rel-MAJOR.MINOR.PATCH`.
-
-
 ## FAQ
 
 Isn't Log4J 1.x at end of life?

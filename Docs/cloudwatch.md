@@ -17,9 +17,9 @@ Your Log4J configuration should look something like this:
 		log4j.appender.default.layout=org.apache.log4j.PatternLayout
 		log4j.appender.default.layout.ConversionPattern=%d [%t] %-5p %c %x - %m%n
 		
-		log4j.appender.default.logGroup=TestCloudwatchAppender
-		log4j.appender.default.logStream=smoketest
-		log4j.appender.default.batchSize=1
+		log4j.appender.default.logGroup={sysprop:APP_NAME}
+		log4j.appender.default.logStream={startTimestamp}
+		log4j.appender.default.batchSize=20
 
 
 The appender provides the following properties (also described in the JavaDoc, where you'll

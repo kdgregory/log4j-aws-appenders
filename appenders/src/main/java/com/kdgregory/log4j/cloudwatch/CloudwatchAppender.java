@@ -2,6 +2,7 @@
 package com.kdgregory.log4j.cloudwatch;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -301,7 +302,7 @@ public class CloudwatchAppender extends AppenderSkeleton
 
         try
         {
-            Substitutions subs = new Substitutions();
+            Substitutions subs = new Substitutions(new Date(), 0);
             actualLogGroup  = ALLOWED_NAME_REGEX.matcher(subs.perform(logGroup)).replaceAll("");
             actualLogStream = ALLOWED_NAME_REGEX.matcher(subs.perform(logStream)).replaceAll("");
 

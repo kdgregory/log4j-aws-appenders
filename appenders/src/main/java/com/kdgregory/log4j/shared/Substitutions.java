@@ -11,27 +11,23 @@ import com.amazonaws.util.EC2MetadataUtils;
 
 
 /**
- *  Handles the standard substitution variables.
- *  <p>
- *  This is an instantiable class to support testing: the default constructor
- *  uses "real" values (eg, the current date), while the base constructor allows
- *  the caller to specify test values.
- *  <p>
- *  Instances are thread-safe.
+ *  Handles the standard substitution variables. You create a new instance whenever
+ *  performing substitutions; instances are not thread-safe.
  */
 public class Substitutions
 {
+    // we precompute all substitution values and cache them for future use; we don't
+    // expect to be called in any sort of tight loop
+
     private String date;
     private String timestamp;
     private String startupTimestamp;
     private String pid;
     private String hostname;
+    private String sequence;
 
 
-    /**
-     *  Constructs an instance with specified substitution values.
-     */
-    public Substitutions(Date curremtDate)
+    public Substitutions(Date curremtDate, int sequence)
     {
         RuntimeMXBean runtimeMx = ManagementFactory.getRuntimeMXBean();
         String vmName = runtimeMx.getName();
@@ -52,15 +48,8 @@ public class Substitutions
         timestampFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         timestamp = timestampFormat.format(curremtDate);
         startupTimestamp = timestampFormat.format(new Date(runtimeMx.getStartTime()));
-    }
 
-
-    /**
-     *  Constructs an instance with real substitution values.
-     */
-    public Substitutions()
-    {
-        this(new Date());
+        this.sequence = String.valueOf(sequence);
     }
 
 
@@ -81,10 +70,11 @@ public class Substitutions
                      substitute("{startupTimestamp}", startupTimestamp,
                      substitute("{pid}",             pid,
                      substitute("{hostname}",        hostname,
+                     substitute("{sequence}",        sequence,
                      substituteInstanceId(
                      substituteSysprop(
                      substituteEnvar(
-                     input))))))));
+                     input)))))))));
         }
         while (! output.equals(input));
         return output;

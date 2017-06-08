@@ -14,10 +14,10 @@ why not reinvent several wheels, and be able to write to multiple destinations?
 Here are the destinations I plan to support. They'll be checked when in development,
 and the link will take you to additional documentation.
 
-  [x] [CloudWatch Logs](Docs/cloudwatch.md)
-  [ ] Kinesis
-  [ ] SNS (I think there it might be interesting to create an "error watcher")
-  [ ] S3 (as an alternative to an external "logfile mover")
+* [x] [CloudWatch Logs](Docs/cloudwatch.md)
+* [ ] Kinesis
+* [ ] SNS (I think there it might be interesting to create an "error watcher")
+* [ ] S3 (as an alternative to an external "logfile mover")
 
 
 

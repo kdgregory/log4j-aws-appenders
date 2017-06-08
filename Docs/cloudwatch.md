@@ -2,10 +2,10 @@
 
 The CloudWatch implementation provides (will provide) the following features:
 
-  [x] User-specified log-group and log-stream names
-  [x] Substitution variables to customize log-group and log-stream names
-  [x] Rolling log streams
-  [ ] Configurable discard in case of network connectivity issues
+* [x] User-specified log-group and log-stream names
+* [x] Substitution variables to customize log-group and log-stream names
+* [x] Rolling log streams, either fixed-delay or hourly/daily
+* [ ] Configurable discard in case of network connectivity issues
 
 
 Your Log4J configuration should look something like this:

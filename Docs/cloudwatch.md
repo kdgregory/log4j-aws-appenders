@@ -24,8 +24,7 @@ Your Log4J configuration should look something like this:
 		log4j.appender.default.rollInterval=86400000
 
 
-The appender provides the following properties (also described in the JavaDoc, where you'll
-see default values):
+The appender provides the following properties (also described in the JavaDoc):
 
 Name            | Description
 ----------------|----------------------------------------------------------------
@@ -33,4 +32,5 @@ Name            | Description
 `logStream`     | Name of the Cloudwatch log stream where messages are sent; may use substitutions. Defaults to `{startTimestamp}`.
 `batchSize`     | Maximum number of messages that will be accumulated before sending a batch.
 `batchTimeout`  | Maximum time, in milliseconds, that messages will be accumulated. This ensures that low-volume loggers will actually get logged.
-`rollInterval`  | Number of milliseconds that a stream will be written. Note that streams can also be rolled manually, via the `roll()` method.
+`rollInterval`  | Number of milliseconds that a stream will be written before switching to a new stream. Note that streams can also be rolled manually, via the `roll()` method. By default a single stream is written forever.
+`sequence`      | A value that is incremented each time the stream is rolled. Defaults to 0.

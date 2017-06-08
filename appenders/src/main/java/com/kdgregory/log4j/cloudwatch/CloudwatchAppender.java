@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 import org.apache.log4j.AppenderSkeleton;
@@ -24,6 +25,7 @@ public class CloudwatchAppender extends AppenderSkeleton
 {
     private final static int DEFAULT_BATCH_SIZE = 16;
     private final static long DEFAULT_BATCH_TIMEOUT = 4000L;
+    private final static long DISABLED_ROLL_INTERVAL = -1;
 
     private final static int AWS_MAX_BATCH_COUNT = 10000;
     private final static int AWS_MAX_BATCH_BYTES = 1048576;
@@ -64,6 +66,8 @@ public class CloudwatchAppender extends AppenderSkeleton
     private String  logStream;
     private int     batchSize;
     private long    maxDelay;
+    private long    rollInterval;
+    private AtomicInteger sequence = new AtomicInteger();
 
 
     /**
@@ -74,6 +78,7 @@ public class CloudwatchAppender extends AppenderSkeleton
         logStream = "{startTimestamp}";
         batchSize = DEFAULT_BATCH_SIZE;
         maxDelay = DEFAULT_BATCH_TIMEOUT;
+        rollInterval = DISABLED_ROLL_INTERVAL;
     }
 
 
@@ -211,6 +216,44 @@ public class CloudwatchAppender extends AppenderSkeleton
     public long getMaxDelay()
     {
         return maxDelay;
+    }
+    
+    
+    /**
+     *  Sets the roll interval, in milliseconds. This enables switching to a new log stream
+     *  after the specified interval has elapsed. To be make this useful, the log stream name
+     *  should be timestamp-based.
+     */
+    public void setRollInterval(long value)
+    {
+        this.rollInterval = value;
+    }
+    
+    
+    /**
+     *  Returns the roll interval. This value is -1 if log rolling is disabled (the default).
+     */
+    public long getRollInterval()
+    {
+        return rollInterval;
+    }
+    
+    
+    /**
+     *  Sets the log sequence number, used by the <code>sequence</code> substitution variable.
+     */
+    public void setSequence(int value)
+    {
+        sequence.set(value);
+    }
+    
+    
+    /**
+     *  Returns the current log sequence number.
+     */
+    public int getSequence()
+    {
+        return sequence.get();
     }
 
 

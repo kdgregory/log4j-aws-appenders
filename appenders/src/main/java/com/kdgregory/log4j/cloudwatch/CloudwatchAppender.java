@@ -13,9 +13,12 @@ import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
 
+import com.kdgregory.log4j.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.shared.LogMessage;
 import com.kdgregory.log4j.shared.LogWriter;
 import com.kdgregory.log4j.shared.Substitutions;
+import com.kdgregory.log4j.shared.ThreadFactory;
+import com.kdgregory.log4j.shared.WriterFactory;
 
 
 /**
@@ -31,6 +34,18 @@ public class CloudwatchAppender extends AppenderSkeleton
     private final static int AWS_MAX_BATCH_BYTES = 1048576;
 
     private final static Pattern ALLOWED_NAME_REGEX = Pattern.compile("[^A-Za-z0-9-_]");
+
+    // writer and thread factories; protected so that they can be replaced during testing
+
+    protected ThreadFactory threadFactory = new DefaultThreadFactory();
+    protected WriterFactory writerFactory = new WriterFactory()
+    {
+        @Override
+        public LogWriter newLogWriter()
+        {
+            return new CloudWatchLogWriter(actualLogGroup, actualLogStream);
+        }
+    };
 
     // flag to indicate whether we need to run setup
     private volatile boolean ready = false;
@@ -217,8 +232,8 @@ public class CloudwatchAppender extends AppenderSkeleton
     {
         return maxDelay;
     }
-    
-    
+
+
     /**
      *  Sets the roll interval, in milliseconds. This enables switching to a new log stream
      *  after the specified interval has elapsed. To be make this useful, the log stream name
@@ -228,8 +243,8 @@ public class CloudwatchAppender extends AppenderSkeleton
     {
         this.rollInterval = value;
     }
-    
-    
+
+
     /**
      *  Returns the roll interval. This value is -1 if log rolling is disabled (the default).
      */
@@ -237,8 +252,8 @@ public class CloudwatchAppender extends AppenderSkeleton
     {
         return rollInterval;
     }
-    
-    
+
+
     /**
      *  Sets the log sequence number, used by the <code>sequence</code> substitution variable.
      */
@@ -246,8 +261,8 @@ public class CloudwatchAppender extends AppenderSkeleton
     {
         sequence.set(value);
     }
-    
-    
+
+
     /**
      *  Returns the current log sequence number.
      */
@@ -352,10 +367,8 @@ public class CloudwatchAppender extends AppenderSkeleton
             // this check allows us to use a mock writer
             if (writer == null)
             {
-                writer = new CloudWatchLogWriter(actualLogGroup, actualLogStream);
-                Thread writerThread = new Thread((CloudWatchLogWriter)writer);
-                writerThread.setPriority(Thread.NORM_PRIORITY);
-                writerThread.start();
+                writer = writerFactory.newLogWriter();
+                threadFactory.startLoggingThread(writer);
             }
 
             if (layout.getHeader() != null)

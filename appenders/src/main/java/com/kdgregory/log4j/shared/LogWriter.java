@@ -3,23 +3,26 @@ package com.kdgregory.log4j.shared;
 
 import java.util.List;
 
+
 /**
- *  Defines the interactions between the appender and writer, allowing mock
- *  implementations for testing.
+ *  Defines the contract between appenders and writers.
+ *  <p>
+ *  Writers run on a background thread, accepting batches of messages and retaining
+ *  them until sent or discarded.
  */
 public interface LogWriter
+extends Runnable
 {
     /**
      *  Adds a batch of messages to the writer.
-     *
-     *  TODO: require that this be a concurrent list, and allow the writer to pull as
-     *        many messages at it wants.
      */
     void addBatch(List<LogMessage> batch);
-    
-    
+
+
     /**
-     *  Breaks the writer out of any write loops that it might be running.
+     *  Signals the writer that it will no longer receive batches. It should, however,
+     *  make a best effort to send any batches that it already has before exiting its
+     *  <code>run()</code> method.
      */
     void stop();
 }

@@ -57,6 +57,15 @@ public class TestSubstitutions
 
 
     @Test
+    public void testHourlyTimestamp() throws Exception
+    {
+        Substitutions subs = new Substitutions(TEST_DATE, 0);
+
+        assertEquals("20170529180000", subs.perform("{hourlyTimestamp}"));
+    }
+
+
+    @Test
     public void testStartupTimestamp() throws Exception
     {
         Substitutions subs = new Substitutions(TEST_DATE, 0);

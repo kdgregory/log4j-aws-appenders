@@ -3,7 +3,7 @@
 Appenders for Log4J 1.x that write to various AWS services.
 
 This project started because I couldn't find an appender that would write to CloudWatch.
-That's not strictly true: I found several for Log4J 2.x, and of course there's the 
+That's not strictly true: I found several for Log4J 2.x, and of course there's the
 appender that AWS provides for Lambda. And then, after I started this project, I found
 an appender for 1.x.
 
@@ -44,6 +44,7 @@ Variable            | Description
 --------------------|----------------------------------------------------------------
 `date`              | Current UTC date: `YYYYMMDD`
 `timestamp`         | Current UTC timestamp: `YYYYMMDDHHMMSS`
+`hourlyTimestamp`   | Current UTC timestamp, with minutes and seconds truncated: `YYYYMMDDHH0000`
 `startTimestamp`    | UTC timestamp of JVM startup as returned by `RuntimeMxBean`: `YYYYMMDDHHMMSS`
 `pid`               | Process ID (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms
 `hostname`          | Unqualified hostname (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms

@@ -21,6 +21,7 @@ public class Substitutions
 
     private String date;
     private String timestamp;
+    private String hourlyTimestamp;
     private String startupTimestamp;
     private String pid;
     private String hostname;
@@ -47,6 +48,7 @@ public class Substitutions
         SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyyMMddHHmmss");
         timestampFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         timestamp = timestampFormat.format(curremtDate);
+        hourlyTimestamp = timestamp.substring(0, 10) + "0000";  // yeah, it's a hack
         startupTimestamp = timestampFormat.format(new Date(runtimeMx.getStartTime()));
 
         this.sequence = String.valueOf(sequence);
@@ -67,6 +69,7 @@ public class Substitutions
             input = output;
             output = substitute("{date}",            date,
                      substitute("{timestamp}",       timestamp,
+                     substitute("{hourlyTimestamp}", hourlyTimestamp,
                      substitute("{startupTimestamp}", startupTimestamp,
                      substitute("{pid}",             pid,
                      substitute("{hostname}",        hostname,
@@ -74,7 +77,7 @@ public class Substitutions
                      substituteInstanceId(
                      substituteSysprop(
                      substituteEnvar(
-                     input)))))))));
+                     input))))))))));
         }
         while (! output.equals(input));
         return output;

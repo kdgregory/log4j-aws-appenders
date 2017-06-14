@@ -347,8 +347,7 @@ public class CloudwatchAppender extends AppenderSkeleton
 //----------------------------------------------------------------------------
 
     /**
-     *  Lazily initializes the writer thread, and otherwise verifies that the appender
-     *  is able to do its thing. This should preface any operations in {@link #append}.
+     *  Called by {@link #append} to lazily initialize appender.
      */
     private synchronized void initialize()
     {
@@ -358,18 +357,30 @@ public class CloudwatchAppender extends AppenderSkeleton
             return;
         }
 
+        resetWriter();
+    }
+
+
+    /**
+     *  Called by {@link #initialize} and also {@link #roll}, to switch to a new
+     *  writer. Closes the old writer, if any.
+     */
+    private synchronized void resetWriter()
+    {
         try
         {
+            if (writer != null)
+            {
+                writer.stop();
+                writer = null;
+            }
+
             Substitutions subs = new Substitutions(new Date(), 0);
             actualLogGroup  = ALLOWED_NAME_REGEX.matcher(subs.perform(logGroup)).replaceAll("");
             actualLogStream = ALLOWED_NAME_REGEX.matcher(subs.perform(logStream)).replaceAll("");
 
-            // this check allows us to use a mock writer
-            if (writer == null)
-            {
-                writer = writerFactory.newLogWriter();
-                threadFactory.startLoggingThread(writer);
-            }
+            writer = writerFactory.newLogWriter();
+            threadFactory.startLoggingThread(writer);
 
             if (layout.getHeader() != null)
             {
@@ -380,7 +391,7 @@ public class CloudwatchAppender extends AppenderSkeleton
         }
         catch (Exception ex)
         {
-            LogLog.error("exception while lazily configuring appender", ex);
+            LogLog.error("exception while initializing writer", ex);
         }
     }
 

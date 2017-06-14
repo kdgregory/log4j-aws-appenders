@@ -46,6 +46,7 @@ Variable            | Description
 `timestamp`         | Current UTC timestamp: `YYYYMMDDHHMMSS`
 `hourlyTimestamp`   | Current UTC timestamp, with minutes and seconds truncated: `YYYYMMDDHH0000`
 `startTimestamp`    | UTC timestamp of JVM startup as returned by `RuntimeMxBean`: `YYYYMMDDHHMMSS`
+`sequence`          | A sequence number that's incremented each time a log is rolled. May not be supported by all loggers; defaults to 0 if not supported.
 `pid`               | Process ID (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms
 `hostname`          | Unqualified hostname (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms
 `instanceId`        | EC2 instance ID. Beware that using this outside of EC2 will introduce a several-minute delay, as the appender tries to retrieve the information

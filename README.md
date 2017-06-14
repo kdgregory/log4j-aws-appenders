@@ -14,10 +14,10 @@ why not reinvent several wheels, and be able to write to multiple destinations?
 Here are the destinations I plan to support. They'll be checked when in development,
 and the link will take you to additional documentation.
 
-  [x] [CloudWatch Logs](Docs/cloudwatch.md)
-  [ ] Kinesis
-  [ ] SNS (I think there it might be interesting to create an "error watcher")
-  [ ] S3 (as an alternative to an external "logfile mover")
+* [x] [CloudWatch Logs](Docs/cloudwatch.md)
+* [ ] Kinesis
+* [ ] SNS (I think there it might be interesting to create an "error watcher")
+* [ ] S3 (as an alternative to an external "logfile mover")
 
 
 
@@ -93,6 +93,25 @@ There are two child projects in this repository:
 * `appender` is the actual appender code.
 * `tests` is a set of integration tests. These are in a separate module so that they can be run as
   desired, rather than as part of every build.
+
+
+## Versions
+
+I follow the standard `MAJOR.MINOR.PATCH` versioning scheme:
+
+* `MAJOR` will track the Log4J major version number (yes, eventually I'll release a version for Log4J 2.x)
+* `MINOR` will be incremented for each destination, when that destination is minimally available
+* `PATCH` will be incremented as support is extended for a destination, as well as for bugfixes
+  (bugfixes will be backported to the version that introduced that destination)
+
+The `master` branch is intended to contain released artifacts only (ie, no snapshot builds). It may,
+however, contain commits that aren't strictly releases (eg, documentation updates).
+
+The source tree contains commits with major version of 0. These are "pre-release" versions, and may
+change in arbitrary ways. Please do not use them.
+
+I do not plan to upload all releases to Maven Central; just the "final" ones for each destination
+(where "final" may include backports). These releases will be tagged with the name `rel-MAJOR.MINOR.PATCH`.
 
 
 ## FAQ

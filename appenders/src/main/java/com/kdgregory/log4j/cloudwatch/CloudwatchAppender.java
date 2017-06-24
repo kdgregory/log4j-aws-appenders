@@ -309,29 +309,8 @@ public class CloudwatchAppender extends AppenderSkeleton
             return;
         }
 
+        stopWriter();
         closed = true;
-
-        try
-        {
-            if (layout.getFooter() != null)
-            {
-                internalAppend(new LogMessage(layout.getFooter()));
-            }
-
-            sendBatch();
-
-            // writer should only be null during testing; we should have complained already in sendBatch(),
-            // and by now it's too late so quietly ignore if null
-            if (writer != null)
-            {
-                writer.stop();
-            }
-        }
-        catch (Exception ex)
-        {
-            LogLog.error("exception while shutting down appender", ex);
-        }
-
     }
 
 
@@ -339,6 +318,21 @@ public class CloudwatchAppender extends AppenderSkeleton
     public boolean requiresLayout()
     {
         return true;
+    }
+
+
+//----------------------------------------------------------------------------
+//  Appender-specific methods
+//----------------------------------------------------------------------------
+
+    /**
+     *  Rolls the log stream: flushes all outstanding messages to the current
+     *  stream, and opens a new stream.
+     */
+    public synchronized void roll()
+    {
+        sequence.incrementAndGet();
+        startWriter();
     }
 
 
@@ -357,7 +351,7 @@ public class CloudwatchAppender extends AppenderSkeleton
             return;
         }
 
-        resetWriter();
+        startWriter();
     }
 
 
@@ -365,17 +359,14 @@ public class CloudwatchAppender extends AppenderSkeleton
      *  Called by {@link #initialize} and also {@link #roll}, to switch to a new
      *  writer. Closes the old writer, if any.
      */
-    private synchronized void resetWriter()
+    private synchronized void startWriter()
     {
+        if (writer != null)
+            stopWriter();
+
         try
         {
-            if (writer != null)
-            {
-                writer.stop();
-                writer = null;
-            }
-
-            Substitutions subs = new Substitutions(new Date(), 0);
+            Substitutions subs = new Substitutions(new Date(), sequence.get());
             actualLogGroup  = ALLOWED_NAME_REGEX.matcher(subs.perform(logGroup)).replaceAll("");
             actualLogStream = ALLOWED_NAME_REGEX.matcher(subs.perform(logStream)).replaceAll("");
 
@@ -393,6 +384,32 @@ public class CloudwatchAppender extends AppenderSkeleton
         {
             LogLog.error("exception while initializing writer", ex);
         }
+    }
+
+
+    /**
+     *  Closes the current writer, passing it any outstanding messages.
+     */
+    private synchronized void stopWriter()
+    {
+        if (writer == null)
+            return;
+
+        try
+        {
+            if (layout.getFooter() != null)
+            {
+                internalAppend(new LogMessage(layout.getFooter()));
+            }
+            sendBatch();
+        }
+        catch (Exception ex)
+        {
+            LogLog.error("exception while flushing writer", ex);
+        }
+
+        writer.stop();
+        writer = null;
     }
 
 

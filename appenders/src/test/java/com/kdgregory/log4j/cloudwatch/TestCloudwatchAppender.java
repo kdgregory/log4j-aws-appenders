@@ -180,9 +180,11 @@ public class TestCloudwatchAppender
 
         Logger myLogger = Logger.getLogger(getClass());
         myLogger.debug("blah blah blah");
+
+        // must retrieve writer before we shut down
+        MockCloudwatchWriter mock = (MockCloudwatchWriter)appender.writer;
         LogManager.shutdown();
 
-        MockCloudwatchWriter mock = (MockCloudwatchWriter)appender.writer;
         assertEquals("number of messages written to log", 3, mock.messages.size());
         assertEquals("header is first", HeaderFooterLayout.HEADER, mock.getMessage(0));
         assertEquals("footer is last",  HeaderFooterLayout.FOOTER, mock.getMessage(2));
@@ -215,5 +217,30 @@ public class TestCloudwatchAppender
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
         assertEquals("factory saw same log-group name",  appender.getActualLogGroup(),  writerFactory.lastLogGroupName);
         assertEquals("factory saw same log-stream name", appender.getActualLogStream(), writerFactory.lastLogStreamName);
+    }
+
+
+    @Test
+    public void testRoll() throws Exception
+    {
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testRoll.properties");
+        MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
+
+        Logger myLogger = Logger.getLogger(getClass());
+
+        myLogger.debug("first message");
+
+        MockCloudwatchWriter writer0 = (MockCloudwatchWriter)appender.writer;
+        assertEquals("pre-roll, writer factory calls",      1,          writerFactory.invocationCount);
+        assertEquals("pre-roll, logstream name",            "bargle-0", writerFactory.lastLogStreamName);
+        assertEquals("pre-roll, messages in queue",         1,          appender.messageQueue.size());
+
+        appender.roll();
+
+        assertEquals("post-roll, writer factory calls",     2,          writerFactory.invocationCount);
+        assertEquals("post-roll, logstream name",           "bargle-1", writerFactory.lastLogStreamName);
+        assertEquals("post-roll, messages in queue",        0,          appender.messageQueue.size());
+        assertEquals("post-roll, messages passed to writer", 1,         writer0.messages.size());
+        assertNotSame("post-roll, writer has been replaced", writer0,   appender.writer);
     }
 }

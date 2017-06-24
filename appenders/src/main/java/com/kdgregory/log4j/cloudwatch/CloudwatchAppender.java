@@ -47,6 +47,10 @@ public class CloudwatchAppender extends AppenderSkeleton
         }
     };
 
+    // the writer is created on first append; again marked as protected for testing
+
+    protected LogWriter writer;
+
     // flag to indicate whether we need to run setup
     private volatile boolean ready = false;
 
@@ -58,31 +62,26 @@ public class CloudwatchAppender extends AppenderSkeleton
 
     private Object messageQueueLock = new Object();
 
-    // the writer is created on first append; it's marked as protected so that tests
-    // can replace with a mock implementation
-
-    protected LogWriter writer;
-
     // the waiting-for-batch queue; also marked as protected for testing
 
     protected LinkedList<LogMessage> messageQueue = new LinkedList<LogMessage>();
     protected int messageQueueBytes = 0;
     protected long lastBatchTimestamp = System.currentTimeMillis();
 
-    // we apply substitutions when creating a new LogWriter; these vars hold the
-    // post-substitution names, and are accessible for testing
+    // these variables hold the post-substitution log-group and log-stream names
+    // (mostly useful for testing)
 
     private String  actualLogGroup;
     private String  actualLogStream;
 
     // all vars below this point are configuration
 
-    private String  logGroup;
-    private String  logStream;
-    private int     batchSize;
-    private long    maxDelay;
-    private long    rollInterval;
-    private AtomicInteger sequence = new AtomicInteger();
+    private String       logGroup;
+    private String       logStream;
+    private int          batchSize;
+    private long         maxDelay;
+    private long         rollInterval;
+    private AtomicInteger sequence;
 
 
     /**
@@ -94,6 +93,7 @@ public class CloudwatchAppender extends AppenderSkeleton
         batchSize = DEFAULT_BATCH_SIZE;
         maxDelay = DEFAULT_BATCH_TIMEOUT;
         rollInterval = DISABLED_ROLL_INTERVAL;
+        sequence = new AtomicInteger();
     }
 
 

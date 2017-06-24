@@ -18,7 +18,7 @@ Your Log4J configuration should look something like this:
 		log4j.appender.default.layout.ConversionPattern=%d [%t] %-5p %c %x - %m%n
 		
 		log4j.appender.default.logGroup={sysprop:APP_NAME}
-		log4j.appender.default.logStream={tTimestamp}
+		log4j.appender.default.logStream={startTimestamp}
 		log4j.appender.default.batchSize=20
 		log4j.appender.default.batchTimeout=1000
 		log4j.appender.default.rollInterval=86400000

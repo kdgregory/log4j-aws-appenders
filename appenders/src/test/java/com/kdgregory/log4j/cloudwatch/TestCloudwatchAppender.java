@@ -83,6 +83,7 @@ public class TestCloudwatchAppender
         assertEquals("log stream name", "bargle",   appender.getLogStream());
         assertEquals("batch size",      100,        appender.getBatchSize());
         assertEquals("max delay",       1234L,      appender.getMaxDelay());
+        assertEquals("sequence",        2,          appender.getSequence());
         assertEquals("roll interval",   86400000L,  appender.getRollInterval());
     }
 
@@ -98,6 +99,7 @@ public class TestCloudwatchAppender
         assertEquals("log stream name", "{startTimestamp}", appender.getLogStream());
         assertEquals("batch size",      16,                 appender.getBatchSize());
         assertEquals("max delay",       4000L,              appender.getMaxDelay());
+        assertEquals("sequence",        0,                  appender.getSequence());
         assertEquals("roll interval",   -1,                 appender.getRollInterval());
     }
 

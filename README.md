@@ -3,7 +3,7 @@
 Appenders for Log4J 1.x that write to various AWS services.
 
 This project started because I couldn't find an appender that would write to CloudWatch.
-That's not strictly true: I found several for Log4J 2.x, and of course there's the 
+That's not strictly true: I found several for Log4J 2.x, and of course there's the
 appender that AWS provides for Lambda. And then, after I started this project, I found
 an appender for 1.x.
 
@@ -44,7 +44,9 @@ Variable            | Description
 --------------------|----------------------------------------------------------------
 `date`              | Current UTC date: `YYYYMMDD`
 `timestamp`         | Current UTC timestamp: `YYYYMMDDHHMMSS`
+`hourlyTimestamp`   | Current UTC timestamp, with minutes and seconds truncated: `YYYYMMDDHH0000`
 `startTimestamp`    | UTC timestamp of JVM startup as returned by `RuntimeMxBean`: `YYYYMMDDHHMMSS`
+`sequence`          | A sequence number that's incremented each time a log is rolled. May not be supported by all loggers; defaults to 0 if not supported.
 `pid`               | Process ID (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms
 `hostname`          | Unqualified hostname (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms
 `instanceId`        | EC2 instance ID. Beware that using this outside of EC2 will introduce a several-minute delay, as the appender tries to retrieve the information
@@ -100,9 +102,8 @@ There are two child projects in this repository:
 I follow the standard `MAJOR.MINOR.PATCH` versioning scheme:
 
 * `MAJOR` will track the Log4J major version number (yes, eventually I'll release a version for Log4J 2.x)
-* `MINOR` will be incremented for each destination, when that destination is minimally available
-* `PATCH` will be incremented as support is extended for a destination, as well as for bugfixes
-  (bugfixes will be backported to the version that introduced that destination)
+* `MINOR` will be incremented for each destination; version x.y.0 will be minimally functional
+* `PATCH` will be incremented to reflect bugfixes or additional features; significant bugfixes will be backported
 
 The `master` branch is intended to contain released artifacts only (ie, no snapshot builds). It may,
 however, contain commits that aren't strictly releases (eg, documentation updates).

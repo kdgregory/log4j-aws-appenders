@@ -2,18 +2,23 @@
 package com.kdgregory.log4j.cloudwatch;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
 
+import com.kdgregory.log4j.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.shared.LogMessage;
 import com.kdgregory.log4j.shared.LogWriter;
 import com.kdgregory.log4j.shared.Substitutions;
+import com.kdgregory.log4j.shared.ThreadFactory;
+import com.kdgregory.log4j.shared.WriterFactory;
 
 
 /**
@@ -23,11 +28,24 @@ public class CloudwatchAppender extends AppenderSkeleton
 {
     private final static int DEFAULT_BATCH_SIZE = 16;
     private final static long DEFAULT_BATCH_TIMEOUT = 4000L;
+    private final static long DISABLED_ROLL_INTERVAL = -1;
 
     private final static int AWS_MAX_BATCH_COUNT = 10000;
     private final static int AWS_MAX_BATCH_BYTES = 1048576;
 
     private final static Pattern ALLOWED_NAME_REGEX = Pattern.compile("[^A-Za-z0-9-_]");
+
+    // writer and thread factories; protected so that they can be replaced during testing
+
+    protected ThreadFactory threadFactory = new DefaultThreadFactory();
+    protected WriterFactory writerFactory = new WriterFactory()
+    {
+        @Override
+        public LogWriter newLogWriter()
+        {
+            return new CloudWatchLogWriter(actualLogGroup, actualLogStream);
+        }
+    };
 
     // flag to indicate whether we need to run setup
     private volatile boolean ready = false;
@@ -63,6 +81,8 @@ public class CloudwatchAppender extends AppenderSkeleton
     private String  logStream;
     private int     batchSize;
     private long    maxDelay;
+    private long    rollInterval;
+    private AtomicInteger sequence = new AtomicInteger();
 
 
     /**
@@ -73,6 +93,7 @@ public class CloudwatchAppender extends AppenderSkeleton
         logStream = "{startTimestamp}";
         batchSize = DEFAULT_BATCH_SIZE;
         maxDelay = DEFAULT_BATCH_TIMEOUT;
+        rollInterval = DISABLED_ROLL_INTERVAL;
     }
 
 
@@ -213,6 +234,44 @@ public class CloudwatchAppender extends AppenderSkeleton
     }
 
 
+    /**
+     *  Sets the roll interval, in milliseconds. This enables switching to a new log stream
+     *  after the specified interval has elapsed. To be make this useful, the log stream name
+     *  should be timestamp-based.
+     */
+    public void setRollInterval(long value)
+    {
+        this.rollInterval = value;
+    }
+
+
+    /**
+     *  Returns the roll interval. This value is -1 if log rolling is disabled (the default).
+     */
+    public long getRollInterval()
+    {
+        return rollInterval;
+    }
+
+
+    /**
+     *  Sets the log sequence number, used by the <code>sequence</code> substitution variable.
+     */
+    public void setSequence(int value)
+    {
+        sequence.set(value);
+    }
+
+
+    /**
+     *  Returns the current log sequence number.
+     */
+    public int getSequence()
+    {
+        return sequence.get();
+    }
+
+
 //----------------------------------------------------------------------------
 //  Appender overrides
 //----------------------------------------------------------------------------
@@ -250,29 +309,8 @@ public class CloudwatchAppender extends AppenderSkeleton
             return;
         }
 
+        stopWriter();
         closed = true;
-
-        try
-        {
-            if (layout.getFooter() != null)
-            {
-                internalAppend(new LogMessage(layout.getFooter()));
-            }
-
-            sendBatch();
-
-            // writer should only be null during testing; we should have complained already in sendBatch(),
-            // and by now it's too late so quietly ignore if null
-            if (writer != null)
-            {
-                writer.stop();
-            }
-        }
-        catch (Exception ex)
-        {
-            LogLog.error("exception while shutting down appender", ex);
-        }
-
     }
 
 
@@ -284,12 +322,26 @@ public class CloudwatchAppender extends AppenderSkeleton
 
 
 //----------------------------------------------------------------------------
+//  Appender-specific methods
+//----------------------------------------------------------------------------
+
+    /**
+     *  Rolls the log stream: flushes all outstanding messages to the current
+     *  stream, and opens a new stream.
+     */
+    public synchronized void roll()
+    {
+        sequence.incrementAndGet();
+        startWriter();
+    }
+
+
+//----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
 
     /**
-     *  Lazily initializes the writer thread, and otherwise verifies that the appender
-     *  is able to do its thing. This should preface any operations in {@link #append}.
+     *  Called by {@link #append} to lazily initialize appender.
      */
     private synchronized void initialize()
     {
@@ -299,20 +351,27 @@ public class CloudwatchAppender extends AppenderSkeleton
             return;
         }
 
+        startWriter();
+    }
+
+
+    /**
+     *  Called by {@link #initialize} and also {@link #roll}, to switch to a new
+     *  writer. Closes the old writer, if any.
+     */
+    private synchronized void startWriter()
+    {
+        if (writer != null)
+            stopWriter();
+
         try
         {
-            Substitutions subs = new Substitutions();
+            Substitutions subs = new Substitutions(new Date(), sequence.get());
             actualLogGroup  = ALLOWED_NAME_REGEX.matcher(subs.perform(logGroup)).replaceAll("");
             actualLogStream = ALLOWED_NAME_REGEX.matcher(subs.perform(logStream)).replaceAll("");
 
-            // this check allows us to use a mock writer
-            if (writer == null)
-            {
-                writer = new CloudWatchLogWriter(actualLogGroup, actualLogStream);
-                Thread writerThread = new Thread((CloudWatchLogWriter)writer);
-                writerThread.setPriority(Thread.NORM_PRIORITY);
-                writerThread.start();
-            }
+            writer = writerFactory.newLogWriter();
+            threadFactory.startLoggingThread(writer);
 
             if (layout.getHeader() != null)
             {
@@ -323,8 +382,34 @@ public class CloudwatchAppender extends AppenderSkeleton
         }
         catch (Exception ex)
         {
-            LogLog.error("exception while lazily configuring appender", ex);
+            LogLog.error("exception while initializing writer", ex);
         }
+    }
+
+
+    /**
+     *  Closes the current writer, passing it any outstanding messages.
+     */
+    private synchronized void stopWriter()
+    {
+        if (writer == null)
+            return;
+
+        try
+        {
+            if (layout.getFooter() != null)
+            {
+                internalAppend(new LogMessage(layout.getFooter()));
+            }
+            sendBatch();
+        }
+        catch (Exception ex)
+        {
+            LogLog.error("exception while flushing writer", ex);
+        }
+
+        writer.stop();
+        writer = null;
     }
 
 

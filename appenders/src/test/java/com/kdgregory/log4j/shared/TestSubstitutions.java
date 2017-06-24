@@ -18,13 +18,13 @@ import com.amazonaws.util.EC2MetadataUtils;
 
 public class TestSubstitutions
 {
-    private static long TEST_TIMESTAMP = 1496082062000L;    // Mon May 29 14:21:02 EDT 2017
+    private static Date TEST_DATE = new Date(1496082062000L);    // Mon May 29 14:21:02 EDT 2017
 
 
     @Test
     public void testNullInput() throws Exception
     {
-        Substitutions subs = new Substitutions();
+        Substitutions subs = new Substitutions(TEST_DATE, 0);
         assertEquals("", subs.perform(null));
     }
 
@@ -32,7 +32,7 @@ public class TestSubstitutions
     @Test
     public void testEmptyInput() throws Exception
     {
-        Substitutions subs = new Substitutions();
+        Substitutions subs = new Substitutions(TEST_DATE, 0);
         assertEquals("", subs.perform(""));
     }
 
@@ -41,7 +41,7 @@ public class TestSubstitutions
     @Test
     public void testDate() throws Exception
     {
-        Substitutions subs = new Substitutions(new Date(TEST_TIMESTAMP));
+        Substitutions subs = new Substitutions(TEST_DATE, 0);
 
         assertEquals("20170529", subs.perform("{date}"));
     }
@@ -50,16 +50,25 @@ public class TestSubstitutions
     @Test
     public void testTimestamp() throws Exception
     {
-        Substitutions subs = new Substitutions(new Date(TEST_TIMESTAMP));
+        Substitutions subs = new Substitutions(TEST_DATE, 0);
 
         assertEquals("20170529182102", subs.perform("{timestamp}"));
     }
 
 
     @Test
+    public void testHourlyTimestamp() throws Exception
+    {
+        Substitutions subs = new Substitutions(TEST_DATE, 0);
+
+        assertEquals("20170529180000", subs.perform("{hourlyTimestamp}"));
+    }
+
+
+    @Test
     public void testStartupTimestamp() throws Exception
     {
-        Substitutions subs = new Substitutions();
+        Substitutions subs = new Substitutions(TEST_DATE, 0);
 
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
         formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -74,7 +83,7 @@ public class TestSubstitutions
     @Test
     public void testPid() throws Exception
     {
-        Substitutions subs = new Substitutions();
+        Substitutions subs = new Substitutions(TEST_DATE, 0);
 
         // rather than duplicate implementation, I'll just assert that we got something like a PID
         StringAsserts.assertRegex("[0-9]+", subs.perform("{pid}"));
@@ -84,7 +93,7 @@ public class TestSubstitutions
     @Test
     public void testHostname() throws Exception
     {
-        Substitutions subs = new Substitutions();
+        Substitutions subs = new Substitutions(TEST_DATE, 0);
 
         // rather than duplicate implementation, I'll just assert that we got something
         // more-or-less correct that wasn't "unknown" and didn't have punctuation
@@ -98,7 +107,7 @@ public class TestSubstitutions
     @Test @Ignore
     public void testInstanceId() throws Exception
     {
-        Substitutions subs = new Substitutions();
+        Substitutions subs = new Substitutions(TEST_DATE, 0);
 
         assertEquals(EC2MetadataUtils.getInstanceId(), subs.perform("{instanceId}"));
     }
@@ -108,7 +117,7 @@ public class TestSubstitutions
     // defined; if not, feel free to @Ignore
     @Test
     public void testEnvar() throws Exception  {
-        Substitutions subs = new Substitutions();
+        Substitutions subs = new Substitutions(TEST_DATE, 0);
         assertEquals(System.getenv("HOME"), subs.perform("{env:HOME}"));
         assertEquals("{env:frobulator}", subs.perform("{env:frobulator}"));
     }
@@ -120,16 +129,23 @@ public class TestSubstitutions
         String value = "this-is_/a test!";
         System.setProperty("TestSubstitutions.testSysprop", value);
 
-        Substitutions subs = new Substitutions();
+        Substitutions subs = new Substitutions(TEST_DATE, 0);
         assertEquals(value,                  subs.perform("{sysprop:TestSubstitutions.testSysprop}"));
         assertEquals("{sysprop:frobulator}", subs.perform("{sysprop:frobulator}"));
     }
 
 
     @Test
+    public void testSequence() throws Exception  {
+        Substitutions subs = new Substitutions(TEST_DATE, 123);
+        assertEquals("123", subs.perform("{sequence}"));
+    }
+
+
+    @Test
     public void testBogusSubstitution() throws Exception
     {
-        Substitutions subs = new Substitutions(new Date(TEST_TIMESTAMP));
+        Substitutions subs = new Substitutions(TEST_DATE, 0);
 
         assertEquals("{date", subs.perform("{date"));
     }
@@ -138,7 +154,7 @@ public class TestSubstitutions
     @Test
     public void testUnterminatedSubstitution() throws Exception
     {
-        Substitutions subs = new Substitutions(new Date(TEST_TIMESTAMP));
+        Substitutions subs = new Substitutions(TEST_DATE, 0);
 
         assertEquals("{bogus}", subs.perform("{bogus}"));
     }
@@ -147,7 +163,7 @@ public class TestSubstitutions
     @Test
     public void testMultipleSubstitution() throws Exception
     {
-        Substitutions subs = new Substitutions(new Date(TEST_TIMESTAMP));
+        Substitutions subs = new Substitutions(TEST_DATE, 0);
 
         assertEquals("2017052920170529", subs.perform("{date}{date}"));
     }

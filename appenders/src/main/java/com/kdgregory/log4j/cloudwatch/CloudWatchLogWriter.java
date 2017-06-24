@@ -19,7 +19,7 @@ import com.kdgregory.log4j.shared.LogMessage;
  *  This is where all the magic happens.
  */
 class CloudWatchLogWriter
-implements LogWriter, Runnable
+implements LogWriter
 {
     private String groupName;
     private String streamName;

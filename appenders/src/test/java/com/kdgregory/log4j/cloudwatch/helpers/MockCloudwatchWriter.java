@@ -38,4 +38,11 @@ implements LogWriter
     {
         stopped = true;
     }
+
+
+    @Override
+    public void run()
+    {
+        // we're not expecting to be on a background thread, so do nothing
+    }
 }

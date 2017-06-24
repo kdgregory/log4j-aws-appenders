@@ -102,9 +102,8 @@ There are two child projects in this repository:
 I follow the standard `MAJOR.MINOR.PATCH` versioning scheme:
 
 * `MAJOR` will track the Log4J major version number (yes, eventually I'll release a version for Log4J 2.x)
-* `MINOR` will be incremented for each destination, when that destination is minimally available
-* `PATCH` will be incremented as support is extended for a destination, as well as for bugfixes
-  (bugfixes will be backported to the version that introduced that destination)
+* `MINOR` will be incremented for each destination; version x.y.0 will be minimally functional
+* `PATCH` will be incremented to reflect bugfixes or additional features; significant bugfixes will be backported
 
 The `master` branch is intended to contain released artifacts only (ie, no snapshot builds). It may,
 however, contain commits that aren't strictly releases (eg, documentation updates).

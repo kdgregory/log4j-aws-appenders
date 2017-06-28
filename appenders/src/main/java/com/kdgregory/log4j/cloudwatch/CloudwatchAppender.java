@@ -35,7 +35,15 @@ public class CloudwatchAppender extends AppenderSkeleton
 
     private final static Pattern ALLOWED_NAME_REGEX = Pattern.compile("[^A-Za-z0-9-_]");
 
-    // writer and thread factories; protected so that they can be replaced during testing
+    // NOTE: any variables marked as protected will be replaced/examined during testing
+
+    // flag to indicate whether we need to run setup
+    private volatile boolean ready = false;
+
+    // flag to indicate whether we can keep writing; cannot be reset
+    private volatile boolean closed = false;
+
+    // factories for creating writer and thread
 
     protected ThreadFactory threadFactory = new DefaultThreadFactory();
     protected WriterFactory writerFactory = new WriterFactory()
@@ -47,26 +55,29 @@ public class CloudwatchAppender extends AppenderSkeleton
         }
     };
 
-    // the writer is created on first append; again marked as protected for testing
+    // the current writer; initialized on first append, changed after roll
 
     protected LogWriter writer;
 
-    // flag to indicate whether we need to run setup
-    private volatile boolean ready = false;
+    // the last time we rolled the writer
 
-    // flag to indicate whether we can keep writing; cannot be reset
-    private volatile boolean closed = false;
+    protected long lastRollTimestamp;
 
     // this is used to synchronize access to the queue; queue updates are normally
     // very fast, so plain-old-synchronization should not cause undue contention
 
     private Object messageQueueLock = new Object();
 
-    // the waiting-for-batch queue; also marked as protected for testing
+    // the waiting-for-batch queue
 
     protected LinkedList<LogMessage> messageQueue = new LinkedList<LogMessage>();
     protected int messageQueueBytes = 0;
-    protected long lastBatchTimestamp = System.currentTimeMillis();
+
+    // the last time we wrote a batch, to enable delay-based batching; this is
+    // initialized during construction, so the first batch might actually go out
+    // earlier than expected (if there's a delay between construction and use)
+
+    protected long lastBatchTimestamp;
 
     // these variables hold the post-substitution log-group and log-stream names
     // (mostly useful for testing)
@@ -94,6 +105,8 @@ public class CloudwatchAppender extends AppenderSkeleton
         maxDelay = DEFAULT_BATCH_TIMEOUT;
         rollInterval = DISABLED_ROLL_INTERVAL;
         sequence = new AtomicInteger();
+
+        lastBatchTimestamp = System.currentTimeMillis();
     }
 
 
@@ -289,7 +302,6 @@ public class CloudwatchAppender extends AppenderSkeleton
             if (! ready)
             {
                 initialize();
-
             }
             internalAppend(new LogMessage(event, getLayout()));
         }
@@ -352,6 +364,7 @@ public class CloudwatchAppender extends AppenderSkeleton
         }
 
         startWriter();
+        ready = true;
     }
 
 
@@ -378,7 +391,7 @@ public class CloudwatchAppender extends AppenderSkeleton
                 internalAppend(new LogMessage(layout.getHeader()));
             }
 
-            ready = true;
+            lastRollTimestamp = System.currentTimeMillis();
         }
         catch (Exception ex)
         {

@@ -110,20 +110,23 @@ public class TestCloudwatchAppender
         CloudwatchAppender appender = initialize("TestCloudwatchAppender.testAppend.properties");
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
 
-        long initialTimestamp = appender.lastBatchTimestamp;
-        assertTrue("initial timestamp > 0", initialTimestamp > 0);
-        assertNull("before messages, writer is null", appender.writer);
-
-        // this sleep ensures that the timestamp will be updated
-        Thread.sleep(100);
+        assertTrue("before messages, last batch timestamp > 0",    appender.lastBatchTimestamp > 0);
+        assertTrue("before messages, last roll timestamp == 0",     appender.lastRollTimestamp == 0);
+        assertNull("before messages, writer is null",               appender.writer);
 
         Logger myLogger = Logger.getLogger(getClass());
-        myLogger.debug("test without exception");
+        myLogger.debug("first message");
 
+        assertTrue("after messages, last batch timestamp > 0",     appender.lastBatchTimestamp > 0);
+        assertTrue("after messages, last roll timestamp > 0",      appender.lastRollTimestamp > 0);
         assertNotNull("after message 1, writer is initialized",     appender.writer);
         assertEquals("after message 1, writer factory called once", 1, writerFactory.invocationCount);
         assertEquals("after message 1, messages in queue",          1, appender.messageQueue.size());
         assertTrue("after message 1, bytes in queue > 0",           appender.messageQueueBytes > 0);
+
+        // sleep so that we'll increment the batch timestamp
+        long initialTimestamp = appender.lastBatchTimestamp;
+        Thread.sleep(100);
 
         myLogger.error("test with exception", new Exception("this is a test"));
 
@@ -144,7 +147,7 @@ public class TestCloudwatchAppender
         assertTrue("message 1 timestamp <= batch timestamp",   message1.getTimestamp() <= appender.lastBatchTimestamp);
         StringAsserts.assertRegex(
                 "message 1 generally follows layout: " + message1.getMessage(),
-                "20[12][0-9]-.* DEBUG .*TestCloudwatchAppender .*test without exception.*",
+                "20[12][0-9]-.* DEBUG .*TestCloudwatchAppender .*first message.*",
                 message1.getMessage().trim());
 
         LogMessage message2 = lastBatch.get(1);

@@ -439,13 +439,20 @@ public class CloudwatchAppender extends AppenderSkeleton
 
         synchronized (messageQueueLock)
         {
+            long now = System.currentTimeMillis();
+
             messageQueue.add(message);
             messageQueueBytes += message.size();
-            long curDelay = System.currentTimeMillis() - lastBatchTimestamp;
 
+            long curDelay = now - lastBatchTimestamp;
             if ((messageQueue.size() >= batchSize) || (messageQueueBytes >= AWS_MAX_BATCH_BYTES) || (curDelay >= maxDelay))
             {
                 sendBatch();
+            }
+
+            if ((rollInterval > 0) && ((now - lastRollTimestamp) > rollInterval))
+            {
+                roll();
             }
         }
     }

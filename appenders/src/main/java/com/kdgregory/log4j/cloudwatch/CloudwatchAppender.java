@@ -26,6 +26,24 @@ import com.kdgregory.log4j.shared.WriterFactory;
  */
 public class CloudwatchAppender extends AppenderSkeleton
 {
+    /**
+     *  The different types of writer rolling that we support.
+     */
+    public enum RollMode
+    {
+        /** Rolling is disabled. */
+        none,
+
+        /** Rolling is controlled by the <code>rollInterval</code> parameter. */
+        interval,
+
+        /** Rolling happens with the first message after every hour. */
+        hourly,
+
+        /** Rolling happens with the first message after midnight UTC */
+        daily
+    }
+
     private final static int DEFAULT_BATCH_SIZE = 16;
     private final static long DEFAULT_BATCH_TIMEOUT = 4000L;
     private final static long DISABLED_ROLL_INTERVAL = -1;
@@ -85,14 +103,15 @@ public class CloudwatchAppender extends AppenderSkeleton
     private String  actualLogGroup;
     private String  actualLogStream;
 
-    // all vars below this point are configuration
+    // all vars below this point are configurable
 
-    private String       logGroup;
-    private String       logStream;
-    private int          batchSize;
-    private long         maxDelay;
-    private long         rollInterval;
-    private AtomicInteger sequence;
+    private String          logGroup;
+    private String          logStream;
+    private int             batchSize;
+    private long            maxDelay;
+    private RollMode        rollMode;
+    private long            rollInterval;
+    private AtomicInteger   sequence;
 
 
     /**
@@ -103,6 +122,7 @@ public class CloudwatchAppender extends AppenderSkeleton
         logStream = "{startTimestamp}";
         batchSize = DEFAULT_BATCH_SIZE;
         maxDelay = DEFAULT_BATCH_TIMEOUT;
+        rollMode = RollMode.none;
         rollInterval = DISABLED_ROLL_INTERVAL;
         sequence = new AtomicInteger();
 
@@ -203,6 +223,7 @@ public class CloudwatchAppender extends AppenderSkeleton
     {
         if (batchSize > AWS_MAX_BATCH_COUNT)
         {
+            // FIXME - log an error
             throw new IllegalArgumentException("AWS limits batch size to " + AWS_MAX_BATCH_COUNT + " messages");
         }
         this.batchSize = batchSize;
@@ -248,8 +269,39 @@ public class CloudwatchAppender extends AppenderSkeleton
 
 
     /**
-     *  Sets the roll interval, in milliseconds. This enables switching to a new log stream
-     *  after the specified interval has elapsed. To be make this useful, the log stream name
+     *  Sets the rule for rolling to a new log stream. Acceptable values are "none", "interval",
+     *  "hourly", and "daily"; see {@link #RollMode} for details. Note that you must also set
+     *  <code>rollInterval</code> to make interval rolling useful.
+     *  <p>
+     *  Attempting to set an invalid mode is equivalent to "none", but will emit a warning to the
+     *  Log4J internal log.
+     */
+    public void setRollMode(String rollMode)
+    {
+        try
+        {
+            this.rollMode = RollMode.valueOf(rollMode);
+        }
+        catch (IllegalArgumentException ex)
+        {
+            this.rollMode = RollMode.none;
+            LogLog.error("invalid rollMode: " + rollMode);
+        }
+    }
+
+
+    /**
+     *  Returns the current rolling mode.
+     */
+    public String getRollMode()
+    {
+        return this.rollMode.name();
+    }
+
+
+    /**
+     *  Sets the roll interval, in milliseconds. This parameter is used only when the
+     *  <code>rollMode</code> parameter is "interval"; to be useful, the log stream name
      *  should be timestamp-based.
      */
     public void setRollInterval(long value)
@@ -259,7 +311,7 @@ public class CloudwatchAppender extends AppenderSkeleton
 
 
     /**
-     *  Returns the roll interval. This value is -1 if log rolling is disabled (the default).
+     *  Returns the current roll interval.
      */
     public long getRollInterval()
     {
@@ -441,6 +493,8 @@ public class CloudwatchAppender extends AppenderSkeleton
         {
             long now = System.currentTimeMillis();
 
+            // FIXME - check for rolling before adding the message to batch
+
             messageQueue.add(message);
             messageQueueBytes += message.size();
 
@@ -450,10 +504,33 @@ public class CloudwatchAppender extends AppenderSkeleton
                 sendBatch();
             }
 
-            if ((rollInterval > 0) && ((now - lastRollTimestamp) > rollInterval))
+            if (shouldRoll(now))
             {
                 roll();
             }
+        }
+    }
+
+
+    /**
+     *  Test for rolling the writer.
+     */
+    private boolean shouldRoll(long now)
+    {
+        switch (rollMode)
+        {
+            case none:
+                return false;
+            case interval:
+                return (rollInterval > 0) && ((now - lastRollTimestamp) > rollInterval);
+            case hourly:
+                // FIXME
+                return false;
+            case daily:
+                // FIXME
+                return false;
+            default:
+                return false;
         }
     }
 

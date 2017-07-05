@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DefaultThreadFactory implements ThreadFactory
 {
     private AtomicInteger threadNumber = new AtomicInteger();
-    
+
     @Override
     public void startLoggingThread(LogWriter writer)
     {

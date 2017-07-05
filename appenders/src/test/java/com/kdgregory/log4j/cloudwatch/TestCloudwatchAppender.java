@@ -84,6 +84,7 @@ public class TestCloudwatchAppender
         assertEquals("batch size",      100,        appender.getBatchSize());
         assertEquals("max delay",       1234L,      appender.getMaxDelay());
         assertEquals("sequence",        2,          appender.getSequence());
+        assertEquals("roll mode",       "interval", appender.getRollMode());
         assertEquals("roll interval",   86400000L,  appender.getRollInterval());
     }
 
@@ -100,6 +101,7 @@ public class TestCloudwatchAppender
         assertEquals("batch size",      16,                 appender.getBatchSize());
         assertEquals("max delay",       4000L,              appender.getMaxDelay());
         assertEquals("sequence",        0,                  appender.getSequence());
+        assertEquals("roll mode",       "none",             appender.getRollMode());
         assertEquals("roll interval",   -1,                 appender.getRollInterval());
     }
 
@@ -110,20 +112,23 @@ public class TestCloudwatchAppender
         CloudwatchAppender appender = initialize("TestCloudwatchAppender.testAppend.properties");
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
 
-        long initialTimestamp = appender.lastBatchTimestamp;
-        assertTrue("initial timestamp > 0", initialTimestamp > 0);
-        assertNull("before messages, writer is null", appender.writer);
-
-        // this sleep ensures that the timestamp will be updated
-        Thread.sleep(100);
+        assertTrue("before messages, last batch timestamp > 0",    appender.lastBatchTimestamp > 0);
+        assertTrue("before messages, last roll timestamp == 0",     appender.lastRollTimestamp == 0);
+        assertNull("before messages, writer is null",               appender.writer);
 
         Logger myLogger = Logger.getLogger(getClass());
-        myLogger.debug("test without exception");
+        myLogger.debug("first message");
 
+        assertTrue("after messages, last batch timestamp > 0",     appender.lastBatchTimestamp > 0);
+        assertTrue("after messages, last roll timestamp > 0",      appender.lastRollTimestamp > 0);
         assertNotNull("after message 1, writer is initialized",     appender.writer);
         assertEquals("after message 1, writer factory called once", 1, writerFactory.invocationCount);
         assertEquals("after message 1, messages in queue",          1, appender.messageQueue.size());
         assertTrue("after message 1, bytes in queue > 0",           appender.messageQueueBytes > 0);
+
+        // sleep so that we'll increment the batch timestamp
+        long initialTimestamp = appender.lastBatchTimestamp;
+        Thread.sleep(100);
 
         myLogger.error("test with exception", new Exception("this is a test"));
 
@@ -144,7 +149,7 @@ public class TestCloudwatchAppender
         assertTrue("message 1 timestamp <= batch timestamp",   message1.getTimestamp() <= appender.lastBatchTimestamp);
         StringAsserts.assertRegex(
                 "message 1 generally follows layout: " + message1.getMessage(),
-                "20[12][0-9]-.* DEBUG .*TestCloudwatchAppender .*test without exception.*",
+                "20[12][0-9]-.* DEBUG .*TestCloudwatchAppender .*first message.*",
                 message1.getMessage().trim());
 
         LogMessage message2 = lastBatch.get(1);
@@ -223,9 +228,9 @@ public class TestCloudwatchAppender
 
 
     @Test
-    public void testRoll() throws Exception
+    public void testExplicitRoll() throws Exception
     {
-        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testRoll.properties");
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testExplicitRoll.properties");
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
 
         Logger myLogger = Logger.getLogger(getClass());
@@ -233,6 +238,7 @@ public class TestCloudwatchAppender
         myLogger.debug("first message");
 
         MockCloudwatchWriter writer0 = (MockCloudwatchWriter)appender.writer;
+
         assertEquals("pre-roll, writer factory calls",      1,          writerFactory.invocationCount);
         assertEquals("pre-roll, logstream name",            "bargle-0", writerFactory.lastLogStreamName);
         assertEquals("pre-roll, messages in queue",         1,          appender.messageQueue.size());
@@ -244,5 +250,95 @@ public class TestCloudwatchAppender
         assertEquals("post-roll, messages in queue",        0,          appender.messageQueue.size());
         assertEquals("post-roll, messages passed to writer", 1,         writer0.messages.size());
         assertNotSame("post-roll, writer has been replaced", writer0,   appender.writer);
+    }
+
+
+    @Test
+    public void testTimedRoll() throws Exception
+    {
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testTimedRoll.properties");
+        MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
+
+        Logger myLogger = Logger.getLogger(getClass());
+
+        myLogger.debug("first message");
+
+        MockCloudwatchWriter writer0 = (MockCloudwatchWriter)appender.writer;
+
+        assertEquals("pre-roll, logstream name",                "bargle-0", writerFactory.lastLogStreamName);
+        assertEquals("pre-roll, messages in queue",             1,          appender.messageQueue.size());
+
+        appender.lastRollTimestamp -= 20000;
+
+        myLogger.debug("second message");
+
+        assertEquals("post-roll, logstream name",               "bargle-1", writerFactory.lastLogStreamName);
+        assertEquals("post-roll, messages in queue",            1,          appender.messageQueue.size());
+        assertEquals("post-roll, messages passed to old writer", 1,          writer0.messages.size());
+        assertNotSame("post-roll, writer has been replaced",    writer0,    appender.writer);
+        assertEquals("post-roll, no messages for new writer",   0,          ((MockCloudwatchWriter)appender.writer).messages.size());
+    }
+
+
+    @Test
+    public void testInvalidTimedRollConfiguration() throws Exception
+    {
+        // note: this will generate a log message that we can't validate
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testInvalidTimedRoll.properties");
+        assertEquals("roll mode",       "none",             appender.getRollMode());
+    }
+
+
+    @Test
+    public void testHourlyRoll() throws Exception
+    {
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testHourlyRoll.properties");
+        MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
+
+        Logger myLogger = Logger.getLogger(getClass());
+
+        myLogger.debug("first message");
+
+        MockCloudwatchWriter writer0 = (MockCloudwatchWriter)appender.writer;
+
+        assertEquals("pre-roll, logstream name",                "bargle-0", writerFactory.lastLogStreamName);
+        assertEquals("pre-roll, messages in queue",             1,          appender.messageQueue.size());
+
+        appender.lastRollTimestamp -= 3600000;
+
+        myLogger.debug("second message");
+
+        assertEquals("post-roll, logstream name",               "bargle-1", writerFactory.lastLogStreamName);
+        assertEquals("post-roll, messages in queue",            1,          appender.messageQueue.size());
+        assertEquals("post-roll, messages passed to old writer", 1,          writer0.messages.size());
+        assertNotSame("post-roll, writer has been replaced",    writer0,    appender.writer);
+        assertEquals("post-roll, no messages for new writer",   0,          ((MockCloudwatchWriter)appender.writer).messages.size());
+    }
+
+
+    @Test
+    public void testDailyRoll() throws Exception
+    {
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testDailyRoll.properties");
+        MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
+
+        Logger myLogger = Logger.getLogger(getClass());
+
+        myLogger.debug("first message");
+
+        MockCloudwatchWriter writer0 = (MockCloudwatchWriter)appender.writer;
+
+        assertEquals("pre-roll, logstream name",                "bargle-0", writerFactory.lastLogStreamName);
+        assertEquals("pre-roll, messages in queue",             1,          appender.messageQueue.size());
+
+        appender.lastRollTimestamp -= 86400000;
+
+        myLogger.debug("second message");
+
+        assertEquals("post-roll, logstream name",               "bargle-1", writerFactory.lastLogStreamName);
+        assertEquals("post-roll, messages in queue",            1,          appender.messageQueue.size());
+        assertEquals("post-roll, messages passed to old writer", 1,          writer0.messages.size());
+        assertNotSame("post-roll, writer has been replaced",    writer0,    appender.writer);
+        assertEquals("post-roll, no messages for new writer",   0,          ((MockCloudwatchWriter)appender.writer).messages.size());
     }
 }

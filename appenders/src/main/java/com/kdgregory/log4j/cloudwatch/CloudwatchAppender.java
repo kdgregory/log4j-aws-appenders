@@ -53,7 +53,9 @@ public class CloudwatchAppender extends AppenderSkeleton
 
     private final static Pattern ALLOWED_NAME_REGEX = Pattern.compile("[^A-Za-z0-9-_]");
 
+    //*********************************************************************************
     // NOTE: any variables marked as protected will be replaced/examined during testing
+    //*********************************************************************************
 
     // flag to indicate whether we need to run setup
     private volatile boolean ready = false;
@@ -80,6 +82,12 @@ public class CloudwatchAppender extends AppenderSkeleton
     // the last time we rolled the writer
 
     protected long lastRollTimestamp;
+    
+    // this object is used for synchronization of initialization and writer change
+    // we don't synchronize on the appender itself, lest some external code also
+    // synchronize on it and cause a deadlock
+    
+    private Object initializationLock = new Object();
 
     // this is used to synchronize access to the queue; queue updates are normally
     // very fast, so plain-old-synchronization should not cause undue contention
@@ -365,16 +373,19 @@ public class CloudwatchAppender extends AppenderSkeleton
 
 
     @Override
-    public synchronized void close()
+    public void close()
     {
-        if (closed)
+        synchronized (initializationLock)
         {
-            // someone already called this
-            return;
-        }
+            if (closed)
+            {
+                // someone already called this
+                return;
+            }
 
-        stopWriter();
-        closed = true;
+            stopWriter();
+            closed = true;
+        }
     }
 
 
@@ -393,10 +404,13 @@ public class CloudwatchAppender extends AppenderSkeleton
      *  Rolls the log stream: flushes all outstanding messages to the current
      *  stream, and opens a new stream.
      */
-    public synchronized void roll()
+    public void roll()
     {
-        sequence.incrementAndGet();
-        startWriter();
+        synchronized (initializationLock)
+        {
+            sequence.incrementAndGet();
+            startWriter();
+        }
     }
 
 
@@ -407,16 +421,19 @@ public class CloudwatchAppender extends AppenderSkeleton
     /**
      *  Called by {@link #append} to lazily initialize appender.
      */
-    private synchronized void initialize()
+    private void initialize()
     {
-        if (ready)
+        synchronized (initializationLock)
         {
-            // someone else already initialized us
-            return;
-        }
+            if (ready)
+            {
+                // someone else already initialized us
+                return;
+            }
 
-        startWriter();
-        ready = true;
+            startWriter();
+            ready = true;
+        }
     }
 
 
@@ -424,30 +441,33 @@ public class CloudwatchAppender extends AppenderSkeleton
      *  Called by {@link #initialize} and also {@link #roll}, to switch to a new
      *  writer. Closes the old writer, if any.
      */
-    private synchronized void startWriter()
+    private void startWriter()
     {
-        if (writer != null)
-            stopWriter();
-
-        try
+        synchronized (initializationLock)
         {
-            Substitutions subs = new Substitutions(new Date(), sequence.get());
-            actualLogGroup  = ALLOWED_NAME_REGEX.matcher(subs.perform(logGroup)).replaceAll("");
-            actualLogStream = ALLOWED_NAME_REGEX.matcher(subs.perform(logStream)).replaceAll("");
+            if (writer != null)
+                stopWriter();
 
-            writer = writerFactory.newLogWriter();
-            threadFactory.startLoggingThread(writer);
-
-            if (layout.getHeader() != null)
+            try
             {
-                internalAppend(new LogMessage(layout.getHeader()));
-            }
+                Substitutions subs = new Substitutions(new Date(), sequence.get());
+                actualLogGroup  = ALLOWED_NAME_REGEX.matcher(subs.perform(logGroup)).replaceAll("");
+                actualLogStream = ALLOWED_NAME_REGEX.matcher(subs.perform(logStream)).replaceAll("");
 
-            lastRollTimestamp = System.currentTimeMillis();
-        }
-        catch (Exception ex)
-        {
-            LogLog.error("exception while initializing writer", ex);
+                writer = writerFactory.newLogWriter();
+                threadFactory.startLoggingThread(writer);
+
+                if (layout.getHeader() != null)
+                {
+                    internalAppend(new LogMessage(layout.getHeader()));
+                }
+
+                lastRollTimestamp = System.currentTimeMillis();
+            }
+            catch (Exception ex)
+            {
+                LogLog.error("exception while initializing writer", ex);
+            }
         }
     }
 
@@ -455,26 +475,29 @@ public class CloudwatchAppender extends AppenderSkeleton
     /**
      *  Closes the current writer, passing it any outstanding messages.
      */
-    private synchronized void stopWriter()
+    private void stopWriter()
     {
-        if (writer == null)
-            return;
-
-        try
+        synchronized (initializationLock)
         {
-            if (layout.getFooter() != null)
+            if (writer == null)
+                return;
+
+            try
             {
-                internalAppend(new LogMessage(layout.getFooter()));
+                if (layout.getFooter() != null)
+                {
+                    internalAppend(new LogMessage(layout.getFooter()));
+                }
+                sendBatch();
             }
-            sendBatch();
-        }
-        catch (Exception ex)
-        {
-            LogLog.error("exception while flushing writer", ex);
-        }
+            catch (Exception ex)
+            {
+                LogLog.error("exception while flushing writer", ex);
+            }
 
-        writer.stop();
-        writer = null;
+            writer.stop();
+            writer = null;
+        }
     }
 
 

@@ -493,20 +493,18 @@ public class CloudwatchAppender extends AppenderSkeleton
         {
             long now = System.currentTimeMillis();
 
-            // FIXME - check for rolling before adding the message to batch
+            if (shouldRoll(now))
+            {
+                sendBatch();
+                roll();
+            }
 
             messageQueue.add(message);
             messageQueueBytes += message.size();
 
-            long curDelay = now - lastBatchTimestamp;
-            if ((messageQueue.size() >= batchSize) || (messageQueueBytes >= AWS_MAX_BATCH_BYTES) || (curDelay >= maxDelay))
+            if (shouldSendBatch(now))
             {
                 sendBatch();
-            }
-
-            if (shouldRoll(now))
-            {
-                roll();
             }
         }
     }
@@ -532,6 +530,17 @@ public class CloudwatchAppender extends AppenderSkeleton
             default:
                 return false;
         }
+    }
+    
+    
+    /**
+     *  Test for sending current batch.
+     */
+    private boolean shouldSendBatch(long now)
+    {
+        return (messageQueue.size() >= batchSize) 
+            || (messageQueueBytes >= AWS_MAX_BATCH_BYTES) 
+            || ((now - lastBatchTimestamp) >= maxDelay);
     }
 
 

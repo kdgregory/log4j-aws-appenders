@@ -265,18 +265,18 @@ public class TestCloudwatchAppender
 
         MockCloudwatchWriter writer0 = (MockCloudwatchWriter)appender.writer;
 
-        assertEquals("pre-roll, logstream name",            "bargle-0", writerFactory.lastLogStreamName);
-        assertEquals("pre-roll, messages in queue",         1,          appender.messageQueue.size());
+        assertEquals("pre-roll, logstream name",                "bargle-0", writerFactory.lastLogStreamName);
+        assertEquals("pre-roll, messages in queue",             1,          appender.messageQueue.size());
 
         appender.lastRollTimestamp -= 20000;
 
         myLogger.debug("second message");
 
-        assertEquals("post-autoroll, logstream name",               "bargle-1", writerFactory.lastLogStreamName);
-        assertEquals("post-autoroll, messages in queue",            0,          appender.messageQueue.size());
-        assertEquals("post-autoroll, messages passed to writer",    2,          writer0.messages.size());
-        assertNotSame("post-autoroll, writer has been replaced",    writer0,    appender.writer);
-        assertEquals("post-autoroll, no messages for new writer",   0,          ((MockCloudwatchWriter)appender.writer).messages.size());
+        assertEquals("post-roll, logstream name",               "bargle-1", writerFactory.lastLogStreamName);
+        assertEquals("post-roll, messages in queue",            1,          appender.messageQueue.size());
+        assertEquals("post-roll, messages passed to old writer", 1,          writer0.messages.size());
+        assertNotSame("post-roll, writer has been replaced",    writer0,    appender.writer);
+        assertEquals("post-roll, no messages for new writer",   0,          ((MockCloudwatchWriter)appender.writer).messages.size());
     }
 
 

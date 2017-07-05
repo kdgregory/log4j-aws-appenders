@@ -522,24 +522,22 @@ public class CloudwatchAppender extends AppenderSkeleton
             case interval:
                 return (rollInterval > 0) && ((now - lastRollTimestamp) > rollInterval);
             case hourly:
-                // FIXME
-                return false;
+                return (lastRollTimestamp / 3600000) < (now / 3600000);
             case daily:
-                // FIXME
-                return false;
+                return (lastRollTimestamp / 86400000) < (now / 86400000);
             default:
                 return false;
         }
     }
-    
-    
+
+
     /**
      *  Test for sending current batch.
      */
     private boolean shouldSendBatch(long now)
     {
-        return (messageQueue.size() >= batchSize) 
-            || (messageQueueBytes >= AWS_MAX_BATCH_BYTES) 
+        return (messageQueue.size() >= batchSize)
+            || (messageQueueBytes >= AWS_MAX_BATCH_BYTES)
             || ((now - lastBatchTimestamp) >= maxDelay);
     }
 

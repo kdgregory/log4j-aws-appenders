@@ -81,11 +81,9 @@ public class CloudwatchAppender extends AppenderSkeleton
 
     // the last time we rolled the writer
 
-    protected long lastRollTimestamp;
+    protected volatile long lastRollTimestamp;
     
     // this object is used for synchronization of initialization and writer change
-    // we don't synchronize on the appender itself, lest some external code also
-    // synchronize on it and cause a deadlock
     
     private Object initializationLock = new Object();
 
@@ -357,17 +355,26 @@ public class CloudwatchAppender extends AppenderSkeleton
             throw new IllegalStateException("appender is closed");
         }
 
+        if (! ready)
+        {
+            initialize();
+        }
+
+        // FIXME - move message conversion into LogMessage
         try
         {
-            if (! ready)
+            LogMessage message = new LogMessage(event, getLayout());
+            if (message.size() > AWS_MAX_BATCH_BYTES)
             {
-                initialize();
+                LogLog.warn("attempted to append a message > AWS batch size; ignored");
+                return;
             }
-            internalAppend(new LogMessage(event, getLayout()));
+            internalAppend(message);
         }
         catch (Exception ex)
         {
-            LogLog.error("exception while appending (should never happen)", ex);
+            LogLog.warn("exception will constructing log message; ignored", ex);
+            return;
         }
     }
 
@@ -506,28 +513,37 @@ public class CloudwatchAppender extends AppenderSkeleton
      */
     private void internalAppend(LogMessage message)
     {
-        if (message.size() > AWS_MAX_BATCH_BYTES)
-        {
-            LogLog.warn("attempted to append a message > AWS batch size; ignored");
-            return;
-        }
-
+        long now = System.currentTimeMillis();
+        rollIfNeeded(now);
+        
         synchronized (messageQueueLock)
         {
-            long now = System.currentTimeMillis();
-
-            if (shouldRoll(now))
-            {
-                sendBatch();
-                roll();
-            }
-
             messageQueue.add(message);
             messageQueueBytes += message.size();
 
             if (shouldSendBatch(now))
             {
                 sendBatch();
+            }
+        }
+    }
+    
+    
+    /**
+     *  Rolls the writer if needed. This includes flushing the current batch.
+     */
+    private void rollIfNeeded(long now)
+    {
+        // double-checked locking: avoid contention for first check, but make sure we don't do things twice
+        if (shouldRoll(now))
+        {
+            synchronized (initializationLock)
+            {
+                if (shouldRoll(now))
+                {
+                    sendBatch();
+                    roll();
+                }
             }
         }
     }
@@ -572,6 +588,9 @@ public class CloudwatchAppender extends AppenderSkeleton
      */
     private void sendBatch()
     {
+        // FIXME - replace existing list in synchronized block, don't iterate
+        //         move all the batch sizing stuff into the writer
+
         List<LogMessage> batch = new ArrayList<LogMessage>(messageQueue.size());
         long batchBytes = 0;
         Iterator<LogMessage> itx = messageQueue.iterator();

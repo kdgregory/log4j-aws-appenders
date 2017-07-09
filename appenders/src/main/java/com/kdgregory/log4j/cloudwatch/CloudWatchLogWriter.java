@@ -152,11 +152,24 @@ implements LogWriter
                                       .withLogStreamName(streamName)
                                       .withLogEvents(constructLogEvents(batch));
 
-        // TODO - wrap this in a retry loop
+        Exception lastException = null;
+        for (int attempt = 1 ; attempt < 4 ; attempt++)
+        {
+            try
+            {
+                LogStream stream = findLogStream();
+                request.setSequenceToken(stream.getUploadSequenceToken());
+                client.putLogEvents(request);
+                return;
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+                sleepQuietly(250 * attempt);
+            }
+        }
 
-        LogStream stream = findLogStream();
-        request.setSequenceToken(stream.getUploadSequenceToken());
-        client.putLogEvents(request);
+        LogLog.error("failed to send batch after 3 retries", lastException);
     }
 
 

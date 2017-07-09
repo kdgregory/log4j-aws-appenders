@@ -5,7 +5,6 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
@@ -42,14 +41,10 @@ public class CloudwatchAppender extends AppenderSkeleton
         daily
     }
 
-    private final static int AWS_MAX_BATCH_COUNT = 10000;
-    private final static int AWS_MAX_BATCH_BYTES = 1048576;
-
     private final static int DEFAULT_BATCH_SIZE = 16;
     private final static long DEFAULT_BATCH_TIMEOUT = 4000L;
     private final static long DISABLED_ROLL_INTERVAL = -1;
 
-    private final static Pattern ALLOWED_NAME_REGEX = Pattern.compile("[^A-Za-z0-9-_]");
 
     //*********************************************************************************
     // NOTE: any variables marked as protected will be replaced/examined during testing
@@ -225,10 +220,9 @@ public class CloudwatchAppender extends AppenderSkeleton
      */
     public void setBatchSize(int batchSize)
     {
-        if (batchSize > AWS_MAX_BATCH_COUNT)
+        if (batchSize > CloudWatchConstants.AWS_MAX_BATCH_COUNT)
         {
-            // FIXME - log an error
-            throw new IllegalArgumentException("AWS limits batch size to " + AWS_MAX_BATCH_COUNT + " messages");
+            throw new IllegalArgumentException("AWS limits batch size to " + CloudWatchConstants.AWS_MAX_BATCH_COUNT + " messages");
         }
         this.batchSize = batchSize;
     }
@@ -439,8 +433,8 @@ public class CloudwatchAppender extends AppenderSkeleton
             try
             {
                 Substitutions subs = new Substitutions(new Date(), sequence.get());
-                actualLogGroup  = ALLOWED_NAME_REGEX.matcher(subs.perform(logGroup)).replaceAll("");
-                actualLogStream = ALLOWED_NAME_REGEX.matcher(subs.perform(logStream)).replaceAll("");
+                actualLogGroup  = CloudWatchConstants.ALLOWED_NAME_REGEX.matcher(subs.perform(logGroup)).replaceAll("");
+                actualLogStream = CloudWatchConstants.ALLOWED_NAME_REGEX.matcher(subs.perform(logStream)).replaceAll("");
 
                 writer = writerFactory.newLogWriter();
                 threadFactory.startLoggingThread(writer);
@@ -494,7 +488,7 @@ public class CloudwatchAppender extends AppenderSkeleton
         if (message == null)
             return;
 
-        if (message.size() > AWS_MAX_BATCH_BYTES)
+        if (message.size() > CloudWatchConstants.AWS_MAX_BATCH_BYTES)
         {
             LogLog.warn("attempted to append a message > AWS batch size; ignored");
             return;
@@ -519,7 +513,7 @@ public class CloudwatchAppender extends AppenderSkeleton
     private boolean shouldSendBatch(long now)
     {
         return (messageQueue.size() >= batchSize)
-            || (messageQueueBytes >= AWS_MAX_BATCH_BYTES)
+            || (messageQueueBytes >= CloudWatchConstants.AWS_MAX_BATCH_BYTES)
             || ((now - lastBatchTimestamp) >= maxDelay);
     }
 

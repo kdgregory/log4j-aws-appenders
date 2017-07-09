@@ -21,9 +21,6 @@ import com.kdgregory.log4j.shared.LogMessage;
 class CloudWatchLogWriter
 implements LogWriter
 {
-    private final static int AWS_MAX_BATCH_COUNT = 10000;
-    private final static int AWS_MAX_BATCH_BYTES = 1048576;
-
     private String groupName;
     private String streamName;
 
@@ -128,7 +125,7 @@ implements LogWriter
         while (message != null)
         {
             // the first message must never break this rule -- and shouldn't, as appender checks size
-            if (((batchBytes + message.size()) > AWS_MAX_BATCH_BYTES) || (batchCount == AWS_MAX_BATCH_COUNT))
+            if (((batchBytes + message.size()) > CloudWatchConstants.AWS_MAX_BATCH_BYTES) || (batchCount == CloudWatchConstants.AWS_MAX_BATCH_COUNT))
             {
                 heldMessage = message;
                 break;

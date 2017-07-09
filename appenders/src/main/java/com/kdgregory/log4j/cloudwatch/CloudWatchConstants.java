@@ -5,6 +5,8 @@ import java.util.regex.Pattern;
 
 /**
  *  Holds limits and other constants for CloudWatch Logs.
+ *  <p>
+ *  See http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
  */
 public class CloudWatchConstants
 {
@@ -12,13 +14,20 @@ public class CloudWatchConstants
     /**
      *  Maximum number of messages in a single batch.
      */
-    final static int AWS_MAX_BATCH_COUNT = 10000;
+    final static int MAX_BATCH_COUNT = 10000;
 
 
     /**
-     *  Maximum number of bytes in a single batch.
+     *  Maximum number of bytes in a single batch. Note that this includes the
+     *  message bytes as well as overhead.
      */
-    final static int AWS_MAX_BATCH_BYTES = 1048576;
+    final static int MAX_BATCH_BYTES = 1048576;
+
+
+    /**
+     *  Overhead added to each message.
+     */
+    final static int MESSAGE_OVERHEAD = 26;
 
 
     /**

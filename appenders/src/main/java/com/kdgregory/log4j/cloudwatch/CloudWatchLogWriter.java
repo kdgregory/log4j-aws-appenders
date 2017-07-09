@@ -124,17 +124,17 @@ implements LogWriter
         int batchCount = 0;
         while (message != null)
         {
+            batchBytes += message.size() + CloudWatchConstants.MESSAGE_OVERHEAD;
+            batchCount++;
+
             // the first message must never break this rule -- and shouldn't, as appender checks size
-            if (((batchBytes + message.size()) > CloudWatchConstants.AWS_MAX_BATCH_BYTES) || (batchCount == CloudWatchConstants.AWS_MAX_BATCH_COUNT))
+            if ((batchBytes >= CloudWatchConstants.MAX_BATCH_BYTES) || (batchCount == CloudWatchConstants.MAX_BATCH_COUNT))
             {
                 heldMessage = message;
                 break;
             }
 
             batch.add(message);
-            batchBytes += message.size();
-            batchCount++;
-
             message = messageQueue.poll();
         }
 
@@ -163,7 +163,6 @@ implements LogWriter
     private List<InputLogEvent> constructLogEvents(List<LogMessage> batch)
     {
         Collections.sort(batch);
-        // TODO - verify that batch satisfies requirements in http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
 
         List<InputLogEvent> result = new ArrayList<InputLogEvent>(batch.size());
         for (LogMessage msg : batch)

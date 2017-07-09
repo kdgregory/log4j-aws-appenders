@@ -220,9 +220,9 @@ public class CloudwatchAppender extends AppenderSkeleton
      */
     public void setBatchSize(int batchSize)
     {
-        if (batchSize > CloudWatchConstants.AWS_MAX_BATCH_COUNT)
+        if (batchSize > CloudWatchConstants.MAX_BATCH_COUNT)
         {
-            throw new IllegalArgumentException("AWS limits batch size to " + CloudWatchConstants.AWS_MAX_BATCH_COUNT + " messages");
+            throw new IllegalArgumentException("AWS limits batch size to " + CloudWatchConstants.MAX_BATCH_COUNT + " messages");
         }
         this.batchSize = batchSize;
     }
@@ -488,7 +488,7 @@ public class CloudwatchAppender extends AppenderSkeleton
         if (message == null)
             return;
 
-        if (message.size() > CloudWatchConstants.AWS_MAX_BATCH_BYTES)
+        if (message.size() + CloudWatchConstants.MESSAGE_OVERHEAD  >= CloudWatchConstants.MAX_BATCH_BYTES)
         {
             LogLog.warn("attempted to append a message > AWS batch size; ignored");
             return;
@@ -513,7 +513,7 @@ public class CloudwatchAppender extends AppenderSkeleton
     private boolean shouldSendBatch(long now)
     {
         return (messageQueue.size() >= batchSize)
-            || (messageQueueBytes >= CloudWatchConstants.AWS_MAX_BATCH_BYTES)
+            || (messageQueueBytes >= CloudWatchConstants.MAX_BATCH_BYTES)
             || ((now - lastBatchTimestamp) >= maxDelay);
     }
 

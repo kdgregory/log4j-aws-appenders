@@ -358,22 +358,7 @@ public class CloudwatchAppender extends AppenderSkeleton
             initialize();
         }
 
-        // FIXME - move message conversion into LogMessage
-        try
-        {
-            LogMessage message = new LogMessage(event, getLayout());
-            if (message.size() > AWS_MAX_BATCH_BYTES)
-            {
-                LogLog.warn("attempted to append a message > AWS batch size; ignored");
-                return;
-            }
-            internalAppend(message);
-        }
-        catch (Exception ex)
-        {
-            LogLog.warn("exception when constructing log message; ignored", ex);
-            return;
-        }
+        internalAppend(LogMessage.create(event, getLayout()));
     }
 
 
@@ -462,7 +447,7 @@ public class CloudwatchAppender extends AppenderSkeleton
 
                 if (layout.getHeader() != null)
                 {
-                    internalAppend(new LogMessage(layout.getHeader()));
+                    internalAppend(LogMessage.create(layout.getHeader()));
                 }
 
                 lastRollTimestamp = System.currentTimeMillis();
@@ -489,7 +474,7 @@ public class CloudwatchAppender extends AppenderSkeleton
             {
                 if (layout.getFooter() != null)
                 {
-                    internalAppend(new LogMessage(layout.getFooter()));
+                    internalAppend(LogMessage.create(layout.getFooter()));
                 }
                 sendBatch();
             }
@@ -506,6 +491,15 @@ public class CloudwatchAppender extends AppenderSkeleton
 
     private void internalAppend(LogMessage message)
     {
+        if (message == null)
+            return;
+
+        if (message.size() > AWS_MAX_BATCH_BYTES)
+        {
+            LogLog.warn("attempted to append a message > AWS batch size; ignored");
+            return;
+        }
+
         long now = System.currentTimeMillis();
         rollIfNeeded(now);
 

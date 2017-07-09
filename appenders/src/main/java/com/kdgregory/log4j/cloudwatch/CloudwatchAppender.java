@@ -1,9 +1,7 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.cloudwatch;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,12 +42,12 @@ public class CloudwatchAppender extends AppenderSkeleton
         daily
     }
 
+    private final static int AWS_MAX_BATCH_COUNT = 10000;
+    private final static int AWS_MAX_BATCH_BYTES = 1048576;
+
     private final static int DEFAULT_BATCH_SIZE = 16;
     private final static long DEFAULT_BATCH_TIMEOUT = 4000L;
     private final static long DISABLED_ROLL_INTERVAL = -1;
-
-    private final static int AWS_MAX_BATCH_COUNT = 10000;
-    private final static int AWS_MAX_BATCH_BYTES = 1048576;
 
     private final static Pattern ALLOWED_NAME_REGEX = Pattern.compile("[^A-Za-z0-9-_]");
 
@@ -82,9 +80,9 @@ public class CloudwatchAppender extends AppenderSkeleton
     // the last time we rolled the writer
 
     protected volatile long lastRollTimestamp;
-    
+
     // this object is used for synchronization of initialization and writer change
-    
+
     private Object initializationLock = new Object();
 
     // this is used to synchronize access to the queue; queue updates are normally
@@ -92,7 +90,7 @@ public class CloudwatchAppender extends AppenderSkeleton
 
     private Object messageQueueLock = new Object();
 
-    // the waiting-for-batch queue
+    // the waiting-for-batch queue; replaced when we pass batch to writer
 
     protected LinkedList<LogMessage> messageQueue = new LinkedList<LogMessage>();
     protected int messageQueueBytes = 0;
@@ -101,7 +99,7 @@ public class CloudwatchAppender extends AppenderSkeleton
     // initialized during construction, so the first batch might actually go out
     // earlier than expected (if there's a delay between construction and use)
 
-    protected long lastBatchTimestamp;
+    protected volatile long lastBatchTimestamp;
 
     // these variables hold the post-substitution log-group and log-stream names
     // (mostly useful for testing)
@@ -109,7 +107,7 @@ public class CloudwatchAppender extends AppenderSkeleton
     private String  actualLogGroup;
     private String  actualLogStream;
 
-    // all vars below this point are configurable
+    // all vars below this point are configuration-controlled
 
     private String          logGroup;
     private String          logStream;
@@ -373,7 +371,7 @@ public class CloudwatchAppender extends AppenderSkeleton
         }
         catch (Exception ex)
         {
-            LogLog.warn("exception will constructing log message; ignored", ex);
+            LogLog.warn("exception when constructing log message; ignored", ex);
             return;
         }
     }
@@ -386,7 +384,7 @@ public class CloudwatchAppender extends AppenderSkeleton
         {
             if (closed)
             {
-                // someone already called this
+                // someone already closed us
                 return;
             }
 
@@ -415,6 +413,7 @@ public class CloudwatchAppender extends AppenderSkeleton
     {
         synchronized (initializationLock)
         {
+            stopWriter();
             sequence.incrementAndGet();
             startWriter();
         }
@@ -452,9 +451,6 @@ public class CloudwatchAppender extends AppenderSkeleton
     {
         synchronized (initializationLock)
         {
-            if (writer != null)
-                stopWriter();
-
             try
             {
                 Substitutions subs = new Substitutions(new Date(), sequence.get());
@@ -508,14 +504,11 @@ public class CloudwatchAppender extends AppenderSkeleton
     }
 
 
-    /**
-     *  Appends a message to the current batch, and decides whether or not to send the batch.
-     */
     private void internalAppend(LogMessage message)
     {
         long now = System.currentTimeMillis();
         rollIfNeeded(now);
-        
+
         synchronized (messageQueueLock)
         {
             messageQueue.add(message);
@@ -527,31 +520,39 @@ public class CloudwatchAppender extends AppenderSkeleton
             }
         }
     }
-    
-    
-    /**
-     *  Rolls the writer if needed. This includes flushing the current batch.
-     */
-    private void rollIfNeeded(long now)
+
+
+    private boolean shouldSendBatch(long now)
     {
-        // double-checked locking: avoid contention for first check, but make sure we don't do things twice
-        if (shouldRoll(now))
+        return (messageQueue.size() >= batchSize)
+            || (messageQueueBytes >= AWS_MAX_BATCH_BYTES)
+            || ((now - lastBatchTimestamp) >= maxDelay);
+    }
+
+
+    private void sendBatch()
+    {
+        List<LogMessage> batch = null;
+        synchronized (messageQueueLock)
         {
-            synchronized (initializationLock)
-            {
-                if (shouldRoll(now))
-                {
-                    sendBatch();
-                    roll();
-                }
-            }
+            batch = messageQueue;
+            messageQueue = new LinkedList<LogMessage>();
+            messageQueueBytes = 0;
+            lastBatchTimestamp = System.currentTimeMillis();
+        }
+
+        // in normal use, writer will never be null; for testing, however, it might be
+        if (writer == null)
+        {
+            LogLog.warn("appender not properly configured: writer is null");
+        }
+        else
+        {
+            writer.addBatch(batch);
         }
     }
 
 
-    /**
-     *  Test for rolling the writer.
-     */
     private boolean shouldRoll(long now)
     {
         switch (rollMode)
@@ -571,53 +572,20 @@ public class CloudwatchAppender extends AppenderSkeleton
 
 
     /**
-     *  Test for sending current batch.
+     *  Rolls the writer if needed. This includes flushing the current batch.
      */
-    private boolean shouldSendBatch(long now)
+    private void rollIfNeeded(long now)
     {
-        return (messageQueue.size() >= batchSize)
-            || (messageQueueBytes >= AWS_MAX_BATCH_BYTES)
-            || ((now - lastBatchTimestamp) >= maxDelay);
-    }
-
-
-    /**
-     *  Creates a batch from as many messages as will fit.
-     *  <p>
-     *  Note: this is called from within a synchronized block.
-     */
-    private void sendBatch()
-    {
-        // FIXME - replace existing list in synchronized block, don't iterate
-        //         move all the batch sizing stuff into the writer
-
-        List<LogMessage> batch = new ArrayList<LogMessage>(messageQueue.size());
-        long batchBytes = 0;
-        Iterator<LogMessage> itx = messageQueue.iterator();
-
-        while (itx.hasNext() && (batchBytes < AWS_MAX_BATCH_BYTES) && (batch.size() < AWS_MAX_BATCH_COUNT))
+        // double-checked locking: avoid contention for first check, but make sure we don't do things twice
+        if (shouldRoll(now))
         {
-            LogMessage message = itx.next();
-            if ((batchBytes + message.size()) > AWS_MAX_BATCH_BYTES)
+            synchronized (initializationLock)
             {
-                break;
+                if (shouldRoll(now))
+                {
+                    roll();
+                }
             }
-            batch.add(message);
-            batchBytes += message.size();
-            messageQueueBytes -= message.size();
-            itx.remove();
-        }
-
-        lastBatchTimestamp = System.currentTimeMillis();
-
-        // in normal use, writer will never be null; for testing, however, it might be
-        if (writer == null)
-        {
-            LogLog.warn("appender not properly configured: writer is null");
-        }
-        else
-        {
-            writer.addBatch(batch);
         }
     }
 }

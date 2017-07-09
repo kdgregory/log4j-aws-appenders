@@ -15,6 +15,9 @@ extends Runnable
 {
     /**
      *  Adds a batch of messages to the writer.
+     *  <p>
+     *  Implementations are expected to be synchronized, so that concurrent calls will
+     *  not interleave messages.
      */
     void addBatch(List<LogMessage> batch);
 

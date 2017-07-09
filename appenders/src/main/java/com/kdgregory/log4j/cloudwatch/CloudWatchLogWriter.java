@@ -4,7 +4,7 @@ package com.kdgregory.log4j.cloudwatch;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.log4j.helpers.LogLog;
 
@@ -21,6 +21,9 @@ import com.kdgregory.log4j.shared.LogMessage;
 class CloudWatchLogWriter
 implements LogWriter
 {
+    private final static int AWS_MAX_BATCH_COUNT = 10000;
+    private final static int AWS_MAX_BATCH_BYTES = 1048576;
+
     private String groupName;
     private String streamName;
 
@@ -29,7 +32,10 @@ implements LogWriter
     private volatile boolean running = true;
     private Thread dispatchThread;
 
-    private ConcurrentLinkedQueue<List<LogMessage>> batchQueue = new ConcurrentLinkedQueue<List<LogMessage>>();
+    private LinkedBlockingQueue<LogMessage> messageQueue = new LinkedBlockingQueue<LogMessage>();
+
+    // because we can't push back onto the queue
+    private volatile LogMessage heldMessage;
 
 
     public CloudWatchLogWriter(String logGroup, String logStream)
@@ -43,11 +49,10 @@ implements LogWriter
 //  Implementation of LogWriter
 //----------------------------------------------------------------------------
 
-
     @Override
-    public void addBatch(List<LogMessage> batch)
+    public synchronized void addBatch(List<LogMessage> batch)
     {
-        batchQueue.add(batch);
+        messageQueue.addAll(batch);
     }
 
 
@@ -80,15 +85,9 @@ implements LogWriter
 
         while (running)
         {
-            List<LogMessage> currentBatch = batchQueue.poll();
-            if (currentBatch != null)
-            {
-                attemptToSend(currentBatch);
-            }
-            else
-            {
-                sleepQuietly(100);
-            }
+            List<LogMessage> currentBatch = buildBatch();
+            attemptToSend(currentBatch);
+            sleepQuietly(100);
         }
     }
 
@@ -97,21 +96,60 @@ implements LogWriter
 //  Internals
 //----------------------------------------------------------------------------
 
-    private void sleepQuietly(long time)
+    /**
+     *  Blocks until at least one message is available on the queue, then
+     *  retrieves as many messages as will fit in one request.
+     */
+    private List<LogMessage> buildBatch()
     {
-        try
+        // presizing to a small-but-possible size to avoid repeated resizes
+        List<LogMessage> batch = new ArrayList<LogMessage>(512);
+
+        LogMessage message;
+        if (heldMessage != null)
         {
-            Thread.sleep(time);
+            message = heldMessage;
+            heldMessage = null;
         }
-        catch (InterruptedException ignored)
+        else
         {
-            // this will simply break to the enclosing loop
+            try
+            {
+                message = messageQueue.take();
+            }
+            catch (InterruptedException ex)
+            {
+                return batch;
+            }
         }
+
+        int batchBytes = 0;
+        int batchCount = 0;
+        while (message != null)
+        {
+            // the first message must never break this rule -- and shouldn't, as appender checks size
+            if (((batchBytes + message.size()) > AWS_MAX_BATCH_BYTES) || (batchCount == AWS_MAX_BATCH_COUNT))
+            {
+                heldMessage = message;
+                break;
+            }
+
+            batch.add(message);
+            batchBytes += message.size();
+            batchCount++;
+
+            message = messageQueue.poll();
+        }
+
+        return batch;
     }
 
 
     private void attemptToSend(List<LogMessage> batch)
     {
+        if (batch.isEmpty())
+            return;
+
         PutLogEventsRequest request = new PutLogEventsRequest()
                                       .withLogGroupName(groupName)
                                       .withLogStreamName(streamName)
@@ -199,5 +237,18 @@ implements LogWriter
                 return stream;
         }
         return null;
+    }
+
+
+    private void sleepQuietly(long time)
+    {
+        try
+        {
+            Thread.sleep(time);
+        }
+        catch (InterruptedException ignored)
+        {
+            // this will simply break to the enclosing loop
+        }
     }
 }

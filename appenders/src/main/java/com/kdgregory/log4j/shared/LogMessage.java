@@ -2,70 +2,93 @@
 package com.kdgregory.log4j.shared;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 
 import org.apache.log4j.Layout;
+import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
 
 
 /**
- *  Holder for an in-queue logging message. This class applies the layout
- *  to the logging event, storing the result as a byte array so that we
- *  can calculate total batch size.
+ *  Holder for an in-queue logging message. Instances hold the message bytes
+ *  (encoded using UTF-8) as well as the timestamp (either provided by Log4J
+ *  event or time of construction). Instances are comparable based on timestamp,
+ *  but <code>compareTo()</code> is not  consistent with <code>equals()</code>.
  *  <p>
- *  Note: instances are <code>Comparable</code> because Cloudwatch requires
- *  all messages in a batch to be in timestamp order. However, comparison
- *  is not consistent with equality, as we don't expect instances to be
- *  use where equality matters.
- *  <p>
- *  Note: package protected so available for tests.
+ *  Instances are normally constructed using one of the provided factory methods,
+ *  rather than the constructor. These methods will log any exceptions using the
+ *  Log4J internal logger, and return null if unable to construct an instance.
+ *  Such exceptions are defined by the classes used, and therefore must be
+ *  handled, but are not expected to ever occur.
  */
 public class LogMessage
 implements Comparable<LogMessage>
 {
+    /**
+     *  Creates an instance from an arbitrary string.
+     */
+    public static LogMessage create(String message)
+    {
+        try
+        {
+            return new LogMessage(System.currentTimeMillis(), message.getBytes("UTF-8"));
+        }
+        catch (UnsupportedEncodingException ex)
+        {
+            LogLog.error("unsupported encoding: UTF-8 (should never happen!)");
+            return null;
+        }
+    }
+
+
+    /**
+     *  Creates an instance from a Log4J LoggingEvent, applying the provided
+     *  Log4J layout.
+     */
+    public static LogMessage create(LoggingEvent event, Layout layout)
+    {
+        try
+        {
+
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            OutputStreamWriter out = new OutputStreamWriter(bos, "UTF-8");
+
+            out.write(layout.format(event));
+            if ((event.getThrowableInformation() != null) && layout.ignoresThrowable())
+            {
+                for (String traceline : event.getThrowableStrRep())
+                {
+                    out.write(traceline);
+                    out.write(Layout.LINE_SEP);
+                }
+            }
+            out.close();
+
+            return new LogMessage(event.getTimeStamp(), bos.toByteArray());
+        }
+        catch (Exception ex)
+        {
+            LogLog.error("error creating LogMessage (should never happen!)", ex);
+            return null;
+        }
+    }
+
+
+//----------------------------------------------------------------------------
+//
+//----------------------------------------------------------------------------
+
     private long timestamp;
     private byte[] messageBytes;
 
 
-    /**
-     *  Constructor for arbitrary strings. Timestamp is current time.
-     * @throws UnsupportedEncodingException
-     */
-    public LogMessage(String message)
-    throws UnsupportedEncodingException
+    public LogMessage(long timestamp, byte[] messageBytes)
     {
-        timestamp = System.currentTimeMillis();
-        messageBytes = message.getBytes("UTF-8");
+        this.timestamp = timestamp;
+        this.messageBytes = messageBytes;
     }
 
-
-    /**
-     *  Constructor for Log4J events. Applies layout to generate message text, and
-     *  retrieves timestamp from event.
-     */
-    public LogMessage(LoggingEvent event, Layout layout)
-    throws UnsupportedEncodingException, IOException
-    {
-        timestamp = event.getTimeStamp();
-
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        OutputStreamWriter out = new OutputStreamWriter(bos, "UTF-8");
-        out.write(layout.format(event));
-
-        if ((event.getThrowableInformation() != null) && layout.ignoresThrowable())
-        {
-            for (String traceline : event.getThrowableStrRep())
-            {
-                out.write(traceline);
-                out.write(Layout.LINE_SEP);
-            }
-        }
-
-        out.close();
-        messageBytes = bos.toByteArray();
-    }
 
 
     /**

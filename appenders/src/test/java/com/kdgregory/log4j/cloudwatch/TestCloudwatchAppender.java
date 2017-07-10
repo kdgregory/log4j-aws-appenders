@@ -84,8 +84,8 @@ public class TestCloudwatchAppender
         assertEquals("batch size",      100,        appender.getBatchSize());
         assertEquals("max delay",       1234L,      appender.getMaxDelay());
         assertEquals("sequence",        2,          appender.getSequence());
-        assertEquals("roll mode",       "interval", appender.getRollMode());
-        assertEquals("roll interval",   86400000L,  appender.getRollInterval());
+        assertEquals("roll mode",       "interval", appender.getRotationMode());
+        assertEquals("roll interval",   86400000L,  appender.getRotationInterval());
     }
 
 
@@ -101,8 +101,8 @@ public class TestCloudwatchAppender
         assertEquals("batch size",      16,                 appender.getBatchSize());
         assertEquals("max delay",       4000L,              appender.getMaxDelay());
         assertEquals("sequence",        0,                  appender.getSequence());
-        assertEquals("roll mode",       "none",             appender.getRollMode());
-        assertEquals("roll interval",   -1,                 appender.getRollInterval());
+        assertEquals("roll mode",       "none",             appender.getRotationMode());
+        assertEquals("roll interval",   -1,                 appender.getRotationInterval());
     }
 
 
@@ -113,14 +113,14 @@ public class TestCloudwatchAppender
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
 
         assertTrue("before messages, last batch timestamp > 0",    appender.lastBatchTimestamp > 0);
-        assertTrue("before messages, last roll timestamp == 0",     appender.lastRollTimestamp == 0);
+        assertTrue("before messages, last roll timestamp == 0",     appender.lastRotationTimestamp == 0);
         assertNull("before messages, writer is null",               appender.writer);
 
         Logger myLogger = Logger.getLogger(getClass());
         myLogger.debug("first message");
 
         assertTrue("after messages, last batch timestamp > 0",     appender.lastBatchTimestamp > 0);
-        assertTrue("after messages, last roll timestamp > 0",      appender.lastRollTimestamp > 0);
+        assertTrue("after messages, last roll timestamp > 0",      appender.lastRotationTimestamp > 0);
         assertNotNull("after message 1, writer is initialized",     appender.writer);
         assertEquals("after message 1, writer factory called once", 1, writerFactory.invocationCount);
         assertEquals("after message 1, messages in queue",          1, appender.messageQueue.size());
@@ -243,7 +243,7 @@ public class TestCloudwatchAppender
         assertEquals("pre-roll, logstream name",            "bargle-0", writerFactory.lastLogStreamName);
         assertEquals("pre-roll, messages in queue",         1,          appender.messageQueue.size());
 
-        appender.roll();
+        appender.rotate();
 
         assertEquals("post-roll, writer factory calls",     2,          writerFactory.invocationCount);
         assertEquals("post-roll, logstream name",           "bargle-1", writerFactory.lastLogStreamName);
@@ -268,7 +268,7 @@ public class TestCloudwatchAppender
         assertEquals("pre-roll, logstream name",                "bargle-0", writerFactory.lastLogStreamName);
         assertEquals("pre-roll, messages in queue",             1,          appender.messageQueue.size());
 
-        appender.lastRollTimestamp -= 20000;
+        appender.lastRotationTimestamp -= 20000;
 
         myLogger.debug("second message");
 
@@ -285,7 +285,7 @@ public class TestCloudwatchAppender
     {
         // note: this will generate a log message that we can't validate
         CloudwatchAppender appender = initialize("TestCloudwatchAppender.testInvalidTimedRoll.properties");
-        assertEquals("roll mode",       "none",             appender.getRollMode());
+        assertEquals("roll mode",       "none",             appender.getRotationMode());
     }
 
 
@@ -304,7 +304,7 @@ public class TestCloudwatchAppender
         assertEquals("pre-roll, logstream name",                "bargle-0", writerFactory.lastLogStreamName);
         assertEquals("pre-roll, messages in queue",             1,          appender.messageQueue.size());
 
-        appender.lastRollTimestamp -= 3600000;
+        appender.lastRotationTimestamp -= 3600000;
 
         myLogger.debug("second message");
 
@@ -331,7 +331,7 @@ public class TestCloudwatchAppender
         assertEquals("pre-roll, logstream name",                "bargle-0", writerFactory.lastLogStreamName);
         assertEquals("pre-roll, messages in queue",             1,          appender.messageQueue.size());
 
-        appender.lastRollTimestamp -= 86400000;
+        appender.lastRotationTimestamp -= 86400000;
 
         myLogger.debug("second message");
 

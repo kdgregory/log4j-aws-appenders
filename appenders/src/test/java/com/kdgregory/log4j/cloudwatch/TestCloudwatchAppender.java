@@ -230,7 +230,7 @@ public class TestCloudwatchAppender
     @Test
     public void testExplicitRotation() throws Exception
     {
-        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testExplicitRoll.properties");
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testExplicitRotation.properties");
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
 
         Logger myLogger = Logger.getLogger(getClass());
@@ -256,7 +256,7 @@ public class TestCloudwatchAppender
     @Test
     public void testTimedRotation() throws Exception
     {
-        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testTimedRoll.properties");
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testTimedRotation.properties");
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
 
         Logger myLogger = Logger.getLogger(getClass());
@@ -284,7 +284,7 @@ public class TestCloudwatchAppender
     public void testInvalidTimedRotationConfiguration() throws Exception
     {
         // note: this will generate a log message that we can't validate
-        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testInvalidTimedRoll.properties");
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testInvalidTimedRotation.properties");
         assertEquals("rotation mode",       "none",             appender.getRotationMode());
     }
 
@@ -292,7 +292,7 @@ public class TestCloudwatchAppender
     @Test
     public void testHourlyRotation() throws Exception
     {
-        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testHourlyRoll.properties");
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testHourlyRotation.properties");
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
 
         Logger myLogger = Logger.getLogger(getClass());
@@ -319,7 +319,7 @@ public class TestCloudwatchAppender
     @Test
     public void testDailyRotation() throws Exception
     {
-        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testDailyRoll.properties");
+        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testDailyRotation.properties");
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
 
         Logger myLogger = Logger.getLogger(getClass());

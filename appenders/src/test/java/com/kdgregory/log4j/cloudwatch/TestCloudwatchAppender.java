@@ -79,13 +79,13 @@ public class TestCloudwatchAppender
     {
         CloudwatchAppender appender = initialize("TestCloudwatchAppender.testConfiguration.properties");
 
-        assertEquals("log group name",  "argle",    appender.getLogGroup());
-        assertEquals("log stream name", "bargle",   appender.getLogStream());
-        assertEquals("batch size",      100,        appender.getBatchSize());
-        assertEquals("max delay",       1234L,      appender.getMaxDelay());
-        assertEquals("sequence",        2,          appender.getSequence());
-        assertEquals("roll mode",       "interval", appender.getRotationMode());
-        assertEquals("roll interval",   86400000L,  appender.getRotationInterval());
+        assertEquals("log group name",      "argle",            appender.getLogGroup());
+        assertEquals("log stream name",     "bargle",           appender.getLogStream());
+        assertEquals("batch size",          100,                appender.getBatchSize());
+        assertEquals("max delay",           1234L,              appender.getMaxDelay());
+        assertEquals("sequence",            2,                  appender.getSequence());
+        assertEquals("rotation mode",       "interval",         appender.getRotationMode());
+        assertEquals("rotation interval",   86400000L,          appender.getRotationInterval());
     }
 
 
@@ -97,12 +97,12 @@ public class TestCloudwatchAppender
         // note: this is allowed at time of configuration, would disable logger if we try to append
         assertNull("log group name",    appender.getLogGroup());
 
-        assertEquals("log stream name", "{startTimestamp}", appender.getLogStream());
-        assertEquals("batch size",      16,                 appender.getBatchSize());
-        assertEquals("max delay",       4000L,              appender.getMaxDelay());
-        assertEquals("sequence",        0,                  appender.getSequence());
-        assertEquals("roll mode",       "none",             appender.getRotationMode());
-        assertEquals("roll interval",   -1,                 appender.getRotationInterval());
+        assertEquals("log stream name",     "{startTimestamp}", appender.getLogStream());
+        assertEquals("batch size",          16,                 appender.getBatchSize());
+        assertEquals("max delay",           4000L,              appender.getMaxDelay());
+        assertEquals("sequence",            0,                  appender.getSequence());
+        assertEquals("rotation mode",       "none",             appender.getRotationMode());
+        assertEquals("rotation interval",   -1,                 appender.getRotationInterval());
     }
 
 
@@ -228,7 +228,7 @@ public class TestCloudwatchAppender
 
 
     @Test
-    public void testExplicitRoll() throws Exception
+    public void testExplicitRotation() throws Exception
     {
         CloudwatchAppender appender = initialize("TestCloudwatchAppender.testExplicitRoll.properties");
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
@@ -239,22 +239,22 @@ public class TestCloudwatchAppender
 
         MockCloudwatchWriter writer0 = (MockCloudwatchWriter)appender.writer;
 
-        assertEquals("pre-roll, writer factory calls",      1,          writerFactory.invocationCount);
-        assertEquals("pre-roll, logstream name",            "bargle-0", writerFactory.lastLogStreamName);
-        assertEquals("pre-roll, messages in queue",         1,          appender.messageQueue.size());
+        assertEquals("pre-rotate, writer factory calls",        1,          writerFactory.invocationCount);
+        assertEquals("pre-rotate, logstream name",              "bargle-0", writerFactory.lastLogStreamName);
+        assertEquals("pre-rotate, messages in queue",           1,          appender.messageQueue.size());
 
         appender.rotate();
 
-        assertEquals("post-roll, writer factory calls",     2,          writerFactory.invocationCount);
-        assertEquals("post-roll, logstream name",           "bargle-1", writerFactory.lastLogStreamName);
-        assertEquals("post-roll, messages in queue",        0,          appender.messageQueue.size());
-        assertEquals("post-roll, messages passed to writer", 1,         writer0.messages.size());
-        assertNotSame("post-roll, writer has been replaced", writer0,   appender.writer);
+        assertEquals("post-rotate, writer factory calls",       2,          writerFactory.invocationCount);
+        assertEquals("post-rotate, logstream name",             "bargle-1", writerFactory.lastLogStreamName);
+        assertEquals("post-rotate, messages in queue",          0,          appender.messageQueue.size());
+        assertEquals("post-rotate, messages passed to writer",  1,         writer0.messages.size());
+        assertNotSame("post-rotate, writer has been replaced",  writer0,   appender.writer);
     }
 
 
     @Test
-    public void testTimedRoll() throws Exception
+    public void testTimedRotation() throws Exception
     {
         CloudwatchAppender appender = initialize("TestCloudwatchAppender.testTimedRoll.properties");
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
@@ -265,32 +265,32 @@ public class TestCloudwatchAppender
 
         MockCloudwatchWriter writer0 = (MockCloudwatchWriter)appender.writer;
 
-        assertEquals("pre-roll, logstream name",                "bargle-0", writerFactory.lastLogStreamName);
-        assertEquals("pre-roll, messages in queue",             1,          appender.messageQueue.size());
+        assertEquals("pre-rotate, logstream name",                  "bargle-0", writerFactory.lastLogStreamName);
+        assertEquals("pre-rotate, messages in queue",               1,          appender.messageQueue.size());
 
         appender.lastRotationTimestamp -= 20000;
 
         myLogger.debug("second message");
 
-        assertEquals("post-roll, logstream name",               "bargle-1", writerFactory.lastLogStreamName);
-        assertEquals("post-roll, messages in queue",            1,          appender.messageQueue.size());
-        assertEquals("post-roll, messages passed to old writer", 1,          writer0.messages.size());
-        assertNotSame("post-roll, writer has been replaced",    writer0,    appender.writer);
-        assertEquals("post-roll, no messages for new writer",   0,          ((MockCloudwatchWriter)appender.writer).messages.size());
+        assertEquals("post-rotate, logstream name",                 "bargle-1", writerFactory.lastLogStreamName);
+        assertEquals("post-rotate, messages in queue",              1,          appender.messageQueue.size());
+        assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
+        assertNotSame("post-rotate, writer has been replaced",      writer0,    appender.writer);
+        assertEquals("post-rotate, no messages for new writer",     0,          ((MockCloudwatchWriter)appender.writer).messages.size());
     }
 
 
     @Test
-    public void testInvalidTimedRollConfiguration() throws Exception
+    public void testInvalidTimedRotationConfiguration() throws Exception
     {
         // note: this will generate a log message that we can't validate
         CloudwatchAppender appender = initialize("TestCloudwatchAppender.testInvalidTimedRoll.properties");
-        assertEquals("roll mode",       "none",             appender.getRotationMode());
+        assertEquals("rotation mode",       "none",             appender.getRotationMode());
     }
 
 
     @Test
-    public void testHourlyRoll() throws Exception
+    public void testHourlyRotation() throws Exception
     {
         CloudwatchAppender appender = initialize("TestCloudwatchAppender.testHourlyRoll.properties");
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
@@ -301,23 +301,23 @@ public class TestCloudwatchAppender
 
         MockCloudwatchWriter writer0 = (MockCloudwatchWriter)appender.writer;
 
-        assertEquals("pre-roll, logstream name",                "bargle-0", writerFactory.lastLogStreamName);
-        assertEquals("pre-roll, messages in queue",             1,          appender.messageQueue.size());
+        assertEquals("pre-rotate, logstream name",                  "bargle-0", writerFactory.lastLogStreamName);
+        assertEquals("pre-rotate, messages in queue",               1,          appender.messageQueue.size());
 
         appender.lastRotationTimestamp -= 3600000;
 
         myLogger.debug("second message");
 
-        assertEquals("post-roll, logstream name",               "bargle-1", writerFactory.lastLogStreamName);
-        assertEquals("post-roll, messages in queue",            1,          appender.messageQueue.size());
-        assertEquals("post-roll, messages passed to old writer", 1,          writer0.messages.size());
-        assertNotSame("post-roll, writer has been replaced",    writer0,    appender.writer);
-        assertEquals("post-roll, no messages for new writer",   0,          ((MockCloudwatchWriter)appender.writer).messages.size());
+        assertEquals("post-rotate, logstream name",                 "bargle-1", writerFactory.lastLogStreamName);
+        assertEquals("post-rotate, messages in queue",              1,          appender.messageQueue.size());
+        assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
+        assertNotSame("post-rotate, writer has been replaced",      writer0,    appender.writer);
+        assertEquals("post-rotate, no messages for new writer",     0,          ((MockCloudwatchWriter)appender.writer).messages.size());
     }
 
 
     @Test
-    public void testDailyRoll() throws Exception
+    public void testDailyRotation() throws Exception
     {
         CloudwatchAppender appender = initialize("TestCloudwatchAppender.testDailyRoll.properties");
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
@@ -328,17 +328,17 @@ public class TestCloudwatchAppender
 
         MockCloudwatchWriter writer0 = (MockCloudwatchWriter)appender.writer;
 
-        assertEquals("pre-roll, logstream name",                "bargle-0", writerFactory.lastLogStreamName);
-        assertEquals("pre-roll, messages in queue",             1,          appender.messageQueue.size());
+        assertEquals("pre-rotate, logstream name",                  "bargle-0", writerFactory.lastLogStreamName);
+        assertEquals("pre-rotate, messages in queue",               1,          appender.messageQueue.size());
 
         appender.lastRotationTimestamp -= 86400000;
 
         myLogger.debug("second message");
 
-        assertEquals("post-roll, logstream name",               "bargle-1", writerFactory.lastLogStreamName);
-        assertEquals("post-roll, messages in queue",            1,          appender.messageQueue.size());
-        assertEquals("post-roll, messages passed to old writer", 1,          writer0.messages.size());
-        assertNotSame("post-roll, writer has been replaced",    writer0,    appender.writer);
-        assertEquals("post-roll, no messages for new writer",   0,          ((MockCloudwatchWriter)appender.writer).messages.size());
+        assertEquals("post-rotate, logstream name",                 "bargle-1", writerFactory.lastLogStreamName);
+        assertEquals("post-rotate, messages in queue",              1,          appender.messageQueue.size());
+        assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
+        assertNotSame("post-rotate, writer has been replaced",      writer0,    appender.writer);
+        assertEquals("post-rotate, no messages for new writer",     0,          ((MockCloudwatchWriter)appender.writer).messages.size());
     }
 }

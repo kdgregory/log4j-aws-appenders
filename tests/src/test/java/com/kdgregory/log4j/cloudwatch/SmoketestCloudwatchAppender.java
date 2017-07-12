@@ -2,6 +2,8 @@
 package com.kdgregory.log4j.cloudwatch;
 
 import java.net.URL;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -18,36 +20,9 @@ import com.amazonaws.services.logs.model.*;
 public class SmoketestCloudwatchAppender
 {
     private final static String LOGGROUP_NAME = "TestCloudwatchAppender";
-    private final static long ASSERTION_TIMEOUT = 2000;
+    private final static long READ_TIMEOUT = 2000;
 
     private AWSLogsClient client;
-
-
-    private OutputLogEvent lookForMessage(String logStreamName, String message) throws Exception
-    {
-        long start = System.currentTimeMillis();
-        while (System.currentTimeMillis() < start + ASSERTION_TIMEOUT)
-        {
-            GetLogEventsRequest request = new GetLogEventsRequest()
-                                          .withLogGroupName(LOGGROUP_NAME)
-                                          .withLogStreamName(logStreamName);
-            try
-            {
-                GetLogEventsResult logEvents = client.getLogEvents(request);
-                for (OutputLogEvent event : logEvents.getEvents())
-                {
-                    if (event.getMessage().contains(message))
-                        return event;
-                }
-            }
-            catch (ResourceNotFoundException ignored)
-            {
-                // eventual consistency means maybe the stream isn't readable yet
-            }
-            Thread.sleep(100);
-        }
-        return null;
-    }
 
 
     @Before
@@ -55,9 +30,9 @@ public class SmoketestCloudwatchAppender
     {
         URL config = ClassLoader.getSystemResource("TestCloudwatchAppender-smoketest.properties");
         PropertyConfigurator.configure(config);
-        
+
         client = new AWSLogsClient();
-        
+
         // note: we leave the log group at the end of the test, for diagnositics, so must
         //       delete it before starting a new test
         try
@@ -81,7 +56,44 @@ public class SmoketestCloudwatchAppender
         logger.debug(message);
 
         assertNotNull("unable to find message before timeout",
-                      lookForMessage("smoketest", message));
+                      lookForMessage("smoketest-0", message));
+    }
+
+
+    private OutputLogEvent lookForMessage(String logStreamName, String message) throws Exception
+    {
+        for (OutputLogEvent event : retrieveAllMessages(logStreamName))
+        {
+            if (event.getMessage().contains(message))
+                return event;
+        }
+        return null;
+    }
+
+
+    private Set<OutputLogEvent> retrieveAllMessages(String logStreamName) throws Exception
+    {
+        long start = System.currentTimeMillis();
+        Set<OutputLogEvent> result = new HashSet<OutputLogEvent>();
+
+        GetLogEventsRequest request = new GetLogEventsRequest()
+                              .withLogGroupName(LOGGROUP_NAME)
+                              .withLogStreamName(logStreamName);
+
+        while (System.currentTimeMillis() < start + READ_TIMEOUT)
+        {
+            try
+            {
+                GetLogEventsResult response = client.getLogEvents(request);
+                result.addAll(response.getEvents());
+            }
+            catch (ResourceNotFoundException ignored)
+            {
+                // eventual consistency means maybe the stream might not be readable yet
+            }
+            Thread.sleep(250);
+        }
+        return result;
     }
 
 }

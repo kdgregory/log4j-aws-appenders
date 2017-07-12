@@ -53,8 +53,13 @@ public class SmoketestCloudwatchAppender
     @Before
     public void setUp() throws Exception
     {
+        URL config = ClassLoader.getSystemResource("TestCloudwatchAppender-smoketest.properties");
+        PropertyConfigurator.configure(config);
+        
         client = new AWSLogsClient();
-
+        
+        // note: we leave the log group at the end of the test, for diagnositics, so must
+        //       delete it before starting a new test
         try
         {
             client.deleteLogGroup(new DeleteLogGroupRequest().withLogGroupName(LOGGROUP_NAME));
@@ -64,17 +69,12 @@ public class SmoketestCloudwatchAppender
             // it's OK if the log group doesn't exist when we start running
         }
         client.createLogGroup(new CreateLogGroupRequest().withLogGroupName(LOGGROUP_NAME));
-
-        // note: this log group will remain after the test, for diagnostics
     }
 
 
     @Test
     public void smoketest() throws Exception
     {
-        URL config = ClassLoader.getSystemResource("TestCloudwatchAppender-smoketest.properties");
-        PropertyConfigurator.configure(config);
-
         Logger logger = Logger.getLogger(getClass());
 
         String message = "can you hear me now?";

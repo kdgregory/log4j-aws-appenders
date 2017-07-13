@@ -80,7 +80,7 @@ implements LogWriter
 
         dispatchThread = Thread.currentThread();
 
-        while (running)
+        while (keepRunning())
         {
             List<LogMessage> currentBatch = buildBatch();
             attemptToSend(currentBatch);
@@ -92,6 +92,16 @@ implements LogWriter
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
+    
+    /**
+     *  Checks the "running" flag, but overrides if there are messages in queue.
+     */
+    private boolean keepRunning()
+    {
+        return running
+            && (messageQueue.peek() == null);
+    }
+    
 
     /**
      *  Blocks until at least one message is available on the queue, then

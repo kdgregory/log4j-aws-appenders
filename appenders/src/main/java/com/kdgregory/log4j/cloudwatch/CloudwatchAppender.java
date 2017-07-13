@@ -541,6 +541,22 @@ public class CloudwatchAppender extends AppenderSkeleton
     }
 
 
+    private void rotateIfNeeded(long now)
+    {
+        // double-checked locking: avoid contention for first check, but make sure we don't do things twice
+        if (shouldRotate(now))
+        {
+            synchronized (initializationLock)
+            {
+                if (shouldRotate(now))
+                {
+                    rotate();
+                }
+            }
+        }
+    }
+
+
     private boolean shouldRotate(long now)
     {
         switch (rotationMode)
@@ -555,22 +571,6 @@ public class CloudwatchAppender extends AppenderSkeleton
                 return (lastRotationTimestamp / 86400000) < (now / 86400000);
             default:
                 return false;
-        }
-    }
-
-
-    private void rotateIfNeeded(long now)
-    {
-        // double-checked locking: avoid contention for first check, but make sure we don't do things twice
-        if (shouldRotate(now))
-        {
-            synchronized (initializationLock)
-            {
-                if (shouldRotate(now))
-                {
-                    rotate();
-                }
-            }
         }
     }
 }

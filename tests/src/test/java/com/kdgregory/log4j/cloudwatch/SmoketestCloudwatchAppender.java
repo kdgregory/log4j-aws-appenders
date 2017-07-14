@@ -2,8 +2,7 @@
 package com.kdgregory.log4j.cloudwatch;
 
 import java.net.URL;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.LinkedHashSet;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -51,12 +50,22 @@ public class SmoketestCloudwatchAppender
     public void smoketest() throws Exception
     {
         Logger logger = Logger.getLogger(getClass());
+        CloudwatchAppender appender = (CloudwatchAppender)logger.getAppender("test");
 
-        String message = "can you hear me now?";
-        logger.debug(message);
-
-        assertNotNull("unable to find message before timeout",
-                      lookForMessage("smoketest-0", message));
+        logger.debug("message 1");
+        logger.debug("message 2");
+        logger.debug("message 3");
+        
+        appender.lastRotationTimestamp = System.currentTimeMillis() - 86400000;
+        
+        logger.debug("message 4");
+        logger.debug("message 5");
+        
+        LinkedHashSet<OutputLogEvent> messages0 = retrieveAllMessages("smoketest-0");
+        assertEquals("number of messages in first stream", 3, messages0.size());
+        
+        LinkedHashSet<OutputLogEvent> messages1 = retrieveAllMessages("smoketest-1");
+        assertEquals("number of messages in second stream", 2, messages1.size());
     }
 
 
@@ -71,10 +80,10 @@ public class SmoketestCloudwatchAppender
     }
 
 
-    private Set<OutputLogEvent> retrieveAllMessages(String logStreamName) throws Exception
+    private LinkedHashSet<OutputLogEvent> retrieveAllMessages(String logStreamName) throws Exception
     {
         long start = System.currentTimeMillis();
-        Set<OutputLogEvent> result = new HashSet<OutputLogEvent>();
+        LinkedHashSet<OutputLogEvent> result = new LinkedHashSet<OutputLogEvent>();
 
         GetLogEventsRequest request = new GetLogEventsRequest()
                               .withLogGroupName(LOGGROUP_NAME)

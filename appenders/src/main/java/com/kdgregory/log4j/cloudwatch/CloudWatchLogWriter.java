@@ -4,8 +4,7 @@ package com.kdgregory.log4j.cloudwatch;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.helpers.LogLog;
@@ -37,10 +36,7 @@ implements LogWriter
     private volatile Long shutdownTime;
     private Thread dispatchThread;
 
-    private LinkedBlockingQueue<LogMessage> messageQueue = new LinkedBlockingQueue<LogMessage>();
-
-    // because we can't push back onto the queue
-    private volatile LogMessage heldMessage;
+    private LinkedBlockingDeque<LogMessage> messageQueue = new LinkedBlockingDeque<LogMessage>();
 
 
     public CloudWatchLogWriter(String logGroup, String logStream)
@@ -144,7 +140,7 @@ implements LogWriter
             // the first message must never break this rule -- and shouldn't, as appender checks size
             if ((batchBytes >= CloudWatchConstants.MAX_BATCH_BYTES) || (batchCount == CloudWatchConstants.MAX_BATCH_COUNT))
             {
-                heldMessage = message;
+                messageQueue.addFirst(message);
                 break;
             }
 
@@ -158,13 +154,6 @@ implements LogWriter
 
     private LogMessage waitForFirstMessage()
     {
-        if (heldMessage != null)
-        {
-            LogMessage message = heldMessage;
-            heldMessage = null;
-            return message;
-        }
-
         try
         {
             if (shutdownTime == null)

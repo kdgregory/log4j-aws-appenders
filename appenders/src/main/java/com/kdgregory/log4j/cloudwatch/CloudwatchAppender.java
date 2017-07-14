@@ -24,26 +24,27 @@ import com.kdgregory.log4j.shared.WriterFactory;
 public class CloudwatchAppender extends AppenderSkeleton
 {
     /**
-     *  The different types of writer rolling that we support.
+     *  The different types of writer rotation that we support.
      */
-    public enum RollMode
+    public enum RotationMode
     {
-        /** Rolling is disabled. */
+        /** Rotation is disabled. */
         none,
 
-        /** Rolling is controlled by the <code>rollInterval</code> parameter. */
+        /** Rotation is controlled by the <code>rotationInterval</code> parameter. */
         interval,
 
-        /** Rolling happens with the first message after every hour. */
+        /** Rotation happens with the first message after every hour. */
         hourly,
 
-        /** Rolling happens with the first message after midnight UTC */
+        /** Rotation happens with the first message after midnight UTC */
         daily
     }
 
+
     private final static int DEFAULT_BATCH_SIZE = 16;
     private final static long DEFAULT_BATCH_TIMEOUT = 4000L;
-    private final static long DISABLED_ROLL_INTERVAL = -1;
+    private final static long DISABLED_ROTATION_INTERVAL = -1;
 
 
     //*********************************************************************************
@@ -68,13 +69,13 @@ public class CloudwatchAppender extends AppenderSkeleton
         }
     };
 
-    // the current writer; initialized on first append, changed after roll
+    // the current writer; initialized on first append, changed after rotation
 
     protected LogWriter writer;
 
-    // the last time we rolled the writer
+    // the last time we rotated the writer
 
-    protected volatile long lastRollTimestamp;
+    protected volatile long lastRotationTimestamp;
 
     // this object is used for synchronization of initialization and writer change
 
@@ -108,8 +109,8 @@ public class CloudwatchAppender extends AppenderSkeleton
     private String          logStream;
     private int             batchSize;
     private long            maxDelay;
-    private RollMode        rollMode;
-    private long            rollInterval;
+    private RotationMode    rotationMode;
+    private long            rotationInterval;
     private AtomicInteger   sequence;
 
 
@@ -121,8 +122,8 @@ public class CloudwatchAppender extends AppenderSkeleton
         logStream = "{startTimestamp}";
         batchSize = DEFAULT_BATCH_SIZE;
         maxDelay = DEFAULT_BATCH_TIMEOUT;
-        rollMode = RollMode.none;
-        rollInterval = DISABLED_ROLL_INTERVAL;
+        rotationMode = RotationMode.none;
+        rotationInterval = DISABLED_ROTATION_INTERVAL;
         sequence = new AtomicInteger();
 
         lastBatchTimestamp = System.currentTimeMillis();
@@ -267,53 +268,52 @@ public class CloudwatchAppender extends AppenderSkeleton
 
 
     /**
-     *  Sets the rule for rolling to a new log stream. Acceptable values are "none", "interval",
-     *  "hourly", and "daily"; see {@link #RollMode} for details. Note that you must also set
-     *  <code>rollInterval</code> to make interval rolling useful.
+     *  Sets the rule for rotating to a new log stream. Acceptable values are "none", "interval",
+     *  "hourly", and "daily"; see {@link #RotationMode} for details.
      *  <p>
      *  Attempting to set an invalid mode is equivalent to "none", but will emit a warning to the
      *  Log4J internal log.
      */
-    public void setRollMode(String rollMode)
+    public void setRotationMode(String mode)
     {
         try
         {
-            this.rollMode = RollMode.valueOf(rollMode);
+            this.rotationMode = RotationMode.valueOf(mode);
         }
         catch (IllegalArgumentException ex)
         {
-            this.rollMode = RollMode.none;
-            LogLog.error("invalid rollMode: " + rollMode);
+            this.rotationMode = RotationMode.none;
+            LogLog.error("invalid rotationMode: " + mode);
         }
     }
 
 
     /**
-     *  Returns the current rolling mode.
+     *  Returns the current rotation mode.
      */
-    public String getRollMode()
+    public String getRotationMode()
     {
-        return this.rollMode.name();
+        return this.rotationMode.name();
     }
 
 
     /**
-     *  Sets the roll interval, in milliseconds. This parameter is used only when the
-     *  <code>rollMode</code> parameter is "interval"; to be useful, the log stream name
+     *  Sets the rotation interval, in milliseconds. This parameter is used only when the
+     *  <code>rotationMode</code> parameter is "interval"; to be useful, the log stream name
      *  should be timestamp-based.
      */
-    public void setRollInterval(long value)
+    public void setRotationInterval(long value)
     {
-        this.rollInterval = value;
+        this.rotationInterval = value;
     }
 
 
     /**
-     *  Returns the current roll interval.
+     *  Returns the current rotation interval.
      */
-    public long getRollInterval()
+    public long getRotationInterval()
     {
-        return rollInterval;
+        return rotationInterval;
     }
 
 
@@ -385,10 +385,10 @@ public class CloudwatchAppender extends AppenderSkeleton
 //----------------------------------------------------------------------------
 
     /**
-     *  Rolls the log stream: flushes all outstanding messages to the current
+     *  Rotates the log stream: flushes all outstanding messages to the current
      *  stream, and opens a new stream.
      */
-    public void roll()
+    public void rotate()
     {
         synchronized (initializationLock)
         {
@@ -423,8 +423,8 @@ public class CloudwatchAppender extends AppenderSkeleton
 
 
     /**
-     *  Called by {@link #initialize} and also {@link #roll}, to switch to a new
-     *  writer. Closes the old writer, if any.
+     *  Called by {@link #initialize} and also {@link #rotate}, to switch to a new
+     *  writer. Does not close the old writer, if any.
      */
     private void startWriter()
     {
@@ -444,7 +444,7 @@ public class CloudwatchAppender extends AppenderSkeleton
                     internalAppend(LogMessage.create(layout.getHeader()));
                 }
 
-                lastRollTimestamp = System.currentTimeMillis();
+                lastRotationTimestamp = System.currentTimeMillis();
             }
             catch (Exception ex)
             {
@@ -495,7 +495,7 @@ public class CloudwatchAppender extends AppenderSkeleton
         }
 
         long now = System.currentTimeMillis();
-        rollIfNeeded(now);
+        rotateIfNeeded(now);
 
         synchronized (messageQueueLock)
         {
@@ -541,37 +541,34 @@ public class CloudwatchAppender extends AppenderSkeleton
     }
 
 
-    private boolean shouldRoll(long now)
+    private boolean shouldRotate(long now)
     {
-        switch (rollMode)
+        switch (rotationMode)
         {
             case none:
                 return false;
             case interval:
-                return (rollInterval > 0) && ((now - lastRollTimestamp) > rollInterval);
+                return (rotationInterval > 0) && ((now - lastRotationTimestamp) > rotationInterval);
             case hourly:
-                return (lastRollTimestamp / 3600000) < (now / 3600000);
+                return (lastRotationTimestamp / 3600000) < (now / 3600000);
             case daily:
-                return (lastRollTimestamp / 86400000) < (now / 86400000);
+                return (lastRotationTimestamp / 86400000) < (now / 86400000);
             default:
                 return false;
         }
     }
 
 
-    /**
-     *  Rolls the writer if needed. This includes flushing the current batch.
-     */
-    private void rollIfNeeded(long now)
+    private void rotateIfNeeded(long now)
     {
         // double-checked locking: avoid contention for first check, but make sure we don't do things twice
-        if (shouldRoll(now))
+        if (shouldRotate(now))
         {
             synchronized (initializationLock)
             {
-                if (shouldRoll(now))
+                if (shouldRotate(now))
                 {
-                    roll();
+                    rotate();
                 }
             }
         }

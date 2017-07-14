@@ -4,7 +4,8 @@ package com.kdgregory.log4j.cloudwatch;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.helpers.LogLog;
 
@@ -15,24 +16,27 @@ import com.kdgregory.log4j.shared.LogWriter;
 import com.kdgregory.log4j.shared.LogMessage;
 
 
-/**
- *  This is where all the magic happens.
- */
 class CloudWatchLogWriter
 implements LogWriter
 {
+    // this controls the number of times that we retry a send
+    private final static int RETRY_LIMIT = 3;
+
+    // to avoid race conditions when shutting down, we don't use a simple boolean
+    // "is-running" flag; instead, we wait for this amount of millis for any last
+    // messages to be added to the queue
+
+    private final static long SHUTDOWN_WAIT = 500;
+
     private String groupName;
     private String streamName;
 
     private AWSLogsClient client;
 
-    private volatile boolean running = true;
+    private volatile Long shutdownTime;
     private Thread dispatchThread;
 
-    private LinkedBlockingQueue<LogMessage> messageQueue = new LinkedBlockingQueue<LogMessage>();
-
-    // because we can't push back onto the queue
-    private volatile LogMessage heldMessage;
+    private LinkedBlockingDeque<LogMessage> messageQueue = new LinkedBlockingDeque<LogMessage>();
 
 
     public CloudWatchLogWriter(String logGroup, String logStream)
@@ -47,8 +51,14 @@ implements LogWriter
 //----------------------------------------------------------------------------
 
     @Override
-    public synchronized void addBatch(List<LogMessage> batch)
+    public void addBatch(List<LogMessage> batch)
     {
+        // for now I'm going to assume that batches will be relatively small
+        // (definitely less than 10k rows), so this won't cause excessive
+        // contention; the alternative is to maintain a separate (concurrent)
+        // batch queue, and then copy messages from that queue in the run loop
+        // ... right now, that seems like another point of failure
+
         messageQueue.addAll(batch);
     }
 
@@ -56,7 +66,7 @@ implements LogWriter
     @Override
     public void stop()
     {
-        running = false;
+        shutdownTime = new Long(System.currentTimeMillis() + SHUTDOWN_WAIT);
         if (dispatchThread != null)
         {
             dispatchThread.interrupt();
@@ -80,18 +90,32 @@ implements LogWriter
 
         dispatchThread = Thread.currentThread();
 
-        while (running)
+        // the do-while loop here ensures that we attempt to process at least one batch,
+        // even if the writer is started and immediately stopped; that's not likely to
+        // happen in the real world, but does cause problems for our smoketest
+
+        do
         {
             List<LogMessage> currentBatch = buildBatch();
             attemptToSend(currentBatch);
-            sleepQuietly(100);
-        }
+        } while (keepRunning());
     }
 
 
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
+
+    /**
+     *  Checks the "running" flag, but overrides if there are messages in queue.
+     */
+    private boolean keepRunning()
+    {
+        return shutdownTime != null
+            && shutdownTime.longValue() > System.currentTimeMillis()
+            && messageQueue.peek() == null;
+    }
+
 
     /**
      *  Blocks until at least one message is available on the queue, then
@@ -102,23 +126,9 @@ implements LogWriter
         // presizing to a small-but-possible size to avoid repeated resizes
         List<LogMessage> batch = new ArrayList<LogMessage>(512);
 
-        LogMessage message;
-        if (heldMessage != null)
-        {
-            message = heldMessage;
-            heldMessage = null;
-        }
-        else
-        {
-            try
-            {
-                message = messageQueue.take();
-            }
-            catch (InterruptedException ex)
-            {
-                return batch;
-            }
-        }
+        LogMessage message = waitForFirstMessage();
+        if (message == null)
+            return batch;
 
         int batchBytes = 0;
         int batchCount = 0;
@@ -130,7 +140,7 @@ implements LogWriter
             // the first message must never break this rule -- and shouldn't, as appender checks size
             if ((batchBytes >= CloudWatchConstants.MAX_BATCH_BYTES) || (batchCount == CloudWatchConstants.MAX_BATCH_COUNT))
             {
-                heldMessage = message;
+                messageQueue.addFirst(message);
                 break;
             }
 
@@ -139,6 +149,22 @@ implements LogWriter
         }
 
         return batch;
+    }
+
+
+    private LogMessage waitForFirstMessage()
+    {
+        try
+        {
+            if (shutdownTime == null)
+                return messageQueue.take();
+            else
+                return messageQueue.poll(SHUTDOWN_WAIT, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException ex)
+        {
+            return null;
+        }
     }
 
 
@@ -153,7 +179,7 @@ implements LogWriter
                                       .withLogEvents(constructLogEvents(batch));
 
         Exception lastException = null;
-        for (int attempt = 1 ; attempt < 4 ; attempt++)
+        for (int attempt = 0 ; attempt < RETRY_LIMIT ; attempt++)
         {
             try
             {
@@ -165,11 +191,11 @@ implements LogWriter
             catch (Exception ex)
             {
                 lastException = ex;
-                sleepQuietly(250 * attempt);
+                sleepQuietly(250 * (attempt + 1));
             }
         }
 
-        LogLog.error("failed to send batch after 3 retries", lastException);
+        LogLog.error("failed to send batch after " + RETRY_LIMIT + " retries", lastException);
     }
 
 

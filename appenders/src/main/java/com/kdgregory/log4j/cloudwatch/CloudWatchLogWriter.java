@@ -4,6 +4,7 @@ package com.kdgregory.log4j.cloudwatch;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -25,6 +26,7 @@ implements LogWriter
     // to avoid race conditions when shutting down, we don't use a simple boolean
     // "is-running" flag; instead, we wait for this amount of millis for any last
     // messages to be added to the queue
+
     private final static long SHUTDOWN_WAIT = 500;
 
     private String groupName;
@@ -53,8 +55,14 @@ implements LogWriter
 //----------------------------------------------------------------------------
 
     @Override
-    public synchronized void addBatch(List<LogMessage> batch)
+    public void addBatch(List<LogMessage> batch)
     {
+        // for now I'm going to assume that batches will be relatively small
+        // (definitely less than 10k rows), so this won't cause excessive
+        // contention; the alternative is to maintain a separate (concurrent)
+        // batch queue, and then copy messages from that queue in the run loop
+        // ... right now, that seems like another point of failure
+
         messageQueue.addAll(batch);
     }
 

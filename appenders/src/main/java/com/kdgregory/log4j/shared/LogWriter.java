@@ -16,8 +16,8 @@ extends Runnable
     /**
      *  Adds a batch of messages to the writer.
      *  <p>
-     *  Implementations are expected to be synchronized, so that concurrent calls will
-     *  not interleave messages.
+     *  Implementations should assume that they are invoked within a synchronized
+     *  block, and therefore should not perform excessive amounts of work.
      */
     void addBatch(List<LogMessage> batch);
 

@@ -29,7 +29,7 @@ public class SmoketestCloudWatchAppender
     @Before
     public void setUp() throws Exception
     {
-        URL config = ClassLoader.getSystemResource("TestCloudwatchAppender-smoketest.properties");
+        URL config = ClassLoader.getSystemResource("SmoketestCloudWatchAppender.properties");
         PropertyConfigurator.configure(config);
 
         client = new AWSLogsClient();

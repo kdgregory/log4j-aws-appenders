@@ -7,7 +7,7 @@ import java.util.List;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 
-public class MockCloudwatchWriter
+public class MockCloudWatchWriter
 implements LogWriter
 {
     public List<LogMessage> messages = new ArrayList<LogMessage>();

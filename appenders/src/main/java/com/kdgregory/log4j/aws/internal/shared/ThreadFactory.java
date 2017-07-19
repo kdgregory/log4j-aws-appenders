@@ -1,6 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.log4j.shared;
-
+package com.kdgregory.log4j.aws.internal.shared;
 
 /**
  *  Creates and starts a new thread for running the LogWriter.

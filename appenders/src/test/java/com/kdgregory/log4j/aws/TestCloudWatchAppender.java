@@ -15,12 +15,12 @@ import org.apache.log4j.PropertyConfigurator;
 import net.sf.kdgcommons.test.StringAsserts;
 
 import com.kdgregory.log4j.aws.CloudWatchAppender;
+import com.kdgregory.log4j.aws.internal.shared.LogMessage;
+import com.kdgregory.log4j.aws.internal.shared.LogWriter;
+import com.kdgregory.log4j.aws.internal.shared.NullThreadFactory;
+import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 import com.kdgregory.log4j.cloudwatch.helpers.HeaderFooterLayout;
 import com.kdgregory.log4j.cloudwatch.helpers.MockCloudwatchWriter;
-import com.kdgregory.log4j.shared.LogMessage;
-import com.kdgregory.log4j.shared.LogWriter;
-import com.kdgregory.log4j.shared.NullThreadFactory;
-import com.kdgregory.log4j.shared.WriterFactory;
 
 
 public class TestCloudWatchAppender

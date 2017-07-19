@@ -1,5 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.log4j.cloudwatch;
+package com.kdgregory.log4j.aws.internal.cloudwatch;
 
 import java.util.regex.Pattern;
 

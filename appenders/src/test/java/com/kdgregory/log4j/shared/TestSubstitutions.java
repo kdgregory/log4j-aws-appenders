@@ -15,6 +15,8 @@ import net.sf.kdgcommons.test.StringAsserts;
 
 import com.amazonaws.util.EC2MetadataUtils;
 
+import com.kdgregory.log4j.aws.internal.shared.Substitutions;
+
 
 public class TestSubstitutions
 {

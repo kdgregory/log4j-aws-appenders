@@ -1,5 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.log4j.cloudwatch;
+package com.kdgregory.log4j.aws.internal.cloudwatch;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,8 +12,8 @@ import org.apache.log4j.helpers.LogLog;
 import com.amazonaws.services.logs.AWSLogsClient;
 import com.amazonaws.services.logs.model.*;
 
-import com.kdgregory.log4j.shared.LogWriter;
-import com.kdgregory.log4j.shared.LogMessage;
+import com.kdgregory.log4j.aws.internal.shared.LogMessage;
+import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 
 
 public class CloudWatchLogWriter

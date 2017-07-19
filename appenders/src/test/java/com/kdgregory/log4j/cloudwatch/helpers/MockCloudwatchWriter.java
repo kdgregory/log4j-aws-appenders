@@ -4,8 +4,8 @@ package com.kdgregory.log4j.cloudwatch.helpers;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kdgregory.log4j.shared.LogWriter;
-import com.kdgregory.log4j.shared.LogMessage;
+import com.kdgregory.log4j.aws.internal.shared.LogMessage;
+import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 
 public class MockCloudwatchWriter
 implements LogWriter

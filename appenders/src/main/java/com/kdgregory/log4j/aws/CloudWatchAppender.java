@@ -10,14 +10,14 @@ import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
 
-import com.kdgregory.log4j.cloudwatch.CloudWatchConstants;
-import com.kdgregory.log4j.cloudwatch.CloudWatchLogWriter;
-import com.kdgregory.log4j.shared.DefaultThreadFactory;
-import com.kdgregory.log4j.shared.LogMessage;
-import com.kdgregory.log4j.shared.LogWriter;
-import com.kdgregory.log4j.shared.Substitutions;
-import com.kdgregory.log4j.shared.ThreadFactory;
-import com.kdgregory.log4j.shared.WriterFactory;
+import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchConstants;
+import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
+import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
+import com.kdgregory.log4j.aws.internal.shared.LogMessage;
+import com.kdgregory.log4j.aws.internal.shared.LogWriter;
+import com.kdgregory.log4j.aws.internal.shared.Substitutions;
+import com.kdgregory.log4j.aws.internal.shared.ThreadFactory;
+import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 
 
 /**

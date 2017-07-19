@@ -1,6 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.log4j.shared;
-
+package com.kdgregory.log4j.aws.internal.shared;
 
 /**
  *  A {@link ThreadFactory} used for testing: it doesn't actually start a thread.

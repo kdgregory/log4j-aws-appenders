@@ -1,5 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.log4j.cloudwatch;
+package com.kdgregory.log4j.aws;
 
 import java.net.URL;
 import java.util.List;
@@ -14,6 +14,7 @@ import org.apache.log4j.PropertyConfigurator;
 
 import net.sf.kdgcommons.test.StringAsserts;
 
+import com.kdgregory.log4j.aws.CloudWatchAppender;
 import com.kdgregory.log4j.cloudwatch.helpers.HeaderFooterLayout;
 import com.kdgregory.log4j.cloudwatch.helpers.MockCloudwatchWriter;
 import com.kdgregory.log4j.shared.LogMessage;
@@ -22,7 +23,7 @@ import com.kdgregory.log4j.shared.NullThreadFactory;
 import com.kdgregory.log4j.shared.WriterFactory;
 
 
-public class TestCloudwatchAppender
+public class TestCloudWatchAppender
 {
 
 //----------------------------------------------------------------------------
@@ -31,14 +32,14 @@ public class TestCloudwatchAppender
 
     private static class MockWriterFactory implements WriterFactory
     {
-        public CloudwatchAppender appender;
+        public CloudWatchAppender appender;
 
         public int invocationCount = 0;
         public String lastLogGroupName;
         public String lastLogStreamName;
         public MockCloudwatchWriter writer;
 
-        public MockWriterFactory(CloudwatchAppender appender)
+        public MockWriterFactory(CloudWatchAppender appender)
         {
             this.appender = appender;
         }
@@ -55,14 +56,14 @@ public class TestCloudwatchAppender
     }
 
 
-    private CloudwatchAppender initialize(String propsName)
+    private CloudWatchAppender initialize(String propsName)
     throws Exception
     {
         URL config = ClassLoader.getSystemResource(propsName);
         PropertyConfigurator.configure(config);
 
         Logger rootLogger = Logger.getRootLogger();
-        CloudwatchAppender appender = (CloudwatchAppender)rootLogger.getAppender("default");
+        CloudWatchAppender appender = (CloudWatchAppender)rootLogger.getAppender("default");
 
         appender.writerFactory = new MockWriterFactory(appender);
         appender.threadFactory = new NullThreadFactory();
@@ -77,7 +78,7 @@ public class TestCloudwatchAppender
     @Test
     public void testConfiguration() throws Exception
     {
-        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testConfiguration.properties");
+        CloudWatchAppender appender = initialize("TestCloudwatchAppender.testConfiguration.properties");
 
         assertEquals("log group name",      "argle",            appender.getLogGroup());
         assertEquals("log stream name",     "bargle",           appender.getLogStream());
@@ -92,7 +93,7 @@ public class TestCloudwatchAppender
     @Test
     public void testDefaultConfiguration() throws Exception
     {
-        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testDefaultConfiguration.properties");
+        CloudWatchAppender appender = initialize("TestCloudwatchAppender.testDefaultConfiguration.properties");
 
         // note: this is allowed at time of configuration, would disable logger if we try to append
         assertNull("log group name",    appender.getLogGroup());
@@ -109,7 +110,7 @@ public class TestCloudwatchAppender
     @Test
     public void testAppend() throws Exception
     {
-        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testAppend.properties");
+        CloudWatchAppender appender = initialize("TestCloudwatchAppender.testAppend.properties");
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
 
         assertTrue("before messages, last batch timestamp > 0",    appender.lastBatchTimestamp > 0);
@@ -149,7 +150,7 @@ public class TestCloudwatchAppender
         assertTrue("message 1 timestamp <= batch timestamp",   message1.getTimestamp() <= appender.lastBatchTimestamp);
         StringAsserts.assertRegex(
                 "message 1 generally follows layout: " + message1.getMessage(),
-                "20[12][0-9]-.* DEBUG .*TestCloudwatchAppender .*first message.*",
+                "20[12][0-9]-.* DEBUG .*TestCloudWatchAppender .*first message.*",
                 message1.getMessage().trim());
 
         LogMessage message2 = lastBatch.get(1);
@@ -167,7 +168,7 @@ public class TestCloudwatchAppender
     @Test(expected=IllegalStateException.class)
     public void testThrowsIfAppenderClosed() throws Exception
     {
-        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testAppend.properties");
+        CloudWatchAppender appender = initialize("TestCloudwatchAppender.testAppend.properties");
 
         // write the first message to initialize the appender
         Logger myLogger = Logger.getLogger(getClass());
@@ -183,7 +184,7 @@ public class TestCloudwatchAppender
     @Test
     public void testWriteHeaderAndFooter() throws Exception
     {
-        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testWriteHeaderAndFooter.properties");
+        CloudWatchAppender appender = initialize("TestCloudwatchAppender.testWriteHeaderAndFooter.properties");
 
         Logger myLogger = Logger.getLogger(getClass());
         myLogger.debug("blah blah blah");
@@ -204,7 +205,7 @@ public class TestCloudwatchAppender
         // note that the property value includes invalid characters
         System.setProperty("TestCloudwatchAppender.testSubstitution", "foo/bar");
 
-        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testSubstitution.properties");
+        CloudWatchAppender appender = initialize("TestCloudwatchAppender.testSubstitution.properties");
         assertNull("actual log group after construction", appender.getActualLogGroup());
         assertNull("actual log stream after construction", appender.getActualLogStream());
 
@@ -230,7 +231,7 @@ public class TestCloudwatchAppender
     @Test
     public void testExplicitRotation() throws Exception
     {
-        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testExplicitRotation.properties");
+        CloudWatchAppender appender = initialize("TestCloudwatchAppender.testExplicitRotation.properties");
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
 
         Logger myLogger = Logger.getLogger(getClass());
@@ -256,7 +257,7 @@ public class TestCloudwatchAppender
     @Test
     public void testTimedRotation() throws Exception
     {
-        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testTimedRotation.properties");
+        CloudWatchAppender appender = initialize("TestCloudwatchAppender.testTimedRotation.properties");
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
 
         Logger myLogger = Logger.getLogger(getClass());
@@ -284,7 +285,7 @@ public class TestCloudwatchAppender
     public void testInvalidTimedRotationConfiguration() throws Exception
     {
         // note: this will generate a log message that we can't validate
-        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testInvalidTimedRotation.properties");
+        CloudWatchAppender appender = initialize("TestCloudwatchAppender.testInvalidTimedRotation.properties");
         assertEquals("rotation mode",       "none",             appender.getRotationMode());
     }
 
@@ -292,7 +293,7 @@ public class TestCloudwatchAppender
     @Test
     public void testHourlyRotation() throws Exception
     {
-        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testHourlyRotation.properties");
+        CloudWatchAppender appender = initialize("TestCloudwatchAppender.testHourlyRotation.properties");
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
 
         Logger myLogger = Logger.getLogger(getClass());
@@ -319,7 +320,7 @@ public class TestCloudwatchAppender
     @Test
     public void testDailyRotation() throws Exception
     {
-        CloudwatchAppender appender = initialize("TestCloudwatchAppender.testDailyRotation.properties");
+        CloudWatchAppender appender = initialize("TestCloudwatchAppender.testDailyRotation.properties");
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
 
         Logger myLogger = Logger.getLogger(getClass());

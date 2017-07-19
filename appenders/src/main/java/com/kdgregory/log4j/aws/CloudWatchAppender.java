@@ -1,5 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.log4j.cloudwatch;
+package com.kdgregory.log4j.aws;
 
 import java.util.Date;
 import java.util.LinkedList;
@@ -10,6 +10,8 @@ import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
 
+import com.kdgregory.log4j.cloudwatch.CloudWatchConstants;
+import com.kdgregory.log4j.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.log4j.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.shared.LogMessage;
 import com.kdgregory.log4j.shared.LogWriter;
@@ -21,7 +23,7 @@ import com.kdgregory.log4j.shared.WriterFactory;
 /**
  *  Appender that writes to a Cloudwatch log stream.
  */
-public class CloudwatchAppender extends AppenderSkeleton
+public class CloudWatchAppender extends AppenderSkeleton
 {
     /**
      *  The different types of writer rotation that we support.
@@ -117,7 +119,7 @@ public class CloudwatchAppender extends AppenderSkeleton
     /**
      *  Base constructor: assigns default values to configuration properties.
      */
-    public CloudwatchAppender()
+    public CloudWatchAppender()
     {
         logStream = "{startTimestamp}";
         batchSize = DEFAULT_BATCH_SIZE;

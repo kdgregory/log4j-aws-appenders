@@ -1,5 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.log4j.cloudwatch;
+package com.kdgregory.log4j.aws;
 
 import java.net.URL;
 import java.util.LinkedHashSet;
@@ -14,9 +14,11 @@ import org.apache.log4j.PropertyConfigurator;
 import com.amazonaws.services.logs.AWSLogsClient;
 import com.amazonaws.services.logs.model.*;
 
+import com.kdgregory.log4j.aws.CloudWatchAppender;
 
 
-public class SmoketestCloudwatchAppender
+
+public class SmoketestCloudWatchAppender
 {
     private final static String LOGGROUP_NAME = "TestCloudwatchAppender";
     private final static long READ_TIMEOUT = 2000;
@@ -50,33 +52,22 @@ public class SmoketestCloudwatchAppender
     public void smoketest() throws Exception
     {
         Logger logger = Logger.getLogger(getClass());
-        CloudwatchAppender appender = (CloudwatchAppender)logger.getAppender("test");
+        CloudWatchAppender appender = (CloudWatchAppender)logger.getAppender("test");
 
         logger.debug("message 1");
         logger.debug("message 2");
         logger.debug("message 3");
-        
+
         appender.lastRotationTimestamp = System.currentTimeMillis() - 86400000;
-        
+
         logger.debug("message 4");
         logger.debug("message 5");
-        
+
         LinkedHashSet<OutputLogEvent> messages0 = retrieveAllMessages("smoketest-0");
         assertEquals("number of messages in first stream", 3, messages0.size());
-        
+
         LinkedHashSet<OutputLogEvent> messages1 = retrieveAllMessages("smoketest-1");
         assertEquals("number of messages in second stream", 2, messages1.size());
-    }
-
-
-    private OutputLogEvent lookForMessage(String logStreamName, String message) throws Exception
-    {
-        for (OutputLogEvent event : retrieveAllMessages(logStreamName))
-        {
-            if (event.getMessage().contains(message))
-                return event;
-        }
-        return null;
     }
 
 

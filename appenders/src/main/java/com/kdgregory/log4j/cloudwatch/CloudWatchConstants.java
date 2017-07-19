@@ -14,25 +14,25 @@ public class CloudWatchConstants
     /**
      *  Maximum number of messages in a single batch.
      */
-    final static int MAX_BATCH_COUNT = 10000;
+    public final static int MAX_BATCH_COUNT = 10000;
 
 
     /**
      *  Maximum number of bytes in a single batch. Note that this includes the
      *  message bytes as well as overhead.
      */
-    final static int MAX_BATCH_BYTES = 1048576;
+    public final static int MAX_BATCH_BYTES = 1048576;
 
 
     /**
      *  Overhead added to each message.
      */
-    final static int MESSAGE_OVERHEAD = 26;
+    public final static int MESSAGE_OVERHEAD = 26;
 
 
     /**
      *  Allowed characters for log-stream and log-group names.
      */
-    final static Pattern ALLOWED_NAME_REGEX = Pattern.compile("[^A-Za-z0-9-_]");
+    public final static Pattern ALLOWED_NAME_REGEX = Pattern.compile("[^A-Za-z0-9-_]");
 
 }

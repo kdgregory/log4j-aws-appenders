@@ -16,7 +16,7 @@ import com.kdgregory.log4j.shared.LogWriter;
 import com.kdgregory.log4j.shared.LogMessage;
 
 
-class CloudWatchLogWriter
+public class CloudWatchLogWriter
 implements LogWriter
 {
     // this controls the number of times that we retry a send

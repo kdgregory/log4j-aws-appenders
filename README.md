@@ -46,9 +46,9 @@ Variable            | Description
 `timestamp`         | Current UTC timestamp: `YYYYMMDDHHMMSS`
 `hourlyTimestamp`   | Current UTC timestamp, with minutes and seconds truncated: `YYYYMMDDHH0000`
 `startTimestamp`    | UTC timestamp of JVM startup as returned by `RuntimeMxBean`: `YYYYMMDDHHMMSS`
-`sequence`          | A sequence number that's incremented each time a log is rolled. May not be supported by all loggers; defaults to 0 if not supported.
-`pid`               | Process ID (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms
-`hostname`          | Unqualified hostname (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms
+`sequence`          | A sequence number that's incremented each time a log is rotated (only useful for loggers that rotate logs); defaults to 0
+`pid`               | Process ID (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms)
+`hostname`          | Unqualified hostname (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms)
 `instanceId`        | EC2 instance ID. Beware that using this outside of EC2 will introduce a several-minute delay, as the appender tries to retrieve the information
 `env:XXX`           | Environment variable `XXX`
 `sysprop:XXX`       | System property `XXX`
@@ -77,11 +77,13 @@ While this presents a point of contention, in normal use it should be minimal: a
 list is very fast.
 
 When the messages on the internal queue reach a configured batch size, or a batch timeout occurs, the
-currently-queued messages are moved to an immutable list, and this list is passed to the writer thread.
+currently-queued messages are passed to a writer thread. This is handled by passing the entire list
+and creating a new one in the appender; writers may then use this list however they wish.
 
-The writer thread maintains its own queue of batches, and attempts to send each batch a configured
-number of times (with exponential fallback). If unable to send the batch, or if the backlog of unsent
-batches exceeds a configured value, the batch will be dropped.
+The writer thread combines messages into batches, with the batch size dependent on the service. It
+attempts to send each batch multiple times, with exponential fallback (note that the service client
+has its own retry mechanisms). If unable to send the batch after multiple tries, it is blocked and
+the failure is logged using Log4J's internal logger.
 
 The writer thread is lazily started on the first call to `append()`. You can disable actual writes by
 setting the `dryRun` configuration parameter. All AWS clients use the default constructor, which
@@ -90,11 +92,15 @@ retrieves credentials via the [DefaultAWSCredentialsProviderChain](http://docs.a
 
 ## Building
 
-There are two child projects in this repository:
+There are two projects in this repository:
 
 * `appender` is the actual appender code.
 * `tests` is a set of integration tests. These are in a separate module so that they can be run as
   desired, rather than as part of every build.
+
+Classes in the package `com.kdgregory.log4j.aws` are expected to remain backwards compatible. Any
+other classes, particularly those in `com.kdgregory.log4j.aws.internal` may change arbitrarily and
+should not be relied-upon by user code. This caveat also applies to all test classes/packages.
 
 
 ## Versions
@@ -105,14 +111,28 @@ I follow the standard `MAJOR.MINOR.PATCH` versioning scheme:
 * `MINOR` will be incremented for each destination; version x.y.0 will be minimally functional
 * `PATCH` will be incremented to reflect bugfixes or additional features; significant bugfixes will be backported
 
+I do not plan to upload all releases to Maven Central; just the "final" ones for each destination
+(where "final" may include backports). These releases will be tagged with the name `rel-MAJOR.MINOR.PATCH`.
+
+The source tree also contains commits with major version of 0. These are "pre-release" versions, and
+may change in arbitrary ways. Please do not use them.
+
+
+## Source Control
+
 The `master` branch is intended to contain released artifacts only (ie, no snapshot builds). It may,
 however, contain commits that aren't strictly releases (eg, documentation updates).
 
-The source tree contains commits with major version of 0. These are "pre-release" versions, and may
-change in arbitrary ways. Please do not use them.
+Development takes place on a `dev-MAJOR.MINOR.PATCH` branch; these branches are deleted once their
+content has been merged into `master`.
 
-I do not plan to upload all releases to Maven Central; just the "final" ones for each destination
-(where "final" may include backports). These releases will be tagged with the name `rel-MAJOR.MINOR.PATCH`.
+Each minor release has a `support-MAJOR.MINOR` branch for backports and patches. These branches are
+expected to live forever.
+
+Each release version is tagged with `release-MAJOR.MINOR.PATCH`.
+
+Merges into `master` are handled via pull requests, and each is squashed into a single commit. If
+you really want to see my experiments you can look at closed PRs.
 
 
 ## FAQ

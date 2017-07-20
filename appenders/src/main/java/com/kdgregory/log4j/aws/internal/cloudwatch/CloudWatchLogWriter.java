@@ -111,6 +111,9 @@ implements LogWriter
      */
     private boolean keepRunning()
     {
+        if (shutdownTime == null)
+            return true;
+
         return shutdownTime != null
             && shutdownTime.longValue() > System.currentTimeMillis()
             && messageQueue.peek() == null;

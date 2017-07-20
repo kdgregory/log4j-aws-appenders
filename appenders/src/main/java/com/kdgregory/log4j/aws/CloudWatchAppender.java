@@ -33,6 +33,9 @@ public class CloudWatchAppender extends AppenderSkeleton
         /** Rotation is disabled. */
         none,
 
+        /** Rotation is based on number of records. */
+        count,
+
         /** Rotation is controlled by the <code>rotationInterval</code> parameter. */
         interval,
 
@@ -78,6 +81,10 @@ public class CloudWatchAppender extends AppenderSkeleton
     // the last time we rotated the writer
 
     protected volatile long lastRotationTimestamp;
+    
+    // number of messages since we rotated the writer
+    
+    protected volatile int lastRotationCount;
 
     // this object is used for synchronization of initialization and writer change
 
@@ -447,6 +454,7 @@ public class CloudWatchAppender extends AppenderSkeleton
                 }
 
                 lastRotationTimestamp = System.currentTimeMillis();
+                lastRotationCount = 0;
             }
             catch (Exception ex)
             {
@@ -503,6 +511,7 @@ public class CloudWatchAppender extends AppenderSkeleton
         {
             messageQueue.add(message);
             messageQueueBytes += message.size();
+            lastRotationCount++;
 
             if (shouldSendBatch(now))
             {
@@ -565,6 +574,8 @@ public class CloudWatchAppender extends AppenderSkeleton
         {
             case none:
                 return false;
+            case count:
+                return (rotationInterval > 0) && (lastRotationCount >= rotationInterval);
             case interval:
                 return (rotationInterval > 0) && ((now - lastRotationTimestamp) > rotationInterval);
             case hourly:

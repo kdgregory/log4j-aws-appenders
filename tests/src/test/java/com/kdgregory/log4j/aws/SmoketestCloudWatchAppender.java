@@ -14,9 +14,6 @@ import org.apache.log4j.PropertyConfigurator;
 import com.amazonaws.services.logs.AWSLogsClient;
 import com.amazonaws.services.logs.model.*;
 
-import com.kdgregory.log4j.aws.CloudWatchAppender;
-
-
 
 public class SmoketestCloudWatchAppender
 {
@@ -52,22 +49,23 @@ public class SmoketestCloudWatchAppender
     public void smoketest() throws Exception
     {
         Logger logger = Logger.getLogger(getClass());
-        CloudWatchAppender appender = (CloudWatchAppender)logger.getAppender("test");
 
-        logger.debug("message 1");
-        logger.debug("message 2");
-        logger.debug("message 3");
+        for (int ii = 0 ; ii < 1000 ; ii++)
+        {
+            logger.debug("message " + ii);
+        }
 
-        appender.lastRotationTimestamp = System.currentTimeMillis() - 86400000;
-
-        logger.debug("message 4");
-        logger.debug("message 5");
-
-        LinkedHashSet<OutputLogEvent> messages0 = retrieveAllMessages("smoketest-0");
-        assertEquals("number of messages in first stream", 3, messages0.size());
-
-        LinkedHashSet<OutputLogEvent> messages1 = retrieveAllMessages("smoketest-1");
-        assertEquals("number of messages in second stream", 2, messages1.size());
+        assertMessages("smoketest-0", 333);
+        assertMessages("smoketest-1", 333);
+        assertMessages("smoketest-2", 333);
+        assertMessages("smoketest-3", 1);
+    }
+    
+    
+    private void assertMessages(String streamName, int expectedMessageCount) throws Exception
+    {
+        LinkedHashSet<OutputLogEvent> messages = retrieveAllMessages(streamName);
+        assertEquals("number of messages in " + streamName, expectedMessageCount, messages.size());
     }
 
 

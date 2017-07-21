@@ -255,6 +255,35 @@ public class TestCloudWatchAppender
 
 
     @Test
+    public void testCountedRotation() throws Exception
+    {
+        CloudWatchAppender appender = initialize("TestCloudWatchAppender.testCountedRotation.properties");
+        MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
+
+        Logger myLogger = Logger.getLogger(getClass());
+
+        myLogger.debug("message 1");
+
+        // writer gets created on first append; we want to hold onto it
+        MockCloudWatchWriter writer0 = (MockCloudWatchWriter)appender.writer;
+
+        assertEquals("pre-rotate, logstream name",                  "bargle-0", writerFactory.lastLogStreamName);
+        assertEquals("pre-rotate, messages in queue",               1,          appender.messageQueue.size());
+
+        // these messages should trigger rotation
+        myLogger.debug("message 2");
+        myLogger.debug("message 3");
+        myLogger.debug("message 4");
+
+        assertEquals("post-rotate, logstream name",                 "bargle-1", writerFactory.lastLogStreamName);
+        assertEquals("post-rotate, messages in queue",              1,          appender.messageQueue.size());
+        assertEquals("post-rotate, messages passed to old writer",  3,          writer0.messages.size());
+        assertNotSame("post-rotate, writer has been replaced",      writer0,    appender.writer);
+        assertEquals("post-rotate, no messages for new writer",     0,          ((MockCloudWatchWriter)appender.writer).messages.size());
+    }
+
+
+    @Test
     public void testTimedRotation() throws Exception
     {
         CloudWatchAppender appender = initialize("TestCloudWatchAppender.testTimedRotation.properties");

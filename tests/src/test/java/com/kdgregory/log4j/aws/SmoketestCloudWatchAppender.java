@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
@@ -55,13 +56,18 @@ public class SmoketestCloudWatchAppender
             logger.debug("message " + ii);
         }
 
-        assertMessages("smoketest-0", 333);
+        // this is a hack: since batches are only formed by append(), the test will end
+        // with one message still in the appender and not moved to the writer
+        // ... batching should be managed in the writer
+        LogManager.shutdown();
+
         assertMessages("smoketest-1", 333);
         assertMessages("smoketest-2", 333);
-        assertMessages("smoketest-3", 1);
+        assertMessages("smoketest-3", 333);
+        assertMessages("smoketest-4", 1);
     }
-    
-    
+
+
     private void assertMessages(String streamName, int expectedMessageCount) throws Exception
     {
         LinkedHashSet<OutputLogEvent> messages = retrieveAllMessages(streamName);

@@ -81,7 +81,7 @@ public class TestCloudWatchAppender
 
         assertEquals("log group name",      "argle",            appender.getLogGroup());
         assertEquals("log stream name",     "bargle",           appender.getLogStream());
-        assertEquals("max delay",           1234L,              appender.getMaxDelay());
+        assertEquals("max delay",           1234L,              appender.getBatchDelay());
         assertEquals("sequence",            2,                  appender.getSequence());
         assertEquals("rotation mode",       "interval",         appender.getRotationMode());
         assertEquals("rotation interval",   86400000L,          appender.getRotationInterval());
@@ -97,7 +97,7 @@ public class TestCloudWatchAppender
         assertNull("log group name",    appender.getLogGroup());
 
         assertEquals("log stream name",     "{startTimestamp}", appender.getLogStream());
-        assertEquals("max delay",           4000L,              appender.getMaxDelay());
+        assertEquals("max delay",           2000L,              appender.getBatchDelay());
         assertEquals("sequence",            0,                  appender.getSequence());
         assertEquals("rotation mode",       "none",             appender.getRotationMode());
         assertEquals("rotation interval",   -1,                 appender.getRotationInterval());

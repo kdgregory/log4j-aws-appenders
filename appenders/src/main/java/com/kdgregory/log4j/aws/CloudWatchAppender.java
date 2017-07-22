@@ -44,8 +44,6 @@ public class CloudWatchAppender extends AppenderSkeleton
         daily
     }
 
-    private final static long DISABLED_ROTATION_INTERVAL = -1;
-
 
     //*********************************************************************************
     // NOTE: any variables marked as protected will be replaced/examined during testing
@@ -99,7 +97,7 @@ public class CloudWatchAppender extends AppenderSkeleton
 
     private String          logGroup;
     private String          logStream;
-    private long            maxDelay;
+    private long            batchDelay;
     private RotationMode    rotationMode;
     private long            rotationInterval;
     private AtomicInteger   sequence;
@@ -111,9 +109,9 @@ public class CloudWatchAppender extends AppenderSkeleton
     public CloudWatchAppender()
     {
         logStream = "{startTimestamp}";
-        maxDelay = 4000;
+        batchDelay = 2000;
         rotationMode = RotationMode.none;
-        rotationInterval = DISABLED_ROTATION_INTERVAL;
+        rotationInterval = -1;
         sequence = new AtomicInteger();
     }
 
@@ -206,9 +204,9 @@ public class CloudWatchAppender extends AppenderSkeleton
      *  <p>
      *  The default value is 4000, which is rather arbitrarily chosen.
      */
-    public void setMaxDelay(long maxDelay)
+    public void setBatchDelay(long value)
     {
-        this.maxDelay = maxDelay;
+        this.batchDelay = value;
     }
 
 
@@ -216,9 +214,9 @@ public class CloudWatchAppender extends AppenderSkeleton
      *  Returns the maximum batch delay; see {@link #setMaxDelay}. Primarily used
      *  for testing.
      */
-    public long getMaxDelay()
+    public long getBatchDelay()
     {
-        return maxDelay;
+        return batchDelay;
     }
 
 
@@ -229,16 +227,16 @@ public class CloudWatchAppender extends AppenderSkeleton
      *  Attempting to set an invalid mode is equivalent to "none", but will emit a warning to the
      *  Log4J internal log.
      */
-    public void setRotationMode(String mode)
+    public void setRotationMode(String value)
     {
         try
         {
-            this.rotationMode = RotationMode.valueOf(mode);
+            this.rotationMode = RotationMode.valueOf(value);
         }
         catch (IllegalArgumentException ex)
         {
             this.rotationMode = RotationMode.none;
-            LogLog.error("invalid rotationMode: " + mode);
+            LogLog.error("invalid rotationMode: " + value);
         }
     }
 

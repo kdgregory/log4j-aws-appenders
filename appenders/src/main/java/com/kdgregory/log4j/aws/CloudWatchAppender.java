@@ -207,6 +207,8 @@ public class CloudWatchAppender extends AppenderSkeleton
     public void setBatchDelay(long value)
     {
         this.batchDelay = value;
+        if (writer != null)
+            writer.setBatchDelay(value);
     }
 
 

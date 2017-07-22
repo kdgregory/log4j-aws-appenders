@@ -54,6 +54,13 @@ implements LogWriter
 
 
     @Override
+    public void setBatchDelay(long value)
+    {
+        this.batchDelay = value;
+    }
+
+
+    @Override
     public void stop()
     {
         shutdownTime = new Long(System.currentTimeMillis() + batchDelay);
@@ -67,7 +74,6 @@ implements LogWriter
 //----------------------------------------------------------------------------
 //  Implementation of Runnable
 //----------------------------------------------------------------------------
-
 
     @Override
     public void run()
@@ -92,6 +98,19 @@ implements LogWriter
             List<LogMessage> currentBatch = buildBatch();
             attemptToSend(currentBatch);
         } while (keepRunning());
+    }
+
+
+//----------------------------------------------------------------------------
+//  Other public methods
+//----------------------------------------------------------------------------
+
+    /**
+     *  Returns the current batch delay. This is intended for testing.
+     */
+    public long getBatchDelay()
+    {
+        return batchDelay;
     }
 
 

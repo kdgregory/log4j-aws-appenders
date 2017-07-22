@@ -13,6 +13,7 @@ implements LogWriter
     public List<LogMessage> messages = new ArrayList<LogMessage>();
     public LogMessage lastMessage;
     public boolean stopped;
+    public long batchDelay;
 
 
     @Override
@@ -20,6 +21,13 @@ implements LogWriter
     {
         messages.add(message);
         lastMessage = message;
+    }
+
+
+    @Override
+    public void setBatchDelay(long value)
+    {
+        this.batchDelay = value;
     }
 
 

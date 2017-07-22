@@ -15,11 +15,10 @@ import net.sf.kdgcommons.test.StringAsserts;
 
 import com.kdgregory.log4j.aws.CloudWatchAppender;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 import com.kdgregory.log4j.aws.internal.shared.NullThreadFactory;
-import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 import com.kdgregory.testhelpers.log4j.HeaderFooterLayout;
 import com.kdgregory.testhelpers.log4j.aws.cloudwatch.MockCloudWatchWriter;
+import com.kdgregory.testhelpers.log4j.aws.cloudwatch.MockWriterFactory;
 
 
 public class TestCloudWatchAppender
@@ -28,32 +27,6 @@ public class TestCloudWatchAppender
 //----------------------------------------------------------------------------
 //  Support Code
 //----------------------------------------------------------------------------
-
-    private static class MockWriterFactory implements WriterFactory
-    {
-        public CloudWatchAppender appender;
-
-        public int invocationCount = 0;
-        public String lastLogGroupName;
-        public String lastLogStreamName;
-        public MockCloudWatchWriter writer;
-
-        public MockWriterFactory(CloudWatchAppender appender)
-        {
-            this.appender = appender;
-        }
-
-        @Override
-        public LogWriter newLogWriter()
-        {
-            invocationCount++;
-            lastLogGroupName = appender.getActualLogGroup();
-            lastLogStreamName = appender.getActualLogStream();
-            writer = new MockCloudWatchWriter();
-            return writer;
-        }
-    }
-
 
     private CloudWatchAppender initialize(String propsName)
     throws Exception
@@ -150,6 +123,11 @@ public class TestCloudWatchAppender
                    message2.getMessage().indexOf("java.lang.Exception") > 0);
         assertTrue("message 2 includes exception",
                    message2.getMessage().indexOf("this is a test") > 0);
+
+        // since we have the writer, we can verify that setting the batch delay gets propagated
+
+        appender.setBatchDelay(1234567);
+        assertEquals("writer batch delay propagated", 1234567, mock.batchDelay);
     }
 
 

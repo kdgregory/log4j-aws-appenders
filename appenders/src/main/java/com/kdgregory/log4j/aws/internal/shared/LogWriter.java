@@ -21,6 +21,16 @@ extends Runnable
 
 
     /**
+     *  Sets the batch delay for the writer. The appender is assumed to expose a delay
+     *  parameter, and this method allows it to change the writer's delay at runtime.
+     *  Changes may or may not take place immediately.
+     *  <p>
+     *  If the writer doesn't support batching, this will be a no-op.
+     */
+    void setBatchDelay(long value);
+
+
+    /**
      *  Signals the writer that it will no longer receive batches. It should, however,
      *  make a best effort to send any batches that it already has before exiting its
      *  <code>run()</code> method.

@@ -81,9 +81,9 @@ public class CloudWatchAppender extends AppenderSkeleton
     // the last time we rotated the writer
 
     protected volatile long lastRotationTimestamp;
-    
+
     // number of messages since we rotated the writer
-    
+
     protected volatile int lastRotationCount;
 
     // this object is used for synchronization of initialization and writer change
@@ -547,7 +547,8 @@ public class CloudWatchAppender extends AppenderSkeleton
         }
         else
         {
-            writer.addBatch(batch);
+            for (LogMessage message : batch)
+                writer.addMessage(message);
         }
     }
 

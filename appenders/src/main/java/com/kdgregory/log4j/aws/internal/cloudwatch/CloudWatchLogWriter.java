@@ -51,15 +51,9 @@ implements LogWriter
 //----------------------------------------------------------------------------
 
     @Override
-    public void addBatch(List<LogMessage> batch)
+    public void addMessage(LogMessage message)
     {
-        // for now I'm going to assume that batches will be relatively small
-        // (definitely less than 10k rows), so this won't cause excessive
-        // contention; the alternative is to maintain a separate (concurrent)
-        // batch queue, and then copy messages from that queue in the run loop
-        // ... right now, that seems like another point of failure
-
-        messageQueue.addAll(batch);
+        messageQueue.add(message);
     }
 
 

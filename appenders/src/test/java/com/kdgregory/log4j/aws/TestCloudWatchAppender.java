@@ -2,7 +2,6 @@
 package com.kdgregory.log4j.aws;
 
 import java.net.URL;
-import java.util.List;
 
 import org.junit.Test;
 
@@ -142,10 +141,8 @@ public class TestCloudWatchAppender
         assertEquals("actual log-stream name", "bargle", writerFactory.lastLogStreamName);
 
         MockCloudWatchWriter mock = (MockCloudWatchWriter)appender.writer;
-        List<LogMessage> lastBatch = mock.lastBatch;
-        assertEquals("messages in batch",  2, mock.lastBatch.size());
 
-        LogMessage message1 = lastBatch.get(0);
+        LogMessage message1 = mock.messages.get(0);
         assertTrue("message 1 timestamp >= initial timestamp", message1.getTimestamp() >= initialTimestamp);
         assertTrue("message 1 timestamp <= batch timestamp",   message1.getTimestamp() <= appender.lastBatchTimestamp);
         StringAsserts.assertRegex(
@@ -153,7 +150,7 @@ public class TestCloudWatchAppender
                 "20[12][0-9]-.* DEBUG .*TestCloudWatchAppender .*first message.*",
                 message1.getMessage().trim());
 
-        LogMessage message2 = lastBatch.get(1);
+        LogMessage message2 = mock.messages.get(1);
         assertTrue("message 2 includes exception",
                    message2.getMessage().indexOf("java.lang.Exception") > 0);
         assertTrue("message 2 includes exception",
@@ -161,7 +158,6 @@ public class TestCloudWatchAppender
 
         myLogger.info("this is a third message");
         assertEquals("after message 3, messages in queue",  1, appender.messageQueue.size());
-        assertSame("after message 3, last batch hasn't changed", lastBatch, mock.lastBatch);
     }
 
 

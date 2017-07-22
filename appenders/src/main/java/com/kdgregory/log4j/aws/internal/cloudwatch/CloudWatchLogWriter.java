@@ -22,27 +22,23 @@ implements LogWriter
     // this controls the number of times that we retry a send
     private final static int RETRY_LIMIT = 3;
 
-    // to avoid race conditions when shutting down, we don't use a simple boolean
-    // "is-running" flag; instead, we wait for this amount of millis for any last
-    // messages to be added to the queue
-
-    private final static long SHUTDOWN_WAIT = 500;
-
     private String groupName;
     private String streamName;
+    private long batchDelay;
 
+    private Thread dispatchThread;
     private AWSLogsClient client;
 
     private volatile Long shutdownTime;
-    private Thread dispatchThread;
 
     private LinkedBlockingDeque<LogMessage> messageQueue = new LinkedBlockingDeque<LogMessage>();
 
 
-    public CloudWatchLogWriter(String logGroup, String logStream)
+    public CloudWatchLogWriter(String logGroup, String logStream, long batchDelay)
     {
         this.groupName = logGroup;
         this.streamName = logStream;
+        this.batchDelay = batchDelay;
     }
 
 
@@ -60,7 +56,7 @@ implements LogWriter
     @Override
     public void stop()
     {
-        shutdownTime = new Long(System.currentTimeMillis() + SHUTDOWN_WAIT);
+        shutdownTime = new Long(System.currentTimeMillis() + batchDelay);
         if (dispatchThread != null)
         {
             dispatchThread.interrupt();
@@ -82,11 +78,14 @@ implements LogWriter
 
         if (! ensureGroupAndStreamAvailable()) return;
 
+        // initialize the dispatch thread here so that an interrupt will only affect the code
+        // that waits for messages; not likely to happen in real world, but does in smoketest
+
         dispatchThread = Thread.currentThread();
 
-        // the do-while loop here ensures that we attempt to process at least one batch,
-        // even if the writer is started and immediately stopped; that's not likely to
-        // happen in the real world, but does cause problems for our smoketest
+        // the do-while loop ensures that we attempt to process at least one batch, even if
+        // the writer is started and immediately stopped; again, that's not likely to happen
+        // in the real world, but was causing problems with the smoketest
 
         do
         {
@@ -101,16 +100,15 @@ implements LogWriter
 //----------------------------------------------------------------------------
 
     /**
-     *  Checks the "running" flag, but overrides if there are messages in queue.
+     *  A check for whether we should keep running: either we haven't been shut
+     *  down or there's still messages to process
      */
     private boolean keepRunning()
     {
-        if (shutdownTime == null)
-            return true;
-
-        return shutdownTime != null
-            && shutdownTime.longValue() > System.currentTimeMillis()
-            && messageQueue.peek() == null;
+        return (shutdownTime == null)
+             ? true
+             : shutdownTime.longValue() > System.currentTimeMillis()
+               && messageQueue.peek() == null;
     }
 
 
@@ -123,10 +121,14 @@ implements LogWriter
         // presizing to a small-but-possible size to avoid repeated resizes
         List<LogMessage> batch = new ArrayList<LogMessage>(512);
 
-        LogMessage message = waitForFirstMessage();
+        // normally we wait "forever" for the first message, unless we're shutting down
+        long firstMessageTimeout = (shutdownTime != null) ? shutdownTime.longValue() : Long.MAX_VALUE;
+
+        LogMessage message = waitForMessage(firstMessageTimeout);
         if (message == null)
             return batch;
 
+        long batchTimeout = System.currentTimeMillis() + batchDelay;
         int batchBytes = 0;
         int batchCount = 0;
         while (message != null)
@@ -134,6 +136,7 @@ implements LogWriter
             batchBytes += message.size() + CloudWatchConstants.MESSAGE_OVERHEAD;
             batchCount++;
 
+            // if this message would exceed the batch limits, push it back onto the queue
             // the first message must never break this rule -- and shouldn't, as appender checks size
             if ((batchBytes >= CloudWatchConstants.MAX_BATCH_BYTES) || (batchCount == CloudWatchConstants.MAX_BATCH_COUNT))
             {
@@ -142,21 +145,20 @@ implements LogWriter
             }
 
             batch.add(message);
-            message = messageQueue.poll();
+            message = waitForMessage(batchTimeout);
         }
 
         return batch;
     }
 
 
-    private LogMessage waitForFirstMessage()
+    private LogMessage waitForMessage(long waitUntil)
     {
         try
         {
-            if (shutdownTime == null)
-                return messageQueue.take();
-            else
-                return messageQueue.poll(SHUTDOWN_WAIT, TimeUnit.MILLISECONDS);
+            long waitTime = waitUntil - System.currentTimeMillis();
+            if (waitTime < 0) waitTime = 1;
+            return messageQueue.poll(waitTime, TimeUnit.MILLISECONDS);
         }
         catch (InterruptedException ex)
         {

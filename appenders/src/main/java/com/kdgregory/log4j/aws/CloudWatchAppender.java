@@ -63,7 +63,7 @@ public class CloudWatchAppender extends AppenderSkeleton
         @Override
         public LogWriter newLogWriter()
         {
-            return new CloudWatchLogWriter(actualLogGroup, actualLogStream);
+            return new CloudWatchLogWriter(actualLogGroup, actualLogStream, batchDelay);
         }
     };
 

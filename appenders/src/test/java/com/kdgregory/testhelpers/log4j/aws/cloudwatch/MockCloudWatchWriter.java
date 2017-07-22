@@ -1,5 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.log4j.testhelpers.cloudwatch;
+package com.kdgregory.testhelpers.log4j.aws.cloudwatch;
 
 import java.util.ArrayList;
 import java.util.List;

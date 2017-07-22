@@ -8,14 +8,12 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 import com.amazonaws.services.logs.AWSLogsClient;
 import com.amazonaws.services.logs.model.*;
-
-import com.kdgregory.log4j.aws.CloudWatchAppender;
-
 
 
 public class SmoketestCloudWatchAppender
@@ -52,22 +50,37 @@ public class SmoketestCloudWatchAppender
     public void smoketest() throws Exception
     {
         Logger logger = Logger.getLogger(getClass());
-        CloudWatchAppender appender = (CloudWatchAppender)logger.getAppender("test");
 
-        logger.debug("message 1");
-        logger.debug("message 2");
-        logger.debug("message 3");
+        for (int ii = 0 ; ii < 1000 ; ii++)
+        {
+            logger.debug("message " + ii);
+        }
 
-        appender.lastRotationTimestamp = System.currentTimeMillis() - 86400000;
+        // this is a hack: since batches are only formed by append(), the test will end
+        // with one message still in the appender and not moved to the writer
+        // ... batching should be managed in the writer
+        LogManager.shutdown();
 
-        logger.debug("message 4");
-        logger.debug("message 5");
+        assertMessages("smoketest-1", 333);
+        assertMessages("smoketest-2", 333);
+        assertMessages("smoketest-3", 333);
+        assertMessages("smoketest-4", 1);
+    }
 
-        LinkedHashSet<OutputLogEvent> messages0 = retrieveAllMessages("smoketest-0");
-        assertEquals("number of messages in first stream", 3, messages0.size());
 
-        LinkedHashSet<OutputLogEvent> messages1 = retrieveAllMessages("smoketest-1");
-        assertEquals("number of messages in second stream", 2, messages1.size());
+    private void assertMessages(String streamName, int expectedMessageCount) throws Exception
+    {
+        LinkedHashSet<OutputLogEvent> events = retrieveAllMessages(streamName);
+        assertEquals("number of events in " + streamName, expectedMessageCount, events.size());
+
+        int prevMessageNum = -1;
+        for (OutputLogEvent event : events)
+        {
+            int messageNum = Integer.parseInt(event.getMessage().replaceAll(".* message ", "").trim());
+            if (prevMessageNum >= 0)
+                assertEquals("message sequence", prevMessageNum + 1, messageNum);
+            prevMessageNum = messageNum;
+        }
     }
 
 

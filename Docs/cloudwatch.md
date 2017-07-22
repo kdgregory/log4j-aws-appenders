@@ -32,6 +32,6 @@ Name                | Description
 `logStream`         | Name of the Cloudwatch log stream where messages are sent; may use substitutions. Defaults to `{startTimestamp}`.
 `batchSize`         | Maximum number of messages that will be queued in the appender before passing them to the writer.
 `maxDelay`          | Maximum time, in milliseconds, that messages will be queued in the appender. This ensures that low-volume loggers will regularly write something.
-`rotationMode`      | Controls whether auto-rotation is enabled. Values are `none`, `interval`, `hourly`, and `daily`. Default is `none`, which means the stream will be written forever (unless explicitly rotated via the `rotate()` method).
-`rotationInterval`  | For interval rotation only; the number of milliseconds between automatic rotations.
+`rotationMode`      | Controls whether auto-rotation is enabled. Values are `none`, `count`, `interval`, `hourly`, and `daily`. Default is `none`, which means the stream will be written forever (unless explicitly rotated via the `rotate()` method).
+`rotationInterval`  | Used only for `count` and `interval` rotation modes: for the former, the maximum number of messages, and for latter, the number of milliseconds between automatic rotations.
 `sequence`          | A value that is incremented each time the stream is rotated. Defaults to 0 and typically won't be changed.

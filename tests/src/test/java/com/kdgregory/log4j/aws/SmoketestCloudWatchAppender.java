@@ -70,8 +70,17 @@ public class SmoketestCloudWatchAppender
 
     private void assertMessages(String streamName, int expectedMessageCount) throws Exception
     {
-        LinkedHashSet<OutputLogEvent> messages = retrieveAllMessages(streamName);
-        assertEquals("number of messages in " + streamName, expectedMessageCount, messages.size());
+        LinkedHashSet<OutputLogEvent> events = retrieveAllMessages(streamName);
+        assertEquals("number of events in " + streamName, expectedMessageCount, events.size());
+
+        int prevMessageNum = -1;
+        for (OutputLogEvent event : events)
+        {
+            int messageNum = Integer.parseInt(event.getMessage().replaceAll(".* message ", "").trim());
+            if (prevMessageNum >= 0)
+                assertEquals("message sequence", prevMessageNum + 1, messageNum);
+            prevMessageNum = messageNum;
+        }
     }
 
 

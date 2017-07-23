@@ -14,6 +14,8 @@ import org.apache.log4j.PropertyConfigurator;
 import com.amazonaws.services.logs.AWSLogsClient;
 import com.amazonaws.services.logs.model.*;
 
+import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
+
 
 public class SmoketestCloudWatchAppender
 {
@@ -48,8 +50,9 @@ public class SmoketestCloudWatchAppender
     public void smoketest() throws Exception
     {
         Logger logger = Logger.getLogger(getClass());
+        CloudWatchAppender appender = (CloudWatchAppender)logger.getAppender("test");
 
-        for (int ii = 0 ; ii < 1000 ; ii++)
+        for (int ii = 0 ; ii < 1001 ; ii++)
         {
             logger.debug("message " + ii);
         }
@@ -61,7 +64,14 @@ public class SmoketestCloudWatchAppender
         assertMessages("smoketest-1", 333);
         assertMessages("smoketest-2", 333);
         assertMessages("smoketest-3", 333);
-        assertMessages("smoketest-4", 1);
+        assertMessages("smoketest-4", 2);
+
+        CloudWatchLogWriter lastWriter = (CloudWatchLogWriter)appender.writer;
+        assertEquals("number of batches for last writer", 1, lastWriter.getBatchCount());
+
+        // while we're here, verify that batch delay is propagated
+        appender.setBatchDelay(1234L);
+        assertEquals("batch delay", 1234L, lastWriter.getBatchDelay());
     }
 
 

@@ -30,6 +30,7 @@ implements LogWriter
     private AWSLogsClient client;
 
     private volatile Long shutdownTime;
+    private volatile int batchCount;
 
     private LinkedBlockingDeque<LogMessage> messageQueue = new LinkedBlockingDeque<LogMessage>();
 
@@ -114,6 +115,15 @@ implements LogWriter
     }
 
 
+    /**
+     *  Returns the number of batches processed. This is intended for testing
+     */
+    public int getBatchCount()
+    {
+        return batchCount;
+    }
+
+
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
@@ -149,15 +159,15 @@ implements LogWriter
 
         long batchTimeout = System.currentTimeMillis() + batchDelay;
         int batchBytes = 0;
-        int batchCount = 0;
+        int batchMsgs = 0;
         while (message != null)
         {
             batchBytes += message.size() + CloudWatchConstants.MESSAGE_OVERHEAD;
-            batchCount++;
+            batchMsgs++;
 
             // if this message would exceed the batch limits, push it back onto the queue
             // the first message must never break this rule -- and shouldn't, as appender checks size
-            if ((batchBytes >= CloudWatchConstants.MAX_BATCH_BYTES) || (batchCount == CloudWatchConstants.MAX_BATCH_COUNT))
+            if ((batchBytes >= CloudWatchConstants.MAX_BATCH_BYTES) || (batchMsgs == CloudWatchConstants.MAX_BATCH_COUNT))
             {
                 messageQueue.addFirst(message);
                 break;
@@ -191,6 +201,7 @@ implements LogWriter
         if (batch.isEmpty())
             return;
 
+        batchCount++;
         PutLogEventsRequest request = new PutLogEventsRequest()
                                       .withLogGroupName(groupName)
                                       .withLogStreamName(streamName)

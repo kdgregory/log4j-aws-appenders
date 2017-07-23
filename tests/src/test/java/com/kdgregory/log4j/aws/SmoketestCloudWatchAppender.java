@@ -8,18 +8,18 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 import com.amazonaws.services.logs.AWSLogsClient;
 import com.amazonaws.services.logs.model.*;
 
+import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
+
 
 public class SmoketestCloudWatchAppender
 {
     private final static String LOGGROUP_NAME = "TestCloudwatchAppender";
-    private final static long READ_TIMEOUT = 2000;
 
     private AWSLogsClient client;
 
@@ -50,21 +50,28 @@ public class SmoketestCloudWatchAppender
     public void smoketest() throws Exception
     {
         Logger logger = Logger.getLogger(getClass());
+        CloudWatchAppender appender = (CloudWatchAppender)logger.getAppender("test");
 
-        for (int ii = 0 ; ii < 1000 ; ii++)
+        for (int ii = 0 ; ii < 1001 ; ii++)
         {
             logger.debug("message " + ii);
         }
 
-        // this is a hack: since batches are only formed by append(), the test will end
-        // with one message still in the appender and not moved to the writer
-        // ... batching should be managed in the writer
-        LogManager.shutdown();
+        // this is a multiple of the batch size, so should give all writers a chance to write
+        // all of their messages before shutdown
+        Thread.sleep(3000);
 
         assertMessages("smoketest-1", 333);
         assertMessages("smoketest-2", 333);
         assertMessages("smoketest-3", 333);
-        assertMessages("smoketest-4", 1);
+        assertMessages("smoketest-4", 2);
+
+        CloudWatchLogWriter lastWriter = (CloudWatchLogWriter)appender.writer;
+        assertEquals("number of batches for last writer", 1, lastWriter.getBatchCount());
+
+        // while we're here, verify that batch delay is propagated
+        appender.setBatchDelay(1234L);
+        assertEquals("batch delay", 1234L, lastWriter.getBatchDelay());
     }
 
 
@@ -86,26 +93,28 @@ public class SmoketestCloudWatchAppender
 
     private LinkedHashSet<OutputLogEvent> retrieveAllMessages(String logStreamName) throws Exception
     {
-        long start = System.currentTimeMillis();
         LinkedHashSet<OutputLogEvent> result = new LinkedHashSet<OutputLogEvent>();
 
         GetLogEventsRequest request = new GetLogEventsRequest()
                               .withLogGroupName(LOGGROUP_NAME)
-                              .withLogStreamName(logStreamName);
+                              .withLogStreamName(logStreamName)
+                              .withStartFromHead(Boolean.TRUE);
 
-        while (System.currentTimeMillis() < start + READ_TIMEOUT)
+        // once you've read all outstanding messages, the request will return the same token
+        // so we try to read at least one response, and repeat until the token doesn't change
+
+        String prevToken = "";
+        String nextToken;
+        do
         {
-            try
-            {
-                GetLogEventsResult response = client.getLogEvents(request);
-                result.addAll(response.getEvents());
-            }
-            catch (ResourceNotFoundException ignored)
-            {
-                // eventual consistency means maybe the stream might not be readable yet
-            }
+            GetLogEventsResult response = client.getLogEvents(request);
+            result.addAll(response.getEvents());
+            nextToken = response.getNextForwardToken();
+            request.setNextToken(nextToken);
+            prevToken = nextToken;
             Thread.sleep(250);
-        }
+        } while (! prevToken.equals(nextToken));
+
         return result;
     }
 

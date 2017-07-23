@@ -1,25 +1,33 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.aws.internal.shared;
 
-import java.util.List;
-
 
 /**
  *  Defines the contract between appenders and writers.
  *  <p>
- *  Writers run on a background thread, accepting batches of messages and retaining
- *  them until sent or discarded.
+ *  Writers run on a background thread, building batches of messages and attempting
+ *  to send them to the destination.
  */
 public interface LogWriter
 extends Runnable
 {
     /**
-     *  Adds a batch of messages to the writer.
+     *  Adds a message to the writer waiting for batch.
      *  <p>
      *  Implementations should assume that they are invoked within a synchronized
      *  block, and therefore should not perform excessive amounts of work.
      */
-    void addBatch(List<LogMessage> batch);
+    void addMessage(LogMessage message);
+
+
+    /**
+     *  Sets the batch delay for the writer. The appender is assumed to expose a delay
+     *  parameter, and this method allows it to change the writer's delay at runtime.
+     *  Changes may or may not take place immediately.
+     *  <p>
+     *  If the writer doesn't support batching, this will be a no-op.
+     */
+    void setBatchDelay(long value);
 
 
     /**

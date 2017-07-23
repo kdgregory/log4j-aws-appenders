@@ -11,15 +11,23 @@ public class MockCloudWatchWriter
 implements LogWriter
 {
     public List<LogMessage> messages = new ArrayList<LogMessage>();
-    public List<LogMessage> lastBatch;
+    public LogMessage lastMessage;
     public boolean stopped;
+    public long batchDelay;
 
 
     @Override
-    public void addBatch(List<LogMessage> batch)
+    public void addMessage(LogMessage message)
     {
-        messages.addAll(batch);
-        lastBatch = batch;
+        messages.add(message);
+        lastMessage = message;
+    }
+
+
+    @Override
+    public void setBatchDelay(long value)
+    {
+        this.batchDelay = value;
     }
 
 

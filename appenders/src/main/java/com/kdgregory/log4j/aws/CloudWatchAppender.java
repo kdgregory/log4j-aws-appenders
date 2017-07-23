@@ -2,8 +2,6 @@
 package com.kdgregory.log4j.aws;
 
 import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.AppenderSkeleton;
@@ -47,11 +45,6 @@ public class CloudWatchAppender extends AppenderSkeleton
     }
 
 
-    private final static int DEFAULT_BATCH_SIZE = 16;
-    private final static long DEFAULT_BATCH_TIMEOUT = 4000L;
-    private final static long DISABLED_ROTATION_INTERVAL = -1;
-
-
     //*********************************************************************************
     // NOTE: any variables marked as protected will be replaced/examined during testing
     //*********************************************************************************
@@ -70,7 +63,7 @@ public class CloudWatchAppender extends AppenderSkeleton
         @Override
         public LogWriter newLogWriter()
         {
-            return new CloudWatchLogWriter(actualLogGroup, actualLogStream);
+            return new CloudWatchLogWriter(actualLogGroup, actualLogStream, batchDelay);
         }
     };
 
@@ -81,9 +74,9 @@ public class CloudWatchAppender extends AppenderSkeleton
     // the last time we rotated the writer
 
     protected volatile long lastRotationTimestamp;
-    
+
     // number of messages since we rotated the writer
-    
+
     protected volatile int lastRotationCount;
 
     // this object is used for synchronization of initialization and writer change
@@ -94,18 +87,6 @@ public class CloudWatchAppender extends AppenderSkeleton
     // very fast, so plain-old-synchronization should not cause undue contention
 
     private Object messageQueueLock = new Object();
-
-    // the waiting-for-batch queue; replaced when we pass batch to writer
-
-    protected LinkedList<LogMessage> messageQueue = new LinkedList<LogMessage>();
-    protected int messageQueueBytes = 0;
-
-    // the last time we wrote a batch, to enable delay-based batching; this is
-    // initialized during construction, so the first batch might actually go out
-    // earlier than expected (if there's a delay between construction and use)
-
-    protected volatile long lastBatchTimestamp;
-
     // these variables hold the post-substitution log-group and log-stream names
     // (mostly useful for testing)
 
@@ -116,8 +97,7 @@ public class CloudWatchAppender extends AppenderSkeleton
 
     private String          logGroup;
     private String          logStream;
-    private int             batchSize;
-    private long            maxDelay;
+    private long            batchDelay;
     private RotationMode    rotationMode;
     private long            rotationInterval;
     private AtomicInteger   sequence;
@@ -129,13 +109,10 @@ public class CloudWatchAppender extends AppenderSkeleton
     public CloudWatchAppender()
     {
         logStream = "{startTimestamp}";
-        batchSize = DEFAULT_BATCH_SIZE;
-        maxDelay = DEFAULT_BATCH_TIMEOUT;
+        batchDelay = 2000;
         rotationMode = RotationMode.none;
-        rotationInterval = DISABLED_ROTATION_INTERVAL;
+        rotationInterval = -1;
         sequence = new AtomicInteger();
-
-        lastBatchTimestamp = System.currentTimeMillis();
     }
 
 
@@ -215,39 +192,6 @@ public class CloudWatchAppender extends AppenderSkeleton
 
 
     /**
-     *  Sets the number of messages that will submitted per request. Smaller batch
-     *  sizes mean more calls to AWS, larger batches mean a higher risk for losing
-     *  messages if the program crashes.
-     *  <p>
-     *  <em>Note:</em> this value is used as a trigger for sending a batch; it
-     *  does not guarantee the size of that batch as written to Cloudwatch. The
-     *  actual write may contain more or fewer events than are in the batch,
-     *  either due to reaching a physical request limit or because additional
-     *  events were added to the batch while it was being processed.
-     *  <p>
-     *  The default value is 16, which should be a good tradeoff for non-chatty
-     *  programs. The maximum size is 10,000, imposed by AWS.
-     */
-    public void setBatchSize(int batchSize)
-    {
-        if (batchSize > CloudWatchConstants.MAX_BATCH_COUNT)
-        {
-            throw new IllegalArgumentException("AWS limits batch size to " + CloudWatchConstants.MAX_BATCH_COUNT + " messages");
-        }
-        this.batchSize = batchSize;
-    }
-
-
-    /**
-     *  Returns the batch size; see {@link #setBatchSize}. Primarily used for testing.
-     */
-    public int getBatchSize()
-    {
-        return batchSize;
-    }
-
-
-    /**
      *  Sets the maximum batch delay, in milliseconds.
      *  <p>
      *  This acts as a counterbalance to batch size, for applications that have bursty
@@ -260,9 +204,11 @@ public class CloudWatchAppender extends AppenderSkeleton
      *  <p>
      *  The default value is 4000, which is rather arbitrarily chosen.
      */
-    public void setMaxDelay(long maxDelay)
+    public void setBatchDelay(long value)
     {
-        this.maxDelay = maxDelay;
+        this.batchDelay = value;
+        if (writer != null)
+            writer.setBatchDelay(value);
     }
 
 
@@ -270,9 +216,9 @@ public class CloudWatchAppender extends AppenderSkeleton
      *  Returns the maximum batch delay; see {@link #setMaxDelay}. Primarily used
      *  for testing.
      */
-    public long getMaxDelay()
+    public long getBatchDelay()
     {
-        return maxDelay;
+        return batchDelay;
     }
 
 
@@ -283,16 +229,16 @@ public class CloudWatchAppender extends AppenderSkeleton
      *  Attempting to set an invalid mode is equivalent to "none", but will emit a warning to the
      *  Log4J internal log.
      */
-    public void setRotationMode(String mode)
+    public void setRotationMode(String value)
     {
         try
         {
-            this.rotationMode = RotationMode.valueOf(mode);
+            this.rotationMode = RotationMode.valueOf(value);
         }
         catch (IllegalArgumentException ex)
         {
             this.rotationMode = RotationMode.none;
-            LogLog.error("invalid rotationMode: " + mode);
+            LogLog.error("invalid rotationMode: " + value);
         }
     }
 
@@ -480,7 +426,6 @@ public class CloudWatchAppender extends AppenderSkeleton
                 {
                     internalAppend(LogMessage.create(layout.getFooter()));
                 }
-                sendBatch();
             }
             catch (Exception ex)
             {
@@ -509,45 +454,15 @@ public class CloudWatchAppender extends AppenderSkeleton
 
         synchronized (messageQueueLock)
         {
-            messageQueue.add(message);
-            messageQueueBytes += message.size();
-            lastRotationCount++;
-
-            if (shouldSendBatch(now))
+            if (writer == null)
             {
-                sendBatch();
+                LogLog.warn("appender not properly configured: writer is null");
             }
-        }
-    }
-
-
-    private boolean shouldSendBatch(long now)
-    {
-        return (messageQueue.size() >= batchSize)
-            || (messageQueueBytes >= CloudWatchConstants.MAX_BATCH_BYTES)
-            || ((now - lastBatchTimestamp) >= maxDelay);
-    }
-
-
-    private void sendBatch()
-    {
-        List<LogMessage> batch = null;
-        synchronized (messageQueueLock)
-        {
-            batch = messageQueue;
-            messageQueue = new LinkedList<LogMessage>();
-            messageQueueBytes = 0;
-            lastBatchTimestamp = System.currentTimeMillis();
-        }
-
-        // in normal use, writer will never be null; for testing, however, it might be
-        if (writer == null)
-        {
-            LogLog.warn("appender not properly configured: writer is null");
-        }
-        else
-        {
-            writer.addBatch(batch);
+            else
+            {
+                writer.addMessage(message);
+                lastRotationCount++;
+            }
         }
     }
 

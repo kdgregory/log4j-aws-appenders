@@ -23,17 +23,30 @@ and the link will take you to additional documentation.
 
 ## Usage
 
+To use these appenders, include the `aws-appenders` JAR in your project, and configure
+the desired appender in your Log4J properties. Each appender's documentation gives an
+example configuration.
+
 ### Dependency Versions
 
-To avoid dependency hell, all dependencies are marked as "provided"; you will need
-to ensure that your project includes necessary dependencies. The minimum dependency
-versions are:
+To avoid dependency hell, all dependencies are marked as "provided": you will need
+to ensure that your project includes necessary dependencies. Minimum dependency
+versions will depend on which AWS service you use: Amazon introduces new services
+and APIs all the time, and does not pay attention to backwards compatibility.
 
-* Log4J: 1.2.16
-* AWS SDK: 1.11.0
+* JDK: 1.6  
+  The appender code does not rely on standard libary classes/methods introduced
+  after 1.6. The AWS code, however, might.
+* Log4J: 1.2.16  
+  This is the first version that implements `LoggingEvent.getTimeStamp()`, which
+  is needed to order messages when sending to AWS.
+* Cloudwatch SDK: 1.11.0  
+  This is the first version where `createLogGroup()` and `createLogStream()` return
+  a result object. In the 1.10.x branch, these functions returned `void`; you can
+  compile the appender for those releases, but it won't run on newer releases.
 
 
-## Substitution Variables
+### Substitution Variables
 
 Logging destination names (such as a CloudWatch log group or SNS topic) may use substitution variables
 from the table below. To use, these must be brace-delimited (eg: or `MyLog-{date}`, _not_ `MyLog-date`)
@@ -71,23 +84,23 @@ The primary design constraints are these:
   constraints on either number of messages or bytes in a batch.
 * Services may reject our requests, either temporarily or permanently.
 
-To meet these constraints, we maintain an internal message queue, and each call to `append()` adds to
-this queue. At present this queue is a simple `LinkedList`, and access to the queue is synchronized.
-While this presents a point of contention, in normal use it should be minimal: adding an item to a linked
-list is very fast.
+To meet these constraints, the appender spins up a separate thread for communication with the service.
+This thread consumes a concurrent queue: when Log4J calls `append()`, the appender converts the passed
+`LoggingEvent` into a textual representation, verifies that it conforms to limitations imposed by the
+service, and adds it to the queue.
 
-When the messages on the internal queue reach a configured batch size, or a batch timeout occurs, the
-currently-queued messages are passed to a writer thread. This is handled by passing the entire list
-and creating a new one in the appender; writers may then use this list however they wish.
+The writer consumes that queue, attempting to batch together messages into a single request. Once it
+has a batch (either based on size or a configurable timeout) it attempts to write those messages to
+the service. In addition to retries embedded within the SDK, the writer makes three attempts to write
+the batch; if unable to do so it drops the batch and logs a message on Log4J's internal logger.
 
-The writer thread combines messages into batches, with the batch size dependent on the service. It
-attempts to send each batch multiple times, with exponential fallback (note that the service client
-has its own retry mechanisms). If unable to send the batch after multiple tries, it is blocked and
-the failure is logged using Log4J's internal logger.
+The writer thread is lazily started on the first call to `append()`. There's a factory for writer
+objects and writer threads, to support testing (_not_ to be enterprisey!). If unable to start the
+writer thread, messages are dropped and the situation is logged to the internal topic.
 
-The writer thread is lazily started on the first call to `append()`. You can disable actual writes by
-setting the `dryRun` configuration parameter. All AWS clients use the default constructor, which
-retrieves credentials via the [DefaultAWSCredentialsProviderChain](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/auth/DefaultAWSCredentialsProviderChain.html).
+The writer uses the default constructor for each service, which in turn uses the default credential
+provider chain. This allows you to specify explicit credentials using several mechanisms, or to use
+instance roles for applications running on EC2 or Lambda.
 
 
 ## Building
@@ -111,8 +124,8 @@ I follow the standard `MAJOR.MINOR.PATCH` versioning scheme:
 * `MINOR` will be incremented for each destination; version x.y.0 will be minimally functional
 * `PATCH` will be incremented to reflect bugfixes or additional features; significant bugfixes will be backported
 
-I do not plan to upload all releases to Maven Central; just the "final" ones for each destination
-(where "final" may include backports). These releases will be tagged with the name `rel-MAJOR.MINOR.PATCH`.
+Not all versions will be released to Maven Central. I may choose to make release (non-snapshot) versions for
+development testing, or as interim steps of a bigger piece of functionality.
 
 The source tree also contains commits with major version of 0. These are "pre-release" versions, and
 may change in arbitrary ways. Please do not use them.
@@ -120,8 +133,8 @@ may change in arbitrary ways. Please do not use them.
 
 ## Source Control
 
-The `master` branch is intended to contain released artifacts only (ie, no snapshot builds). It may,
-however, contain commits that aren't strictly releases (eg, documentation updates).
+The `master` branch holds the current branch of development. Commits on master are functional, but may
+not contain all functionality. They may be "snapshot" or release builds.
 
 Development takes place on a `dev-MAJOR.MINOR.PATCH` branch; these branches are deleted once their
 content has been merged into `master`.
@@ -131,8 +144,8 @@ expected to live forever.
 
 Each release version is tagged with `release-MAJOR.MINOR.PATCH`.
 
-Merges into `master` are handled via pull requests, and each is squashed into a single commit. If
-you really want to see my experiments you can look at closed PRs.
+Merges into `master` are typically handled via pull requests, and each is squashed into a single commit. If
+you really want to see my development process you can look at closed PRs.
 
 
 ## FAQ

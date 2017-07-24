@@ -15,8 +15,8 @@ import net.sf.kdgcommons.test.StringAsserts;
 
 import com.kdgregory.log4j.aws.CloudWatchAppender;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.log4j.aws.internal.shared.NullThreadFactory;
 import com.kdgregory.testhelpers.log4j.HeaderFooterLayout;
+import com.kdgregory.testhelpers.log4j.NullThreadFactory;
 import com.kdgregory.testhelpers.log4j.aws.cloudwatch.MockCloudWatchWriter;
 import com.kdgregory.testhelpers.log4j.aws.cloudwatch.MockWriterFactory;
 

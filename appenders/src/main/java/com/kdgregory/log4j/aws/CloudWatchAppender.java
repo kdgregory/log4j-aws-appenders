@@ -22,7 +22,7 @@ import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 /**
  *  Appender that writes to a Cloudwatch log stream.
  */
-public class CloudWatchAppender extends AppenderSkeleton implements UncaughtExceptionHandler
+public class CloudWatchAppender extends AppenderSkeleton
 {
     /**
      *  The different types of writer rotation that we support.
@@ -341,19 +341,6 @@ public class CloudWatchAppender extends AppenderSkeleton implements UncaughtExce
 
 
 //----------------------------------------------------------------------------
-//  UncaughtExceptionHandler
-//----------------------------------------------------------------------------
-
-    @Override
-    public void uncaughtException(Thread t, Throwable ex)
-    {
-        LogLog.error("CloudWatchLogWriter failure", ex);
-        writer = null;
-        lastWriterException = ex;
-    }
-
-
-//----------------------------------------------------------------------------
 //  Appender-specific methods
 //----------------------------------------------------------------------------
 
@@ -410,7 +397,16 @@ public class CloudWatchAppender extends AppenderSkeleton implements UncaughtExce
                 actualLogStream = CloudWatchConstants.ALLOWED_NAME_REGEX.matcher(subs.perform(logStream)).replaceAll("");
 
                 writer = writerFactory.newLogWriter();
-                threadFactory.startLoggingThread(writer, this);
+                threadFactory.startLoggingThread(writer, new UncaughtExceptionHandler()
+                {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable ex)
+                    {
+                        LogLog.error("CloudWatchLogWriter failure", ex);
+                        writer = null;
+                        lastWriterException = ex;
+                    }
+                });
 
                 if (layout.getHeader() != null)
                 {

@@ -1,6 +1,8 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.aws.internal.shared;
 
+import java.lang.Thread.UncaughtExceptionHandler;
+
 /**
  *  Creates and starts a new thread for running the LogWriter.
  *  <p>
@@ -14,5 +16,5 @@ package com.kdgregory.log4j.aws.internal.shared;
  */
 public interface ThreadFactory
 {
-    void startLoggingThread(LogWriter writer);
+    void startLoggingThread(LogWriter writer, UncaughtExceptionHandler exceptionHandler);
 }

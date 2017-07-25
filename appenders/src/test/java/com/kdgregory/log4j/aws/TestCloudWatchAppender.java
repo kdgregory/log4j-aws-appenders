@@ -2,6 +2,7 @@
 package com.kdgregory.log4j.aws;
 
 import java.net.URL;
+import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
 
@@ -14,7 +15,10 @@ import org.apache.log4j.PropertyConfigurator;
 import net.sf.kdgcommons.test.StringAsserts;
 
 import com.kdgregory.log4j.aws.CloudWatchAppender;
+import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
+import com.kdgregory.log4j.aws.internal.shared.LogWriter;
+import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 import com.kdgregory.testhelpers.log4j.HeaderFooterLayout;
 import com.kdgregory.testhelpers.log4j.NullThreadFactory;
 import com.kdgregory.testhelpers.log4j.aws.cloudwatch.MockCloudWatchWriter;
@@ -326,4 +330,74 @@ public class TestCloudWatchAppender
         assertNotSame("post-rotate, writer has been replaced",      writer0,    appender.writer);
         assertEquals("post-rotate, messages passed to new writer",  1,          ((MockCloudWatchWriter)appender.writer).messages.size());
     }
+
+
+    @Test
+    public void testWriterErrorHandling() throws Exception
+    {
+        CloudWatchAppender appender = initialize("TestCloudWatchAppender.testWriterErrorHandling.properties");
+
+        // note that we will be running the writer on a separate thread
+
+        appender.threadFactory = new DefaultThreadFactory();
+        appender.writerFactory = new WriterFactory()
+        {
+            @Override
+            public LogWriter newLogWriter()
+            {
+                return new LogWriter()
+                {
+                    private CountDownLatch appendLatch = new CountDownLatch(2);
+
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            appendLatch.await();
+                            throw new IllegalStateException("danger, danger Will Robinson!");
+                        }
+                        catch (InterruptedException ignored)
+                        { /* nothing to do */ }
+                    }
+
+                    @Override
+                    public void stop()
+                    {
+                        // not used
+                    }
+
+                    @Override
+                    public void setBatchDelay(long value)
+                    {
+                        // not used
+                    }
+
+                    @Override
+                    public void addMessage(LogMessage message)
+                    {
+                        appendLatch.countDown();
+                    }
+                };
+            }
+        };
+
+        Logger myLogger = Logger.getLogger(getClass());
+
+        myLogger.debug("this should trigger writer creation");
+        assertNotNull("writer has been initialized", appender.writer);
+        assertNull("writer has not yet thrown",      appender.lastWriterException);
+
+        myLogger.debug("this should trigger writer throwage");
+
+        // without getting really clever, the best way to wait for the throw to be reported is to sit and spin
+        for (int ii = 0 ; (ii < 10) && (appender.lastWriterException == null) ; ii++)
+        {
+            Thread.sleep(10);
+        }
+
+        assertNull("writer has been reset",         appender.writer);
+        assertEquals("last writer exception class", IllegalStateException.class, appender.lastWriterException.getClass());
+    }
+
 }

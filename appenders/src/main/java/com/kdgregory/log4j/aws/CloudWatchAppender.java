@@ -1,6 +1,7 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.aws;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -21,7 +22,7 @@ import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 /**
  *  Appender that writes to a Cloudwatch log stream.
  */
-public class CloudWatchAppender extends AppenderSkeleton
+public class CloudWatchAppender extends AppenderSkeleton implements UncaughtExceptionHandler
 {
     /**
      *  The different types of writer rotation that we support.
@@ -69,7 +70,7 @@ public class CloudWatchAppender extends AppenderSkeleton
 
     // the current writer; initialized on first append, changed after rotation
 
-    protected LogWriter writer;
+    protected volatile LogWriter writer;
 
     // the last time we rotated the writer
 
@@ -78,6 +79,10 @@ public class CloudWatchAppender extends AppenderSkeleton
     // number of messages since we rotated the writer
 
     protected volatile int lastRotationCount;
+
+    // this is strictly for testing
+
+    protected volatile Throwable lastWriterException;
 
     // this object is used for synchronization of initialization and writer change
 
@@ -336,6 +341,19 @@ public class CloudWatchAppender extends AppenderSkeleton
 
 
 //----------------------------------------------------------------------------
+//  UncaughtExceptionHandler
+//----------------------------------------------------------------------------
+
+    @Override
+    public void uncaughtException(Thread t, Throwable ex)
+    {
+        LogLog.error("CloudWatchLogWriter failure", ex);
+        writer = null;
+        lastWriterException = ex;
+    }
+
+
+//----------------------------------------------------------------------------
 //  Appender-specific methods
 //----------------------------------------------------------------------------
 
@@ -392,7 +410,7 @@ public class CloudWatchAppender extends AppenderSkeleton
                 actualLogStream = CloudWatchConstants.ALLOWED_NAME_REGEX.matcher(subs.perform(logStream)).replaceAll("");
 
                 writer = writerFactory.newLogWriter();
-                threadFactory.startLoggingThread(writer);
+                threadFactory.startLoggingThread(writer, this);
 
                 if (layout.getHeader() != null)
                 {

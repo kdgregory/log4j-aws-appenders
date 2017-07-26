@@ -84,19 +84,23 @@ The primary design constraints are these:
   constraints on either number of messages or bytes in a batch.
 * Services may reject our requests, either temporarily or permanently.
 
-To meet these constraints, the appender spins up a separate thread for communication with the service.
-This thread consumes a concurrent queue: when Log4J calls `append()`, the appender converts the passed
-`LoggingEvent` into a textual representation, verifies that it conforms to limitations imposed by the
-service, and adds it to the queue.
+To meet these constraints, the appender spins up a separate thread for communication with the service,
+with a concurrent queue between appender and logger. When Log4J calls `append()`, the appender converts
+the passed `LoggingEvent` into a textual representation, verifies that it conforms to limitations imposed
+by the service, and adds it to the queue.
 
 The writer consumes that queue, attempting to batch together messages into a single request. Once it
 has a batch (either based on size or a configurable timeout) it attempts to write those messages to
 the service. In addition to retries embedded within the SDK, the writer makes three attempts to write
 the batch; if unable to do so it drops the batch and logs a message on Log4J's internal logger.
 
+Unexpected exceptions within the writer thread are reported using an uncaught exception handler in
+the appender. This will trigger the appender to discard the writer and create a new one (and report
+the event to the internal logger).
+
 The writer thread is lazily started on the first call to `append()`. There's a factory for writer
 objects and writer threads, to support testing (_not_ to be enterprisey!). If unable to start the
-writer thread, messages are dropped and the situation is logged to the internal topic.
+writer thread, messages are dropped and the situation is reported to the internal logger.
 
 The writer uses the default constructor for each service, which in turn uses the default credential
 provider chain. This allows you to specify explicit credentials using several mechanisms, or to use
@@ -111,9 +115,10 @@ There are two projects in this repository:
 * `tests` is a set of integration tests. These are in a separate module so that they can be run as
   desired, rather than as part of every build.
 
-Classes in the package `com.kdgregory.log4j.aws` are expected to remain backwards compatible. Any
-other classes, particularly those in `com.kdgregory.log4j.aws.internal` may change arbitrarily and
-should not be relied-upon by user code. This caveat also applies to all test classes/packages.
+Classes in the package `com.kdgregory.log4j.aws` package are expected to remain backwards compatible.
+Any other classes, particularly those in `com.kdgregory.log4j.aws.internal` package, may change
+arbitrarily and should not be relied-upon by user code. This caveat also applies to all test
+classes and packages.
 
 
 ## Versions
@@ -121,20 +126,21 @@ should not be relied-upon by user code. This caveat also applies to all test cla
 I follow the standard `MAJOR.MINOR.PATCH` versioning scheme:
 
 * `MAJOR` will track the Log4J major version number (yes, eventually I'll release a version for Log4J 2.x)
-* `MINOR` will be incremented for each destination; version x.y.0 will be minimally functional
+* `MINOR` will be incremented for each destination (CloudWatch, Kinesis, &c)
 * `PATCH` will be incremented to reflect bugfixes or additional features; significant bugfixes will be backported
 
 Not all versions will be released to Maven Central. I may choose to make release (non-snapshot) versions for
-development testing, or as interim steps of a bigger piece of functionality.
+development testing, or as interim steps of a bigger piece of functionality. Versions that _are_ released to
+Maven Central will be tagged in source control.
 
-The source tree also contains commits with major version of 0. These are "pre-release" versions, and
-may change in arbitrary ways. Please do not use them.
+The source tree also contains commits with major version of 0. These are "pre-release" versions, and may change
+in arbitrary ways. Please do not use them.
 
 
 ## Source Control
 
 The `master` branch holds the current branch of development. Commits on master are functional, but may
-not contain all functionality. They may be "snapshot" or release builds.
+not be "complete" (whatever that means). They may be "snapshot" or release builds.
 
 Development takes place on a `dev-MAJOR.MINOR.PATCH` branch; these branches are deleted once their
 content has been merged into `master`.
@@ -142,7 +148,7 @@ content has been merged into `master`.
 Each minor release has a `support-MAJOR.MINOR` branch for backports and patches. These branches are
 expected to live forever.
 
-Each release version is tagged with `release-MAJOR.MINOR.PATCH`.
+Each version released to Maven Central is tagged with `release-MAJOR.MINOR.PATCH`.
 
 Merges into `master` are typically handled via pull requests, and each is squashed into a single commit. If
 you really want to see my development process you can look at closed PRs.
@@ -154,12 +160,13 @@ Isn't Log4J 1.x at end of life?
 
 > Yep. Have you updated all of your applications yet? If you have, congratulations.
   I haven't, nor have a lot of people that I know. Replacing a stable logging
-  framework is pretty low on the priority list, even though we don't expect problems.
+  framework is pretty low on the priority list.
 
 If you found other appenders, why are you writing this?
 
 > Reinventing wheels can be a great spur to creativity. It also gives me a deeper
-  understanding of the services involved, which is a Good Thing.
+  understanding of the services involved, which is a Good Thing. And of course I've
+  added features that I didn't find elsewhere.
 
 What happens when the appender drops messages?
 

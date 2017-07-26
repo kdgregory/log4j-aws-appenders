@@ -9,13 +9,13 @@ an appender for 1.x.
 
 But, this seemed to be an easy weekend project, and I'd be able to get exactly what I
 wanted if I was willing to reinvent a wheel. After some thought, I expanded the idea:
-why not reinvent several wheels, and be able to write to multiple destinations?
+why not reinvent several wheels, and be able to write to multiple destinations? It's
+been more than a dozen weekends since I started the project; I keep getting new ideas.
 
-Here are the destinations I plan to support. They'll be checked when in development,
-and the link will take you to additional documentation.
+Here are the destinations I plan to support. No idea how many weekends they'll take.
 
 * [x] [CloudWatch Logs](Docs/cloudwatch.md)
-* [ ] Kinesis
+* [ ] Kinesis Firehose (to support Elastic Search)
 * [ ] SNS (I think there it might be interesting to create an "error watcher")
 * [ ] S3 (as an alternative to an external "logfile mover")
 
@@ -31,7 +31,7 @@ example configuration.
 
 To avoid dependency hell, all dependencies are marked as "provided": you will need
 to ensure that your project includes necessary dependencies. Minimum dependency
-versions will depend on which AWS service you use: Amazon introduces new services
+versions will depend on which AWS service you use; Amazon introduces new services
 and APIs all the time, and does not pay attention to backwards compatibility.
 
 * JDK: 1.6  
@@ -39,7 +39,8 @@ and APIs all the time, and does not pay attention to backwards compatibility.
   after 1.6. The AWS code, however, might.
 * Log4J: 1.2.16  
   This is the first version that implements `LoggingEvent.getTimeStamp()`, which
-  is needed to order messages when sending to AWS.
+  is needed to order messages when sending to AWS. It's been around since 2010,
+  so if you haven't upgraded already you should.
 * Cloudwatch SDK: 1.11.0  
   This is the first version where `createLogGroup()` and `createLogStream()` return
   a result object. In the 1.10.x branch, these functions returned `void`; you can
@@ -49,7 +50,7 @@ and APIs all the time, and does not pay attention to backwards compatibility.
 ### Substitution Variables
 
 Logging destination names (such as a CloudWatch log group or SNS topic) may use substitution variables
-from the table below. To use, these must be brace-delimited (eg: or `MyLog-{date}`, _not_ `MyLog-date`)
+from the table below. To use, these must be brace-delimited (eg: `MyLog-{date}`, _not_ `MyLog-date`)
 and may appear in any configuration variable that allows substitutions.
 
 
@@ -59,7 +60,7 @@ Variable            | Description
 `timestamp`         | Current UTC timestamp: `YYYYMMDDHHMMSS`
 `hourlyTimestamp`   | Current UTC timestamp, with minutes and seconds truncated: `YYYYMMDDHH0000`
 `startTimestamp`    | UTC timestamp of JVM startup as returned by `RuntimeMxBean`: `YYYYMMDDHHMMSS`
-`sequence`          | A sequence number that's incremented each time a log is rotated (only useful for loggers that rotate logs); defaults to 0
+`sequence`          | A sequence number that's incremented each time a log is rotated (only useful for loggers that rotate logs)
 `pid`               | Process ID (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms)
 `hostname`          | Unqualified hostname (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms)
 `instanceId`        | EC2 instance ID. Beware that using this outside of EC2 will introduce a several-minute delay, as the appender tries to retrieve the information
@@ -85,22 +86,22 @@ The primary design constraints are these:
 * Services may reject our requests, either temporarily or permanently.
 
 To meet these constraints, the appender spins up a separate thread for communication with the service,
-with a concurrent queue between appender and logger. When Log4J calls `append()`, the appender converts
+with a concurrent queue between appender and writer. When Log4J calls `append()`, the appender converts
 the passed `LoggingEvent` into a textual representation, verifies that it conforms to limitations imposed
 by the service, and adds it to the queue.
 
 The writer consumes that queue, attempting to batch together messages into a single request. Once it
 has a batch (either based on size or a configurable timeout) it attempts to write those messages to
-the service. In addition to retries embedded within the SDK, the writer makes three attempts to write
-the batch; if unable to do so it drops the batch and logs a message on Log4J's internal logger.
-
-Unexpected exceptions within the writer thread are reported using an uncaught exception handler in
-the appender. This will trigger the appender to discard the writer and create a new one (and report
-the event to the internal logger).
+the service. In addition to retries embedded within the AWS SDK, the writer makes three attempts to
+write the batch; if unable to do so it drops the batch and logs a message on Log4J's internal logger.
 
 The writer thread is lazily started on the first call to `append()`. There's a factory for writer
 objects and writer threads, to support testing (_not_ to be enterprisey!). If unable to start the
 writer thread, messages are dropped and the situation is reported to the internal logger.
+
+Unexpected exceptions within the writer thread are reported using an uncaught exception handler in
+the appender. This will trigger the appender to discard the writer and create a new one (and report
+the failure to the internal logger).
 
 The writer uses the default constructor for each service, which in turn uses the default credential
 provider chain. This allows you to specify explicit credentials using several mechanisms, or to use
@@ -115,8 +116,8 @@ There are two projects in this repository:
 * `tests` is a set of integration tests. These are in a separate module so that they can be run as
   desired, rather than as part of every build.
 
-Classes in the package `com.kdgregory.log4j.aws` package are expected to remain backwards compatible.
-Any other classes, particularly those in `com.kdgregory.log4j.aws.internal` package, may change
+Classes in the `com.kdgregory.log4j.aws` package are expected to remain backwards compatible. Any
+other classes, particularly those in the `com.kdgregory.log4j.aws.internal` package, may change
 arbitrarily and should not be relied-upon by user code. This caveat also applies to all test
 classes and packages.
 

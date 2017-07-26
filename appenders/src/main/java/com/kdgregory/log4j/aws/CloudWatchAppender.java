@@ -46,14 +46,14 @@ public class CloudWatchAppender extends AppenderSkeleton
     }
 
 
-    //*********************************************************************************
-    // NOTE: any variables marked as protected will be replaced/examined during testing
-    //*********************************************************************************
+//*********************************************************************************
+// NOTE: any variables marked as protected may be updated/examined during testing
+//*********************************************************************************
 
     // flag to indicate whether we need to run setup
     private volatile boolean ready = false;
 
-    // flag to indicate whether we can keep writing; cannot be reset
+    // flag to indicate whether we can keep writing
     private volatile boolean closed = false;
 
     // factories for creating writer and thread
@@ -68,7 +68,7 @@ public class CloudWatchAppender extends AppenderSkeleton
         }
     };
 
-    // the current writer; initialized on first append, changed after rotation
+    // the current writer; initialized on first append, changed after rotation or error
 
     protected volatile LogWriter writer;
 
@@ -76,7 +76,7 @@ public class CloudWatchAppender extends AppenderSkeleton
 
     protected volatile long lastRotationTimestamp;
 
-    // number of messages since we rotated the writer
+    // number of messages since we last rotated the writer
 
     protected volatile int lastRotationCount;
 
@@ -92,13 +92,14 @@ public class CloudWatchAppender extends AppenderSkeleton
     // very fast, so plain-old-synchronization should not cause undue contention
 
     private Object messageQueueLock = new Object();
+
     // these variables hold the post-substitution log-group and log-stream names
     // (mostly useful for testing)
 
     private String  actualLogGroup;
     private String  actualLogStream;
 
-    // all vars below this point are configuration-controlled
+    // all vars below this point are configuration
 
     private String          logGroup;
     private String          logStream;
@@ -131,7 +132,7 @@ public class CloudWatchAppender extends AppenderSkeleton
      *  You typically assign a single log group to an application, and then
      *  use multiple log streams for instances of that application.
      *  <p>
-     *  Log group is required. If you do not configure the log group, the
+     *  There is no default value. If you do not configure the log group, the
      *  appender will be disabled and will report its misconfiguration.
      */
     public void setLogGroup(String value)
@@ -152,7 +153,7 @@ public class CloudWatchAppender extends AppenderSkeleton
 
     /**
      *  Returns the current log group name, post-substitutions. This is lazily
-     *  populated, so will be <code>null</code> until the first message is written.
+     *  populated, so will be <code>null</code> until first append.
      */
     public String getActualLogGroup()
     {
@@ -161,14 +162,12 @@ public class CloudWatchAppender extends AppenderSkeleton
 
 
     /**
-     *  Sets the Cloudwatch Log Stream associated with this appender.
+     *  Sets the CloudWatch Log Stream associated with this appender.
      *  <p>
      *  You typically create a separate log stream for each instance of the
      *  application.
      *  <p>
-     *  If you do not explicitly configure the log stream, then it will use
-     *  a string representation of the virtual machine start time (formatted
-     *  "YYYYMMDDHHMMSS" using UTC time).
+     *  Default value is <code>{startTimestamp}</code>, the JVM startup timestamp.
      */
     public void setLogStream(String value)
     {
@@ -188,7 +187,7 @@ public class CloudWatchAppender extends AppenderSkeleton
 
     /**
      *  Returns the current log stream name, post-substitutions. This is lazily
-     *  populated, so will be <code>null</code> until the first message is written.
+     *  populated, so will be <code>null</code> until first append.
      */
     public String getActualLogStream()
     {
@@ -199,15 +198,14 @@ public class CloudWatchAppender extends AppenderSkeleton
     /**
      *  Sets the maximum batch delay, in milliseconds.
      *  <p>
-     *  This acts as a counterbalance to batch size, for applications that have bursty
-     *  logging: if the time since the first message was added to the batch exceeds
-     *  this value, the batch will be sent.
+     *  The writer attempts to gather multiple logging messages into a batch, to
+     *  reduce communication with the service. The batch delay controls the time
+     *  that a message will remain in-memory while the writer builds this batch.
+     *  In a low-volume environment it will be the main determinant of when the
+     *  batch is sent; in a high volume environment it's likely that the maximum
+     *  request size will be reached before the batch delay expires.
      *  <p>
-     *  <em>Note:</em> batch delay is only checked when calling {@link #append}. If you
-     *  have infrequent log messages, you should set batch size to 1 rather than rely on
-     *  this parameter.
-     *  <p>
-     *  The default value is 4000, which is rather arbitrarily chosen.
+     *  The default value is 2000, which is rather arbitrarily chosen.
      */
     public void setBatchDelay(long value)
     {
@@ -228,8 +226,7 @@ public class CloudWatchAppender extends AppenderSkeleton
 
 
     /**
-     *  Sets the rule for rotating to a new log stream. Acceptable values are "none", "interval",
-     *  "hourly", and "daily"; see {@link #RotationMode} for details.
+     *  Sets the rule for log stream rotation. See {@link #RotationMode} for allowed values.
      *  <p>
      *  Attempting to set an invalid mode is equivalent to "none", but will emit a warning to the
      *  Log4J internal log.
@@ -258,9 +255,12 @@ public class CloudWatchAppender extends AppenderSkeleton
 
 
     /**
-     *  Sets the rotation interval, in milliseconds. This parameter is used only when the
-     *  <code>rotationMode</code> parameter is "interval"; to be useful, the log stream name
-     *  should be timestamp-based.
+     *  Sets the rotation interval. This parameter is used only when the <code>rotationMode</code>
+     *  parameter is "interval" or "count": for the former, it's the number of milliseconds
+     *  between rotations, for the latter the number of messages.
+     *  <p>
+     *  If using interval rotation, you should include <code>{timestamp}</code> in the log stream
+     *  name. If using counted rotation, you should include <code>{sequence}</code>.
      */
     public void setRotationInterval(long value)
     {
@@ -278,7 +278,7 @@ public class CloudWatchAppender extends AppenderSkeleton
 
 
     /**
-     *  Sets the log sequence number, used by the <code>sequence</code> substitution variable.
+     *  Sets the log sequence number, used by the <code>{sequence}</code> substitution variable.
      */
     public void setSequence(int value)
     {
@@ -346,7 +346,8 @@ public class CloudWatchAppender extends AppenderSkeleton
 
     /**
      *  Rotates the log stream: flushes all outstanding messages to the current
-     *  stream, and opens a new stream.
+     *  stream, and opens a new stream. This is called internally, and exposed
+     *  for testing.
      */
     public void rotate()
     {
@@ -425,7 +426,7 @@ public class CloudWatchAppender extends AppenderSkeleton
 
 
     /**
-     *  Closes the current writer, passing it any outstanding messages.
+     *  Closes the current writer.
      */
     private void stopWriter()
     {
@@ -434,16 +435,9 @@ public class CloudWatchAppender extends AppenderSkeleton
             if (writer == null)
                 return;
 
-            try
+            if (layout.getFooter() != null)
             {
-                if (layout.getFooter() != null)
-                {
-                    internalAppend(LogMessage.create(layout.getFooter()));
-                }
-            }
-            catch (Exception ex)
-            {
-                LogLog.error("exception while flushing writer", ex);
+                internalAppend(LogMessage.create(layout.getFooter()));
             }
 
             writer.stop();
@@ -463,8 +457,7 @@ public class CloudWatchAppender extends AppenderSkeleton
             return;
         }
 
-        long now = System.currentTimeMillis();
-        rotateIfNeeded(now);
+        rotateIfNeeded(System.currentTimeMillis());
 
         synchronized (messageQueueLock)
         {

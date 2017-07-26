@@ -191,7 +191,7 @@ public class TestCloudWatchAppender
     public void testSubstitution() throws Exception
     {
         // note that the property value includes invalid characters
-        System.setProperty("TestCloudwatchAppender.testSubstitution", "foo/bar");
+        System.setProperty("TestCloudWatchAppender.testSubstitution", "foo/bar");
 
         initialize("TestCloudWatchAppender.testSubstitution.properties");
         assertNull("actual log group after construction", appender.getActualLogGroup());

@@ -27,8 +27,8 @@ The appender provides the following properties (also described in the JavaDoc):
 
 Name                | Description
 --------------------|----------------------------------------------------------------
-`logGroup`          | Name of the Cloudwatch log group where messages are sent; may use substitutions. If this group doesn't exist it will be created. No default.
-`logStream`         | Name of the Cloudwatch log stream where messages are sent; may use substitutions. Defaults to `{startTimestamp}`.
+`logGroup`          | Name of the CloudWatch log group where messages are sent; may use substitutions. If this group doesn't exist it will be created. No default.
+`logStream`         | Name of the CloudWatch log stream where messages are sent; may use substitutions. Defaults to `{startTimestamp}`.
 `batchDelay`        | The time, in milliseconds, that the writer will wait to accumulate messages for a batch. See below for more information.
 `rotationMode`      | Controls whether auto-rotation is enabled. Values are `none`, `count`, `interval`, `hourly`, and `daily`; default is `none`. See below for more information.
 `rotationInterval`  | Used only for `count` and `interval` rotation modes: for the former, the maximum number of messages, and for the latter, the number of milliseconds between automatic rotations.

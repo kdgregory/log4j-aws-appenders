@@ -101,7 +101,7 @@ implements Comparable<LogMessage>
 
 
     /**
-     *  Returns the size of the message, as it affects the Cloudwatch batch.
+     *  Returns the size of the message, as it affects the CloudWatch batch.
      */
     public int size()
     {
@@ -110,7 +110,7 @@ implements Comparable<LogMessage>
 
 
     /**
-     *  Returns the message content as a string (unfortunately, the Cloudwatch
+     *  Returns the message content as a string (unfortunately, the CloudWatch
      *  API doesn't allow us to write raw bytes).
      */
     public String getMessage()

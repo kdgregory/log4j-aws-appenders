@@ -41,7 +41,7 @@ and APIs all the time, and does not pay attention to backwards compatibility.
   This is the first version that implements `LoggingEvent.getTimeStamp()`, which
   is needed to order messages when sending to AWS. It's been around since 2010,
   so if you haven't upgraded already you should.
-* Cloudwatch SDK: 1.11.0  
+* CloudWatch SDK: 1.11.0  
   This is the first version where `createLogGroup()` and `createLogStream()` return
   a result object. In the 1.10.x branch, these functions returned `void`; you can
   compile the appender for those releases, but it won't run on newer releases.

@@ -20,7 +20,7 @@ import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 
 
 /**
- *  Appender that writes to a Cloudwatch log stream.
+ *  Appender that writes to a CloudWatch log stream.
  */
 public class CloudWatchAppender extends AppenderSkeleton
 {
@@ -127,7 +127,7 @@ public class CloudWatchAppender extends AppenderSkeleton
 //----------------------------------------------------------------------------
 
     /**
-     *  Sets the Cloudwatch Log Group associated with this appender.
+     *  Sets the CloudWatch Log Group associated with this appender.
      *  <p>
      *  You typically assign a single log group to an application, and then
      *  use multiple log streams for instances of that application.

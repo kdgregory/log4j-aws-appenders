@@ -4,7 +4,7 @@
 
     <groupId>com.kdgregory.log4j-appenders</groupId>
     <artifactId>aws-appenders-test</artifactId>
-    <version>0.0.8-SNAPSHOT</version>
+    <version>0.0.8</version>
     <packaging>jar</packaging>
 
     <name>AWS Log4J Appender Integration Tests</name>
@@ -19,7 +19,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <aws-sdk.version>1.11.60</aws-sdk.version>
+        <aws-sdk.version>1.11.121</aws-sdk.version>
         <junit.version>4.10</junit.version>
         <log4j.version>1.2.16</log4j.version>
     </properties>

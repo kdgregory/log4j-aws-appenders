@@ -19,7 +19,7 @@ import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
 
 public class SmoketestCloudWatchAppender
 {
-    private final static String LOGGROUP_NAME = "TestCloudwatchAppender";
+    private final static String LOGGROUP_NAME = "TestCloudWatchAppender";
 
     private AWSLogsClient client;
 

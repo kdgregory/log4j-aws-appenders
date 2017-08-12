@@ -2,9 +2,9 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.kdgregory.log4j-appenders</groupId>
+    <groupId>com.kdgregory.log4j</groupId>
     <artifactId>aws-appenders</artifactId>
-    <version>0.0.8</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <name>AWS Log4J Appenders</name>
@@ -12,6 +12,28 @@
     <description>
         Appenders for Log4J 1.x that writes log events to various AWS services
     </description>
+
+    <url> https://github.com/kdgregory/log4j-aws-appenders </url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Keith D Gregory</name>
+            <email>kdgregory@users.noreply.github.com</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/kdgregory/log4j-aws-appenders.git</connection>
+        <developerConnection>scm:git:git@github.com:kdgregory/log4j-aws-appenders.git</developerConnection>
+        <url>https://github.com/kdgregory/log4j-aws-appenders</url>
+    </scm>
 
 
     <properties>
@@ -23,6 +45,8 @@
         <junit.version>4.10</junit.version>
         <kdgcommons.version>1.0.15</kdgcommons.version>
         <log4j.version>1.2.16</log4j.version>
+
+        <plugin.compiler.version>3.1</plugin.compiler.version>
     </properties>
 
 
@@ -59,6 +83,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>${plugin.compiler.version}</version>
                 <configuration>
                     <source>1.6</source>
                     <target>1.6</target>
@@ -67,5 +92,15 @@
             </plugin>
         </plugins>
     </build>
+
+
+    <!-- local distribution management so I can review before deploying to Sonatype OSSHR -->
+    <distributionManagement>
+        <repository>
+            <id>build</id>
+            <name>Local Deployment Directory</name>
+            <url>file://${project.build.directory}/deploy</url>
+        </repository>
+    </distributionManagement>
 
 </project>

@@ -216,7 +216,7 @@ public class CloudWatchAppender extends AppenderSkeleton
 
 
     /**
-     *  Returns the maximum batch delay; see {@link #setMaxDelay}. Primarily used
+     *  Returns the maximum batch delay; see {@link #setBatchDelay}. Primarily used
      *  for testing.
      */
     public long getBatchDelay()
@@ -226,7 +226,7 @@ public class CloudWatchAppender extends AppenderSkeleton
 
 
     /**
-     *  Sets the rule for log stream rotation. See {@link #RotationMode} for allowed values.
+     *  Sets the rule for log stream rotation. See {@link CloudWatchAppender.RotationMode} for allowed values.
      *  <p>
      *  Attempting to set an invalid mode is equivalent to "none", but will emit a warning to the
      *  Log4J internal log.

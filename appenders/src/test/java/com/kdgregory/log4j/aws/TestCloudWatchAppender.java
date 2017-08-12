@@ -53,15 +53,15 @@ public class TestCloudWatchAppender
         appender.writerFactory = new MockWriterFactory(appender);
         appender.threadFactory = new NullThreadFactory();
     }
-    
-    
+
+
     @Before
     public void setUp()
     {
         LogLog.setQuietMode(true);
     }
-    
-    
+
+
     @After
     public void tearDown()
     {

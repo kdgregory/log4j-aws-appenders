@@ -59,7 +59,7 @@ Variable            | Description
 `date`              | Current UTC date: `YYYYMMDD`
 `timestamp`         | Current UTC timestamp: `YYYYMMDDHHMMSS`
 `hourlyTimestamp`   | Current UTC timestamp, with minutes and seconds truncated: `YYYYMMDDHH0000`
-`startTimestamp`    | UTC timestamp of JVM startup as returned by `RuntimeMxBean`: `YYYYMMDDHHMMSS`
+`startupTimestamp`  | UTC timestamp of JVM startup as returned by `RuntimeMxBean`: `YYYYMMDDHHMMSS`
 `sequence`          | A sequence number that's incremented each time a log is rotated (only useful for loggers that rotate logs)
 `pid`               | Process ID (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms)
 `hostname`          | Unqualified hostname (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms)
@@ -174,3 +174,25 @@ What happens when the appender drops messages?
 > All misbehaviors get logged using the Log4J internal logger. To see messages from
   this logger, set the system property `log4j.configDebug` to `true` (note that the
   internal logger always writes messages to StdErr).
+
+What are all these messages from `com.amazonaws` and `org.apache.http`?
+
+> You attached the `CloudWatchAppender` to your root logger. There are two solutions;
+  the first is to attach the appender only to your program's classes (here I turn off
+  additivity, so the messages _won't_ go to the root logger; you might prefer sending
+  messages to both destinations).
+
+    log4j.logger.com.myprogram=DEBUG, cloudwatch
+    log4j.additivity.com.myprogram=false
+
+> Or alternatively, shut off logging for those packages that you don't care about.
+
+    log4j.logger.org.apache.http=ERROR
+    log4j.logger.com.amazonaws=ERROR
+
+> My preference is to attach the CloudWatch appender to my application classes, and use
+  the built-in `ConsoleAppender` as the root logger. This ensures that you have some
+  way to track "meta" issues with the logging configuration.
+
+> Note that seeing unwanted messages is a problem with whatever appender you might use.
+  It's more apparent here because the logger invokes code that itself writes to the log.

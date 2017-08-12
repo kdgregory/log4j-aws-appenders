@@ -93,4 +93,14 @@
         </plugins>
     </build>
 
+
+    <!-- local distribution management so I can review before deploying to Sonatype OSSHR -->
+    <distributionManagement>
+        <repository>
+            <id>build</id>
+            <name>Local Deployment Directory</name>
+            <url>file://${project.build.directory}/deploy</url>
+        </repository>
+    </distributionManagement>
+
 </project>

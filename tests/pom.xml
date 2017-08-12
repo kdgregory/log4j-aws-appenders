@@ -2,7 +2,7 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.kdgregory.log4j-appenders</groupId>
+    <groupId>com.kdgregory.log4j</groupId>
     <artifactId>aws-appenders-test</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
@@ -52,7 +52,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.kdgregory.log4j-appenders</groupId>
+            <groupId>com.kdgregory.log4j</groupId>
             <artifactId>aws-appenders</artifactId>
             <version>${project.version}</version>
         </dependency>

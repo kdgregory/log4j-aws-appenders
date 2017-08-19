@@ -25,6 +25,7 @@ import com.kdgregory.testhelpers.log4j.HeaderFooterLayout;
 import com.kdgregory.testhelpers.log4j.NullThreadFactory;
 import com.kdgregory.testhelpers.log4j.aws.cloudwatch.MockCloudWatchWriter;
 import com.kdgregory.testhelpers.log4j.aws.cloudwatch.MockWriterFactory;
+import com.kdgregory.testhelpers.log4j.aws.cloudwatch.TestableCloudWatchAppender;
 
 
 public class TestCloudWatchAppender
@@ -35,7 +36,7 @@ public class TestCloudWatchAppender
 //----------------------------------------------------------------------------
 
     private Logger logger;
-    private CloudWatchAppender appender;
+    private TestableCloudWatchAppender appender;
 
 
     private void initialize(String propsName)
@@ -47,10 +48,10 @@ public class TestCloudWatchAppender
         logger = Logger.getLogger(getClass());
 
         Logger rootLogger = Logger.getRootLogger();
-        appender = (CloudWatchAppender)rootLogger.getAppender("default");
+        appender = (TestableCloudWatchAppender)rootLogger.getAppender("default");
 
-        appender.writerFactory = new MockWriterFactory(appender);
-        appender.threadFactory = new NullThreadFactory();
+        appender.setThreadFactory(new NullThreadFactory());
+        appender.setWriterFactory(new MockWriterFactory(appender));
     }
 
 
@@ -106,22 +107,22 @@ public class TestCloudWatchAppender
     public void testAppend() throws Exception
     {
         initialize("TestCloudWatchAppender.testAppend.properties");
-        MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
+        MockWriterFactory writerFactory = appender.getMockWriterFactory();
 
         long initialTimestamp = System.currentTimeMillis();
 
-        assertNull("before messages, writer is null",                   appender.writer);
+        assertNull("before messages, writer is null",                   appender.getWriter());
 
         logger.debug("first message");
 
-        assertNotNull("after message 1, writer is initialized",         appender.writer);
-        assertEquals("after message 1, calls to writer factory",        1,              writerFactory.invocationCount);
-        assertEquals("actual log-group name",                           "argle",        writerFactory.lastLogGroupName);
-        assertRegex("actual log-stream name",                           "20\\d{12}",    writerFactory.lastLogStreamName);
+        assertNotNull("after message 1, writer is initialized",         appender.getWriter());
+        assertEquals("after message 1, calls to writer factory",        1,          writerFactory.invocationCount);
+        assertEquals("actual log-group name",                           "argle",    writerFactory.lastLogGroupName);
+        assertEquals("actual log-stream name",                          "bargle",   writerFactory.lastLogStreamName);
 
-        MockCloudWatchWriter mock = (MockCloudWatchWriter)appender.writer;
+        MockCloudWatchWriter mockWriter = appender.getMockWriter();
 
-        assertEquals("after message 1, number of messages in writer",   1,          mock.messages.size());
+        assertEquals("after message 1, number of messages in writer",   1,          mockWriter.messages.size());
 
         // throw in a sleep so that we can discern timestamps
         Thread.sleep(100);
@@ -129,11 +130,11 @@ public class TestCloudWatchAppender
         logger.error("test with exception", new Exception("this is a test"));
 
         assertEquals("after message 2, calls to writer factory",        1,          writerFactory.invocationCount);
-        assertEquals("after message 1, number of messages in writer",   2,          mock.messages.size());
+        assertEquals("after message 1, number of messages in writer",   2,          mockWriter.messages.size());
 
         long finalTimestamp = System.currentTimeMillis();
 
-        LogMessage message1 = mock.messages.get(0);
+        LogMessage message1 = mockWriter.messages.get(0);
         assertTrue("message 1 timestamp >= initial timestamp", message1.getTimestamp() >= initialTimestamp);
         assertTrue("message 1 timestamp <= batch timestamp",   message1.getTimestamp() <= finalTimestamp);
         assertRegex(
@@ -141,7 +142,7 @@ public class TestCloudWatchAppender
                 "20[12][0-9]-.* DEBUG .*TestCloudWatchAppender .*first message.*",
                 message1.getMessage().trim());
 
-        LogMessage message2 = mock.messages.get(1);
+        LogMessage message2 = mockWriter.messages.get(1);
         assertTrue("message 2 includes exception",
                    message2.getMessage().indexOf("java.lang.Exception") > 0);
         assertTrue("message 2 includes exception",
@@ -150,7 +151,7 @@ public class TestCloudWatchAppender
         // since we have the writer, we can verify that setting the batch delay gets propagated
 
         appender.setBatchDelay(1234567);
-        assertEquals("writer batch delay propagated", 1234567, mock.batchDelay);
+        assertEquals("writer batch delay propagated", 1234567, mockWriter.batchDelay);
     }
 
 
@@ -177,12 +178,12 @@ public class TestCloudWatchAppender
         logger.debug("blah blah blah");
 
         // must retrieve writer before we shut down
-        MockCloudWatchWriter mock = (MockCloudWatchWriter)appender.writer;
+        MockCloudWatchWriter mockWriter = appender.getMockWriter();
         LogManager.shutdown();
 
-        assertEquals("number of messages written to log", 3, mock.messages.size());
-        assertEquals("header is first", HeaderFooterLayout.HEADER, mock.getMessage(0));
-        assertEquals("footer is last",  HeaderFooterLayout.FOOTER, mock.getMessage(2));
+        assertEquals("number of messages written to log", 3, mockWriter.messages.size());
+        assertEquals("header is first", HeaderFooterLayout.HEADER, mockWriter.getMessage(0));
+        assertEquals("footer is last",  HeaderFooterLayout.FOOTER, mockWriter.getMessage(2));
     }
 
 
@@ -193,8 +194,8 @@ public class TestCloudWatchAppender
         System.setProperty("TestCloudWatchAppender.testSubstitution", "foo/bar");
 
         initialize("TestCloudWatchAppender.testSubstitution.properties");
-        assertNull("actual log group after construction", appender.getActualLogGroup());
-        assertNull("actual log stream after construction", appender.getActualLogStream());
+        assertNull("actual log group after construction",   appender.getActualLogGroup());
+        assertNull("actual log stream after construction",  appender.getActualLogStream());
 
         // need to trigger append to apply substitutions
         logger.debug("doesn't matter what's written");
@@ -208,7 +209,7 @@ public class TestCloudWatchAppender
                     "MyStream-20\\d{12}-bogus",
                     appender.getActualLogStream());
 
-        MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
+        MockWriterFactory writerFactory = appender.getMockWriterFactory();
         assertEquals("factory saw same log-group name",  appender.getActualLogGroup(),  writerFactory.lastLogGroupName);
         assertEquals("factory saw same log-stream name", appender.getActualLogStream(), writerFactory.lastLogStreamName);
     }
@@ -218,11 +219,11 @@ public class TestCloudWatchAppender
     public void testExplicitRotation() throws Exception
     {
         initialize("TestCloudWatchAppender.testExplicitRotation.properties");
-        MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
+        MockWriterFactory writerFactory = appender.getMockWriterFactory();
 
         logger.debug("first message");
 
-        MockCloudWatchWriter writer0 = (MockCloudWatchWriter)appender.writer;
+        MockCloudWatchWriter writer0 = appender.getMockWriter();
 
         assertEquals("pre-rotate, writer factory calls",        1,          writerFactory.invocationCount);
         assertEquals("pre-rotate, logstream name",              "bargle-0", writerFactory.lastLogStreamName);
@@ -231,7 +232,7 @@ public class TestCloudWatchAppender
 
         assertEquals("post-rotate, writer factory calls",       2,          writerFactory.invocationCount);
         assertEquals("post-rotate, logstream name",             "bargle-1", writerFactory.lastLogStreamName);
-        assertNotSame("post-rotate, writer has been replaced",  writer0,   appender.writer);
+        assertNotSame("post-rotate, writer has been replaced",  writer0,    appender.getWriter());
     }
 
 
@@ -239,12 +240,12 @@ public class TestCloudWatchAppender
     public void testCountedRotation() throws Exception
     {
         initialize("TestCloudWatchAppender.testCountedRotation.properties");
-        MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
+        MockWriterFactory writerFactory = appender.getMockWriterFactory();
 
         logger.debug("message 1");
 
         // writer gets created on first append; we want to hold onto it
-        MockCloudWatchWriter writer0 = (MockCloudWatchWriter)appender.writer;
+        MockCloudWatchWriter writer0 = appender.getMockWriter();
 
         assertEquals("pre-rotate, logstream name",                  "bargle-0", writerFactory.lastLogStreamName);
 
@@ -255,8 +256,8 @@ public class TestCloudWatchAppender
 
         assertEquals("post-rotate, logstream name",                 "bargle-1", writerFactory.lastLogStreamName);
         assertEquals("post-rotate, messages passed to old writer",  3,          writer0.messages.size());
-        assertNotSame("post-rotate, writer has been replaced",      writer0,    appender.writer);
-        assertEquals("post-rotate, messages passed to new writer",  1,          ((MockCloudWatchWriter)appender.writer).messages.size());
+        assertNotSame("post-rotate, writer has been replaced",      writer0,    appender.getWriter());
+        assertEquals("post-rotate, messages passed to new writer",  1,          appender.getMockWriter().messages.size());
     }
 
 
@@ -264,22 +265,22 @@ public class TestCloudWatchAppender
     public void testTimedRotation() throws Exception
     {
         initialize("TestCloudWatchAppender.testTimedRotation.properties");
-        MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
+        MockWriterFactory writerFactory = appender.getMockWriterFactory();
 
         logger.debug("first message");
 
-        MockCloudWatchWriter writer0 = (MockCloudWatchWriter)appender.writer;
+        MockCloudWatchWriter writer0 = appender.getMockWriter();
 
         assertEquals("pre-rotate, logstream name",                  "bargle-0", writerFactory.lastLogStreamName);
 
-        appender.lastRotationTimestamp -= 20000;
+        appender.updateLastRotationTimestamp(-20000);
 
         logger.debug("second message");
 
         assertEquals("post-rotate, logstream name",                 "bargle-1", writerFactory.lastLogStreamName);
         assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
-        assertNotSame("post-rotate, writer has been replaced",      writer0,    appender.writer);
-        assertEquals("post-rotate, messages passed to new writer",  1,          ((MockCloudWatchWriter)appender.writer).messages.size());
+        assertNotSame("post-rotate, writer has been replaced",      writer0,    appender.getWriter());
+        assertEquals("post-rotate, messages passed to new writer",  1,          appender.getMockWriter().messages.size());
     }
 
 
@@ -296,22 +297,22 @@ public class TestCloudWatchAppender
     public void testHourlyRotation() throws Exception
     {
         initialize("TestCloudWatchAppender.testHourlyRotation.properties");
-        MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
+        MockWriterFactory writerFactory = appender.getMockWriterFactory();
 
         logger.debug("first message");
 
-        MockCloudWatchWriter writer0 = (MockCloudWatchWriter)appender.writer;
+        MockCloudWatchWriter writer0 = appender.getMockWriter();
 
         assertEquals("pre-rotate, logstream name",                  "bargle-0", writerFactory.lastLogStreamName);
 
-        appender.lastRotationTimestamp -= 3600000;
+        appender.updateLastRotationTimestamp(-3600000);
 
         logger.debug("second message");
 
         assertEquals("post-rotate, logstream name",                 "bargle-1", writerFactory.lastLogStreamName);
         assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
-        assertNotSame("post-rotate, writer has been replaced",      writer0,    appender.writer);
-        assertEquals("post-rotate, messages passed to new writer",  1,          ((MockCloudWatchWriter)appender.writer).messages.size());
+        assertNotSame("post-rotate, writer has been replaced",      writer0,    appender.getWriter());
+        assertEquals("post-rotate, messages passed to new writer",  1,          appender.getMockWriter().messages.size());
     }
 
 
@@ -319,22 +320,22 @@ public class TestCloudWatchAppender
     public void testDailyRotation() throws Exception
     {
         initialize("TestCloudWatchAppender.testDailyRotation.properties");
-        MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
+        MockWriterFactory writerFactory = appender.getMockWriterFactory();
 
         logger.debug("first message");
 
-        MockCloudWatchWriter writer0 = (MockCloudWatchWriter)appender.writer;
+        MockCloudWatchWriter writer0 = appender.getMockWriter();
 
         assertEquals("pre-rotate, logstream name",                  "bargle-0", writerFactory.lastLogStreamName);
 
-        appender.lastRotationTimestamp -= 86400000;
+        appender.updateLastRotationTimestamp(-86400000);
 
         logger.debug("second message");
 
         assertEquals("post-rotate, logstream name",                 "bargle-1", writerFactory.lastLogStreamName);
         assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
-        assertNotSame("post-rotate, writer has been replaced",      writer0,    appender.writer);
-        assertEquals("post-rotate, messages passed to new writer",  1,          ((MockCloudWatchWriter)appender.writer).messages.size());
+        assertNotSame("post-rotate, writer has been replaced",      writer0,    appender.getWriter());
+        assertEquals("post-rotate, messages passed to new writer",  1,          appender.getMockWriter().messages.size());
     }
 
 
@@ -345,8 +346,8 @@ public class TestCloudWatchAppender
 
         // note that we will be running the writer on a separate thread
 
-        appender.threadFactory = new DefaultThreadFactory();
-        appender.writerFactory = new WriterFactory()
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(new WriterFactory()
         {
             @Override
             public LogWriter newLogWriter()
@@ -386,22 +387,22 @@ public class TestCloudWatchAppender
                     }
                 };
             }
-        };
+        });
 
         logger.debug("this should trigger writer creation");
-        assertNotNull("writer has been initialized", appender.writer);
-        assertNull("writer has not yet thrown",      appender.lastWriterException);
+        assertNotNull("writer has been initialized",    appender.getWriter());
+        assertNull("writer has not yet thrown",         appender.getLastWriterException());
 
         logger.debug("this should trigger writer throwage");
 
         // without getting really clever, the best way to wait for the throw to be reported is to sit and spin
-        for (int ii = 0 ; (ii < 10) && (appender.lastWriterException == null) ; ii++)
+        for (int ii = 0 ; (ii < 10) && (appender.getLastWriterException() == null) ; ii++)
         {
             Thread.sleep(10);
         }
 
-        assertNull("writer has been reset",         appender.writer);
-        assertEquals("last writer exception class", IllegalStateException.class, appender.lastWriterException.getClass());
+        assertNull("writer has been reset",         appender.getWriter());
+        assertEquals("last writer exception class", IllegalStateException.class, appender.getLastWriterException().getClass());
     }
 
 }

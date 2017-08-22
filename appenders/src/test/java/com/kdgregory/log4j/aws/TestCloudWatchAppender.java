@@ -130,7 +130,7 @@ public class TestCloudWatchAppender
         logger.error("test with exception", new Exception("this is a test"));
 
         assertEquals("after message 2, calls to writer factory",        1,          writerFactory.invocationCount);
-        assertEquals("after message 1, number of messages in writer",   2,          mockWriter.messages.size());
+        assertEquals("after message 2, number of messages in writer",   2,          mockWriter.messages.size());
 
         long finalTimestamp = System.currentTimeMillis();
 

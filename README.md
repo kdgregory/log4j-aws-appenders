@@ -15,9 +15,8 @@ been more than a dozen weekends since I started the project; I keep getting new 
 Here are the destinations I plan to support. No idea how many weekends they'll take.
 
 * [x] [CloudWatch Logs](Docs/cloudwatch.md)
-* [ ] Kinesis Firehose (to support Elastic Search)
+* [x] Kinesis Streams (which can be used as a source for Kinesis Firehose, and thence ElasticSearch)
 * [ ] SNS (I think there it might be interesting to create an "error watcher")
-* [ ] S3 (as an alternative to an external "logfile mover")
 
 
 

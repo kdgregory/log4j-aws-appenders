@@ -33,7 +33,7 @@ import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
  *  so any application code that touches these variables should not be surprised if
  *  they cease to exist.
  */
-public abstract class AbstractAppender extends AppenderSkeleton
+public abstract class AbstractAppender<WriterConfigType> extends AppenderSkeleton
 {
     // flag to indicate whether we need to run setup
 
@@ -49,7 +49,7 @@ public abstract class AbstractAppender extends AppenderSkeleton
     //       instance, and you can't create those in a super() call
 
     protected ThreadFactory threadFactory;
-    protected WriterFactory writerFactory;
+    protected WriterFactory<WriterConfigType> writerFactory;
 
     // the current writer; initialized on first append, changed after rotation or error
 
@@ -85,11 +85,14 @@ public abstract class AbstractAppender extends AppenderSkeleton
 
 
 //----------------------------------------------------------------------------
-//  Constructor; will set property defaults
+//  Constructor
 //----------------------------------------------------------------------------
 
-    public AbstractAppender()
+    public AbstractAppender(ThreadFactory threadFactory, WriterFactory<WriterConfigType> writerFactory)
     {
+        this.threadFactory = threadFactory;
+        this.writerFactory = writerFactory;
+
         batchDelay = 2000;
         rotationMode = RotationMode.none;
         rotationInterval = -1;
@@ -264,14 +267,10 @@ public abstract class AbstractAppender extends AppenderSkeleton
 //----------------------------------------------------------------------------
 
     /**
-     *  Called just before a writer is created, allowing the subclass to set
-     *  any internal variables used by the writer factory. Typically this is
-     *  used to perform subsitutions.
+     *  Called just before a writer is created, so that the subclass can
+     *  perform substitutions on the configuration.
      */
-    protected void prepareWriterFactory()
-    {
-        // default implementation does nothing
-    }
+    protected abstract WriterConfigType generateWriterConfig();
 
 
     /**
@@ -314,8 +313,7 @@ public abstract class AbstractAppender extends AppenderSkeleton
         {
             try
             {
-                prepareWriterFactory();
-                writer = writerFactory.newLogWriter();
+                writer = writerFactory.newLogWriter(generateWriterConfig());
                 threadFactory.startLoggingThread(writer, new UncaughtExceptionHandler()
                 {
                     @Override

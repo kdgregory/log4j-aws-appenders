@@ -4,6 +4,7 @@ package com.kdgregory.testhelpers.log4j.aws.kinesis;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 
@@ -13,7 +14,18 @@ implements LogWriter
     public List<LogMessage> messages = new ArrayList<LogMessage>();
     public LogMessage lastMessage;
     public boolean stopped;
+    
+    public String streamName;
+    public String partitionKey;
     public long batchDelay;
+    
+    
+    public MockKinesisWriter(KinesisWriterConfig config)
+    {
+        this.streamName = config.streamName;
+        this.partitionKey = config.partitionKey;
+        this.batchDelay = config.batchDelay;
+    }
 
 
     @Override

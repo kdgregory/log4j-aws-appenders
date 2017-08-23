@@ -41,12 +41,12 @@ implements LogWriter
     private LinkedBlockingDeque<LogMessage> messageQueue = new LinkedBlockingDeque<LogMessage>();
 
 
-    public KinesisLogWriter(String streamName, String partitionKey, long batchDelay)
+    public KinesisLogWriter(KinesisWriterConfig config)
     {
-        this.streamName = streamName;
-        this.partitionKey = partitionKey;
+        this.streamName = config.streamName;
+        this.partitionKey = config.partitionKey;
+        this.batchDelay = config.batchDelay;
         // TODO - add shard count
-        this.batchDelay = batchDelay;
     }
 
 

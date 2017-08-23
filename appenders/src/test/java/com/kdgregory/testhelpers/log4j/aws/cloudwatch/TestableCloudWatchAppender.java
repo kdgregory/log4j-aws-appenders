@@ -2,7 +2,7 @@
 package com.kdgregory.testhelpers.log4j.aws.cloudwatch;
 
 import com.kdgregory.log4j.aws.CloudWatchAppender;
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
+import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.ThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 
@@ -20,35 +20,19 @@ public class TestableCloudWatchAppender extends CloudWatchAppender
     }
 
 
-    public void setWriterFactory(WriterFactory writerFactory)
+    public void setWriterFactory(WriterFactory<CloudWatchWriterConfig> writerFactory)
     {
         this.writerFactory = writerFactory;
     }
 
 
-    // this is used when we just want to see if the factory has been set
-    public WriterFactory getWriterFactory()
+    public MockCloudWatchWriterFactory getWriterFactory()
     {
-        return writerFactory;
+        return (MockCloudWatchWriterFactory)writerFactory;
     }
 
 
-    // this is called most often, so that we can examine what's written
-    public MockWriterFactory getMockWriterFactory()
-    {
-        return (MockWriterFactory)writerFactory;
-    }
-
-
-    // called when we don't care about the writer
-    public LogWriter getWriter()
-    {
-        return writer;
-    }
-
-
-    // and when we do
-    public MockCloudWatchWriter getMockWriter()
+    public MockCloudWatchWriter getWriter()
     {
         return (MockCloudWatchWriter)writer;
     }

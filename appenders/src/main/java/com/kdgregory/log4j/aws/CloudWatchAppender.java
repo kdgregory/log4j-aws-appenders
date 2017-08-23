@@ -6,6 +6,7 @@ import java.util.Date;
 import com.kdgregory.log4j.aws.internal.AbstractAppender;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchConstants;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
+import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
@@ -16,7 +17,7 @@ import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 /**
  *  Appender that writes to a CloudWatch log stream.
  */
-public class CloudWatchAppender extends AbstractAppender
+public class CloudWatchAppender extends AbstractAppender<CloudWatchWriterConfig>
 {
     // these are the only configuration vars specific to this appender
 
@@ -35,17 +36,15 @@ public class CloudWatchAppender extends AbstractAppender
      */
     public CloudWatchAppender()
     {
-        super();
-
-        threadFactory = new DefaultThreadFactory();
-        writerFactory = new WriterFactory()
-                      {
-                            @Override
-                            public LogWriter newLogWriter()
-                            {
-                                return new CloudWatchLogWriter(getActualLogGroup(), getActualLogStream(), getBatchDelay());
-                            }
-                       };
+        super(new DefaultThreadFactory(),
+              new WriterFactory<CloudWatchWriterConfig>()
+                  {
+                        @Override
+                        public LogWriter newLogWriter(CloudWatchWriterConfig config)
+                        {
+                            return new CloudWatchLogWriter(config);
+                        }
+                   });
 
         logStream = "{startupTimestamp}";
     }
@@ -81,16 +80,6 @@ public class CloudWatchAppender extends AbstractAppender
 
 
     /**
-     *  Returns the current log group name, post-substitutions. This is lazily
-     *  populated, so will be <code>null</code> until first append.
-     */
-    public String getActualLogGroup()
-    {
-        return actualLogGroup;
-    }
-
-
-    /**
      *  Sets the CloudWatch Log Stream associated with this appender.
      *  <p>
      *  You typically create a separate log stream for each instance of the
@@ -111,16 +100,6 @@ public class CloudWatchAppender extends AbstractAppender
     public String getLogStream()
     {
         return logStream;
-    }
-
-
-    /**
-     *  Returns the current log stream name, post-substitutions. This is lazily
-     *  populated, so will be <code>null</code> until first append.
-     */
-    public String getActualLogStream()
-    {
-        return actualLogStream;
     }
 
 
@@ -145,11 +124,12 @@ public class CloudWatchAppender extends AbstractAppender
 //----------------------------------------------------------------------------
 
     @Override
-    protected void prepareWriterFactory()
+    protected CloudWatchWriterConfig generateWriterConfig()
     {
         Substitutions subs = new Substitutions(new Date(), sequence.get());
         actualLogGroup  = CloudWatchConstants.ALLOWED_NAME_REGEX.matcher(subs.perform(logGroup)).replaceAll("");
         actualLogStream = CloudWatchConstants.ALLOWED_NAME_REGEX.matcher(subs.perform(logStream)).replaceAll("");
+        return  new CloudWatchWriterConfig(actualLogGroup, actualLogStream, batchDelay);
     }
 
 

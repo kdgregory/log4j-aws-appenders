@@ -6,6 +6,7 @@ import java.util.Date;
 import com.kdgregory.log4j.aws.internal.AbstractAppender;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisConstants;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisLogWriter;
+import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
@@ -16,7 +17,7 @@ import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 /**
  *  Appender that writes to a Kinesis stream.
  */
-public class KinesisAppender extends AbstractAppender
+public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
 {
     // these are the only configuration vars specific to this appender
 
@@ -35,17 +36,15 @@ public class KinesisAppender extends AbstractAppender
      */
     public KinesisAppender()
     {
-        super();
-
-        threadFactory = new DefaultThreadFactory();
-        writerFactory = new WriterFactory()
-                      {
-                            @Override
-                            public LogWriter newLogWriter()
-                            {
-                                return new KinesisLogWriter(getActualStreamName(), getActualPartitionKey(), getBatchDelay());
-                            }
-                       };
+        super(new DefaultThreadFactory(),
+              new WriterFactory<KinesisWriterConfig>()
+                  {
+                        @Override
+                        public LogWriter newLogWriter(KinesisWriterConfig config)
+                        {
+                            return new KinesisLogWriter(config);
+                        }
+                   });
 
         partitionKey = "{startupTimestamp}";
     }
@@ -78,16 +77,6 @@ public class KinesisAppender extends AbstractAppender
 
 
     /**
-     *  Returns the current log group name, post-substitutions. This is lazily
-     *  populated, so will be <code>null</code> until first append.
-     */
-    public String getActualStreamName()
-    {
-        return actualStreamName;
-    }
-
-
-    /**
      *  Sets the partition key associated with this appender. This key is used to
      *  assign messages to shards: all messages with the same partition key will
      *  be sent to the same shard.
@@ -110,16 +99,6 @@ public class KinesisAppender extends AbstractAppender
     }
 
 
-    /**
-     *  Returns the current log group name, post-substitutions. This is lazily
-     *  populated, so will be <code>null</code> until first append.
-     */
-    public String getActualPartitionKey()
-    {
-        return actualPartitionKey;
-    }
-
-
 //----------------------------------------------------------------------------
 //  Appender-specific methods
 //----------------------------------------------------------------------------
@@ -130,11 +109,12 @@ public class KinesisAppender extends AbstractAppender
 //----------------------------------------------------------------------------
 
     @Override
-    protected void prepareWriterFactory()
+    protected KinesisWriterConfig generateWriterConfig()
     {
         Substitutions subs = new Substitutions(new Date(), sequence.get());
         actualStreamName  = KinesisConstants.ALLOWED_NAME_REGEX.matcher(subs.perform(streamName)).replaceAll("");
         actualPartitionKey  = KinesisConstants.ALLOWED_NAME_REGEX.matcher(subs.perform(partitionKey)).replaceAll("");
+        return new KinesisWriterConfig(actualStreamName, actualPartitionKey, batchDelay);
     }
 
 

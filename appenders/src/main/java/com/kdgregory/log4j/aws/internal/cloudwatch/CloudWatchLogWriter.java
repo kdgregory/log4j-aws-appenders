@@ -35,11 +35,11 @@ implements LogWriter
     private LinkedBlockingDeque<LogMessage> messageQueue = new LinkedBlockingDeque<LogMessage>();
 
 
-    public CloudWatchLogWriter(String logGroup, String logStream, long batchDelay)
+    public CloudWatchLogWriter(CloudWatchWriterConfig config)
     {
-        this.groupName = logGroup;
-        this.streamName = logStream;
-        this.batchDelay = batchDelay;
+        this.groupName = config.logGroup;
+        this.streamName = config.logStream;
+        this.batchDelay = config.batchDelay;
     }
 
 

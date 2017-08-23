@@ -2,7 +2,7 @@
 package com.kdgregory.testhelpers.log4j.aws.kinesis;
 
 import com.kdgregory.log4j.aws.KinesisAppender;
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
+import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.ThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 
@@ -20,35 +20,19 @@ public class TestableKinesisAppender extends KinesisAppender
     }
 
 
-    public void setWriterFactory(WriterFactory writerFactory)
+    public void setWriterFactory(WriterFactory<KinesisWriterConfig> writerFactory)
     {
         this.writerFactory = writerFactory;
     }
 
 
-    // this is used when we just want to see if the factory has been set
-    public WriterFactory getWriterFactory()
+    public MockKinesisWriterFactory getWriterFactory()
     {
-        return writerFactory;
+        return (MockKinesisWriterFactory)writerFactory;
     }
 
 
-    // this is called most often, so that we can examine what's written
-    public MockWriterFactory getMockWriterFactory()
-    {
-        return (MockWriterFactory)writerFactory;
-    }
-
-
-    // called when we don't care about the writer
-    public LogWriter getWriter()
-    {
-        return writer;
-    }
-
-
-    // and when we do
-    public MockKinesisWriter getMockWriter()
+    public MockKinesisWriter getWriter()
     {
         return (MockKinesisWriter)writer;
     }

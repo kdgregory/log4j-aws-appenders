@@ -4,6 +4,7 @@ package com.kdgregory.testhelpers.log4j.aws.cloudwatch;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 
@@ -12,8 +13,20 @@ implements LogWriter
 {
     public List<LogMessage> messages = new ArrayList<LogMessage>();
     public LogMessage lastMessage;
+
     public boolean stopped;
+
+    public String logGroup;
+    public String logStream;
     public long batchDelay;
+
+
+    public MockCloudWatchWriter(CloudWatchWriterConfig config)
+    {
+        this.logGroup = config.logGroup;
+        this.logStream = config.logStream;
+        this.batchDelay = config.batchDelay;
+    }
 
 
     @Override

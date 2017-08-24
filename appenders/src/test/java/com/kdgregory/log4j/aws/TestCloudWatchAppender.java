@@ -112,9 +112,9 @@ public class TestCloudWatchAppender
         MockCloudWatchWriter writer = appender.getWriter();
 
         assertNotNull("after message 1, writer is initialized",         writer);
-        assertEquals("after message 1, calls to writer factory",        1,          writerFactory.invocationCount);
-        assertEquals("actual log-group name",                           "argle",    writer.logGroup);
-        assertEquals("actual log-stream name",                          "bargle",   writer.logStream);
+        assertEquals("after message 1, calls to writer factory",        1,              writerFactory.invocationCount);
+        assertEquals("actual log-group name",                           "argle",        writer.logGroup);
+        assertRegex("actual log-stream name",                           "20\\d{12}",    writer.logStream);
 
 
         assertEquals("after message 1, number of messages in writer",   1,          writer.messages.size());

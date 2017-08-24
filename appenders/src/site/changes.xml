@@ -1,0 +1,9 @@
+<document xmlns="http://maven.apache.org/changes/1.0.0">
+	<properties>
+		<title>log4j-aws-appenders changes</title>
+	</properties>
+
+    <body>
+        <release version="1.0.0" date="2017-08-12" description="Initial public release"/>
+	</body>
+</document>

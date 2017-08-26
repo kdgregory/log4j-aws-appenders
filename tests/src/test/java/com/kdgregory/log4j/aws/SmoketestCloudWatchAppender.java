@@ -42,7 +42,6 @@ public class SmoketestCloudWatchAppender
         {
             // it's OK if the log group doesn't exist when we start running
         }
-        client.createLogGroup(new CreateLogGroupRequest().withLogGroupName(LOGGROUP_NAME));
     }
 
 

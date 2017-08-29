@@ -17,9 +17,9 @@ import com.amazonaws.services.logs.model.*;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
 
 
-public class SmoketestCloudWatchAppender
+public class TestCloudWatchAppender
 {
-    private final static String LOGGROUP_NAME = "TestCloudWatchAppender";
+    private final static String LOGGROUP_NAME = "Smoketest";
 
     private AWSLogsClient client;
 
@@ -27,7 +27,7 @@ public class SmoketestCloudWatchAppender
     @Before
     public void setUp() throws Exception
     {
-        URL config = ClassLoader.getSystemResource("SmoketestCloudWatchAppender.properties");
+        URL config = ClassLoader.getSystemResource("CloudWatchAppenderSmoketest.properties");
         PropertyConfigurator.configure(config);
 
         client = new AWSLogsClient();
@@ -72,6 +72,12 @@ public class SmoketestCloudWatchAppender
         appender.setBatchDelay(1234L);
         assertEquals("batch delay", 1234L, lastWriter.getBatchDelay());
     }
+    
+    
+    public void testConcurrentWrites() throws Exception 
+    {
+    }
+    
 
 
     private void assertMessages(String streamName, int expectedMessageCount) throws Exception

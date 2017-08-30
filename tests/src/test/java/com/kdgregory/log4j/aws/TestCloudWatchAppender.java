@@ -13,7 +13,8 @@ import static org.junit.Assert.*;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
-import com.amazonaws.services.logs.AWSLogsClient;
+import com.amazonaws.services.logs.AWSLogs;
+import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.*;
 
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
@@ -25,7 +26,7 @@ public class TestCloudWatchAppender
     private final static String LOGGROUP_NAME = "Smoketest";
     private final static int    ROTATION_COUNT = 333;
 
-    private AWSLogsClient client;
+    private AWSLogs client;
 
 
     @Before
@@ -34,7 +35,7 @@ public class TestCloudWatchAppender
         URL config = ClassLoader.getSystemResource("TestCloudWatchAppender.properties");
         PropertyConfigurator.configure(config);
 
-        client = new AWSLogsClient();
+        client = AWSLogsClientBuilder.defaultClient();
 
         // note: we leave the log group at the end of the test, for diagnositics, so must
         //       delete it before starting a new test

@@ -2,7 +2,9 @@
 package com.kdgregory.log4j.aws;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -19,7 +21,9 @@ import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
 
 public class TestCloudWatchAppender
 {
+    // CHANGE THESE IF YOU CHANGE THE CONFIG
     private final static String LOGGROUP_NAME = "Smoketest";
+    private final static int    ROTATION_COUNT = 333;
 
     private AWSLogsClient client;
 
@@ -27,7 +31,7 @@ public class TestCloudWatchAppender
     @Before
     public void setUp() throws Exception
     {
-        URL config = ClassLoader.getSystemResource("CloudWatchAppenderSmoketest.properties");
+        URL config = ClassLoader.getSystemResource("TestCloudWatchAppender.properties");
         PropertyConfigurator.configure(config);
 
         client = new AWSLogsClient();
@@ -44,26 +48,30 @@ public class TestCloudWatchAppender
         }
     }
 
+//----------------------------------------------------------------------------
+//  Tests
+//----------------------------------------------------------------------------
 
     @Test
     public void smoketest() throws Exception
     {
+        final int numMessages = 1001;
+
         Logger logger = Logger.getLogger(getClass());
         CloudWatchAppender appender = (CloudWatchAppender)logger.getAppender("test");
 
-        for (int ii = 0 ; ii < 1001 ; ii++)
+        for (int ii = 0 ; ii < numMessages ; ii++)
         {
             logger.debug("message " + ii);
         }
 
-        // this is a multiple of the batch size, so should give all writers a chance to write
-        // all of their messages before shutdown
+        // give the writers a chance to do their thing
         Thread.sleep(3000);
 
-        assertMessages("smoketest-1", 333);
-        assertMessages("smoketest-2", 333);
-        assertMessages("smoketest-3", 333);
-        assertMessages("smoketest-4", 2);
+        assertMessages("smoketest-1", ROTATION_COUNT);
+        assertMessages("smoketest-2", ROTATION_COUNT);
+        assertMessages("smoketest-3", ROTATION_COUNT);
+        assertMessages("smoketest-4", numMessages % ROTATION_COUNT);
 
         CloudWatchLogWriter lastWriter = (CloudWatchLogWriter)appender.writer;
         assertEquals("number of batches for last writer", 1, lastWriter.getBatchCount());
@@ -72,14 +80,61 @@ public class TestCloudWatchAppender
         appender.setBatchDelay(1234L);
         assertEquals("batch delay", 1234L, lastWriter.getBatchDelay());
     }
-    
-    
-    public void testConcurrentWrites() throws Exception 
+
+
+    @Test
+    public void concurrencyTest() throws Exception
     {
+        final int numThreads = 5;
+        final int numMessagesPerThread = 200;
+        final int totalMessageCount = numThreads * numMessagesPerThread;
+        final int expectedStreamCount = (totalMessageCount / ROTATION_COUNT) + 1;
+
+        final Logger logger = Logger.getLogger(getClass());
+
+        List<Thread> threads = new ArrayList<Thread>();
+        for (int threadNum = 0 ; threadNum < numThreads ; threadNum++)
+        {
+            Thread thread = new Thread(new Runnable()
+            {
+                public void run()
+                {
+                    for (int ii = 0 ; ii < numMessagesPerThread ; ii++)
+                    {
+                        logger.debug("message on thread " + Thread.currentThread().getId() + ": " + ii);
+                    }
+                }
+            });
+            threads.add(thread);
+            thread.start();
+        }
+
+        for (Thread thread : threads)
+        {
+            thread.join();
+        }
+
+        // give the writers a chance to do their thing
+        Thread.sleep(3000);
+
+        for (int sequence = 1 ; sequence <= expectedStreamCount ; sequence++)
+        {
+            LinkedHashSet<OutputLogEvent> events = retrieveAllMessages("smoketest-" + sequence);
+            if (sequence == expectedStreamCount)
+                assertEquals("messages in last stream", totalMessageCount % ROTATION_COUNT, events.size());
+            else
+                assertEquals("messages in stream " + sequence, ROTATION_COUNT, events.size());
+        }
     }
-    
 
+//----------------------------------------------------------------------------
+//  Helpers
+//----------------------------------------------------------------------------
 
+    /**
+     *  Asserts that the stream contains the expected number of messages, and that
+     *  they're in order.
+     */
     private void assertMessages(String streamName, int expectedMessageCount) throws Exception
     {
         LinkedHashSet<OutputLogEvent> events = retrieveAllMessages(streamName);
@@ -96,6 +151,9 @@ public class TestCloudWatchAppender
     }
 
 
+    /**
+     *  Reads all messages from a stream.
+     */
     private LinkedHashSet<OutputLogEvent> retrieveAllMessages(String logStreamName) throws Exception
     {
         LinkedHashSet<OutputLogEvent> result = new LinkedHashSet<OutputLogEvent>();
@@ -117,7 +175,7 @@ public class TestCloudWatchAppender
             nextToken = response.getNextForwardToken();
             request.setNextToken(nextToken);
             prevToken = nextToken;
-            Thread.sleep(250);
+            Thread.sleep(500);
         } while (! prevToken.equals(nextToken));
 
         return result;

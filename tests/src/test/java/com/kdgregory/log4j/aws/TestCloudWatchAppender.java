@@ -3,8 +3,12 @@ package com.kdgregory.log4j.aws;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -32,7 +36,7 @@ public class TestCloudWatchAppender
     @Before
     public void setUp() throws Exception
     {
-        URL config = ClassLoader.getSystemResource("TestCloudWatchAppender.properties");
+        URL config = ClassLoader.getSystemResource("CloudWatchAppenderSmoketest.properties");
         PropertyConfigurator.configure(config);
 
         client = AWSLogsClientBuilder.defaultClient();
@@ -61,10 +65,7 @@ public class TestCloudWatchAppender
         Logger logger = Logger.getLogger(getClass());
         CloudWatchAppender appender = (CloudWatchAppender)logger.getAppender("test");
 
-        for (int ii = 0 ; ii < numMessages ; ii++)
-        {
-            logger.debug("message " + ii);
-        }
+        (new MessageWriter(logger, numMessages)).run();
 
         // give the writers a chance to do their thing
         Thread.sleep(3000);
@@ -89,23 +90,13 @@ public class TestCloudWatchAppender
         final int numThreads = 5;
         final int numMessagesPerThread = 200;
         final int totalMessageCount = numThreads * numMessagesPerThread;
-        final int expectedStreamCount = (totalMessageCount / ROTATION_COUNT) + 1;
 
         final Logger logger = Logger.getLogger(getClass());
 
         List<Thread> threads = new ArrayList<Thread>();
         for (int threadNum = 0 ; threadNum < numThreads ; threadNum++)
         {
-            Thread thread = new Thread(new Runnable()
-            {
-                public void run()
-                {
-                    for (int ii = 0 ; ii < numMessagesPerThread ; ii++)
-                    {
-                        logger.debug("message on thread " + Thread.currentThread().getId() + ": " + ii);
-                    }
-                }
-            });
+            Thread thread = new Thread(new MessageWriter(logger, numMessagesPerThread));
             threads.add(thread);
             thread.start();
         }
@@ -118,14 +109,11 @@ public class TestCloudWatchAppender
         // give the writers a chance to do their thing
         Thread.sleep(3000);
 
-        for (int sequence = 1 ; sequence <= expectedStreamCount ; sequence++)
-        {
-            LinkedHashSet<OutputLogEvent> events = retrieveAllMessages("smoketest-" + sequence);
-            if (sequence == expectedStreamCount)
-                assertEquals("messages in last stream", totalMessageCount % ROTATION_COUNT, events.size());
-            else
-                assertEquals("messages in stream " + sequence, ROTATION_COUNT, events.size());
-        }
+
+        assertMessages("smoketest-1", ROTATION_COUNT);
+        assertMessages("smoketest-2", ROTATION_COUNT);
+        assertMessages("smoketest-3", ROTATION_COUNT);
+        assertMessages("smoketest-4", totalMessageCount % ROTATION_COUNT);
     }
 
 //----------------------------------------------------------------------------
@@ -133,21 +121,60 @@ public class TestCloudWatchAppender
 //----------------------------------------------------------------------------
 
     /**
+     *  Writes a sequence of messages to the log. Can either be called inline
+     *  or on a thread.
+     */
+    private static class MessageWriter implements Runnable
+    {
+        private Logger logger;
+        private int numMessages;
+
+        public MessageWriter(Logger logger, int numMessages)
+        {
+            this.logger = logger;
+            this.numMessages = numMessages;
+        }
+
+        public void run()
+        {
+            for (int ii = 0 ; ii < numMessages ; ii++)
+            {
+                logger.debug("message on thread " + Thread.currentThread().getId() + ": " + ii);
+            }
+        }
+    }
+
+
+    /**
      *  Asserts that the stream contains the expected number of messages, and that
-     *  they're in order.
+     *  they're in order. Properly handles multi-threaded writes.
      */
     private void assertMessages(String streamName, int expectedMessageCount) throws Exception
     {
         LinkedHashSet<OutputLogEvent> events = retrieveAllMessages(streamName);
         assertEquals("number of events in " + streamName, expectedMessageCount, events.size());
 
-        int prevMessageNum = -1;
+        Pattern messagePattern = Pattern.compile(".*message on thread (\\d+): (\\d+)");
+
+        Map<Integer,Integer> lastMessageByThread = new HashMap<Integer,Integer>();
         for (OutputLogEvent event : events)
         {
-            int messageNum = Integer.parseInt(event.getMessage().replaceAll(".* message ", "").trim());
-            if (prevMessageNum >= 0)
-                assertEquals("message sequence", prevMessageNum + 1, messageNum);
-            prevMessageNum = messageNum;
+            String message = event.getMessage().trim();
+            Matcher matcher = messagePattern.matcher(message);
+            assertTrue("message matches pattern: " + message, matcher.matches());
+
+            Integer threadNum = Integer.valueOf(matcher.group(1));
+            Integer messageNum = Integer.valueOf(matcher.group(2));
+            Integer prevMessageNum = lastMessageByThread.get(threadNum);
+            if (prevMessageNum == null)
+            {
+                lastMessageByThread.put(threadNum, messageNum);
+            }
+            else
+            {
+                assertTrue("previous message (" + prevMessageNum + ") lower than current (" + messageNum + ")",
+                           prevMessageNum.intValue() < messageNum.intValue());
+            }
         }
     }
 

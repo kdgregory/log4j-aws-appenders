@@ -9,13 +9,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
+import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
-
-import net.sf.kdgcommons.test.StringAsserts;
 
 import com.kdgregory.log4j.aws.CloudWatchAppender;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
@@ -78,12 +77,12 @@ public class TestCloudWatchAppender
     {
         initialize("TestCloudWatchAppender.testConfiguration.properties");
 
-        assertEquals("log group name",      "argle",            appender.getLogGroup());
-        assertEquals("log stream name",     "bargle",           appender.getLogStream());
-        assertEquals("max delay",           1234L,              appender.getBatchDelay());
-        assertEquals("sequence",            2,                  appender.getSequence());
-        assertEquals("rotation mode",       "interval",         appender.getRotationMode());
-        assertEquals("rotation interval",   86400000L,          appender.getRotationInterval());
+        assertEquals("log group name",      "argle",              appender.getLogGroup());
+        assertEquals("log stream name",     "bargle",             appender.getLogStream());
+        assertEquals("max delay",           1234L,                appender.getBatchDelay());
+        assertEquals("sequence",            2,                    appender.getSequence());
+        assertEquals("rotation mode",       "interval",           appender.getRotationMode());
+        assertEquals("rotation interval",   86400000L,            appender.getRotationInterval());
     }
 
 
@@ -95,11 +94,11 @@ public class TestCloudWatchAppender
         // note: this is allowed at time of configuration, would disable logger if we try to append
         assertNull("log group name",    appender.getLogGroup());
 
-        assertEquals("log stream name",     "{startTimestamp}", appender.getLogStream());
-        assertEquals("max delay",           2000L,              appender.getBatchDelay());
-        assertEquals("sequence",            0,                  appender.getSequence());
-        assertEquals("rotation mode",       "none",             appender.getRotationMode());
-        assertEquals("rotation interval",   -1,                 appender.getRotationInterval());
+        assertEquals("log stream name",     "{startupTimestamp}", appender.getLogStream());
+        assertEquals("max delay",           2000L,                appender.getBatchDelay());
+        assertEquals("sequence",            0,                    appender.getSequence());
+        assertEquals("rotation mode",       "none",               appender.getRotationMode());
+        assertEquals("rotation interval",   -1,                   appender.getRotationInterval());
     }
 
 
@@ -111,14 +110,14 @@ public class TestCloudWatchAppender
 
         long initialTimestamp = System.currentTimeMillis();
 
-        assertNull("before messages, writer is null",               appender.writer);
+        assertNull("before messages, writer is null",                   appender.writer);
 
         logger.debug("first message");
 
         assertNotNull("after message 1, writer is initialized",         appender.writer);
-        assertEquals("after message 1, calls to writer factory",        1,          writerFactory.invocationCount);
-        assertEquals("actual log-group name",                           "argle",    writerFactory.lastLogGroupName);
-        assertEquals("actual log-stream name",                          "bargle",   writerFactory.lastLogStreamName);
+        assertEquals("after message 1, calls to writer factory",        1,              writerFactory.invocationCount);
+        assertEquals("actual log-group name",                           "argle",        writerFactory.lastLogGroupName);
+        assertRegex("actual log-stream name",                           "20\\d{12}",    writerFactory.lastLogStreamName);
 
         MockCloudWatchWriter mock = (MockCloudWatchWriter)appender.writer;
 
@@ -137,7 +136,7 @@ public class TestCloudWatchAppender
         LogMessage message1 = mock.messages.get(0);
         assertTrue("message 1 timestamp >= initial timestamp", message1.getTimestamp() >= initialTimestamp);
         assertTrue("message 1 timestamp <= batch timestamp",   message1.getTimestamp() <= finalTimestamp);
-        StringAsserts.assertRegex(
+        assertRegex(
                 "message 1 generally follows layout: " + message1.getMessage(),
                 "20[12][0-9]-.* DEBUG .*TestCloudWatchAppender .*first message.*",
                 message1.getMessage().trim());
@@ -205,9 +204,9 @@ public class TestCloudWatchAppender
         assertEquals("actual log group after append",
                      "MyLog-foobar",
                      appender.getActualLogGroup());
-        StringAsserts.assertRegex("actual log stream after append",
-                                  "MyStream-20\\d{12}-bogus",
-                                  appender.getActualLogStream());
+        assertRegex("actual log stream after append",
+                    "MyStream-20\\d{12}-bogus",
+                    appender.getActualLogStream());
 
         MockWriterFactory writerFactory = (MockWriterFactory)appender.writerFactory;
         assertEquals("factory saw same log-group name",  appender.getActualLogGroup(),  writerFactory.lastLogGroupName);

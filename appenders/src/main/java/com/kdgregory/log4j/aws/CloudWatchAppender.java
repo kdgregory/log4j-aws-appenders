@@ -114,7 +114,7 @@ public class CloudWatchAppender extends AppenderSkeleton
      */
     public CloudWatchAppender()
     {
-        logStream = "{startTimestamp}";
+        logStream = "{startupTimestamp}";
         batchDelay = 2000;
         rotationMode = RotationMode.none;
         rotationInterval = -1;

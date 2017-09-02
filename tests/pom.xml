@@ -4,7 +4,7 @@
 
     <groupId>com.kdgregory.log4j</groupId>
     <artifactId>aws-appenders-test</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <packaging>jar</packaging>
 
     <name>AWS Log4J Appender Integration Tests</name>

@@ -246,23 +246,20 @@ implements LogWriter
 
     private boolean ensureGroupAndStreamAvailable()
     {
-        LogLog.debug("making log group and stream (this is first connection to AWS)");
         try
         {
             LogGroup logGroup = findLogGroup();
             if (logGroup == null)
             {
-                CreateLogGroupRequest request = new CreateLogGroupRequest().withLogGroupName(groupName);
-                client.createLogGroup(request);
+                LogLog.debug("creating log group: " + groupName);
+                createLogGroup();
             }
+
 
             LogStream logStream = findLogStream();
             if (logStream == null)
             {
-                CreateLogStreamRequest request = new CreateLogStreamRequest()
-                                                 .withLogGroupName(groupName)
-                                                 .withLogStreamName(streamName);
-                client.createLogStream(request);
+                createLogStream();
             }
 
             return true;
@@ -288,6 +285,36 @@ implements LogWriter
     }
 
 
+    private void createLogGroup()
+    {
+        while (true)
+        {
+            try
+            {
+                CreateLogGroupRequest request = new CreateLogGroupRequest().withLogGroupName(groupName);
+                client.createLogGroup(request);
+                for (int ii = 0 ; ii < 300 ; ii++)
+                {
+                    if (findLogGroup() != null)
+                        return;
+                    else
+                        sleepQuietly(100);
+                }
+                throw new RuntimeException("unable to create log group after 30 seconds; aborting");
+            }
+            catch (ResourceAlreadyExistsException ex)
+            {
+                // somebody else created it
+                return;
+            }
+            catch (OperationAbortedException ex)
+            {
+                // someone else is trying to create it, wait and try again
+                sleepQuietly(250);
+            }
+        }
+    }
+
 
     private LogStream findLogStream()
     {
@@ -302,6 +329,33 @@ implements LogWriter
         }
         return null;
     }
+
+
+    private void createLogStream()
+    {
+        try
+        {
+            CreateLogStreamRequest request = new CreateLogStreamRequest()
+                                             .withLogGroupName(groupName)
+                                             .withLogStreamName(streamName);
+            client.createLogStream(request);
+
+            for (int ii = 0 ; ii < 300 ; ii++)
+            {
+                if (findLogStream() != null)
+                    return;
+                else
+                    sleepQuietly(100);
+            }
+            throw new RuntimeException("unable to create log strean after 30 seconds; aborting");
+        }
+        catch (ResourceAlreadyExistsException ex)
+        {
+            // somebody else created it
+            return;
+        }
+    }
+
 
 
     private void sleepQuietly(long time)

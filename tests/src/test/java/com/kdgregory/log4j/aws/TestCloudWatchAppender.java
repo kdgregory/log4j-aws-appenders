@@ -27,9 +27,11 @@ import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
 public class TestCloudWatchAppender
 {
     // CHANGE THESE IF YOU CHANGE THE CONFIG
-    private final static String LOGGROUP_NAME = "Smoketest";
-    private final static int    ROTATION_COUNT = 333;
+    private final static String LOGGER_NAME     = "SmoketestCloudWatchAppender";
+    private final static String LOGGROUP_NAME   = "Smoketest";
+    private final static int    ROTATION_COUNT  = 333;
 
+    private Logger testLogger = Logger.getLogger(getClass());
     private AWSLogs client;
 
 
@@ -60,14 +62,16 @@ public class TestCloudWatchAppender
     @Test
     public void smoketest() throws Exception
     {
+        testLogger.info("smoketest: starting");
+        
         final int numMessages = 1001;
 
-        Logger logger = Logger.getLogger(getClass());
+        Logger logger = Logger.getLogger(LOGGER_NAME);
         CloudWatchAppender appender = (CloudWatchAppender)logger.getAppender("test");
 
         (new MessageWriter(logger, numMessages)).run();
 
-        // give the writers a chance to do their thing
+        testLogger.info("smoketest: all messages written; sleeping to give writers chance to run");
         Thread.sleep(3000);
 
         assertMessages("smoketest-1", ROTATION_COUNT);
@@ -81,17 +85,21 @@ public class TestCloudWatchAppender
         // while we're here, verify that batch delay is propagated
         appender.setBatchDelay(1234L);
         assertEquals("batch delay", 1234L, lastWriter.getBatchDelay());
+        
+        testLogger.info("smoketest: finished");
     }
 
 
     @Test
     public void concurrencyTest() throws Exception
     {
+        testLogger.info("concurrencyTest: starting");
+        
         final int numThreads = 5;
         final int numMessagesPerThread = 200;
         final int totalMessageCount = numThreads * numMessagesPerThread;
 
-        final Logger logger = Logger.getLogger(getClass());
+        Logger logger = Logger.getLogger(LOGGER_NAME);
 
         List<Thread> threads = new ArrayList<Thread>();
         for (int threadNum = 0 ; threadNum < numThreads ; threadNum++)
@@ -106,7 +114,7 @@ public class TestCloudWatchAppender
             thread.join();
         }
 
-        // give the writers a chance to do their thing
+        testLogger.info("concurrencyTest: all messages written; sleeping to give writers chance to run");
         Thread.sleep(3000);
 
 
@@ -114,6 +122,8 @@ public class TestCloudWatchAppender
         assertMessages("smoketest-2", ROTATION_COUNT);
         assertMessages("smoketest-3", ROTATION_COUNT);
         assertMessages("smoketest-4", totalMessageCount % ROTATION_COUNT);
+        
+        testLogger.info("concurrencyTest: finished");
     }
 
 //----------------------------------------------------------------------------

@@ -4,12 +4,15 @@
 	</properties>
 
     <body>
-        <release version="1.0.1" date="TBD" description="Bugfixes">
+        <release version="1.0.1" date="2017-09-02" description="Bugfixes">
             <action dev='kdgregory' type='update'>
                 CloudWatch SDK dependency not marked as provided; might cause conflict
             </action>
             <action dev='kdgregory' type='update'>
                 Default configuration incorrect: log stream name was "{startTimestamp}", should be "{startupTimestamp}"
+            </action>
+            <action dev='kdgregory' type='update'>
+                Initial group/stream creation could fail if multiple writers initialized in short order
             </action>
         </release>
 

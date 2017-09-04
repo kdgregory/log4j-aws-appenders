@@ -140,13 +140,14 @@ in arbitrary ways. Please do not use them.
 ## Source Control
 
 The `master` branch holds the current branch of development. Commits on master are functional, but may
-not be "complete" (whatever that means). They may be "snapshot" or release builds.
+not be "complete" (whatever that means). They may be "snapshot" or release builds. Master will never be
+rebased; once a commit is made there it's part of history for better or worse.
 
 Development takes place on a `dev-MAJOR.MINOR.PATCH` branch; these branches are deleted once their
-content has been merged into `master`.
+content has been merged into `master`. *BEWARE*: these branches may be rebased as I see fit.
 
 Each minor release has a `support-MAJOR.MINOR` branch for backports and patches. These branches are
-expected to live forever.
+expected to live forever. These branches will never be rebased.
 
 Each version released to Maven Central is tagged with `release-MAJOR.MINOR.PATCH`.
 

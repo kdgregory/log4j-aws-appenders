@@ -357,7 +357,6 @@ implements LogWriter
     }
 
 
-
     private void sleepQuietly(long time)
     {
         try

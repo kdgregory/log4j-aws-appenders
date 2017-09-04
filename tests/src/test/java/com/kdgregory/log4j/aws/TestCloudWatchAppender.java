@@ -1,10 +1,7 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.aws;
 
-<<<<<<< 10becd5800c9e3607da7e8ce767a8023dd0d2cdd
-=======
 import java.lang.reflect.Field;
->>>>>>> rework integration tests per 1.0.1 ; refactor CloudWatch stream and group creation
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,28 +22,19 @@ import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.*;
 
-<<<<<<< 10becd5800c9e3607da7e8ce767a8023dd0d2cdd
-=======
 import com.kdgregory.log4j.aws.internal.AbstractAppender;
->>>>>>> rework integration tests per 1.0.1 ; refactor CloudWatch stream and group creation
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
 
 
 public class TestCloudWatchAppender
 {
     // CHANGE THESE IF YOU CHANGE THE CONFIG
-<<<<<<< 10becd5800c9e3607da7e8ce767a8023dd0d2cdd
-    private final static String LOGGROUP_NAME = "Smoketest";
-    private final static int    ROTATION_COUNT = 333;
-
-=======
     private final static String LOGGER_NAME     = "SmoketestCloudWatchAppender";
     private final static String LOGGROUP_NAME   = "AppenderIntegratonTest";
     private final static String LOGSTREAM_BASE  = "AppenderTest-";
     private final static int    ROTATION_COUNT  = 333;
 
     private Logger testLogger = Logger.getLogger(getClass());
->>>>>>> rework integration tests per 1.0.1 ; refactor CloudWatch stream and group creation
     private AWSLogs client;
 
 
@@ -57,26 +45,10 @@ public class TestCloudWatchAppender
         PropertyConfigurator.configure(config);
 
         client = AWSLogsClientBuilder.defaultClient();
-<<<<<<< 10becd5800c9e3607da7e8ce767a8023dd0d2cdd
-
-        // note: we leave the log group at the end of the test, for diagnositics, so must
-        //       delete it before starting a new test
-        try
-        {
-            client.deleteLogGroup(new DeleteLogGroupRequest().withLogGroupName(LOGGROUP_NAME));
-        }
-        catch (ResourceNotFoundException ignored)
-        {
-            // it's OK if the log group doesn't exist when we start running
-        }
-    }
-
-=======
         deleteLogGroupIfExists();
     }
 
 
->>>>>>> rework integration tests per 1.0.1 ; refactor CloudWatch stream and group creation
 //----------------------------------------------------------------------------
 //  Tests
 //----------------------------------------------------------------------------
@@ -84,32 +56,15 @@ public class TestCloudWatchAppender
     @Test
     public void smoketest() throws Exception
     {
-<<<<<<< 10becd5800c9e3607da7e8ce767a8023dd0d2cdd
-        final int numMessages = 1001;
-
-        Logger logger = Logger.getLogger(getClass());
-=======
         testLogger.info("smoketest: starting");
 
         final int numMessages = 1001;
 
         Logger logger = Logger.getLogger(LOGGER_NAME);
->>>>>>> rework integration tests per 1.0.1 ; refactor CloudWatch stream and group creation
         CloudWatchAppender appender = (CloudWatchAppender)logger.getAppender("test");
 
         (new MessageWriter(logger, numMessages)).run();
 
-<<<<<<< 10becd5800c9e3607da7e8ce767a8023dd0d2cdd
-        // give the writers a chance to do their thing
-        Thread.sleep(3000);
-
-        assertMessages("smoketest-1", ROTATION_COUNT);
-        assertMessages("smoketest-2", ROTATION_COUNT);
-        assertMessages("smoketest-3", ROTATION_COUNT);
-        assertMessages("smoketest-4", numMessages % ROTATION_COUNT);
-
-        CloudWatchLogWriter lastWriter = (CloudWatchLogWriter)appender.writer;
-=======
         testLogger.info("smoketest: all messages written; sleeping to give writers chance to run");
         Thread.sleep(3000);
 
@@ -119,37 +74,26 @@ public class TestCloudWatchAppender
         assertMessages(LOGSTREAM_BASE + "4", numMessages % ROTATION_COUNT);
 
         CloudWatchLogWriter lastWriter = getWriter(appender);
->>>>>>> rework integration tests per 1.0.1 ; refactor CloudWatch stream and group creation
         assertEquals("number of batches for last writer", 1, lastWriter.getBatchCount());
 
         // while we're here, verify that batch delay is propagated
         appender.setBatchDelay(1234L);
         assertEquals("batch delay", 1234L, lastWriter.getBatchDelay());
-<<<<<<< 10becd5800c9e3607da7e8ce767a8023dd0d2cdd
-=======
 
         testLogger.info("smoketest: finished");
->>>>>>> rework integration tests per 1.0.1 ; refactor CloudWatch stream and group creation
     }
 
 
     @Test
     public void concurrencyTest() throws Exception
     {
-<<<<<<< 10becd5800c9e3607da7e8ce767a8023dd0d2cdd
-=======
         testLogger.info("concurrencyTest: starting");
 
->>>>>>> rework integration tests per 1.0.1 ; refactor CloudWatch stream and group creation
         final int numThreads = 5;
         final int numMessagesPerThread = 200;
         final int totalMessageCount = numThreads * numMessagesPerThread;
 
-<<<<<<< 10becd5800c9e3607da7e8ce767a8023dd0d2cdd
-        final Logger logger = Logger.getLogger(getClass());
-=======
         Logger logger = Logger.getLogger(LOGGER_NAME);
->>>>>>> rework integration tests per 1.0.1 ; refactor CloudWatch stream and group creation
 
         List<Thread> threads = new ArrayList<Thread>();
         for (int threadNum = 0 ; threadNum < numThreads ; threadNum++)
@@ -164,19 +108,8 @@ public class TestCloudWatchAppender
             thread.join();
         }
 
-<<<<<<< 10becd5800c9e3607da7e8ce767a8023dd0d2cdd
-        // give the writers a chance to do their thing
-        Thread.sleep(3000);
-
-
-        assertMessages("smoketest-1", ROTATION_COUNT);
-        assertMessages("smoketest-2", ROTATION_COUNT);
-        assertMessages("smoketest-3", ROTATION_COUNT);
-        assertMessages("smoketest-4", totalMessageCount % ROTATION_COUNT);
-=======
         testLogger.info("concurrencyTest: all messages written; sleeping to give writers chance to run");
         Thread.sleep(3000);
-
 
         assertMessages(LOGSTREAM_BASE + "1", ROTATION_COUNT);
         assertMessages(LOGSTREAM_BASE + "2", ROTATION_COUNT);
@@ -184,7 +117,6 @@ public class TestCloudWatchAppender
         assertMessages(LOGSTREAM_BASE + "4", totalMessageCount % ROTATION_COUNT);
 
         testLogger.info("concurrencyTest: finished");
->>>>>>> rework integration tests per 1.0.1 ; refactor CloudWatch stream and group creation
     }
 
 //----------------------------------------------------------------------------
@@ -280,8 +212,6 @@ public class TestCloudWatchAppender
         return result;
     }
 
-<<<<<<< 10becd5800c9e3607da7e8ce767a8023dd0d2cdd
-=======
 
     /**
      *  We leave the log group for post-mortem analysis, but want to ensure
@@ -317,5 +247,4 @@ public class TestCloudWatchAppender
         writerField.setAccessible(true);
         return (CloudWatchLogWriter)writerField.get(appender);
     }
->>>>>>> rework integration tests per 1.0.1 ; refactor CloudWatch stream and group creation
 }

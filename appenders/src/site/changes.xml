@@ -4,7 +4,7 @@
 	</properties>
 
     <body>
-        <release version="1.0.1" date="TBD" description="Bugfixes">
+        <release version="1.0.1" date="2017-09-02" description="Bugfixes">
             <action dev='kdgregory' type='update'>
                 CloudWatch SDK dependency not marked as provided; might cause conflict
             </action>

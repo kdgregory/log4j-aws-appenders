@@ -4,12 +4,14 @@ package com.kdgregory.log4j.aws.internal.kinesis;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.helpers.LogLog;
 
+import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.amazonaws.services.kinesis.model.*;
 
@@ -33,10 +35,12 @@ implements LogWriter
     private long batchDelay;
 
     private Thread dispatchThread;
-    private AmazonKinesisClient client;
+    private AmazonKinesis client;
 
-    private volatile Long shutdownTime;
-    private volatile int batchCount;
+    private int partitionKeyBytes;
+
+    private volatile Long shutdownTime;     // set on another thread
+    private volatile int batchCount;        // can be read via accessor method by other threads
 
     private LinkedBlockingDeque<LogMessage> messageQueue = new LinkedBlockingDeque<LogMessage>();
 
@@ -47,6 +51,15 @@ implements LogWriter
         this.partitionKey = config.partitionKey;
         this.batchDelay = config.batchDelay;
         // TODO - add shard count
+
+        try
+        {
+            partitionKeyBytes = partitionKey.getBytes("UTF-8").length;
+        }
+        catch (UnsupportedEncodingException ex)
+        {
+            throw new RuntimeException("JVM doesn't support UTF-8 (should never happen)");
+        }
     }
 
 
@@ -86,9 +99,7 @@ implements LogWriter
     @Override
     public void run()
     {
-        // unclear why this has to be initialized here, but it throws (failing class init!)
-        // if assigned in constructor
-        client = new AmazonKinesisClient();
+        client = createClient();
 
         if (! ensureStreamAvailable()) return;
 
@@ -104,7 +115,12 @@ implements LogWriter
         do
         {
             List<LogMessage> currentBatch = buildBatch();
-            attemptToSend(currentBatch);
+            PutRecordsRequest request = convertBatchToRequest(currentBatch);
+            if (request != null)
+            {
+                List<Integer> failures = attemptToSend(request);
+                requeueFailures(currentBatch, failures);
+            }
         } while (keepRunning());
     }
 
@@ -134,6 +150,71 @@ implements LogWriter
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
+    
+    /**
+     *  This method is exposed so that we can create a mock client for tests.
+     */
+    protected AmazonKinesis createClient()
+    {
+        return new AmazonKinesisClient();
+    }
+    
+
+    /**
+     *  If the stream is not available, attempts to create it and waits until
+     *  it's active.
+     */
+    private boolean ensureStreamAvailable()
+    {
+        try
+        {
+            if (getStreamStatus() == null)
+            {
+                LogLog.debug("creating Kinesis stream: " + streamName + " with " + shardCount + " shards");
+                CreateStreamRequest request = new CreateStreamRequest()
+                                              .withStreamName(streamName)
+                                              .withShardCount(shardCount);
+                client.createStream(request);
+                sleepQuietly(250);
+            }
+
+            for (int ii = 0 ; ii < STREAM_ACTIVE_TRIES ; ii++)
+            {
+                if (StreamStatus.ACTIVE.toString().equals(getStreamStatus()))
+                {
+                    return true;
+                }
+                sleepQuietly(1000);
+            }
+
+            LogLog.error("timed-out waiting for stream to become active: " + streamName);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            LogLog.error("unable to configure logging stream: " + streamName, ex);
+            return false;
+        }
+    }
+
+
+    /**
+     *  Returns current stream status, null if the stream doesn't exist.
+     */
+    private String getStreamStatus()
+    {
+        try
+        {
+            DescribeStreamRequest request = new DescribeStreamRequest().withStreamName(streamName);
+            DescribeStreamResult response = client.describeStream(request);
+            return response.getStreamDescription().getStreamStatus();
+        }
+        catch (ResourceNotFoundException ex)
+        {
+            return null;
+        }
+    }
+
 
     /**
      *  A check for whether we should keep running: either we haven't been shut
@@ -169,8 +250,7 @@ implements LogWriter
         int batchMsgs = 0;
         while (message != null)
         {
-            // TODO - need to add size of partition key
-            batchBytes += message.size();
+            batchBytes += message.size() + partitionKeyBytes;
             batchMsgs++;
 
             // if this message would exceed the batch limits, push it back onto the queue
@@ -204,32 +284,33 @@ implements LogWriter
     }
 
 
-    private void attemptToSend(List<LogMessage> batch)
+    private PutRecordsRequest convertBatchToRequest(List<LogMessage> batch)
     {
         if (batch.isEmpty())
-            return;
-
-        batchCount++;
+            return null;
 
         List<PutRecordsRequestEntry> requestRecords = new ArrayList<PutRecordsRequestEntry>(batch.size());
         for (LogMessage message : batch)
         {
-            try
-            {
-                byte[] messageBytes = message.getMessage().getBytes("UTF-8");
-                requestRecords.add(new PutRecordsRequestEntry()
-                                       .withPartitionKey(partitionKey)
-                                       .withData(ByteBuffer.wrap(messageBytes)));
-            }
-            catch (UnsupportedEncodingException ex)
-            {
-                LogLog.error("failed to convert message to UTF-8 bytes; possible JVM problem", ex);
-            }
+            requestRecords.add(new PutRecordsRequestEntry()
+                       .withPartitionKey(partitionKey)
+                       .withData(ByteBuffer.wrap(message.getBytes())));
         }
 
-        PutRecordsRequest request = new PutRecordsRequest()
-                                        .withStreamName(streamName)
-                                        .withRecords(requestRecords);
+        return new PutRecordsRequest()
+                   .withStreamName(streamName)
+                   .withRecords(requestRecords);
+    }
+
+
+    /**
+     *  Attempts to send current request, retrying on any request-level failure.
+     *  Returns a list of the indexes for records that failed.
+     */
+    private List<Integer> attemptToSend(PutRecordsRequest request)
+    {
+        batchCount++;
+        List<Integer> failures = new ArrayList<Integer>(request.getRecords().size());
 
         Exception lastException = null;
         for (int attempt = 0 ; attempt < RETRY_LIMIT ; attempt++)
@@ -237,8 +318,16 @@ implements LogWriter
             try
             {
                 PutRecordsResult response = client.putRecords(request);
-                // TODO - examine response to find any errors, re-process
-                return;
+                int ii = 0;
+                for (PutRecordsResultEntry entry : response.getRecords())
+                {
+                    if (entry.getErrorCode() != null)
+                    {
+                        failures.add(Integer.valueOf(ii));
+                    }
+                    ii++;
+                }
+                return failures;
             }
             catch (Exception ex)
             {
@@ -248,53 +337,25 @@ implements LogWriter
         }
 
         LogLog.error("failed to send batch after " + RETRY_LIMIT + " retries", lastException);
+        for (int ii = 0 ; ii < request.getRecords().size() ; ii++)
+        {
+            failures.add(Integer.valueOf(ii));
+        }
+        return failures;
     }
 
 
-    private boolean ensureStreamAvailable()
+    /**
+     *  Re-inserts any failed records into the head of the message queue, so that they'll
+     *  be picked up by the next batch.
+     */
+    private void requeueFailures(List<LogMessage> currentBatch, List<Integer> failures)
     {
-        try
+        Collections.reverse(failures);
+        for (Integer idx : failures)
         {
-            try
-            {
-                // this will throw if the stream doesn't exist
-                getStreamStatus();
-            }
-            catch (ResourceNotFoundException ex)
-            {
-                LogLog.debug("creating Kinesis stream: " + streamName + " with " + shardCount + " shards");
-                CreateStreamRequest request = new CreateStreamRequest()
-                                              .withStreamName(streamName)
-                                              .withShardCount(shardCount);
-                client.createStream(request);
-                sleepQuietly(250);
-            }
-
-            for (int ii = 0 ; ii < STREAM_ACTIVE_TRIES ; ii++)
-            {
-                if (getStreamStatus().equals(StreamStatus.ACTIVE.toString()))
-                {
-                    return true;
-                }
-                sleepQuietly(1000);
-            }
-
-            LogLog.error("timed-out waiting for stream to become active: " + streamName);
-            return false;
+            messageQueue.addFirst(currentBatch.get(idx.intValue()));
         }
-        catch (Exception ex)
-        {
-            LogLog.error("unable to configure logging stream: " + streamName, ex);
-            return false;
-        }
-    }
-
-
-    private String getStreamStatus()
-    {
-        DescribeStreamRequest request = new DescribeStreamRequest().withStreamName(streamName);
-        DescribeStreamResult response = client.describeStream(request);
-        return response.getStreamDescription().getStreamStatus();
     }
 
 

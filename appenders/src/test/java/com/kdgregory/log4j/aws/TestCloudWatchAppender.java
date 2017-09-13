@@ -334,9 +334,9 @@ public class TestCloudWatchAppender
 
 
     @Test
-    public void testWriterErrorHandling() throws Exception
+    public void testUncaughtExceptionHandling() throws Exception
     {
-        initialize("TestCloudWatchAppender.testWriterErrorHandling.properties");
+        initialize("TestCloudWatchAppender.testUncaughtExceptionHandling.properties");
 
         // note that we will be running the writer on a separate thread
 

@@ -23,6 +23,7 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
 
     private String          streamName;
     private String          partitionKey;
+    private int             shardCount;
 
     // these variables hold the post-substitution log-group and log-stream names
     // (mostly useful for testing)
@@ -99,6 +100,27 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
     }
 
 
+
+    /**
+     *  Sets the desired number of shards to use when creating the stream.
+     *  This setting has no effect if the stream already exists.
+     */
+    public void setShardCount(int shardCount)
+    {
+        this.shardCount = shardCount;
+    }
+
+    
+    /**
+     *  Returns the configured number of shards for the stream. This may not
+     *  correspond to the actual shards in the stream.
+     */
+    public int getShardCount()
+    {
+        return shardCount;
+    }
+
+
 //----------------------------------------------------------------------------
 //  Appender-specific methods
 //----------------------------------------------------------------------------
@@ -114,7 +136,7 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
         Substitutions subs = new Substitutions(new Date(), sequence.get());
         actualStreamName  = KinesisConstants.ALLOWED_NAME_REGEX.matcher(subs.perform(streamName)).replaceAll("");
         actualPartitionKey  = KinesisConstants.ALLOWED_NAME_REGEX.matcher(subs.perform(partitionKey)).replaceAll("");
-        return new KinesisWriterConfig(actualStreamName, actualPartitionKey, batchDelay);
+        return new KinesisWriterConfig(actualStreamName, shardCount, actualPartitionKey, batchDelay);
     }
 
 

@@ -6,12 +6,13 @@ public class KinesisWriterConfig
     public String streamName;
     public String partitionKey;
     public long batchDelay;
-    // TODO - add shard count
+    public int shardCount;
     
     
-    public KinesisWriterConfig(String streamName, String partitionKey, long batchDelay)
+    public KinesisWriterConfig(String streamName, int shardCount, String partitionKey, long batchDelay)
     {
         this.streamName = streamName;
+        this.shardCount = shardCount;
         this.partitionKey = partitionKey;
         this.batchDelay = batchDelay;
     }

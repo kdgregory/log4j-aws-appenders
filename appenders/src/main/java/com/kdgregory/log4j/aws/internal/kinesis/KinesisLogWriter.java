@@ -29,15 +29,11 @@ implements LogWriter
     // this controls the number of times that we retry a send
     private final static int RETRY_LIMIT = 3;
 
-    private String streamName;
-    private String partitionKey;
-    private int shardCount = 1;
-    private long batchDelay;
+    private KinesisWriterConfig config;
+    private int partitionKeyBytes;
 
     private Thread dispatchThread;
     private AmazonKinesis client;
-
-    private int partitionKeyBytes;
 
     private volatile Long shutdownTime;     // set on another thread
     private volatile int batchCount;        // can be read via accessor method by other threads
@@ -47,14 +43,10 @@ implements LogWriter
 
     public KinesisLogWriter(KinesisWriterConfig config)
     {
-        this.streamName = config.streamName;
-        this.partitionKey = config.partitionKey;
-        this.batchDelay = config.batchDelay;
-        // TODO - add shard count
-
+        this.config = config;
         try
         {
-            partitionKeyBytes = partitionKey.getBytes("UTF-8").length;
+            partitionKeyBytes = config.partitionKey.getBytes("UTF-8").length;
         }
         catch (UnsupportedEncodingException ex)
         {
@@ -77,14 +69,14 @@ implements LogWriter
     @Override
     public void setBatchDelay(long value)
     {
-        this.batchDelay = value;
+        config.batchDelay = value;
     }
 
 
     @Override
     public void stop()
     {
-        shutdownTime = new Long(System.currentTimeMillis() + batchDelay);
+        shutdownTime = new Long(System.currentTimeMillis() + config.batchDelay);
         if (dispatchThread != null)
         {
             dispatchThread.interrupt();
@@ -134,7 +126,7 @@ implements LogWriter
      */
     public long getBatchDelay()
     {
-        return batchDelay;
+        return config.batchDelay;
     }
 
 
@@ -150,7 +142,7 @@ implements LogWriter
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
-    
+
     /**
      *  This method is exposed so that we can create a mock client for tests.
      */
@@ -158,7 +150,7 @@ implements LogWriter
     {
         return new AmazonKinesisClient();
     }
-    
+
 
     /**
      *  If the stream is not available, attempts to create it and waits until
@@ -170,12 +162,7 @@ implements LogWriter
         {
             if (getStreamStatus() == null)
             {
-                LogLog.debug("creating Kinesis stream: " + streamName + " with " + shardCount + " shards");
-                CreateStreamRequest request = new CreateStreamRequest()
-                                              .withStreamName(streamName)
-                                              .withShardCount(shardCount);
-                client.createStream(request);
-                sleepQuietly(250);
+                createStream();
             }
 
             for (int ii = 0 ; ii < STREAM_ACTIVE_TRIES ; ii++)
@@ -187,13 +174,33 @@ implements LogWriter
                 sleepQuietly(1000);
             }
 
-            LogLog.error("timed-out waiting for stream to become active: " + streamName);
+            LogLog.error("timed-out waiting for stream to become active: " + config.streamName);
             return false;
         }
         catch (Exception ex)
         {
-            LogLog.error("unable to configure logging stream: " + streamName, ex);
+            LogLog.error("unable to configure logging stream: " + config.streamName, ex);
             return false;
+        }
+    }
+
+
+    /**
+     *  Attempts to create the stream, silently succeeding if it already exists.
+     */
+    private void createStream()
+    {
+        try
+        {
+            LogLog.debug("creating Kinesis stream: " + config.streamName + " with " + config.shardCount + " shards");
+            CreateStreamRequest request = new CreateStreamRequest()
+                                          .withStreamName(config.streamName)
+                                          .withShardCount(config.shardCount);
+            client.createStream(request);
+        }
+        catch (ResourceInUseException ignored)
+        {
+            // someone else created stream while we were trying; that's OK
         }
     }
 
@@ -205,7 +212,7 @@ implements LogWriter
     {
         try
         {
-            DescribeStreamRequest request = new DescribeStreamRequest().withStreamName(streamName);
+            DescribeStreamRequest request = new DescribeStreamRequest().withStreamName(config.streamName);
             DescribeStreamResult response = client.describeStream(request);
             return response.getStreamDescription().getStreamStatus();
         }
@@ -245,7 +252,7 @@ implements LogWriter
         if (message == null)
             return batch;
 
-        long batchTimeout = System.currentTimeMillis() + batchDelay;
+        long batchTimeout = System.currentTimeMillis() + config.batchDelay;
         int batchBytes = 0;
         int batchMsgs = 0;
         while (message != null)
@@ -293,12 +300,12 @@ implements LogWriter
         for (LogMessage message : batch)
         {
             requestRecords.add(new PutRecordsRequestEntry()
-                       .withPartitionKey(partitionKey)
+                       .withPartitionKey(config.partitionKey)
                        .withData(ByteBuffer.wrap(message.getBytes())));
         }
 
         return new PutRecordsRequest()
-                   .withStreamName(streamName)
+                   .withStreamName(config.streamName)
                    .withRecords(requestRecords);
     }
 

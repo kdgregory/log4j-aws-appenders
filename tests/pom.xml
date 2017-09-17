@@ -43,6 +43,7 @@
 
         <aws-sdk.version>1.11.121</aws-sdk.version>
         <junit.version>4.10</junit.version>
+        <kdgcommons.version>1.0.15</kdgcommons.version>
         <log4j.version>1.2.16</log4j.version>
 
         <plugin.compiler.version>3.1</plugin.compiler.version>
@@ -55,22 +56,29 @@
             <groupId>com.kdgregory.log4j</groupId>
             <artifactId>aws-appenders</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk</artifactId>
             <version>${aws-sdk.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.sf.kdgcommons</groupId>
+            <artifactId>kdgcommons</artifactId>
+            <version>${kdgcommons.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>${log4j.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -94,8 +102,7 @@
                 <version>${plugin.surefire.version}</version>
                 <configuration>
                     <includes>
-                        <include>**/Test*.java</include>
-                        <include>**/Smoketest*.java</include>
+                        <include>**/*IntegrationTest.java</include>
                     </includes>
                 </configuration>
             </plugin>

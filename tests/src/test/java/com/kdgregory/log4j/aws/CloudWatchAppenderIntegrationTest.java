@@ -3,15 +3,13 @@ package com.kdgregory.log4j.aws;
 
 import java.lang.reflect.Field;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
+
 import java.util.regex.Matcher;
 
-import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -24,26 +22,25 @@ import com.amazonaws.services.logs.model.*;
 
 import com.kdgregory.log4j.aws.internal.AbstractAppender;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
+import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
 
 
-public class TestCloudWatchAppender
+public class CloudWatchAppenderIntegrationTest
 {
     // CHANGE THESE IF YOU CHANGE THE CONFIG
-    private final static String LOGGER_NAME     = "SmoketestCloudWatchAppender";
     private final static String LOGGROUP_NAME   = "AppenderIntegratonTest";
     private final static String LOGSTREAM_BASE  = "AppenderTest-";
-    private final static int    ROTATION_COUNT  = 333;
 
-    private Logger testLogger = Logger.getLogger(getClass());
+    private Logger mainLogger;
     private AWSLogs client;
 
 
-    @Before
-    public void setUp() throws Exception
+    public void setUp(String propertiesName) throws Exception
     {
-        URL config = ClassLoader.getSystemResource("CloudWatchAppenderSmoketest.properties");
+        URL config = ClassLoader.getSystemResource(propertiesName);
         PropertyConfigurator.configure(config);
 
+        mainLogger = Logger.getLogger(getClass());
         client = AWSLogsClientBuilder.defaultClient();
         deleteLogGroupIfExists();
     }
@@ -56,22 +53,24 @@ public class TestCloudWatchAppender
     @Test
     public void smoketest() throws Exception
     {
-        testLogger.info("smoketest: starting");
+        setUp("CloudWatchAppenderIntegrationTest-smoketest.properties");
+        mainLogger.info("smoketest: starting");
 
         final int numMessages = 1001;
+        final int rotationCount  = 333;
 
-        Logger logger = Logger.getLogger(LOGGER_NAME);
-        CloudWatchAppender appender = (CloudWatchAppender)logger.getAppender("test");
+        Logger testLogger = Logger.getLogger("TestLogger");
+        CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test");
 
-        (new MessageWriter(logger, numMessages)).run();
+        (new MessageWriter(testLogger, numMessages)).run();
 
-        testLogger.info("smoketest: all messages written; sleeping to give writers chance to run");
-        Thread.sleep(3000);
+        mainLogger.info("smoketest: all messages written; sleeping to give writers chance to run");
+        Thread.sleep(5000);
 
-        assertMessages(LOGSTREAM_BASE + "1", ROTATION_COUNT);
-        assertMessages(LOGSTREAM_BASE + "2", ROTATION_COUNT);
-        assertMessages(LOGSTREAM_BASE + "3", ROTATION_COUNT);
-        assertMessages(LOGSTREAM_BASE + "4", numMessages % ROTATION_COUNT);
+        assertMessages(LOGSTREAM_BASE + "1", rotationCount);
+        assertMessages(LOGSTREAM_BASE + "2", rotationCount);
+        assertMessages(LOGSTREAM_BASE + "3", rotationCount);
+        assertMessages(LOGSTREAM_BASE + "4", numMessages % rotationCount);
 
         CloudWatchLogWriter lastWriter = getWriter(appender);
         assertEquals("number of batches for last writer", 1, lastWriter.getBatchCount());
@@ -80,73 +79,70 @@ public class TestCloudWatchAppender
         appender.setBatchDelay(1234L);
         assertEquals("batch delay", 1234L, lastWriter.getBatchDelay());
 
-        testLogger.info("smoketest: finished");
+        mainLogger.info("smoketest: finished");
     }
 
 
     @Test
-    public void concurrencyTest() throws Exception
+    public void testMultipleThreadsSingleAppender() throws Exception
     {
-        testLogger.info("concurrencyTest: starting");
+        setUp("CloudWatchAppenderIntegrationTest-testMultipleThreadsSingleAppender.properties");
+        mainLogger.info("multi-thread/single-appender: starting");
 
-        final int numThreads = 5;
-        final int numMessagesPerThread = 200;
-        final int totalMessageCount = numThreads * numMessagesPerThread;
+        final int messagesPerThread = 200;
+        final int rotationCount  = 333;
 
-        Logger logger = Logger.getLogger(LOGGER_NAME);
+        Logger testLogger = Logger.getLogger("TestLogger");
 
-        List<Thread> threads = new ArrayList<Thread>();
-        for (int threadNum = 0 ; threadNum < numThreads ; threadNum++)
+        MessageWriter[] writers = new MessageWriter[]
         {
-            Thread thread = new Thread(new MessageWriter(logger, numMessagesPerThread));
-            threads.add(thread);
-            thread.start();
-        }
+            new MessageWriter(testLogger, messagesPerThread),
+            new MessageWriter(testLogger, messagesPerThread),
+            new MessageWriter(testLogger, messagesPerThread),
+            new MessageWriter(testLogger, messagesPerThread),
+            new MessageWriter(testLogger, messagesPerThread)
+        };
+        MessageWriter.runOnThreads(writers);
 
-        for (Thread thread : threads)
-        {
-            thread.join();
-        }
-
-        testLogger.info("concurrencyTest: all messages written; sleeping to give writers chance to run");
+        mainLogger.info("multi-thread/single-appender: all threads started; sleeping to give writer chance to run");
         Thread.sleep(3000);
 
-        assertMessages(LOGSTREAM_BASE + "1", ROTATION_COUNT);
-        assertMessages(LOGSTREAM_BASE + "2", ROTATION_COUNT);
-        assertMessages(LOGSTREAM_BASE + "3", ROTATION_COUNT);
-        assertMessages(LOGSTREAM_BASE + "4", totalMessageCount % ROTATION_COUNT);
+        assertMessages(LOGSTREAM_BASE + "1", rotationCount);
+        assertMessages(LOGSTREAM_BASE + "2", rotationCount);
+        assertMessages(LOGSTREAM_BASE + "3", rotationCount);
+        assertMessages(LOGSTREAM_BASE + "4", (messagesPerThread * writers.length) % rotationCount);
 
-        testLogger.info("concurrencyTest: finished");
+        mainLogger.info("multi-thread/single-appender: finished");
     }
+
+
+    @Test
+    public void testMultipleThreadsMultipleAppenders() throws Exception
+    {
+        setUp("CloudWatchAppenderIntegrationTest-testMultipleThreadsMultipleAppenders.properties");
+        mainLogger.info("multi-thread/multi-appender: starting");
+
+        final int messagesPerThread = 300;
+
+        MessageWriter.runOnThreads(
+            new MessageWriter(Logger.getLogger("TestLogger1"), messagesPerThread),
+            new MessageWriter(Logger.getLogger("TestLogger2"), messagesPerThread),
+            new MessageWriter(Logger.getLogger("TestLogger3"), messagesPerThread));
+
+        mainLogger.info("multi-thread/multi-appender: all threads started; sleeping to give writer chance to run");
+        Thread.sleep(3000);
+
+        assertMessages(LOGSTREAM_BASE + "1", messagesPerThread);
+        assertMessages(LOGSTREAM_BASE + "2", messagesPerThread);
+        assertMessages(LOGSTREAM_BASE + "3", messagesPerThread);
+
+        mainLogger.info("multi-thread/multi-appender: finished");
+    }
+
 
 //----------------------------------------------------------------------------
 //  Helpers
 //----------------------------------------------------------------------------
-
-    /**
-     *  Writes a sequence of messages to the log. Can either be called inline
-     *  or on a thread.
-     */
-    private static class MessageWriter implements Runnable
-    {
-        private Logger logger;
-        private int numMessages;
-
-        public MessageWriter(Logger logger, int numMessages)
-        {
-            this.logger = logger;
-            this.numMessages = numMessages;
-        }
-
-        public void run()
-        {
-            for (int ii = 0 ; ii < numMessages ; ii++)
-            {
-                logger.debug("message on thread " + Thread.currentThread().getId() + ": " + ii);
-            }
-        }
-    }
-
 
     /**
      *  Asserts that the stream contains the expected number of messages, and that
@@ -157,17 +153,15 @@ public class TestCloudWatchAppender
         LinkedHashSet<OutputLogEvent> events = retrieveAllMessages(streamName);
         assertEquals("number of events in " + streamName, expectedMessageCount, events.size());
 
-        Pattern messagePattern = Pattern.compile(".*message on thread (\\d+): (\\d+)");
-
         Map<Integer,Integer> lastMessageByThread = new HashMap<Integer,Integer>();
         for (OutputLogEvent event : events)
         {
             String message = event.getMessage().trim();
-            Matcher matcher = messagePattern.matcher(message);
+            Matcher matcher = MessageWriter.PATTERN.matcher(message);
             assertTrue("message matches pattern: " + message, matcher.matches());
 
-            Integer threadNum = Integer.valueOf(matcher.group(1));
-            Integer messageNum = Integer.valueOf(matcher.group(2));
+            Integer threadNum = MessageWriter.getThreadId(matcher);
+            Integer messageNum = MessageWriter.getMessageNumber(matcher);
             Integer prevMessageNum = lastMessageByThread.get(threadNum);
             if (prevMessageNum == null)
             {
@@ -189,6 +183,7 @@ public class TestCloudWatchAppender
     {
         LinkedHashSet<OutputLogEvent> result = new LinkedHashSet<OutputLogEvent>();
 
+        ensureLogStreamAvailable(logStreamName);
         GetLogEventsRequest request = new GetLogEventsRequest()
                               .withLogGroupName(LOGGROUP_NAME)
                               .withLogStreamName(logStreamName)
@@ -198,18 +193,50 @@ public class TestCloudWatchAppender
         // so we try to read at least one response, and repeat until the token doesn't change
 
         String prevToken = "";
-        String nextToken;
+        String nextToken = "";
         do
         {
+            prevToken = nextToken;
             GetLogEventsResult response = client.getLogEvents(request);
             result.addAll(response.getEvents());
             nextToken = response.getNextForwardToken();
             request.setNextToken(nextToken);
-            prevToken = nextToken;
             Thread.sleep(500);
         } while (! prevToken.equals(nextToken));
 
         return result;
+    }
+
+
+    /**
+     *  Waits until the named logstream is available, throwing if it isn't available
+     *  after one minute. If the log group isn't available, that's considered equal
+     *  to the stream not being ready.
+     */
+    private void ensureLogStreamAvailable(String streamName)
+    throws Exception
+    {
+        for (int ii = 0 ; ii < 60 ; ii++)
+        {
+            try
+            {
+                DescribeLogStreamsRequest reqest = new DescribeLogStreamsRequest()
+                                                   .withLogGroupName(LOGGROUP_NAME)
+                                                   .withLogStreamNamePrefix(streamName);
+                DescribeLogStreamsResult response = client.describeLogStreams(reqest);
+                List<LogStream> streams = response.getLogStreams();
+                if ((streams != null) && (streams.size() > 0))
+                {
+                    return;
+                }
+            }
+            catch (ResourceNotFoundException ignored)
+            {
+                // this indicates that the log group isn't available
+            }
+            Thread.sleep(1000);
+        }
+        fail("stream not ready within 60 seconds");
     }
 
 

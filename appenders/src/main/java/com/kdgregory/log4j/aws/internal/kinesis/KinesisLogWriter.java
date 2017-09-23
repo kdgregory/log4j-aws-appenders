@@ -1,7 +1,6 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.aws.internal.kinesis;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,6 +16,7 @@ import com.amazonaws.services.kinesis.model.*;
 
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
+import com.kdgregory.log4j.aws.internal.shared.Utils;
 
 
 public class KinesisLogWriter
@@ -30,7 +30,6 @@ implements LogWriter
     private final static int RETRY_LIMIT = 3;
 
     private KinesisWriterConfig config;
-    private int partitionKeyBytes;
 
     private Thread dispatchThread;
     private AmazonKinesis client;
@@ -44,14 +43,6 @@ implements LogWriter
     public KinesisLogWriter(KinesisWriterConfig config)
     {
         this.config = config;
-        try
-        {
-            partitionKeyBytes = config.partitionKey.getBytes("UTF-8").length;
-        }
-        catch (UnsupportedEncodingException ex)
-        {
-            throw new RuntimeException("JVM doesn't support UTF-8 (should never happen)");
-        }
     }
 
 
@@ -171,7 +162,7 @@ implements LogWriter
                 {
                     return true;
                 }
-                sleepQuietly(1000);
+                Utils.sleepQuietly(1000);
             }
 
             LogLog.error("timed-out waiting for stream to become active: " + config.streamName);
@@ -257,7 +248,7 @@ implements LogWriter
         int batchMsgs = 0;
         while (message != null)
         {
-            batchBytes += message.size() + partitionKeyBytes;
+            batchBytes += message.size() + config.partitionKeyLength;
             batchMsgs++;
 
             // if this message would exceed the batch limits, push it back onto the queue
@@ -339,7 +330,7 @@ implements LogWriter
             catch (Exception ex)
             {
                 lastException = ex;
-                sleepQuietly(250 * (attempt + 1));
+                Utils.sleepQuietly(250 * (attempt + 1));
             }
         }
 
@@ -362,19 +353,6 @@ implements LogWriter
         for (Integer idx : failures)
         {
             messageQueue.addFirst(currentBatch.get(idx.intValue()));
-        }
-    }
-
-
-    private void sleepQuietly(long time)
-    {
-        try
-        {
-            Thread.sleep(time);
-        }
-        catch (InterruptedException ignored)
-        {
-            // this will simply break to the enclosing loop
         }
     }
 }

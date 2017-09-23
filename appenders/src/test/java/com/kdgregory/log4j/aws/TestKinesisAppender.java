@@ -14,10 +14,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.*;
+import static net.sf.kdgcommons.test.StringAsserts.*;
+
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
+
+import net.sf.kdgcommons.lang.StringUtil;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
@@ -29,12 +34,9 @@ import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
-import com.kdgregory.testhelpers.log4j.*;
-import com.kdgregory.testhelpers.log4j.aws.ThrowingWriterFactory;
-import com.kdgregory.testhelpers.log4j.aws.kinesis.*;
-
-import static org.junit.Assert.*;
-import static net.sf.kdgcommons.test.StringAsserts.*;
+import com.kdgregory.log4j.testhelpers.*;
+import com.kdgregory.log4j.testhelpers.aws.*;
+import com.kdgregory.log4j.testhelpers.aws.kinesis.*;
 
 
 public class TestKinesisAppender
@@ -343,4 +345,21 @@ public class TestKinesisAppender
                        BinaryUtils.copyAllBytesFrom(successRecords.get(0).getData())));
     }
 
+
+    @Test
+    public void testMaximumMessageSize() throws Exception
+    {
+        final int kinesisMaximumMessageSize = 1024 * 1024;      // 1 MB
+        final int layoutOverhead            = 1;                // newline after message
+        final int partitionKeySize          = 4;                // "test"
+
+        final int maxMessageSize            =  kinesisMaximumMessageSize - (layoutOverhead + partitionKeySize);
+        final String bigMessage             =  StringUtil.repeat('A', maxMessageSize);
+
+        initialize("TestKinesisAppender.testMaximumMessageSize.properties");
+        logger.debug("this message triggers writer configuration");
+
+        assertFalse("max message size",             appender.isMessageTooLarge(LogMessage.create(bigMessage)));
+        assertTrue("bigger than max message size",  appender.isMessageTooLarge(LogMessage.create(bigMessage + "1")));
+    }
 }

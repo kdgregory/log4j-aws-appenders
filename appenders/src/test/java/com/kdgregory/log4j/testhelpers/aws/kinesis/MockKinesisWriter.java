@@ -1,5 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.testhelpers.log4j.aws.kinesis;
+package com.kdgregory.log4j.testhelpers.aws.kinesis;
 
 import java.util.ArrayList;
 import java.util.List;

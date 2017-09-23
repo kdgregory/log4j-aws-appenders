@@ -1,5 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.testhelpers.log4j;
+package com.kdgregory.log4j.testhelpers;
 
 import org.apache.log4j.PatternLayout;
 

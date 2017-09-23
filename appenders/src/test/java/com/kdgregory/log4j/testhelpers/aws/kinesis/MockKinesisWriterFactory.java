@@ -1,5 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.testhelpers.log4j.aws.kinesis;
+package com.kdgregory.log4j.testhelpers.aws.kinesis;
 
 import com.kdgregory.log4j.aws.KinesisAppender;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;

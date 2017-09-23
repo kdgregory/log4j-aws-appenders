@@ -15,15 +15,15 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
 
+import net.sf.kdgcommons.lang.StringUtil;
+
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.testhelpers.log4j.HeaderFooterLayout;
-import com.kdgregory.testhelpers.log4j.NullThreadFactory;
-import com.kdgregory.testhelpers.log4j.aws.ThrowingWriterFactory;
-import com.kdgregory.testhelpers.log4j.aws.cloudwatch.MockCloudWatchWriter;
-import com.kdgregory.testhelpers.log4j.aws.cloudwatch.MockCloudWatchWriterFactory;
-import com.kdgregory.testhelpers.log4j.aws.cloudwatch.TestableCloudWatchAppender;
+
+import com.kdgregory.log4j.testhelpers.*;
+import com.kdgregory.log4j.testhelpers.aws.*;
+import com.kdgregory.log4j.testhelpers.aws.cloudwatch.*;
 
 
 public class TestCloudWatchAppender
@@ -344,7 +344,7 @@ public class TestCloudWatchAppender
         appender.setWriterFactory(new ThrowingWriterFactory<CloudWatchWriterConfig>());
 
         logger.debug("this should trigger writer creation");
-        
+
         assertNull("writer has not yet thrown",         appender.getLastWriterException());
 
         logger.debug("this should trigger writer throwage");
@@ -359,4 +359,21 @@ public class TestCloudWatchAppender
         assertEquals("last writer exception class", IllegalStateException.class, appender.getLastWriterException().getClass());
     }
 
+
+    @Test
+    public void testMaximumMessageSize() throws Exception
+    {
+        final int cloudwatchMaximumBatchSize    = 1048576;  // copied from http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
+        final int cloudwatchOverhead            = 26;       // ditto
+        final int layoutOverhead                = 1;        // newline after message
+
+        final int maxMessageSize                =  cloudwatchMaximumBatchSize - (layoutOverhead + cloudwatchOverhead);
+        final String bigMessage                 =  StringUtil.repeat('A', maxMessageSize);
+
+        initialize("TestCloudWatchAppender.testMaximumMessageSize.properties");
+        // no need to create a writer; cloudwatch messages not dependent on any names
+
+        assertFalse("max message size",             appender.isMessageTooLarge(LogMessage.create(bigMessage)));
+        assertTrue("bigger than max message size",  appender.isMessageTooLarge(LogMessage.create(bigMessage + "1")));
+    }
 }

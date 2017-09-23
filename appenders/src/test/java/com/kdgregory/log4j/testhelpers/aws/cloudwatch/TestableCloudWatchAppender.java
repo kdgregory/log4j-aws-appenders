@@ -1,8 +1,9 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.testhelpers.log4j.aws.cloudwatch;
+package com.kdgregory.log4j.testhelpers.aws.cloudwatch;
 
 import com.kdgregory.log4j.aws.CloudWatchAppender;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
+import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.ThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 
@@ -52,5 +53,12 @@ public class TestableCloudWatchAppender extends CloudWatchAppender
     public long getLastRotationTimestamp()
     {
         return lastRotationTimestamp;
+    }
+
+
+    @Override
+    public boolean isMessageTooLarge(LogMessage message)
+    {
+        return super.isMessageTooLarge(message);
     }
 }

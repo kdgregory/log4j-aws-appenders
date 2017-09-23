@@ -50,7 +50,6 @@ implements Comparable<LogMessage>
     {
         try
         {
-
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             OutputStreamWriter out = new OutputStreamWriter(bos, "UTF-8");
 
@@ -101,11 +100,11 @@ implements Comparable<LogMessage>
 
 
     /**
-     *  Returns the size of the message, as it affects the CloudWatch batch.
+     *  Returns the size of the message after conversion to UTF-8.
      */
     public int size()
     {
-        return messageBytes.length + 26;
+        return messageBytes.length;
     }
     
     

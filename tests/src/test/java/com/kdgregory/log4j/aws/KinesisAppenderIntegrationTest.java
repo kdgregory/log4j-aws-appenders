@@ -182,11 +182,14 @@ public class KinesisAppenderIntegrationTest
 
     private void deleteStreamIfExists() throws Exception
     {
-        client.deleteStream(new DeleteStreamRequest().withStreamName(STREAM_NAME));
-        mainLogger.info("deleted stream; waiting for it to be gone");
-        while (describeStream() != null)
+        if (describeStream() != null)
         {
-            Thread.sleep(1000);
+            client.deleteStream(new DeleteStreamRequest().withStreamName(STREAM_NAME));
+            mainLogger.info("deleted stream; waiting for it to be gone");
+            while (describeStream() != null)
+            {
+                Thread.sleep(1000);
+            }
         }
     }
 

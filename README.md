@@ -16,7 +16,7 @@ Here are the destinations I plan to support. No idea how many weekends they'll t
 
 * [x] [CloudWatch Logs](Docs/cloudwatch.md)
 * [x] Kinesis Streams (which can be used as a source for Kinesis Firehose, and thence ElasticSearch)
-* [ ] SNS (I think there it might be interesting to create an "error watcher")
+* [ ] SNS (I think it might be useful to create an "error notifier")
 
 
 
@@ -29,28 +29,36 @@ example configuration.
 ### Dependency Versions
 
 To avoid dependency hell, all dependencies are marked as "provided": you will need
-to ensure that your project includes necessary dependencies. Minimum dependency
-versions will depend on which AWS service you use; Amazon introduces new services
-and APIs all the time, and does not pay attention to backwards compatibility.
+to ensure that your project includes necessary dependencies. The minimum supported
+depedencies are as follows:
 
 * JDK: 1.6  
   The appender code does not rely on standard libary classes/methods introduced
-  after 1.6. The AWS code, however, might.
+  after 1.6. The AWS SDK, however, might.
 * Log4J: 1.2.16  
   This is the first version that implements `LoggingEvent.getTimeStamp()`, which
   is needed to order messages when sending to AWS. It's been around since 2010,
   so if you haven't upgraded already you should.
-* CloudWatch SDK: 1.11.0  
-  This is the first version where `createLogGroup()` and `createLogStream()` return
-  a result object. In the 1.10.x branch, these functions returned `void`; you can
-  compile the appender for those releases, but it won't run on newer releases.
+* AWS SDK: 1.11.0  
+  Amazon changed the return type of several functions between 1.10.x and 1.11.x.
+  If your project is still using 1.10.x, you can recompile the appenders locally
+  with that version; I have built and tested with 1.10.1. Note, however, that the
+  integration tests use client-builder classes that weren't introduced until midway
+  in the 1.11.x release sequence.
+
+I have made an intentional effort to limit dependencies to the bare minimum. This
+has in some cases meant that I write internal implementations for functions that
+are found in common libraries (including my own).
+
+Note that tests may introduce their own dependencies. These will all be found on
+Maven Central, and will be marked as `test` scope in the POM.
 
 
 ### Substitution Variables
 
-Logging destination names (such as a CloudWatch log group or SNS topic) may use substitution variables
-from the table below. To use, these must be brace-delimited (eg: `MyLog-{date}`, _not_ `MyLog-date`)
-and may appear in any configuration variable that allows substitutions.
+Logging destination names (such as a CloudWatch log group or Kinesis stream) may use substitution
+variables from the table below. To use, these must be brace-delimited (eg: `MyLog-{date}`, _not_
+`MyLog-date`) and may appear in any configuration variable that allows substitutions.
 
 
 Variable            | Description
@@ -70,8 +78,17 @@ If unable to replace a substitution variable, the tag will be left in place. Thi
 to a bogus or unclosed tag, or an unresolvable system property or environment variable.
 
 Note that a particular destination may not accept all of the characters produced by a substitution,
-and the logger will remove illegal characters. You should try to limit substitution values to
-alphanumeric characters, along with hyphens and underscores.
+and the logger will remove illegal characters. As a general rule you should limit substitution values
+to alphanumeric characters, along with hyphens and underscores.
+
+
+### Common Configuration
+
+The following configuration parameters are available for all appenders:
+
+Name                | Description
+--------------------|----------------------------------------------------------------
+`batchDelay`        | The time, in milliseconds, that the writer will wait to accumulate messages for a batch. See below for more information.
 
 
 ## Design
@@ -107,6 +124,25 @@ provider chain. This allows you to specify explicit credentials using several me
 instance roles for applications running on EC2 or Lambda.
 
 
+## Message Batching
+
+Most AWS services allow batching of messages for efficiency. While sending maxmimum-sized requests is
+more efficient when there's a high volume of logging, it could excessively delay writing when there's
+a low volume (and potentially leave more messages unwritten if the program crashes).
+
+The `batchDelay` timer starts when the first message in a batch is pulled off the internal queue. The
+log writer will read additional messages until it either fills the batch or the timer is at zero, at
+which point it sends the batch and starts a new one.
+
+This timeout is also used as a "cooldown" timer when the writer is closed (as when the appender rotates
+its log stream): the writer will continue to look for messages for this amount of time. Note that the writer
+might actually take longer to shut down, if there is a large backlog of messages or communication errors
+that prevent the batch being written.
+
+The default value, 2000, is intended as a tradeoff between keeping the log up to date and minimizing the amount
+of network traffic generated by the logger.
+
+
 ## Building
 
 There are two projects in this repository:
@@ -125,13 +161,15 @@ classes and packages.
 
 I follow the standard `MAJOR.MINOR.PATCH` versioning scheme:
 
-* `MAJOR` will track the Log4J major version number (yes, eventually I'll release a version for Log4J 2.x)
-* `MINOR` will be incremented for each destination (CloudWatch, Kinesis, &c)
-* `PATCH` will be incremented to reflect bugfixes or additional features; significant bugfixes will be backported
+* `MAJOR` will track the Log4J major version number (yes, eventually I'll release a version for Log4J 2.x).
+* `MINOR` will be incremented for each destination (CloudWatch, Kinesis, &c).
+* `PATCH` will be incremented to reflect bugfixes or additional features; significant bugfixes will be
+  backported so that you can continue using the same minor release.
+  
 
 Not all versions will be released to Maven Central. I may choose to make release (non-snapshot) versions for
-development testing, or as interim steps of a bigger piece of functionality. Versions that _are_ released to
-Maven Central will be tagged in source control.
+development testing, or as interim steps of a bigger piece of functionality. However, all release versions
+are tagged in source control, whether or not available on Maven Central.
 
 The source tree also contains commits with major version of 0. These are "pre-release" versions, and may change
 in arbitrary ways. Please do not use them.
@@ -139,20 +177,17 @@ in arbitrary ways. Please do not use them.
 
 ## Source Control
 
-The `master` branch holds the current branch of development. Commits on master are functional, but may
-not be "complete" (whatever that means). They may be "snapshot" or release builds. Master will never be
-rebased; once a commit is made there it's part of history for better or worse.
+The `master` branch is intended for "potentially releasable" versions. Commits on master are functional, but may
+not be "complete" (for some definition of that word). They may be "snapshot" or release builds. Master will never
+be rebased; once a commit is made there it's part of history for better or worse.
 
 Development takes place on a `dev-MAJOR.MINOR.PATCH` branch; these branches are deleted once their
 content has been merged into `master`. *BEWARE*: these branches may be rebased as I see fit.
 
-Each minor release has a `support-MAJOR.MINOR` branch for backports and patches. These branches are
-expected to live forever. These branches will never be rebased.
-
-Each version released to Maven Central is tagged with `release-MAJOR.MINOR.PATCH`.
+Each "release" version is tagged with `release-MAJOR.MINOR.PATCH`, whether or not it was uploaded to Maven Central.
 
 Merges into `master` are typically handled via pull requests, and each is squashed into a single commit. If
-you really want to see my development process you can look at closed PRs.
+you want to see the individual commits that went into a branch, you can look at the closed PR.
 
 
 ## FAQ
@@ -195,4 +230,12 @@ What are all these messages from `com.amazonaws` and `org.apache.http`?
   way to track "meta" issues with the logging configuration.
 
 > Note that seeing unwanted messages is a problem with whatever appender you might use.
-  It's more apparent here because the logger invokes code that itself writes to the log.
+
+
+## Major TODOs / Caveats / Bugs
+
+If you're unable to connect to AWS, or the connection is interrupted, the appenders
+will keep writing log messages to the internal queue. Eventually, this will use up
+all of your memory. This will be fixed by the 1.1.3 release: you'll be able to.
+configure a "max outstanding messages" parameter, and a discard policy.
+  It's more apparent here because the logger invokes code that itself writes log messages.

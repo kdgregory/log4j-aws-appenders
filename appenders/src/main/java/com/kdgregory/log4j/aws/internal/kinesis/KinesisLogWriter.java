@@ -29,6 +29,12 @@ implements LogWriter
     // this controls the number of times that we retry a send
     private final static int RETRY_LIMIT = 3;
 
+    // this controls the number of times that we attempt to create a stream
+    private final static int CREATE_RETRY_LIMIT = 12;
+
+    // and how long we'll sleep between attempts
+    private final static int CREATE_RETRY_SLEEP = 5000;
+
     private KinesisWriterConfig config;
 
     private Thread dispatchThread;
@@ -181,18 +187,31 @@ implements LogWriter
      */
     private void createStream()
     {
-        try
+        for (int retry = 0 ; retry < CREATE_RETRY_LIMIT ; retry++)
         {
-            LogLog.debug("creating Kinesis stream: " + config.streamName + " with " + config.shardCount + " shards");
-            CreateStreamRequest request = new CreateStreamRequest()
-                                          .withStreamName(config.streamName)
-                                          .withShardCount(config.shardCount);
-            client.createStream(request);
+            try
+            {
+                LogLog.debug("creating Kinesis stream: " + config.streamName + " with " + config.shardCount + " shards");
+                CreateStreamRequest request = new CreateStreamRequest()
+                                              .withStreamName(config.streamName)
+                                              .withShardCount(config.shardCount);
+                client.createStream(request);
+                return;
+            }
+            catch (ResourceInUseException ignored)
+            {
+                // someone else created stream while we were trying; that's OK
+                return;
+            }
+            catch (LimitExceededException ex)
+            {
+                // AWS limits number of streams that can be created; and also total
+                // number of shards, with no way to distinguish; sleep a long time
+                // but eventually time-out
+                Utils.sleepQuietly(CREATE_RETRY_SLEEP);
+            }
         }
-        catch (ResourceInUseException ignored)
-        {
-            // someone else created stream while we were trying; that's OK
-        }
+        throw new IllegalStateException("unable to create stream after " + CREATE_RETRY_LIMIT + " tries");
     }
 
 

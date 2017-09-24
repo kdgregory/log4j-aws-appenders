@@ -11,6 +11,9 @@
             <action dev='kdgregory' type='update'>
                 Default configuration incorrect: log stream name was "{startTimestamp}", should be "{startupTimestamp}"
             </action>
+            <action dev='kdgregory' type='update'>
+                Initial group/stream creation could fail if multiple writers initialized in short order
+            </action>
         </release>
 
         <release version="1.0.0" date="2017-08-12" description="Initial public release"/>

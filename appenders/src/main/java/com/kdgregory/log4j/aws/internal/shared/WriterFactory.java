@@ -4,15 +4,11 @@ package com.kdgregory.log4j.aws.internal.shared;
 /**
  *  Defines a function to create a {@link LogWriter}.
  *  <p>
- *  This is normally subclassed by the appender as an anonymous inner class so
- *  that it has access to all configuration variables defined by the appender.
- *  As a result, the factory function does not take any parameters.
- *  <p>
- *  In order to support testing, the appender not rely on the factory to apply
- *  substitutions. Instead, it should apply them and make the results available
- *  for examination by the test class.
+ *  The factory is passed an appender-specific configuration object, which
+ *  contains any post-substitution values needed by the writer (eg, stream
+ *  name).
  */
-public interface WriterFactory
+public interface WriterFactory<T>
 {
-    LogWriter newLogWriter();
+    LogWriter newLogWriter(T config);
 }

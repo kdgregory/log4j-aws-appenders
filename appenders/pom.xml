@@ -4,7 +4,7 @@
 
     <groupId>com.kdgregory.log4j</groupId>
     <artifactId>aws-appenders</artifactId>
-    <version>1.0.1</version>
+    <version>1.1.0</version>
     <packaging>jar</packaging>
 
     <name>AWS Log4J Appenders</name>
@@ -54,6 +54,12 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-logs</artifactId>
+            <version>${aws-sdk.version}</version>
+            <scope>provided</scope>
+        </dependency>        
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-kinesis</artifactId>
             <version>${aws-sdk.version}</version>
             <scope>provided</scope>
         </dependency>

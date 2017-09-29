@@ -14,6 +14,7 @@ import com.amazonaws.services.logs.model.*;
 
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
+import com.kdgregory.log4j.aws.internal.shared.Utils;
 
 
 public class CloudWatchLogWriter
@@ -35,11 +36,11 @@ implements LogWriter
     private LinkedBlockingDeque<LogMessage> messageQueue = new LinkedBlockingDeque<LogMessage>();
 
 
-    public CloudWatchLogWriter(String logGroup, String logStream, long batchDelay)
+    public CloudWatchLogWriter(CloudWatchWriterConfig config)
     {
-        this.groupName = logGroup;
-        this.streamName = logStream;
-        this.batchDelay = batchDelay;
+        this.groupName = config.logGroup;
+        this.streamName = config.logStream;
+        this.batchDelay = config.batchDelay;
     }
 
 
@@ -220,7 +221,7 @@ implements LogWriter
             catch (Exception ex)
             {
                 lastException = ex;
-                sleepQuietly(250 * (attempt + 1));
+                Utils.sleepQuietly(250 * (attempt + 1));
             }
         }
 
@@ -298,7 +299,7 @@ implements LogWriter
                     if (findLogGroup() != null)
                         return;
                     else
-                        sleepQuietly(100);
+                        Utils.sleepQuietly(100);
                 }
                 throw new RuntimeException("unable to create log group after 30 seconds; aborting");
             }
@@ -310,7 +311,7 @@ implements LogWriter
             catch (OperationAbortedException ex)
             {
                 // someone else is trying to create it, wait and try again
-                sleepQuietly(250);
+                Utils.sleepQuietly(250);
             }
         }
     }
@@ -345,7 +346,7 @@ implements LogWriter
                 if (findLogStream() != null)
                     return;
                 else
-                    sleepQuietly(100);
+                    Utils.sleepQuietly(100);
             }
             throw new RuntimeException("unable to create log strean after 30 seconds; aborting");
         }
@@ -353,20 +354,6 @@ implements LogWriter
         {
             // somebody else created it
             return;
-        }
-    }
-
-
-
-    private void sleepQuietly(long time)
-    {
-        try
-        {
-            Thread.sleep(time);
-        }
-        catch (InterruptedException ignored)
-        {
-            // this will simply break to the enclosing loop
         }
     }
 }

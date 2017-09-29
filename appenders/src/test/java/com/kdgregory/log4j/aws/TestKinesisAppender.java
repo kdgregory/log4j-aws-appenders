@@ -86,6 +86,8 @@ public class TestKinesisAppender
 
         assertEquals("stream name",         "argle-{bargle}",       appender.getStreamName());
         assertEquals("partition key",       "foo-{date}",           appender.getPartitionKey());
+        assertEquals("shard count",         7,                      appender.getShardCount());
+        assertEquals("retention period",    48,                     appender.getRetentionPeriod());
         assertEquals("max delay",           1234L,                  appender.getBatchDelay());
     }
 
@@ -95,9 +97,10 @@ public class TestKinesisAppender
     {
         initialize("TestKinesisAppender.testDefaultConfiguration.properties");
 
-        // note: this is allowed at time of configuration, but would disable logger if we try to append
-        assertNull("log group name",        appender.getStreamName());
-        assertEquals("log stream name",     "{startupTimestamp}",   appender.getPartitionKey());
+        // don't test stream name because there's no default
+        assertEquals("partition key",       "{startupTimestamp}",   appender.getPartitionKey());
+        assertEquals("shard count",         1,                      appender.getShardCount());
+        assertEquals("retention period",    24,                     appender.getRetentionPeriod());
         assertEquals("max delay",           2000L,                  appender.getBatchDelay());
     }
 

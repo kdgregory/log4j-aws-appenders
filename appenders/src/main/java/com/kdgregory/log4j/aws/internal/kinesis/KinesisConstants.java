@@ -36,4 +36,16 @@ public class KinesisConstants
      */
     public final static Pattern ALLOWED_NAME_REGEX = Pattern.compile("[^A-Za-z0-9-_]");
 
+
+    /**
+     *  Minimum number of hours for retention period.
+     */
+    public final static int MINIMUM_RETENTION_PERIOD = 24;
+
+
+    /**
+     *  Maximum number of hours for retention period.
+     */
+    public final static int MAXIMUM_RETENTION_PERIOD = 168;
+
 }

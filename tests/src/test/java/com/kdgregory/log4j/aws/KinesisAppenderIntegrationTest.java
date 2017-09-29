@@ -30,8 +30,6 @@ public class KinesisAppenderIntegrationTest
 {
     // CHANGE THESE IF YOU CHANGE THE CONFIG
     private final static String STREAM_NAME     = "AppenderIntegratonTest";
-    private final static int    BATCH_DELAY     = 3000;
-    private final static int    NUM_SHARDS      = 2;
 
     private Logger mainLogger;
     private AmazonKinesis client;
@@ -67,12 +65,13 @@ public class KinesisAppenderIntegrationTest
         mainLogger.info("smoketest: waiting for stream to become ready");
         waitForStreamToBeReady();
 
-        assertEquals("shard count", NUM_SHARDS, describeStream().getShards().size());
-
         mainLogger.info("smoketest: reading messages");
         List<RetrievedRecord> messages = retrieveAllMessages(numMessages);
 
         assertMessages(messages, 1, numMessages, "test");
+
+        assertShardCount(1);
+        assertRetentionPeriod(48);
 
         mainLogger.info("smoketest: finished");
     }
@@ -102,8 +101,6 @@ public class KinesisAppenderIntegrationTest
         mainLogger.info("multi-thread/single-appender: waiting for stream to become ready");
         waitForStreamToBeReady();
 
-        assertEquals("shard count", NUM_SHARDS, describeStream().getShards().size());
-
         mainLogger.info("multi-thread/single-appender: reading messages");
         List<RetrievedRecord> messages = retrieveAllMessages(expectedMessages);
 
@@ -111,6 +108,9 @@ public class KinesisAppenderIntegrationTest
 
         Map<String,List<RetrievedRecord>> groupedByShard = groupByShard(messages);
         assertEquals("all messages written to same shard", 1, groupedByShard.size());
+
+        assertShardCount(2);
+        assertRetentionPeriod(24);
 
         mainLogger.info("multi-thread/single-appender: finished");
     }
@@ -143,15 +143,16 @@ public class KinesisAppenderIntegrationTest
         mainLogger.info("multi-thread/multi-appender: waiting for stream to become ready");
         waitForStreamToBeReady();
 
-        assertEquals("shard count", NUM_SHARDS, describeStream().getShards().size());
-
         mainLogger.info("multi-thread/multi-appender: reading messages");
         List<RetrievedRecord> messages = retrieveAllMessages(expectedMessages);
 
         assertMessages(messages, writers.length, messagesPerThread * 2, "test1", "test2", "test3");
 
         Map<String,List<RetrievedRecord>> groupedByShard = groupByShard(messages);
-        assertEquals("messages written to multiple shards", NUM_SHARDS, groupedByShard.size());
+        assertEquals("messages written to multiple shards", 2, groupedByShard.size());
+
+        assertShardCount(2);
+        assertRetentionPeriod(24);
 
         mainLogger.info("multi-thread/multi-appender: finished");
     }
@@ -223,7 +224,7 @@ public class KinesisAppenderIntegrationTest
         List<RetrievedRecord> result = new ArrayList<RetrievedRecord>();
 
         // this sleep gives all writers a chance to do their work
-        Thread.sleep(BATCH_DELAY);
+        Thread.sleep(1000);
 
         Map<String,String> shardItxs = getInitialShardIterators();
         List<String> shardIds = new ArrayList<String>(shardItxs.keySet());
@@ -339,6 +340,38 @@ public class KinesisAppenderIntegrationTest
             byShard.add(record);
         }
         return result;
+    }
+
+
+    /**
+     *  Gets the stream description and asserts that the shard count is as expected.
+     *  This is a method for consistency with assertRetentionPeriod() (ie, so that
+     *  test code makes two named calls rather than one named call and one assert).
+     */
+    private void assertShardCount(int expectedShardCount)
+    {
+        assertEquals("shard count", expectedShardCount, describeStream().getShards().size());
+    }
+
+
+    /**
+     *  Repeatedly gets the stream description and checks the retention period (because
+     *  it is eventually consistent). Fails if the retention period is not the expected
+     *  value within a minutes.
+     *  <p>
+     *  To minimize the time taken by this method, call after retrieving messages.
+     */
+    private void assertRetentionPeriod(Integer expectedRetentionPeriod) throws Exception
+    {
+        for (int ii = 0 ; ii < 60 ; ii++)
+        {
+            Integer actualRetentionPeriod = describeStream().getRetentionPeriodHours();
+            if ((actualRetentionPeriod != null) && (actualRetentionPeriod.equals(expectedRetentionPeriod)))
+                return;
+            else
+                Thread.sleep(1000);
+        }
+        fail("retention period was not " + expectedRetentionPeriod + " within 60 seconds");
     }
 
 

@@ -28,14 +28,14 @@ Your Log4J configuration will look something like this:
     log4j.appender.kinesis.shardCount=2
 
 
-
 The appender provides the following properties (also described in the JavaDoc):
 
 Name                | Description
 --------------------|----------------------------------------------------------------
 `streamName`        | The name of the log stream that will receive messages. This stream will be created if it doesn't already exist.
 `partitionKey`      | A string used to assign messages to shards; see below for more information.
-`shardCount`        | When creating a stream, the number of shards to use. Defaults to 1.
+`shardCount`        | When creating a stream, specifies the number of shards to use. Defaults to 1.
+`retentionPeriod`   | When creating a stream, specifies the retention period for messages in hours. Per AWS, the minimum is 24 (the default) and the maximum is 168 (7 days).
 
 
 ## Partition Keys

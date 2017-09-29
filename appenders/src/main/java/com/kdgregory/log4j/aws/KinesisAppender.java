@@ -25,6 +25,7 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
     private String          streamName;
     private String          partitionKey;
     private int             shardCount;
+    private Integer         retentionPeriod;    // we only set if not null
 
     // these variables hold the post-substitution log-group and log-stream names
     // (held here for testing, as they're passed to the writer for use)
@@ -52,6 +53,7 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
                    });
 
         partitionKey = "{startupTimestamp}";
+        shardCount = 1;
     }
 
 
@@ -120,7 +122,6 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
     }
 
 
-
     /**
      *  Sets the desired number of shards to use when creating the stream.
      *  This setting has no effect if the stream already exists.
@@ -138,6 +139,35 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
     public int getShardCount()
     {
         return shardCount;
+    }
+
+
+    /**
+     *  Sets the message retention period, in hours. Only applied when creating
+     *  a new stream. Per AWS, minimum value is 24, maximum value is 168. Note
+     *  that non-default retention periods increase your stream cost.
+     */
+    public void setRetentionPeriod(int value)
+    {
+        if ((value <= KinesisConstants.MINIMUM_RETENTION_PERIOD) || (value > KinesisConstants.MAXIMUM_RETENTION_PERIOD))
+        {
+            throw new IllegalArgumentException(
+                "retentionPeriod must be between " + (KinesisConstants.MINIMUM_RETENTION_PERIOD + 1)
+                + " and " + KinesisConstants.MAXIMUM_RETENTION_PERIOD);
+        }
+        retentionPeriod = Integer.valueOf(value);
+    }
+
+
+    /**
+     *  Returns the configured retention period. Note that this may not
+     *  correspond to the actual retention period of the stream.
+     */
+    public int getRetentionPeriod()
+    {
+        return (retentionPeriod != null)
+             ? retentionPeriod.intValue()
+             : KinesisConstants.MINIMUM_RETENTION_PERIOD;
     }
 
 
@@ -166,7 +196,7 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
             throw new RuntimeException("JVM doesn't support UTF-8 (should never happen)");
         }
 
-        return new KinesisWriterConfig(actualStreamName, shardCount, actualPartitionKey, partitionKeyLength, batchDelay);
+        return new KinesisWriterConfig(actualStreamName, shardCount, retentionPeriod, actualPartitionKey, partitionKeyLength, batchDelay);
     }
 
 

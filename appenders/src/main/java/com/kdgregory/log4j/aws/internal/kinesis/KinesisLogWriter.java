@@ -89,8 +89,7 @@ implements LogWriter
     public void run()
     {
         client = createClient();
-
-        if (! ensureStreamAvailable()) return;
+        ensureStreamAvailable();
 
         // initialize the dispatch thread here so that an interrupt will only affect the code
         // that waits for messages; not likely to happen in real world, but does in smoketest
@@ -153,31 +152,25 @@ implements LogWriter
      *  If the stream is not available, attempts to create it and waits until
      *  it's active.
      */
-    private boolean ensureStreamAvailable()
+    private void ensureStreamAvailable()
     {
         try
         {
             if (getStreamStatus() == null)
             {
                 createStream();
+                waitForStreamToBeActive();
+                setRetentionPeriodIfNeeded();
             }
-
-            for (int ii = 0 ; ii < STREAM_ACTIVE_TRIES ; ii++)
+            else
             {
-                if (StreamStatus.ACTIVE.toString().equals(getStreamStatus()))
-                {
-                    return true;
-                }
-                Utils.sleepQuietly(1000);
+                // already created but might just be created
+                waitForStreamToBeActive();
             }
-
-            LogLog.error("timed-out waiting for stream to become active: " + config.streamName);
-            return false;
         }
         catch (Exception ex)
         {
-            LogLog.error("unable to configure logging stream: " + config.streamName, ex);
-            return false;
+            throw new IllegalStateException("unable to configure logging stream: " + config.streamName, ex);
         }
     }
 
@@ -216,6 +209,24 @@ implements LogWriter
 
 
     /**
+     *  Waits for stream to become active, logging a message and throwing if it doesn't
+     *  within a set time.
+     */
+    private void waitForStreamToBeActive()
+    {
+        for (int ii = 0 ; ii < STREAM_ACTIVE_TRIES ; ii++)
+        {
+            if (StreamStatus.ACTIVE.toString().equals(getStreamStatus()))
+            {
+                return;
+            }
+            Utils.sleepQuietly(1000);
+        }
+        throw new IllegalStateException("stream did not become active within " + STREAM_ACTIVE_TRIES + " seconds");
+    }
+
+
+    /**
      *  Returns current stream status, null if the stream doesn't exist.
      */
     private String getStreamStatus()
@@ -229,6 +240,28 @@ implements LogWriter
         catch (ResourceNotFoundException ex)
         {
             return null;
+        }
+    }
+
+
+    /**
+     *  If the caller has configured a retention period, set it.
+     */
+    private void setRetentionPeriodIfNeeded()
+    {
+        if (config.retentionPeriod != null)
+        {
+            try
+            {
+                client.increaseStreamRetentionPeriod(new IncreaseStreamRetentionPeriodRequest()
+                                                     .withStreamName(config.streamName)
+                                                     .withRetentionPeriodHours(config.retentionPeriod));
+                waitForStreamToBeActive();
+            }
+            catch (InvalidArgumentException ignored)
+            {
+                // it's possible that someone else created the stream and set the retention period
+            }
         }
     }
 

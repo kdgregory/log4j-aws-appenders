@@ -10,6 +10,7 @@ public class KinesisWriterConfig
 {
     public String   streamName;
     public int      shardCount;
+    public Integer  retentionPeriod;
     public String   partitionKey;
     public int      partitionKeyLength;
     public long     batchDelay;
@@ -19,16 +20,20 @@ public class KinesisWriterConfig
      *  @param streamName           Name of the stream where messages will be written.
      *  @param shardCount           Number of shards to use when creating the stream
      *                              (ignored if stream already exists).
+     *  @param retentionPeriod      Retention period to use when creating the stream
+     *                              (ignored if stream already exists); null indicates
+     *                              use the default retention period.
      *  @param partitionKey         Partition key for messages written to stream.
      *  @param partitionKeyLength   Length of the partition key in bytes, after conversion
      *                              to UTF-8. Used to calculate message packing.
      *  @param batchDelay           Number of milliseconds to wait for messages to be
      *                              ready to send.
      */
-    public KinesisWriterConfig(String streamName, int shardCount, String partitionKey, int partitionKeyLength, long batchDelay)
+    public KinesisWriterConfig(String streamName, int shardCount, Integer retentionPeriod, String partitionKey, int partitionKeyLength, long batchDelay)
     {
         this.streamName = streamName;
         this.shardCount = shardCount;
+        this.retentionPeriod = retentionPeriod;
         this.partitionKey = partitionKey;
         this.partitionKeyLength = partitionKeyLength;
         this.batchDelay = batchDelay;

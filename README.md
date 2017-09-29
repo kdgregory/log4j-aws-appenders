@@ -14,10 +14,9 @@ been more than a dozen weekends since I started the project; I keep getting new 
 
 Here are the destinations I plan to support. No idea how many weekends they'll take.
 
-* [x] [CloudWatch Logs](Docs/cloudwatch.md)
-* [x] Kinesis Streams (which can be used as a source for Kinesis Firehose, and thence ElasticSearch)
-* [ ] SNS (I think it might be useful to create an "error notifier")
-
+* [x] [CloudWatch Logs](Docs/cloudwatch.md): basic logging that allows keyword search and time ranges
+* [x] [Kinesis Streams](Docs/kinesis.md): can be used as a source for Kinesis Firehose, and thence ElasticSearch or S3 storage
+* [ ] SNS: I think it might be useful to create an "error notifier"
 
 
 ## Usage
@@ -53,7 +52,6 @@ are found in common libraries (including my own).
 Note that tests may introduce their own dependencies. These will all be found on
 Maven Central, and will be marked as `test` scope in the POM.
 
-
 ### Substitution Variables
 
 Logging destination names (such as a CloudWatch log group or Kinesis stream) may use substitution
@@ -80,7 +78,6 @@ to a bogus or unclosed tag, or an unresolvable system property or environment va
 Note that a particular destination may not accept all of the characters produced by a substitution,
 and the logger will remove illegal characters. As a general rule you should limit substitution values
 to alphanumeric characters, along with hyphens and underscores.
-
 
 ### Common Configuration
 
@@ -123,8 +120,7 @@ The writer uses the default constructor for each service, which in turn uses the
 provider chain. This allows you to specify explicit credentials using several mechanisms, or to use
 instance roles for applications running on EC2 or Lambda.
 
-
-## Message Batching
+### Message Batches
 
 Most AWS services allow batching of messages for efficiency. While sending maxmimum-sized requests is
 more efficient when there's a high volume of logging, it could excessively delay writing when there's
@@ -156,7 +152,6 @@ other classes, particularly those in the `com.kdgregory.log4j.aws.internal` pack
 arbitrarily and should not be relied-upon by user code. This caveat also applies to all test
 classes and packages.
 
-
 ## Versions
 
 I follow the standard `MAJOR.MINOR.PATCH` versioning scheme:
@@ -166,14 +161,12 @@ I follow the standard `MAJOR.MINOR.PATCH` versioning scheme:
 * `PATCH` will be incremented to reflect bugfixes or additional features; significant bugfixes will be
   backported so that you can continue using the same minor release.
   
-
 Not all versions will be released to Maven Central. I may choose to make release (non-snapshot) versions for
 development testing, or as interim steps of a bigger piece of functionality. However, all release versions
 are tagged in source control, whether or not available on Maven Central.
 
 The source tree also contains commits with major version of 0. These are "pre-release" versions, and may change
 in arbitrary ways. Please do not use them.
-
 
 ## Source Control
 
@@ -230,6 +223,7 @@ What are all these messages from `com.amazonaws` and `org.apache.http`?
   way to track "meta" issues with the logging configuration.
 
 > Note that seeing unwanted messages is a problem with whatever appender you might use.
+  It's more apparent here because the logger invokes code that itself writes log messages.
 
 
 ## Major TODOs / Caveats / Bugs
@@ -238,4 +232,3 @@ If you're unable to connect to AWS, or the connection is interrupted, the append
 will keep writing log messages to the internal queue. Eventually, this will use up
 all of your memory. This will be fixed by the 1.1.3 release: you'll be able to.
 configure a "max outstanding messages" parameter, and a discard policy.
-  It's more apparent here because the logger invokes code that itself writes log messages.

@@ -9,7 +9,7 @@ The Kinesis implementation provides (will provide) the following features:
 * [x] Configurable destination stream, with substitution variables to specify stream name
 * [x] Auto-creation of streams, with configurable number of shards
 * [ ] JSON messages (via layout)
-* [ ] Random partition keys
+* [ ] Random partition keys, to support high-volume streams
 
 
 ## Configuration
@@ -23,7 +23,6 @@ Your Log4J configuration will look something like this:
     log4j.appender.kinesis.layout.ConversionPattern=%d [%t] %-5p %c %x - %m%n
 
     log4j.appender.kinesis.streamName=AppenderIntegratonTest
-    log4j.appender.kinesis.partitionKey=test
     log4j.appender.kinesis.batchDelay=500
     log4j.appender.kinesis.shardCount=2
 

@@ -4,6 +4,15 @@
 	</properties>
 
     <body>
+        <release version="1.1.0" date="2017-09-29" description="KinesisAppender">
+            <action dev='kdgregory' type='add'>
+                Initial implementation of KinesisAppender, which writes to a Kinesis stream.
+            </action>
+            <action dev='kdgregory' type='update'>
+                Improve implementation of CloudWatchAppender, including integration tests
+            </action>
+        </release>
+
         <release version="1.0.1" date="2017-09-02" description="Bugfixes">
             <action dev='kdgregory' type='update'>
                 CloudWatch SDK dependency not marked as provided; might cause conflict

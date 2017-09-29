@@ -82,7 +82,7 @@ public class TestKinesisAppender
     @Test
     public void testConfiguration() throws Exception
     {
-        initialize("TestKinesisAppender.testConfiguration.properties");
+        initialize("TestKinesisAppender/testConfiguration.properties");
 
         assertEquals("stream name",         "argle-{bargle}",       appender.getStreamName());
         assertEquals("partition key",       "foo-{date}",           appender.getPartitionKey());
@@ -95,7 +95,7 @@ public class TestKinesisAppender
     @Test
     public void testDefaultConfiguration() throws Exception
     {
-        initialize("TestKinesisAppender.testDefaultConfiguration.properties");
+        initialize("TestKinesisAppender/testDefaultConfiguration.properties");
 
         // don't test stream name because there's no default
         assertEquals("partition key",       "{startupTimestamp}",   appender.getPartitionKey());
@@ -108,7 +108,7 @@ public class TestKinesisAppender
     @Test
     public void testAppend() throws Exception
     {
-        initialize("TestKinesisAppender.testAppend.properties");
+        initialize("TestKinesisAppender/testAppend.properties");
         MockKinesisWriterFactory writerFactory = appender.getWriterFactory();
 
         long initialTimestamp = System.currentTimeMillis();
@@ -160,7 +160,7 @@ public class TestKinesisAppender
     @Test(expected=IllegalStateException.class)
     public void testThrowsIfAppenderClosed() throws Exception
     {
-        initialize("TestKinesisAppender.testAppend.properties");
+        initialize("TestKinesisAppender/testAppend.properties");
 
         // write the first message to initialize the appender
         logger.debug("should not throw");
@@ -175,7 +175,7 @@ public class TestKinesisAppender
     @Test
     public void testWriteHeaderAndFooter() throws Exception
     {
-        initialize("TestKinesisAppender.testWriteHeaderAndFooter.properties");
+        initialize("TestKinesisAppender/testWriteHeaderAndFooter.properties");
 
         logger.debug("blah blah blah");
 
@@ -192,7 +192,7 @@ public class TestKinesisAppender
     @Test
     public void testUncaughtExceptionHandling() throws Exception
     {
-        initialize("TestKinesisAppender.testUncaughtExceptionHandling.properties");
+        initialize("TestKinesisAppender/testUncaughtExceptionHandling.properties");
 
         // note that we will be running the writer on a separate thread
 
@@ -221,7 +221,7 @@ public class TestKinesisAppender
     {
         // WARNING: this test may break if the internal implementation changes
 
-        initialize("TestKinesisAppender.testMessageErrorHandling.properties");
+        initialize("TestKinesisAppender/testMessageErrorHandling.properties");
 
         // we will be running the writer on a separate thread, so will require
         // some form of wait to verify the writer's activity
@@ -359,7 +359,7 @@ public class TestKinesisAppender
         final int maxMessageSize            =  kinesisMaximumMessageSize - (layoutOverhead + partitionKeySize);
         final String bigMessage             =  StringUtil.repeat('A', maxMessageSize);
 
-        initialize("TestKinesisAppender.testMaximumMessageSize.properties");
+        initialize("TestKinesisAppender/testMaximumMessageSize.properties");
         logger.debug("this message triggers writer configuration");
 
         assertFalse("max message size",             appender.isMessageTooLarge(LogMessage.create(bigMessage)));

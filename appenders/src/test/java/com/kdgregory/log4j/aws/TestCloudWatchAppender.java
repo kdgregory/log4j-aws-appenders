@@ -69,7 +69,7 @@ public class TestCloudWatchAppender
     @Test
     public void testConfiguration() throws Exception
     {
-        initialize("TestCloudWatchAppender.testConfiguration.properties");
+        initialize("TestCloudWatchAppender/testConfiguration.properties");
 
         assertEquals("log group name",      "argle",              appender.getLogGroup());
         assertEquals("log stream name",     "bargle",             appender.getLogStream());
@@ -83,7 +83,7 @@ public class TestCloudWatchAppender
     @Test
     public void testDefaultConfiguration() throws Exception
     {
-        initialize("TestCloudWatchAppender.testDefaultConfiguration.properties");
+        initialize("TestCloudWatchAppender/testDefaultConfiguration.properties");
 
         // note: this is allowed at time of configuration, would disable logger if we try to append
         assertNull("log group name",    appender.getLogGroup());
@@ -99,7 +99,7 @@ public class TestCloudWatchAppender
     @Test
     public void testAppend() throws Exception
     {
-        initialize("TestCloudWatchAppender.testAppend.properties");
+        initialize("TestCloudWatchAppender/testAppend.properties");
         MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
 
         long initialTimestamp = System.currentTimeMillis();
@@ -152,7 +152,7 @@ public class TestCloudWatchAppender
     @Test(expected=IllegalStateException.class)
     public void testThrowsIfAppenderClosed() throws Exception
     {
-        initialize("TestCloudWatchAppender.testAppend.properties");
+        initialize("TestCloudWatchAppender/testAppend.properties");
 
         // write the first message to initialize the appender
         logger.debug("should not throw");
@@ -167,7 +167,7 @@ public class TestCloudWatchAppender
     @Test
     public void testWriteHeaderAndFooter() throws Exception
     {
-        initialize("TestCloudWatchAppender.testWriteHeaderAndFooter.properties");
+        initialize("TestCloudWatchAppender/testWriteHeaderAndFooter.properties");
 
         logger.debug("blah blah blah");
 
@@ -187,7 +187,7 @@ public class TestCloudWatchAppender
         // note that the property value includes invalid characters
         System.setProperty("TestCloudWatchAppender.testSubstitution", "foo/bar");
 
-        initialize("TestCloudWatchAppender.testSubstitution.properties");
+        initialize("TestCloudWatchAppender/testSubstitution.properties");
 
         // need to trigger append to apply substitutions
         logger.debug("doesn't matter what's written");
@@ -205,7 +205,7 @@ public class TestCloudWatchAppender
     @Test
     public void testExplicitRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender.testExplicitRotation.properties");
+        initialize("TestCloudWatchAppender/testExplicitRotation.properties");
         MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
 
         logger.debug("first message");
@@ -230,7 +230,7 @@ public class TestCloudWatchAppender
     @Test
     public void testCountedRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender.testCountedRotation.properties");
+        initialize("TestCloudWatchAppender/testCountedRotation.properties");
 
         logger.debug("message 1");
 
@@ -255,7 +255,7 @@ public class TestCloudWatchAppender
     @Test
     public void testTimedRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender.testTimedRotation.properties");
+        initialize("TestCloudWatchAppender/testTimedRotation.properties");
 
         logger.debug("first message");
 
@@ -280,7 +280,7 @@ public class TestCloudWatchAppender
     public void testInvalidTimedRotationConfiguration() throws Exception
     {
         // note: this will generate a log message that we can't validate and don't want to see
-        initialize("TestCloudWatchAppender.testInvalidTimedRotation.properties");
+        initialize("TestCloudWatchAppender/testInvalidTimedRotation.properties");
         assertEquals("rotation mode", "none", appender.getRotationMode());
     }
 
@@ -288,7 +288,7 @@ public class TestCloudWatchAppender
     @Test
     public void testHourlyRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender.testHourlyRotation.properties");
+        initialize("TestCloudWatchAppender/testHourlyRotation.properties");
 
         logger.debug("first message");
 
@@ -312,7 +312,7 @@ public class TestCloudWatchAppender
     @Test
     public void testDailyRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender.testDailyRotation.properties");
+        initialize("TestCloudWatchAppender/testDailyRotation.properties");
 
         logger.debug("first message");
 
@@ -336,7 +336,7 @@ public class TestCloudWatchAppender
     @Test
     public void testUncaughtExceptionHandling() throws Exception
     {
-        initialize("TestCloudWatchAppender.testUncaughtExceptionHandling.properties");
+        initialize("TestCloudWatchAppender/testUncaughtExceptionHandling.properties");
 
         // note that we will be running the writer on a separate thread
 
@@ -370,7 +370,7 @@ public class TestCloudWatchAppender
         final int maxMessageSize                =  cloudwatchMaximumBatchSize - (layoutOverhead + cloudwatchOverhead);
         final String bigMessage                 =  StringUtil.repeat('A', maxMessageSize);
 
-        initialize("TestCloudWatchAppender.testMaximumMessageSize.properties");
+        initialize("TestCloudWatchAppender/testMaximumMessageSize.properties");
         // no need to create a writer; cloudwatch messages not dependent on any names
 
         assertFalse("max message size",             appender.isMessageTooLarge(LogMessage.create(bigMessage)));

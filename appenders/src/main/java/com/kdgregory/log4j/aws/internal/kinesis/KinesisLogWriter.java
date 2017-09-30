@@ -12,15 +12,14 @@ import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.amazonaws.services.kinesis.model.*;
 
+import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
-import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 import com.kdgregory.log4j.aws.internal.shared.Utils;
 
 
 public class KinesisLogWriter
-implements LogWriter
+extends AbstractLogWriter
 {
     // this controls the number of tries that we wait for a stream to become active
     // each try takes 1 second
@@ -35,124 +34,31 @@ implements LogWriter
     // and how long we'll sleep between attempts
     private final static int CREATE_RETRY_SLEEP = 5000;
 
+
     private KinesisWriterConfig config;
-
-    private Thread dispatchThread;
-    private AmazonKinesis client;
-
-    private volatile Long shutdownTime;     // set on another thread
-    private volatile int batchCount;        // can be read via accessor method by other threads
-
-    private MessageQueue messageQueue = new MessageQueue(10000, DiscardAction.none);
+    protected AmazonKinesis client;
 
 
     public KinesisLogWriter(KinesisWriterConfig config)
     {
+        super(config.batchDelay, 10000, DiscardAction.none);
         this.config = config;
     }
 
 
 //----------------------------------------------------------------------------
-//  Implementation of LogWriter
+//  Hooks for superclass
 //----------------------------------------------------------------------------
 
     @Override
-    public void addMessage(LogMessage message)
+    protected void createAWSClient()
     {
-        messageQueue.enqueue(message);
-    }
-
-
-    @Override
-    public void setBatchDelay(long value)
-    {
-        config.batchDelay = value;
+        client = new AmazonKinesisClient();
     }
 
 
     @Override
-    public void stop()
-    {
-        shutdownTime = new Long(System.currentTimeMillis() + config.batchDelay);
-        if (dispatchThread != null)
-        {
-            dispatchThread.interrupt();
-        }
-    }
-
-
-//----------------------------------------------------------------------------
-//  Implementation of Runnable
-//----------------------------------------------------------------------------
-
-    @Override
-    public void run()
-    {
-        client = createClient();
-        ensureStreamAvailable();
-
-        // initialize the dispatch thread here so that an interrupt will only affect the code
-        // that waits for messages; not likely to happen in real world, but does in smoketest
-
-        dispatchThread = Thread.currentThread();
-
-        // the do-while loop ensures that we attempt to process at least one batch, even if
-        // the writer is started and immediately stopped; again, that's not likely to happen
-        // in the real world, but was causing problems with the smoketest
-
-        do
-        {
-            List<LogMessage> currentBatch = buildBatch();
-            PutRecordsRequest request = convertBatchToRequest(currentBatch);
-            if (request != null)
-            {
-                List<Integer> failures = attemptToSend(request);
-                requeueFailures(currentBatch, failures);
-            }
-        } while (keepRunning());
-    }
-
-
-//----------------------------------------------------------------------------
-//  Other public methods
-//----------------------------------------------------------------------------
-
-    /**
-     *  Returns the current batch delay. This is intended for testing.
-     */
-    public long getBatchDelay()
-    {
-        return config.batchDelay;
-    }
-
-
-    /**
-     *  Returns the number of batches processed. This is intended for testing
-     */
-    public int getBatchCount()
-    {
-        return batchCount;
-    }
-
-
-//----------------------------------------------------------------------------
-//  Internals
-//----------------------------------------------------------------------------
-
-    /**
-     *  This method is exposed so that we can create a mock client for tests.
-     */
-    protected AmazonKinesis createClient()
-    {
-        return new AmazonKinesisClient();
-    }
-
-
-    /**
-     *  If the stream is not available, attempts to create it and waits until
-     *  it's active.
-     */
-    private void ensureStreamAvailable()
+    protected boolean ensureDestinationAvailable()
     {
         try
         {
@@ -167,13 +73,51 @@ implements LogWriter
                 // already created but might just be created
                 waitForStreamToBeActive();
             }
+            return true;
         }
         catch (Exception ex)
         {
-            throw new IllegalStateException("unable to configure logging stream: " + config.streamName, ex);
+            LogLog.error("unable to configure logging stream: " + config.streamName, ex);
+            return false;
         }
     }
 
+
+    @Override
+    protected List<LogMessage> processBatch(List<LogMessage> currentBatch)
+    {
+        PutRecordsRequest request = convertBatchToRequest(currentBatch);
+        if (request != null)
+        {
+            List<Integer> failures = attemptToSend(request);
+            return extractFailures(currentBatch, failures);
+        }
+        else
+        {
+            return Collections.emptyList();
+        }
+    }
+
+
+    @Override
+    protected int effectiveSize(LogMessage message)
+    {
+        return message.size() + config.partitionKeyLength;
+    }
+
+
+
+    @Override
+    protected boolean withinServiceLimits(int batchBytes, int numMessages)
+    {
+        return (batchBytes < KinesisConstants.MAX_BATCH_BYTES)
+            && (numMessages < KinesisConstants.MAX_BATCH_COUNT);
+    }
+
+
+//----------------------------------------------------------------------------
+//  Internals
+//----------------------------------------------------------------------------
 
     /**
      *  Attempts to create the stream, silently succeeding if it already exists.
@@ -266,66 +210,6 @@ implements LogWriter
     }
 
 
-    /**
-     *  A check for whether we should keep running: either we haven't been shut
-     *  down or there's still messages to process
-     */
-    private boolean keepRunning()
-    {
-        return (shutdownTime == null)
-             ? true
-             : shutdownTime.longValue() > System.currentTimeMillis()
-               && messageQueue.isEmpty();
-    }
-
-
-    /**
-     *  Blocks until at least one message is available on the queue, then
-     *  retrieves as many messages as will fit in one request.
-     */
-    private List<LogMessage> buildBatch()
-    {
-        // presizing to a small-but-possible size to avoid repeated resizes
-        List<LogMessage> batch = new ArrayList<LogMessage>(512);
-
-        // normally we wait "forever" for the first message, unless we're shutting down
-        long firstMessageTimeout = (shutdownTime != null) ? shutdownTime.longValue() : Long.MAX_VALUE;
-
-        LogMessage message = waitForMessage(firstMessageTimeout);
-        if (message == null)
-            return batch;
-
-        long batchTimeout = System.currentTimeMillis() + config.batchDelay;
-        int batchBytes = 0;
-        int batchMsgs = 0;
-        while (message != null)
-        {
-            batchBytes += message.size() + config.partitionKeyLength;
-            batchMsgs++;
-
-            // if this message would exceed the batch limits, push it back onto the queue
-            // the first message must never break this rule -- and shouldn't, as appender checks size
-            if ((batchBytes >= KinesisConstants.MAX_BATCH_BYTES) || (batchMsgs == KinesisConstants.MAX_BATCH_COUNT))
-            {
-                messageQueue.requeue(message);
-                break;
-            }
-
-            batch.add(message);
-            message = waitForMessage(batchTimeout);
-        }
-
-        return batch;
-    }
-
-
-    private LogMessage waitForMessage(long waitUntil)
-    {
-        long waitTime = waitUntil - System.currentTimeMillis();
-        return messageQueue.dequeue(waitTime);
-    }
-
-
     private PutRecordsRequest convertBatchToRequest(List<LogMessage> batch)
     {
         if (batch.isEmpty())
@@ -351,7 +235,6 @@ implements LogWriter
      */
     private List<Integer> attemptToSend(PutRecordsRequest request)
     {
-        batchCount++;
         List<Integer> failures = new ArrayList<Integer>(request.getRecords().size());
 
         Exception lastException = null;
@@ -391,12 +274,20 @@ implements LogWriter
      *  Re-inserts any failed records into the head of the message queue, so that they'll
      *  be picked up by the next batch.
      */
-    private void requeueFailures(List<LogMessage> currentBatch, List<Integer> failures)
+    private List<LogMessage> extractFailures(List<LogMessage> currentBatch, List<Integer> failureIndexes)
     {
-        Collections.reverse(failures);
-        for (Integer idx : failures)
+        if (! failureIndexes.isEmpty())
         {
-            messageQueue.requeue(currentBatch.get(idx.intValue()));
+            List<LogMessage> messages = new ArrayList<LogMessage>(failureIndexes.size());
+            for (Integer idx : failureIndexes)
+            {
+                messages.add(currentBatch.get(idx.intValue()));
+            }
+            return messages;
+        }
+        else
+        {
+            return Collections.emptyList();
         }
     }
 }

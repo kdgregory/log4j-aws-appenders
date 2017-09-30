@@ -4,10 +4,10 @@ package com.kdgregory.log4j.aws;
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 
-import com.kdgregory.log4j.aws.internal.AbstractAppender;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisConstants;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisLogWriter;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;
+import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;

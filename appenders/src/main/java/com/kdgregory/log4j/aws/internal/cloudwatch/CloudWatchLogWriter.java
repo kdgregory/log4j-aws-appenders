@@ -7,237 +7,46 @@ import java.util.List;
 
 import org.apache.log4j.helpers.LogLog;
 
+import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClient;
 import com.amazonaws.services.logs.model.*;
 
+import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
-import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 import com.kdgregory.log4j.aws.internal.shared.Utils;
 
 
 public class CloudWatchLogWriter
-implements LogWriter
+extends AbstractLogWriter
 {
-    // this controls the number of times that we retry a send
-    private final static int RETRY_LIMIT = 3;
-
     private String groupName;
     private String streamName;
-    private long batchDelay;
 
-    private Thread dispatchThread;
-    private AWSLogsClient client;
-
-    private volatile Long shutdownTime;
-    private volatile int batchCount;
-
-    private MessageQueue messageQueue = new MessageQueue(10000, DiscardAction.none);
+    protected AWSLogs client;
 
 
     public CloudWatchLogWriter(CloudWatchWriterConfig config)
     {
+        super(config.batchDelay, 10000, DiscardAction.none);
         this.groupName = config.logGroup;
         this.streamName = config.logStream;
-        this.batchDelay = config.batchDelay;
     }
 
 
 //----------------------------------------------------------------------------
-//  Implementation of LogWriter
+//  Hooks for superclass
 //----------------------------------------------------------------------------
 
     @Override
-    public void addMessage(LogMessage message)
+    protected void createAWSClient()
     {
-        messageQueue.enqueue(message);
-    }
-
-
-    @Override
-    public void setBatchDelay(long value)
-    {
-        this.batchDelay = value;
-    }
-
-
-    @Override
-    public void stop()
-    {
-        shutdownTime = new Long(System.currentTimeMillis() + batchDelay);
-        if (dispatchThread != null)
-        {
-            dispatchThread.interrupt();
-        }
-    }
-
-
-//----------------------------------------------------------------------------
-//  Implementation of Runnable
-//----------------------------------------------------------------------------
-
-    @Override
-    public void run()
-    {
-        // unclear why this has to be initialized here, but it throws (failing class init!)
-        // if assigned in constructor
         client = new AWSLogsClient();
-
-        if (! ensureGroupAndStreamAvailable()) return;
-
-        // initialize the dispatch thread here so that an interrupt will only affect the code
-        // that waits for messages; not likely to happen in real world, but does in smoketest
-
-        dispatchThread = Thread.currentThread();
-
-        // the do-while loop ensures that we attempt to process at least one batch, even if
-        // the writer is started and immediately stopped; again, that's not likely to happen
-        // in the real world, but was causing problems with the smoketest
-
-        do
-        {
-            List<LogMessage> currentBatch = buildBatch();
-            attemptToSend(currentBatch);
-        } while (keepRunning());
     }
 
 
-//----------------------------------------------------------------------------
-//  Other public methods
-//----------------------------------------------------------------------------
-
-    /**
-     *  Returns the current batch delay. This is intended for testing.
-     */
-    public long getBatchDelay()
-    {
-        return batchDelay;
-    }
-
-
-    /**
-     *  Returns the number of batches processed. This is intended for testing
-     */
-    public int getBatchCount()
-    {
-        return batchCount;
-    }
-
-
-//----------------------------------------------------------------------------
-//  Internals
-//----------------------------------------------------------------------------
-
-    /**
-     *  A check for whether we should keep running: either we haven't been shut
-     *  down or there's still messages to process
-     */
-    private boolean keepRunning()
-    {
-        return (shutdownTime == null)
-             ? true
-             : shutdownTime.longValue() > System.currentTimeMillis()
-               && messageQueue.isEmpty();
-    }
-
-
-    /**
-     *  Blocks until at least one message is available on the queue, then
-     *  retrieves as many messages as will fit in one request.
-     */
-    private List<LogMessage> buildBatch()
-    {
-        // presizing to a small-but-possible size to avoid repeated resizes
-        List<LogMessage> batch = new ArrayList<LogMessage>(512);
-
-        // normally we wait "forever" for the first message, unless we're shutting down
-        long firstMessageTimeout = (shutdownTime != null) ? shutdownTime.longValue() : Long.MAX_VALUE;
-
-        LogMessage message = waitForMessage(firstMessageTimeout);
-        if (message == null)
-            return batch;
-
-        long batchTimeout = System.currentTimeMillis() + batchDelay;
-        int batchBytes = 0;
-        int batchMsgs = 0;
-        while (message != null)
-        {
-            batchBytes += message.size() + CloudWatchConstants.MESSAGE_OVERHEAD;
-            batchMsgs++;
-
-            // if this message would exceed the batch limits, push it back onto the queue
-            // the first message must never break this rule -- and shouldn't, as appender checks size
-            if ((batchBytes >= CloudWatchConstants.MAX_BATCH_BYTES) || (batchMsgs == CloudWatchConstants.MAX_BATCH_COUNT))
-            {
-                messageQueue.requeue(message);
-                break;
-            }
-
-            batch.add(message);
-            message = waitForMessage(batchTimeout);
-        }
-
-        return batch;
-    }
-
-
-    private LogMessage waitForMessage(long waitUntil)
-    {
-        long waitTime = waitUntil - System.currentTimeMillis();
-        return messageQueue.dequeue(waitTime);
-    }
-
-
-    private void attemptToSend(List<LogMessage> batch)
-    {
-        if (batch.isEmpty())
-            return;
-
-        batchCount++;
-        PutLogEventsRequest request = new PutLogEventsRequest()
-                                      .withLogGroupName(groupName)
-                                      .withLogStreamName(streamName)
-                                      .withLogEvents(constructLogEvents(batch));
-
-        Exception lastException = null;
-        for (int attempt = 0 ; attempt < RETRY_LIMIT ; attempt++)
-        {
-            try
-            {
-                LogStream stream = findLogStream();
-                request.setSequenceToken(stream.getUploadSequenceToken());
-                client.putLogEvents(request);
-                return;
-            }
-            catch (Exception ex)
-            {
-                lastException = ex;
-                Utils.sleepQuietly(250 * (attempt + 1));
-            }
-        }
-
-        LogLog.error("failed to send batch after " + RETRY_LIMIT + " retries", lastException);
-    }
-
-
-    private List<InputLogEvent> constructLogEvents(List<LogMessage> batch)
-    {
-        Collections.sort(batch);
-
-        List<InputLogEvent> result = new ArrayList<InputLogEvent>(batch.size());
-        for (LogMessage msg : batch)
-        {
-            InputLogEvent event = new InputLogEvent()
-                                      .withTimestamp(msg.getTimestamp())
-                                      .withMessage(msg.getMessage());
-            result.add(event);
-        }
-        return result;
-    }
-
-
-    private boolean ensureGroupAndStreamAvailable()
+    @Override
+    protected boolean ensureDestinationAvailable()
     {
         try
         {
@@ -262,6 +71,76 @@ implements LogWriter
             LogLog.error("unable to configure log group/stream", ex);
             return false;
         }
+    }
+
+
+    @Override
+    protected List<LogMessage> processBatch(List<LogMessage> currentBatch)
+    {
+        Collections.sort(currentBatch);
+        return attemptToSend(currentBatch);
+    }
+
+
+    @Override
+    protected int effectiveSize(LogMessage message)
+    {
+        return message.size() + CloudWatchConstants.MESSAGE_OVERHEAD;
+    }
+
+
+
+    @Override
+    protected boolean withinServiceLimits(int batchBytes, int numMessages)
+    {
+        return (batchBytes < CloudWatchConstants.MAX_BATCH_BYTES)
+            && (numMessages < CloudWatchConstants.MAX_BATCH_COUNT);
+    }
+
+
+//----------------------------------------------------------------------------
+//  Internals
+//----------------------------------------------------------------------------
+
+    private List<LogMessage> attemptToSend(List<LogMessage> batch)
+    {
+        if (batch.isEmpty())
+            return batch;
+
+        PutLogEventsRequest request = new PutLogEventsRequest()
+                                      .withLogGroupName(groupName)
+                                      .withLogStreamName(streamName)
+                                      .withLogEvents(constructLogEvents(batch));
+
+        // sending is all-or-nothing with CloudWatch; we'll return the entire batch
+        // if there's an exception
+
+        try
+        {
+            LogStream stream = findLogStream();
+            request.setSequenceToken(stream.getUploadSequenceToken());
+            client.putLogEvents(request);
+            return Collections.emptyList();
+        }
+        catch (Exception ex)
+        {
+            LogLog.error("failed to send batch", ex);
+            return batch;
+        }
+    }
+
+
+    private List<InputLogEvent> constructLogEvents(List<LogMessage> batch)
+    {
+        List<InputLogEvent> result = new ArrayList<InputLogEvent>(batch.size());
+        for (LogMessage msg : batch)
+        {
+            InputLogEvent event = new InputLogEvent()
+                                      .withTimestamp(msg.getTimestamp())
+                                      .withMessage(msg.getMessage());
+            result.add(event);
+        }
+        return result;
     }
 
 

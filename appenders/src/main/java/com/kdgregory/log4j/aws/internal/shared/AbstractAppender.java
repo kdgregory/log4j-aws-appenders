@@ -1,5 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.log4j.aws.internal;
+package com.kdgregory.log4j.aws.internal.shared;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -7,11 +7,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
-
-import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
-import com.kdgregory.log4j.aws.internal.shared.ThreadFactory;
-import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 
 
 /**
@@ -33,7 +28,8 @@ import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
  *  so any application code that touches these variables should not be surprised if
  *  they cease to exist.
  */
-public abstract class AbstractAppender<WriterConfigType> extends AppenderSkeleton
+public abstract class AbstractAppender<WriterConfigType>
+extends AppenderSkeleton
 {
     // flag to indicate whether we need to run setup
 

@@ -289,9 +289,9 @@ public class TestKinesisAppender
                 return new KinesisLogWriter(config)
                 {
                     @Override
-                    protected AmazonKinesis createClient()
+                    protected void createAWSClient()
                     {
-                        return (AmazonKinesis)Proxy.newProxyInstance(
+                        client = (AmazonKinesis)Proxy.newProxyInstance(
                                     getClass().getClassLoader(),
                                     new Class<?>[] { AmazonKinesis.class },
                                     invocationHandler);

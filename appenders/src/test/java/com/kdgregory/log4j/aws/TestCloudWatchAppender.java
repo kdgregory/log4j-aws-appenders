@@ -1,7 +1,14 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.aws;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Semaphore;
 
 import org.junit.After;
 import org.junit.Before;
@@ -17,10 +24,22 @@ import org.apache.log4j.helpers.LogLog;
 
 import net.sf.kdgcommons.lang.StringUtil;
 
+import com.amazonaws.services.logs.AWSLogs;
+import com.amazonaws.services.logs.model.DescribeLogGroupsResult;
+import com.amazonaws.services.logs.model.DescribeLogStreamsResult;
+import com.amazonaws.services.logs.model.InputLogEvent;
+import com.amazonaws.services.logs.model.InvalidSequenceTokenException;
+import com.amazonaws.services.logs.model.LogGroup;
+import com.amazonaws.services.logs.model.LogStream;
+import com.amazonaws.services.logs.model.PutLogEventsRequest;
+import com.amazonaws.services.logs.model.PutLogEventsResult;
+
+import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-
+import com.kdgregory.log4j.aws.internal.shared.LogWriter;
+import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 import com.kdgregory.log4j.testhelpers.*;
 import com.kdgregory.log4j.testhelpers.aws.*;
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.*;
@@ -357,6 +376,132 @@ public class TestCloudWatchAppender
 
         assertNull("writer has been reset",         appender.getWriter());
         assertEquals("last writer exception class", IllegalStateException.class, appender.getLastWriterException().getClass());
+    }
+
+
+    @Test
+    public void testMessageErrorHandling() throws Exception
+    {
+        // WARNING: this test may break if the internal implementation changes
+
+        initialize("TestCloudWatchAppender/testMessageErrorHandling.properties");
+
+        // we will be running the writer on a separate thread, so will require
+        // some form of wait to verify the writer's activity
+        appender.setThreadFactory(new DefaultThreadFactory());
+
+        // these semaphotes coordinate the calls to PutLogEvents with the assertions
+        // that we make in the main thread; note that both start unacquired
+        final Semaphore allowPutLogEvents = new Semaphore(0);
+        final Semaphore allowMainThread = new Semaphore(0);
+
+        // holds the records from the most recent request
+        final List<InputLogEvent> mostRecentEvents = new ArrayList<InputLogEvent>();
+
+        // our mock for the CloudWatch client; it will throw an error on the first
+        // send, succed on the second one
+        final InvocationHandler invocationHandler = new InvocationHandler()
+        {
+            int invocationCount;
+
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
+            {
+                if (method.getName().equals("describeLogGroups"))
+                {
+                    return new DescribeLogGroupsResult()
+                           .withLogGroups(Arrays.asList(
+                               new LogGroup().withLogGroupName("argle")));
+                }
+                else if (method.getName().equals("describeLogStreams"))
+                {
+                    return new DescribeLogStreamsResult()
+                           .withLogStreams(Arrays.asList(
+                               new LogStream().withLogStreamName("bargle")
+                                              .withUploadSequenceToken("anything")));
+                }
+                else if (method.getName().equals("putLogEvents"))
+                {
+                    allowPutLogEvents.acquire();
+                    mostRecentEvents.addAll(((PutLogEventsRequest)args[0]).getLogEvents());
+                    allowMainThread.release();
+                    if (invocationCount++ == 0)
+                    {
+                        throw new InvalidSequenceTokenException("anything");
+                    }
+                    else
+                    {
+                        return new PutLogEventsResult();
+                    }
+                }
+                else
+                {
+                    System.err.println("invocation handler called unexpectedly: " + method.getName());
+                    return null;
+                }
+            }
+        };
+
+        appender.setWriterFactory(new WriterFactory<CloudWatchWriterConfig>()
+        {
+            @Override
+            public LogWriter newLogWriter(CloudWatchWriterConfig config)
+            {
+                return new CloudWatchLogWriter(config)
+                {
+                    @Override
+                    protected void createAWSClient()
+                    {
+                        client = (AWSLogs)Proxy.newProxyInstance(
+                                    getClass().getClassLoader(),
+                                    new Class<?>[] { AWSLogs.class },
+                                    invocationHandler);
+                    }
+                };
+            }
+        });
+
+        for (int ii = 0 ; ii < 10 ; ii++)
+        {
+            logger.debug("message " + ii);
+        }
+
+        allowPutLogEvents.release();
+        Thread.sleep(100);
+        allowMainThread.acquire();
+
+        assertEquals("first batch, number of events in request", 10, mostRecentEvents.size());
+
+        List<InputLogEvent> preservedEvents = new ArrayList<InputLogEvent>(mostRecentEvents);
+        mostRecentEvents.clear();
+
+        // the first batch should have been returned to the message queue, in order
+
+        allowPutLogEvents.release();
+        Thread.sleep(100);
+        allowMainThread.acquire();
+
+        assertEquals("second batch, number of events in request", 10, mostRecentEvents.size());
+
+        for (int ii = 0 ; ii < mostRecentEvents.size() ; ii++)
+        {
+            assertEquals("event #" + ii, preservedEvents.get(ii), mostRecentEvents.get(ii));
+        }
+
+        mostRecentEvents.clear();
+
+        // now assert that those messages will not be resent
+
+        for (int ii = 100 ; ii < 102 ; ii++)
+        {
+            logger.debug("message " + ii);
+        }
+
+        allowPutLogEvents.release();
+        Thread.sleep(100);
+        allowMainThread.acquire();
+
+        assertEquals("third batch, number of events in request", 2, mostRecentEvents.size());
     }
 
 

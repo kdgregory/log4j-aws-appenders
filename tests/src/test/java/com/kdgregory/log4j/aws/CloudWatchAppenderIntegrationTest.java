@@ -20,8 +20,8 @@ import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.*;
 
-import com.kdgregory.log4j.aws.internal.AbstractAppender;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
+import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
 import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
 
 

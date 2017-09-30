@@ -1,5 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.log4j.aws.internal;
+package com.kdgregory.log4j.aws.internal.shared;
 
 import org.apache.log4j.helpers.LogLog;
 

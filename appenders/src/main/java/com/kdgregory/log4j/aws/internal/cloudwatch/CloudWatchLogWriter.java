@@ -13,6 +13,7 @@ import com.amazonaws.services.logs.model.*;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 import com.kdgregory.log4j.aws.internal.shared.Utils;
 
 
@@ -32,7 +33,7 @@ implements LogWriter
     private volatile Long shutdownTime;
     private volatile int batchCount;
 
-    private MessageQueue messageQueue = new MessageQueue();
+    private MessageQueue messageQueue = new MessageQueue(10000, DiscardAction.none);
 
 
     public CloudWatchLogWriter(CloudWatchWriterConfig config)

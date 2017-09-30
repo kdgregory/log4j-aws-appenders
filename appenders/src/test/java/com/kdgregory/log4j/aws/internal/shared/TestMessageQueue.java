@@ -9,6 +9,8 @@ import java.util.Random;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
+
 
 public class TestMessageQueue
 {
@@ -20,7 +22,7 @@ public class TestMessageQueue
     @Test
     public void testBasicOperation() throws Exception
     {
-        MessageQueue queue = new MessageQueue();
+        MessageQueue queue = new MessageQueue(1000, DiscardAction.none);
 
         assertTrue("newly constructed queue is empty",              queue.isEmpty());
 
@@ -55,7 +57,7 @@ public class TestMessageQueue
     @Test
     public void testTimedDequeue() throws Exception
     {
-        MessageQueue queue = new MessageQueue();
+        MessageQueue queue = new MessageQueue(1000, DiscardAction.none);
 
         queue.enqueue(m1);
 
@@ -96,7 +98,7 @@ public class TestMessageQueue
         final int minExpectedMessages   = (int)(expectedMessagesAtEnd * .8);
         final int maxExpectedMessages   = (int)(expectedMessagesAtEnd * 1.2);
 
-        final MessageQueue queue = new MessageQueue();
+        final MessageQueue queue = new MessageQueue(100000, DiscardAction.none);
 
         final List<Thread> threads = new ArrayList<Thread>(numThreads);
         for (int threadIdx = 0 ; threadIdx < numThreads ; threadIdx++)
@@ -139,5 +141,64 @@ public class TestMessageQueue
                    queue.size() > minExpectedMessages);
         assertTrue("queue size < " + maxExpectedMessages + " (was " + queue.size() + ")",
                    queue.size() < maxExpectedMessages);
+    }
+
+
+    @Test
+    public void testDiscardNone() throws Exception
+    {
+        final int discardThreshold = 10;
+        final int messagesToEnqueue = 20;
+
+        MessageQueue queue = new MessageQueue(discardThreshold, DiscardAction.none);
+
+        for (int ii = 0 ; ii < messagesToEnqueue ; ii++)
+        {
+            queue.enqueue(LogMessage.create(String.valueOf(ii)));
+        }
+
+        assertEquals("queue ignores discard threshold", messagesToEnqueue, queue.size());
+    }
+
+
+    @Test
+    public void testDiscardOldest() throws Exception
+    {
+        final int discardThreshold = 10;
+        final int messagesToEnqueue = 20;
+
+        MessageQueue queue = new MessageQueue(discardThreshold, DiscardAction.oldest);
+
+        for (int ii = 0 ; ii < messagesToEnqueue ; ii++)
+        {
+            queue.enqueue(LogMessage.create(String.valueOf(ii)));
+        }
+
+        assertEquals("queue size at threshold", discardThreshold, queue.size());
+
+        List<LogMessage> messages = queue.toList();
+        assertEquals("first message in queue",  "10", messages.get(0).getMessage());
+        assertEquals("last message in queue",   "19", messages.get(discardThreshold - 1).getMessage());
+    }
+
+
+    @Test
+    public void testDiscardNewest() throws Exception
+    {
+        final int discardThreshold = 10;
+        final int messagesToEnqueue = 20;
+
+        MessageQueue queue = new MessageQueue(discardThreshold, DiscardAction.newest);
+
+        for (int ii = 0 ; ii < messagesToEnqueue ; ii++)
+        {
+            queue.enqueue(LogMessage.create(String.valueOf(ii)));
+        }
+
+        assertEquals("queue size at threshold", discardThreshold, queue.size());
+
+        List<LogMessage> messages = queue.toList();
+        assertEquals("first message in queue",  "0", messages.get(0).getMessage());
+        assertEquals("last message in queue",   "9", messages.get(discardThreshold - 1).getMessage());
     }
 }

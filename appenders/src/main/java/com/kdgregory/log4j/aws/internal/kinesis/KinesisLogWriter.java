@@ -15,6 +15,7 @@ import com.amazonaws.services.kinesis.model.*;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 import com.kdgregory.log4j.aws.internal.shared.Utils;
 
 
@@ -42,7 +43,7 @@ implements LogWriter
     private volatile Long shutdownTime;     // set on another thread
     private volatile int batchCount;        // can be read via accessor method by other threads
 
-    private MessageQueue messageQueue = new MessageQueue();
+    private MessageQueue messageQueue = new MessageQueue(10000, DiscardAction.none);
 
 
     public KinesisLogWriter(KinesisWriterConfig config)

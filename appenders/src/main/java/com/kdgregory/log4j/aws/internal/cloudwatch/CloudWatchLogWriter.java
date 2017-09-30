@@ -4,8 +4,6 @@ package com.kdgregory.log4j.aws.internal.cloudwatch;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.helpers.LogLog;
 
@@ -14,6 +12,7 @@ import com.amazonaws.services.logs.model.*;
 
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
 import com.kdgregory.log4j.aws.internal.shared.Utils;
 
 
@@ -33,7 +32,7 @@ implements LogWriter
     private volatile Long shutdownTime;
     private volatile int batchCount;
 
-    private LinkedBlockingDeque<LogMessage> messageQueue = new LinkedBlockingDeque<LogMessage>();
+    private MessageQueue messageQueue = new MessageQueue();
 
 
     public CloudWatchLogWriter(CloudWatchWriterConfig config)
@@ -51,7 +50,7 @@ implements LogWriter
     @Override
     public void addMessage(LogMessage message)
     {
-        messageQueue.add(message);
+        messageQueue.enqueue(message);
     }
 
 
@@ -138,7 +137,7 @@ implements LogWriter
         return (shutdownTime == null)
              ? true
              : shutdownTime.longValue() > System.currentTimeMillis()
-               && messageQueue.peek() == null;
+               && messageQueue.isEmpty();
     }
 
 
@@ -170,7 +169,7 @@ implements LogWriter
             // the first message must never break this rule -- and shouldn't, as appender checks size
             if ((batchBytes >= CloudWatchConstants.MAX_BATCH_BYTES) || (batchMsgs == CloudWatchConstants.MAX_BATCH_COUNT))
             {
-                messageQueue.addFirst(message);
+                messageQueue.requeue(message);
                 break;
             }
 
@@ -184,16 +183,8 @@ implements LogWriter
 
     private LogMessage waitForMessage(long waitUntil)
     {
-        try
-        {
-            long waitTime = waitUntil - System.currentTimeMillis();
-            if (waitTime < 0) waitTime = 1;
-            return messageQueue.poll(waitTime, TimeUnit.MILLISECONDS);
-        }
-        catch (InterruptedException ex)
-        {
-            return null;
-        }
+        long waitTime = waitUntil - System.currentTimeMillis();
+        return messageQueue.dequeue(waitTime);
     }
 
 

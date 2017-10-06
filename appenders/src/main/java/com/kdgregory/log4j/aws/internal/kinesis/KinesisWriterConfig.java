@@ -1,6 +1,7 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.aws.internal.kinesis;
 
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 
 /**
  *  Holds configuration for the LogWriter. This is a simple struct, with writable fields
@@ -8,12 +9,14 @@ package com.kdgregory.log4j.aws.internal.kinesis;
  */
 public class KinesisWriterConfig
 {
-    public String   streamName;
-    public int      shardCount;
-    public Integer  retentionPeriod;
-    public String   partitionKey;
-    public int      partitionKeyLength;
-    public long     batchDelay;
+    public String           streamName;
+    public int              shardCount;
+    public Integer          retentionPeriod;
+    public String           partitionKey;
+    public int              partitionKeyLength;
+    public long             batchDelay;
+    public int              discardThreshold;
+    public DiscardAction    discardAction;
 
 
     /**
@@ -28,8 +31,13 @@ public class KinesisWriterConfig
      *                              to UTF-8. Used to calculate message packing.
      *  @param batchDelay           Number of milliseconds to wait for messages to be
      *                              ready to send.
+     *  @param discardThreshold     Maximum number of messages to retain if unable to send.
+     *  @param discardAction        What to do with unsent messages over the threshold.
      */
-    public KinesisWriterConfig(String streamName, int shardCount, Integer retentionPeriod, String partitionKey, int partitionKeyLength, long batchDelay)
+    public KinesisWriterConfig(
+        String streamName, int shardCount, Integer retentionPeriod,
+        String partitionKey, int partitionKeyLength, long batchDelay,
+        int discardThreshold, DiscardAction discardAction)
     {
         this.streamName = streamName;
         this.shardCount = shardCount;
@@ -37,5 +45,7 @@ public class KinesisWriterConfig
         this.partitionKey = partitionKey;
         this.partitionKeyLength = partitionKeyLength;
         this.batchDelay = batchDelay;
+        this.discardThreshold = discardThreshold;
+        this.discardAction = discardAction;
     }
 }

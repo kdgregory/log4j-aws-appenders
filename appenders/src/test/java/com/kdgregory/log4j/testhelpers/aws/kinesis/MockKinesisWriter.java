@@ -14,12 +14,12 @@ implements LogWriter
     public List<LogMessage> messages = new ArrayList<LogMessage>();
     public LogMessage lastMessage;
     public boolean stopped;
-    
+
     public String streamName;
     public String partitionKey;
     public long batchDelay;
-    
-    
+
+
     public MockKinesisWriter(KinesisWriterConfig config)
     {
         this.streamName = config.streamName;

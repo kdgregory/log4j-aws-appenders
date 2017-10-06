@@ -13,7 +13,6 @@ import com.amazonaws.services.logs.model.*;
 
 import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 import com.kdgregory.log4j.aws.internal.shared.Utils;
 
 
@@ -28,7 +27,7 @@ extends AbstractLogWriter
 
     public CloudWatchLogWriter(CloudWatchWriterConfig config)
     {
-        super(config.batchDelay, 10000, DiscardAction.none);
+        super(config.batchDelay, config.discardThreshold, config.discardAction);
         this.groupName = config.logGroup;
         this.streamName = config.logStream;
     }

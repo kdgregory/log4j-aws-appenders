@@ -196,7 +196,9 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
             throw new RuntimeException("JVM doesn't support UTF-8 (should never happen)");
         }
 
-        return new KinesisWriterConfig(actualStreamName, shardCount, retentionPeriod, actualPartitionKey, partitionKeyLength, batchDelay);
+        return new KinesisWriterConfig(actualStreamName, shardCount, retentionPeriod,
+                                       actualPartitionKey, partitionKeyLength, batchDelay,
+                                       discardThreshold, discardAction);
     }
 
 

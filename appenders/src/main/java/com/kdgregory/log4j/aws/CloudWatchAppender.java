@@ -129,7 +129,7 @@ public class CloudWatchAppender extends AbstractAppender<CloudWatchWriterConfig>
         Substitutions subs = new Substitutions(new Date(), sequence.get());
         actualLogGroup  = CloudWatchConstants.ALLOWED_NAME_REGEX.matcher(subs.perform(logGroup)).replaceAll("");
         actualLogStream = CloudWatchConstants.ALLOWED_NAME_REGEX.matcher(subs.perform(logStream)).replaceAll("");
-        return  new CloudWatchWriterConfig(actualLogGroup, actualLogStream, batchDelay);
+        return new CloudWatchWriterConfig(actualLogGroup, actualLogStream, batchDelay, discardThreshold, discardAction);
     }
 
 

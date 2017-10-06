@@ -36,7 +36,18 @@ public class MessageQueue
         /**
          *  Discard newest messages once threshold is reached.
          */
-        newest
+        newest;
+
+
+        public static DiscardAction lookup(String value)
+        {
+            for (DiscardAction action : values())
+            {
+                if (action.toString().equals(value))
+                    return action;
+            }
+            throw new IllegalArgumentException("invalid discardAction: " + value);
+        }
     }
 
 //----------------------------------------------------------------------------

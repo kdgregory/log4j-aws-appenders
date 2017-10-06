@@ -1,21 +1,18 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.aws;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
+import static net.sf.kdgcommons.test.StringAsserts.*;
+
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Semaphore;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
-import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -24,19 +21,20 @@ import org.apache.log4j.helpers.LogLog;
 
 import net.sf.kdgcommons.lang.StringUtil;
 
-import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
 import com.amazonaws.util.BinaryUtils;
 
-import com.kdgregory.log4j.aws.internal.kinesis.KinesisLogWriter;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
-import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
-import com.kdgregory.log4j.testhelpers.*;
-import com.kdgregory.log4j.testhelpers.aws.*;
-import com.kdgregory.log4j.testhelpers.aws.kinesis.*;
+import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
+import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
+import com.kdgregory.log4j.testhelpers.NullThreadFactory;
+import com.kdgregory.log4j.testhelpers.aws.ThrowingWriterFactory;
+import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisClient;
+import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisWriter;
+import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisWriterFactory;
+import com.kdgregory.log4j.testhelpers.aws.kinesis.TestableKinesisAppender;
 
 
 public class TestKinesisAppender
@@ -56,7 +54,7 @@ public class TestKinesisAppender
         Logger rootLogger = Logger.getRootLogger();
         appender = (TestableKinesisAppender)rootLogger.getAppender("default");
 
-        appender.setThreadFactory(new NullThreadFactory());
+        appender.setThreadFactory(new InlineThreadFactory());
         appender.setWriterFactory(new MockKinesisWriterFactory(appender));
     }
 
@@ -89,6 +87,8 @@ public class TestKinesisAppender
         assertEquals("shard count",         7,                      appender.getShardCount());
         assertEquals("retention period",    48,                     appender.getRetentionPeriod());
         assertEquals("max delay",           1234L,                  appender.getBatchDelay());
+        assertEquals("discard threshold",   54321,                  appender.getDiscardThreshold());
+        assertEquals("discard action",      "newest",               appender.getDiscardAction());
     }
 
 
@@ -102,6 +102,8 @@ public class TestKinesisAppender
         assertEquals("shard count",         1,                      appender.getShardCount());
         assertEquals("retention period",    24,                     appender.getRetentionPeriod());
         assertEquals("max delay",           2000L,                  appender.getBatchDelay());
+        assertEquals("discard threshold",   10000,                  appender.getDiscardThreshold());
+        assertEquals("discard action",      "oldest",               appender.getDiscardAction());
     }
 
 
@@ -190,6 +192,24 @@ public class TestKinesisAppender
 
 
     @Test
+    public void testMaximumMessageSize() throws Exception
+    {
+        final int kinesisMaximumMessageSize = 1024 * 1024;      // 1 MB
+        final int layoutOverhead            = 1;                // newline after message
+        final int partitionKeySize          = 4;                // "test"
+
+        final int maxMessageSize            =  kinesisMaximumMessageSize - (layoutOverhead + partitionKeySize);
+        final String bigMessage             =  StringUtil.repeat('A', maxMessageSize);
+
+        initialize("TestKinesisAppender/testMaximumMessageSize.properties");
+        logger.debug("this message triggers writer configuration");
+
+        assertFalse("max message size",             appender.isMessageTooLarge(LogMessage.create(bigMessage)));
+        assertTrue("bigger than max message size",  appender.isMessageTooLarge(LogMessage.create(bigMessage + "1")));
+    }
+
+
+    @Test
     public void testUncaughtExceptionHandling() throws Exception
     {
         initialize("TestKinesisAppender/testUncaughtExceptionHandling.properties");
@@ -223,146 +243,163 @@ public class TestKinesisAppender
 
         initialize("TestKinesisAppender/testMessageErrorHandling.properties");
 
-        // we will be running the writer on a separate thread, so will require
-        // some form of wait to verify the writer's activity
-        appender.setThreadFactory(new DefaultThreadFactory());
-
-        // these semaphotes coordinate the calls to PutRecords with the assertions
-        // that we make in the main thread; note that both start unacquired
-        final Semaphore allowPutRecords = new Semaphore(0);
-        final Semaphore allowMainThread = new Semaphore(0);
-
-        // the lists of records that succeeded/failed in last call to putRecords
-        final List<PutRecordsRequestEntry> successRecords = new ArrayList<PutRecordsRequestEntry>();
-        final List<PutRecordsRequestEntry> failRecords = new ArrayList<PutRecordsRequestEntry>();
-
-        // our mock for the Kinesis client; when sending, it will reject 1/3 of the records
-        final InvocationHandler invocationHandler = new InvocationHandler()
+        // the mock client will report an error on every third record
+        MockKinesisClient mockClient = new MockKinesisClient()
         {
             @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
+            public PutRecordsResult putRecords(PutRecordsRequest request)
             {
-                if (method.getName().equals("describeStream"))
+                List<PutRecordsResultEntry> resultRecords = new ArrayList<PutRecordsResultEntry>();
+                for (int ii = 0 ; ii < request.getRecords().size() ; ii++)
                 {
-                    return new DescribeStreamResult()
-                           .withStreamDescription(
-                               new StreamDescription()
-                               .withStreamStatus(StreamStatus.ACTIVE));
-                }
-                else if (method.getName().equals("putRecords"))
-                {
-                    allowPutRecords.acquire();
-                    PutRecordsRequest request = (PutRecordsRequest)args[0];
-                    List<PutRecordsResultEntry> resultRecords = new ArrayList<PutRecordsResultEntry>();
-                    int ii = 0;
-                    for (PutRecordsRequestEntry entry : request.getRecords())
+                    PutRecordsResultEntry resultRecord = new PutRecordsResultEntry();
+                    resultRecords.add(resultRecord);
+                    if ((ii % 3) == 1)
                     {
-                        PutRecordsResultEntry recordResult = new PutRecordsResultEntry();
-                        if ((ii % 3) == 1)
-                        {
-                            failRecords.add(entry);
-                            recordResult.setErrorCode("anything, really");
-                        }
-                        else
-                        {
-                            successRecords.add(entry);
-                        }
-
-                        resultRecords.add(recordResult);
-                        ii++;
+                        resultRecord.setErrorCode("anything, really");
                     }
-
-                    allowMainThread.release();
-                    return new PutRecordsResult().withRecords(resultRecords);
                 }
+                return new PutRecordsResult().withRecords(resultRecords);
 
-                System.err.println("invocation handler called unexpectedly: " + method.getName());
-                return null;
             }
         };
 
-        appender.setWriterFactory(new WriterFactory<KinesisWriterConfig>()
-        {
-            @Override
-            public LogWriter newLogWriter(KinesisWriterConfig config)
-            {
-                return new KinesisLogWriter(config)
-                {
-                    @Override
-                    protected void createAWSClient()
-                    {
-                        client = (AmazonKinesis)Proxy.newProxyInstance(
-                                    getClass().getClassLoader(),
-                                    new Class<?>[] { AmazonKinesis.class },
-                                    invocationHandler);
-                    }
-                };
-            }
-        });
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
 
         for (int ii = 0 ; ii < 10 ; ii++)
         {
             logger.debug("message " + ii);
         }
 
-        allowPutRecords.release();
-        allowMainThread.acquire();
+        mockClient.allowWriterThread();
 
-        assertEquals("first batch, number of successful messages", 7, successRecords.size());
-        assertEquals("first batch, number of failed messages",     3, failRecords.size());
+        assertEquals("first batch, number of successful messages", 7, mockClient.successRecords.size());
+        assertEquals("first batch, number of failed messages",     3, mockClient.failedRecords.size());
 
-        PutRecordsRequestEntry savedFailure1 = failRecords.get(0);
-        PutRecordsRequestEntry savedFailure2 = failRecords.get(1);
-        PutRecordsRequestEntry savedFailure3 = failRecords.get(2);
+        PutRecordsRequestEntry savedFailure1 = mockClient.failedRecords.get(0);
+        PutRecordsRequestEntry savedFailure2 = mockClient.failedRecords.get(1);
+        PutRecordsRequestEntry savedFailure3 = mockClient.failedRecords.get(2);
 
-        successRecords.clear();
-        failRecords.clear();
+        mockClient.allowWriterThread();
 
-        allowPutRecords.release();
-        allowMainThread.acquire();
-
-        assertEquals("second batch, number of successful messages", 2, successRecords.size());
-        assertEquals("second batch, number of failed messages",     1, failRecords.size());
+        assertEquals("second batch, number of successful messages", 2, mockClient.successRecords.size());
+        assertEquals("second batch, number of failed messages",     1, mockClient.failedRecords.size());
 
         assertTrue("first failure is now first success",
                    Arrays.equals(
                        BinaryUtils.copyAllBytesFrom(savedFailure1.getData()),
-                       BinaryUtils.copyAllBytesFrom(successRecords.get(0).getData())));
+                       BinaryUtils.copyAllBytesFrom(mockClient.successRecords.get(0).getData())));
         assertTrue("third failure is now second success (second failure failed again)",
                    Arrays.equals(
                        BinaryUtils.copyAllBytesFrom(savedFailure3.getData()),
-                       BinaryUtils.copyAllBytesFrom(successRecords.get(1).getData())));
+                       BinaryUtils.copyAllBytesFrom(mockClient.successRecords.get(1).getData())));
 
-        successRecords.clear();
-        failRecords.clear();
 
-        allowPutRecords.release();
-        allowMainThread.acquire();
+        mockClient.allowWriterThread();
 
-        assertEquals("third batch, number of successful messages", 1, successRecords.size());
-        assertEquals("third batch, number of failed messages",     0, failRecords.size());
+        assertEquals("third batch, number of successful messages", 1, mockClient.successRecords.size());
+        assertEquals("third batch, number of failed messages",     0, mockClient.failedRecords.size());
 
         assertTrue("second original failure is now a success",
                    Arrays.equals(
                        BinaryUtils.copyAllBytesFrom(savedFailure2.getData()),
-                       BinaryUtils.copyAllBytesFrom(successRecords.get(0).getData())));
+                       BinaryUtils.copyAllBytesFrom(mockClient.successRecords.get(0).getData())));
     }
 
 
     @Test
-    public void testMaximumMessageSize() throws Exception
+    public void testDiscardOldest() throws Exception
     {
-        final int kinesisMaximumMessageSize = 1024 * 1024;      // 1 MB
-        final int layoutOverhead            = 1;                // newline after message
-        final int partitionKeySize          = 4;                // "test"
+        initialize("TestKinesisAppender/testDiscardOldest.properties");
 
-        final int maxMessageSize            =  kinesisMaximumMessageSize - (layoutOverhead + partitionKeySize);
-        final String bigMessage             =  StringUtil.repeat('A', maxMessageSize);
+        // this is a dummy client: never actually run the writer thread, but
+        // need to test the real writer
+        MockKinesisClient mockClient = new MockKinesisClient()
+        {
+            @Override
+            public PutRecordsResult putRecords(PutRecordsRequest request)
+            {
+                throw new IllegalStateException("should never be called");
+            }
+        };
 
-        initialize("TestKinesisAppender/testMaximumMessageSize.properties");
-        logger.debug("this message triggers writer configuration");
+        appender.setThreadFactory(new NullThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
 
-        assertFalse("max message size",             appender.isMessageTooLarge(LogMessage.create(bigMessage)));
-        assertTrue("bigger than max message size",  appender.isMessageTooLarge(LogMessage.create(bigMessage + "1")));
+        for (int ii = 0 ; ii < 20 ; ii++)
+        {
+            logger.debug("message " + ii);
+        }
+
+        List<LogMessage> messages = appender.getMessageQueue().toList();
+
+        assertEquals("number of messages in queue", 10, messages.size());
+        assertEquals("oldest message", "message 10\n", messages.get(0).getMessage());
+        assertEquals("newest message", "message 19\n", messages.get(9).getMessage());
+    }
+
+
+    @Test
+    public void testDiscardNewest() throws Exception
+    {
+        initialize("TestKinesisAppender/testDiscardNewest.properties");
+
+        // this is a dummy client: never actually run the writer thread, but
+        // need to test the real writer
+        MockKinesisClient mockClient = new MockKinesisClient()
+        {
+            @Override
+            public PutRecordsResult putRecords(PutRecordsRequest request)
+            {
+                throw new IllegalStateException("should never be called");
+            }
+        };
+
+        appender.setThreadFactory(new NullThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        for (int ii = 0 ; ii < 20 ; ii++)
+        {
+            logger.debug("message " + ii);
+        }
+
+        List<LogMessage> messages = appender.getMessageQueue().toList();
+
+        assertEquals("number of messages in queue", 10, messages.size());
+        assertEquals("oldest message", "message 0\n", messages.get(0).getMessage());
+        assertEquals("newest message", "message 9\n", messages.get(9).getMessage());
+    }
+
+
+    @Test
+    public void testDiscardNone() throws Exception
+    {
+        initialize("TestKinesisAppender/testDiscardNone.properties");
+
+        // this is a dummy client: never actually run the writer thread, but
+        // need to test the real writer
+        MockKinesisClient mockClient = new MockKinesisClient()
+        {
+            @Override
+            public PutRecordsResult putRecords(PutRecordsRequest request)
+            {
+                throw new IllegalStateException("should never be called");
+            }
+        };
+
+        appender.setThreadFactory(new NullThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        for (int ii = 0 ; ii < 20 ; ii++)
+        {
+            logger.debug("message " + ii);
+        }
+
+        List<LogMessage> messages = appender.getMessageQueue().toList();
+
+        assertEquals("number of messages in queue", 20, messages.size());
+        assertEquals("oldest message", "message 0\n", messages.get(0).getMessage());
+        assertEquals("newest message", "message 19\n", messages.get(19).getMessage());
     }
 }

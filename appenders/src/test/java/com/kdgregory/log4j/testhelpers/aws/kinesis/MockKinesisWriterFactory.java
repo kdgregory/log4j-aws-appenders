@@ -14,7 +14,7 @@ public class MockKinesisWriterFactory implements WriterFactory<KinesisWriterConf
     public int invocationCount = 0;
     public MockKinesisWriter writer;
 
-    
+
     public MockKinesisWriterFactory(KinesisAppender appender)
     {
         this.appender = appender;

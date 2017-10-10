@@ -3,10 +3,10 @@ package com.kdgregory.log4j.aws;
 
 import java.util.Date;
 
-import com.kdgregory.log4j.aws.internal.AbstractAppender;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchConstants;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
+import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
@@ -129,7 +129,7 @@ public class CloudWatchAppender extends AbstractAppender<CloudWatchWriterConfig>
         Substitutions subs = new Substitutions(new Date(), sequence.get());
         actualLogGroup  = CloudWatchConstants.ALLOWED_NAME_REGEX.matcher(subs.perform(logGroup)).replaceAll("");
         actualLogStream = CloudWatchConstants.ALLOWED_NAME_REGEX.matcher(subs.perform(logStream)).replaceAll("");
-        return  new CloudWatchWriterConfig(actualLogGroup, actualLogStream, batchDelay);
+        return new CloudWatchWriterConfig(actualLogGroup, actualLogStream, batchDelay, discardThreshold, discardAction);
     }
 
 

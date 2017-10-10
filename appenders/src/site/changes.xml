@@ -4,6 +4,13 @@
 	</properties>
 
     <body>
+        <release version="1.1.1" date="2017-10-10" description="Message discard">
+            <action dev='kdgregory' type='add'>
+                Added configurable message discard, to avoid out-of-memory errors when
+                connectivity to AWS is spotty
+            </action>
+        </release>
+
         <release version="1.1.0" date="2017-09-29" description="KinesisAppender">
             <action dev='kdgregory' type='add'>
                 Initial implementation of KinesisAppender, which writes to a Kinesis stream.

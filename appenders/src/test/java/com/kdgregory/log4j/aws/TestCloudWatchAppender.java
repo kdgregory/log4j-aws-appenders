@@ -2,6 +2,8 @@
 package com.kdgregory.log4j.aws;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
@@ -17,10 +19,14 @@ import org.apache.log4j.helpers.LogLog;
 
 import net.sf.kdgcommons.lang.StringUtil;
 
+import com.amazonaws.services.logs.model.InputLogEvent;
+import com.amazonaws.services.logs.model.InvalidSequenceTokenException;
+import com.amazonaws.services.logs.model.PutLogEventsRequest;
+import com.amazonaws.services.logs.model.PutLogEventsResult;
+
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-
 import com.kdgregory.log4j.testhelpers.*;
 import com.kdgregory.log4j.testhelpers.aws.*;
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.*;
@@ -43,7 +49,7 @@ public class TestCloudWatchAppender
         Logger rootLogger = Logger.getRootLogger();
         appender = (TestableCloudWatchAppender)rootLogger.getAppender("default");
 
-        appender.setThreadFactory(new NullThreadFactory());
+        appender.setThreadFactory(new InlineThreadFactory());
         appender.setWriterFactory(new MockCloudWatchWriterFactory(appender));
     }
 
@@ -69,7 +75,7 @@ public class TestCloudWatchAppender
     @Test
     public void testConfiguration() throws Exception
     {
-        initialize("TestCloudWatchAppender.testConfiguration.properties");
+        initialize("TestCloudWatchAppender/testConfiguration.properties");
 
         assertEquals("log group name",      "argle",              appender.getLogGroup());
         assertEquals("log stream name",     "bargle",             appender.getLogStream());
@@ -77,13 +83,15 @@ public class TestCloudWatchAppender
         assertEquals("sequence",            2,                    appender.getSequence());
         assertEquals("rotation mode",       "interval",           appender.getRotationMode());
         assertEquals("rotation interval",   86400000L,            appender.getRotationInterval());
+        assertEquals("discard threshold",   12345,                appender.getDiscardThreshold());
+        assertEquals("discard action",      "newest",             appender.getDiscardAction());
     }
 
 
     @Test
     public void testDefaultConfiguration() throws Exception
     {
-        initialize("TestCloudWatchAppender.testDefaultConfiguration.properties");
+        initialize("TestCloudWatchAppender/testDefaultConfiguration.properties");
 
         // note: this is allowed at time of configuration, would disable logger if we try to append
         assertNull("log group name",    appender.getLogGroup());
@@ -93,13 +101,15 @@ public class TestCloudWatchAppender
         assertEquals("sequence",            0,                    appender.getSequence());
         assertEquals("rotation mode",       "none",               appender.getRotationMode());
         assertEquals("rotation interval",   -1,                   appender.getRotationInterval());
+        assertEquals("discard threshold",   10000,                appender.getDiscardThreshold());
+        assertEquals("discard action",      "oldest",               appender.getDiscardAction());
     }
 
 
     @Test
     public void testAppend() throws Exception
     {
-        initialize("TestCloudWatchAppender.testAppend.properties");
+        initialize("TestCloudWatchAppender/testAppend.properties");
         MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
 
         long initialTimestamp = System.currentTimeMillis();
@@ -152,7 +162,7 @@ public class TestCloudWatchAppender
     @Test(expected=IllegalStateException.class)
     public void testThrowsIfAppenderClosed() throws Exception
     {
-        initialize("TestCloudWatchAppender.testAppend.properties");
+        initialize("TestCloudWatchAppender/testAppend.properties");
 
         // write the first message to initialize the appender
         logger.debug("should not throw");
@@ -167,7 +177,7 @@ public class TestCloudWatchAppender
     @Test
     public void testWriteHeaderAndFooter() throws Exception
     {
-        initialize("TestCloudWatchAppender.testWriteHeaderAndFooter.properties");
+        initialize("TestCloudWatchAppender/testWriteHeaderAndFooter.properties");
 
         logger.debug("blah blah blah");
 
@@ -187,7 +197,7 @@ public class TestCloudWatchAppender
         // note that the property value includes invalid characters
         System.setProperty("TestCloudWatchAppender.testSubstitution", "foo/bar");
 
-        initialize("TestCloudWatchAppender.testSubstitution.properties");
+        initialize("TestCloudWatchAppender/testSubstitution.properties");
 
         // need to trigger append to apply substitutions
         logger.debug("doesn't matter what's written");
@@ -205,7 +215,7 @@ public class TestCloudWatchAppender
     @Test
     public void testExplicitRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender.testExplicitRotation.properties");
+        initialize("TestCloudWatchAppender/testExplicitRotation.properties");
         MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
 
         logger.debug("first message");
@@ -230,7 +240,7 @@ public class TestCloudWatchAppender
     @Test
     public void testCountedRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender.testCountedRotation.properties");
+        initialize("TestCloudWatchAppender/testCountedRotation.properties");
 
         logger.debug("message 1");
 
@@ -255,7 +265,7 @@ public class TestCloudWatchAppender
     @Test
     public void testTimedRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender.testTimedRotation.properties");
+        initialize("TestCloudWatchAppender/testTimedRotation.properties");
 
         logger.debug("first message");
 
@@ -280,7 +290,7 @@ public class TestCloudWatchAppender
     public void testInvalidTimedRotationConfiguration() throws Exception
     {
         // note: this will generate a log message that we can't validate and don't want to see
-        initialize("TestCloudWatchAppender.testInvalidTimedRotation.properties");
+        initialize("TestCloudWatchAppender/testInvalidTimedRotation.properties");
         assertEquals("rotation mode", "none", appender.getRotationMode());
     }
 
@@ -288,7 +298,7 @@ public class TestCloudWatchAppender
     @Test
     public void testHourlyRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender.testHourlyRotation.properties");
+        initialize("TestCloudWatchAppender/testHourlyRotation.properties");
 
         logger.debug("first message");
 
@@ -312,7 +322,7 @@ public class TestCloudWatchAppender
     @Test
     public void testDailyRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender.testDailyRotation.properties");
+        initialize("TestCloudWatchAppender/testDailyRotation.properties");
 
         logger.debug("first message");
 
@@ -334,9 +344,27 @@ public class TestCloudWatchAppender
 
 
     @Test
+    public void testMaximumMessageSize() throws Exception
+    {
+        final int cloudwatchMaximumBatchSize    = 1048576;  // copied from http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
+        final int cloudwatchOverhead            = 26;       // ditto
+        final int layoutOverhead                = 1;        // newline after message
+
+        final int maxMessageSize                =  cloudwatchMaximumBatchSize - (layoutOverhead + cloudwatchOverhead);
+        final String bigMessage                 =  StringUtil.repeat('A', maxMessageSize);
+
+        initialize("TestCloudWatchAppender/testMaximumMessageSize.properties");
+        // no need to create a writer; cloudwatch messages not dependent on any names
+
+        assertFalse("max message size",             appender.isMessageTooLarge(LogMessage.create(bigMessage)));
+        assertTrue("bigger than max message size",  appender.isMessageTooLarge(LogMessage.create(bigMessage + "1")));
+    }
+
+
+    @Test
     public void testUncaughtExceptionHandling() throws Exception
     {
-        initialize("TestCloudWatchAppender.testUncaughtExceptionHandling.properties");
+        initialize("TestCloudWatchAppender/testUncaughtExceptionHandling.properties");
 
         // note that we will be running the writer on a separate thread
 
@@ -361,19 +389,159 @@ public class TestCloudWatchAppender
 
 
     @Test
-    public void testMaximumMessageSize() throws Exception
+    public void testMessageErrorHandling() throws Exception
     {
-        final int cloudwatchMaximumBatchSize    = 1048576;  // copied from http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
-        final int cloudwatchOverhead            = 26;       // ditto
-        final int layoutOverhead                = 1;        // newline after message
+        // WARNING: this test may break if the internal implementation changes
 
-        final int maxMessageSize                =  cloudwatchMaximumBatchSize - (layoutOverhead + cloudwatchOverhead);
-        final String bigMessage                 =  StringUtil.repeat('A', maxMessageSize);
+        initialize("TestCloudWatchAppender/testMessageErrorHandling.properties");
 
-        initialize("TestCloudWatchAppender.testMaximumMessageSize.properties");
-        // no need to create a writer; cloudwatch messages not dependent on any names
+        // the mock client -- will throw on odd invocations
+        MockCloudwatchClient mockClient = new MockCloudwatchClient()
+        {
+            @Override
+            protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
+            {
+                if (invocationCount++ == 0)
+                {
+                    throw new InvalidSequenceTokenException("anything");
+                }
+                else
+                {
+                    return new PutLogEventsResult();
+                }
+            }
+        };
 
-        assertFalse("max message size",             appender.isMessageTooLarge(LogMessage.create(bigMessage)));
-        assertTrue("bigger than max message size",  appender.isMessageTooLarge(LogMessage.create(bigMessage + "1")));
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        for (int ii = 0 ; ii < 10 ; ii++)
+        {
+            logger.debug("message " + ii);
+        }
+
+        mockClient.allowWriterThread();
+
+        assertEquals("first batch, number of events in request", 10, mockClient.mostRecentEvents.size());
+
+        List<InputLogEvent> preservedEvents = new ArrayList<InputLogEvent>(mockClient.mostRecentEvents);
+
+        // the first batch should have been returned to the message queue, in order
+
+        mockClient.allowWriterThread();
+
+        assertEquals("second batch, number of events in request", 10, mockClient.mostRecentEvents.size());
+
+        for (int ii = 0 ; ii < mockClient.mostRecentEvents.size() ; ii++)
+        {
+            assertEquals("event #" + ii, preservedEvents.get(ii), mockClient.mostRecentEvents.get(ii));
+        }
+
+        // now assert that those messages will not be resent
+
+        for (int ii = 100 ; ii < 102 ; ii++)
+        {
+            logger.debug("message " + ii);
+        }
+
+        mockClient.allowWriterThread();
+
+        assertEquals("third batch, number of events in request", 2, mockClient.mostRecentEvents.size());
+    }
+
+
+    @Test
+    public void testDiscardOldest() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testDiscardOldest.properties");
+
+        // this is a dummy client: never actually run the writer thread, but
+        // need to test the real writer
+        MockCloudwatchClient mockClient = new MockCloudwatchClient()
+        {
+            @Override
+            protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
+            {
+                throw new IllegalStateException("should never be called");
+            }
+        };
+
+        appender.setThreadFactory(new NullThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        for (int ii = 0 ; ii < 20 ; ii++)
+        {
+            logger.debug("message " + ii);
+        }
+
+        List<LogMessage> messages = appender.getMessageQueue().toList();
+
+        assertEquals("number of messages in queue", 10, messages.size());
+        assertEquals("oldest message", "message 10\n", messages.get(0).getMessage());
+        assertEquals("newest message", "message 19\n", messages.get(9).getMessage());
+    }
+
+
+    @Test
+    public void testDiscardNewest() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testDiscardNewest.properties");
+
+        // this is a dummy client: never actually run the writer thread, but
+        // need to test the real writer
+        MockCloudwatchClient mockClient = new MockCloudwatchClient()
+        {
+            @Override
+            protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
+            {
+                throw new IllegalStateException("should never be called");
+            }
+        };
+
+        appender.setThreadFactory(new NullThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        for (int ii = 0 ; ii < 20 ; ii++)
+        {
+            logger.debug("message " + ii);
+        }
+
+        List<LogMessage> messages = appender.getMessageQueue().toList();
+
+        assertEquals("number of messages in queue", 10, messages.size());
+        assertEquals("oldest message", "message 0\n", messages.get(0).getMessage());
+        assertEquals("newest message", "message 9\n", messages.get(9).getMessage());
+    }
+
+
+    @Test
+    public void testDiscardNone() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testDiscardNone.properties");
+
+        // this is a dummy client: never actually run the writer thread, but
+        // need to test the real writer
+        MockCloudwatchClient mockClient = new MockCloudwatchClient()
+        {
+            @Override
+            protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
+            {
+                throw new IllegalStateException("should never be called");
+            }
+        };
+
+        appender.setThreadFactory(new NullThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        for (int ii = 0 ; ii < 20 ; ii++)
+        {
+            logger.debug("message " + ii);
+        }
+
+        List<LogMessage> messages = appender.getMessageQueue().toList();
+
+        assertEquals("number of messages in queue", 20, messages.size());
+        assertEquals("oldest message", "message 0\n", messages.get(0).getMessage());
+        assertEquals("newest message", "message 19\n", messages.get(19).getMessage());
     }
 }

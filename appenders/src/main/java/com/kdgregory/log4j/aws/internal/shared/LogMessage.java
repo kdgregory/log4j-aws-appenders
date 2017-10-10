@@ -106,8 +106,8 @@ implements Comparable<LogMessage>
     {
         return messageBytes.length;
     }
-    
-    
+
+
     /**
      *  Returns the UTF-8 message bytes.
      */

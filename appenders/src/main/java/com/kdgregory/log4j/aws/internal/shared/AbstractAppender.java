@@ -1,5 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.log4j.aws.internal;
+package com.kdgregory.log4j.aws.internal.shared;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -8,10 +8,7 @@ import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
 
-import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
-import com.kdgregory.log4j.aws.internal.shared.ThreadFactory;
-import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 
 
 /**
@@ -33,7 +30,8 @@ import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
  *  so any application code that touches these variables should not be surprised if
  *  they cease to exist.
  */
-public abstract class AbstractAppender<WriterConfigType> extends AppenderSkeleton
+public abstract class AbstractAppender<WriterConfigType>
+extends AppenderSkeleton
 {
     // flag to indicate whether we need to run setup
 
@@ -79,6 +77,8 @@ public abstract class AbstractAppender<WriterConfigType> extends AppenderSkeleto
     // all member vars below this point are shared configuration
 
     protected long            batchDelay;
+    protected int             discardThreshold;
+    protected DiscardAction   discardAction;
     protected RotationMode    rotationMode;
     protected long            rotationInterval;
     protected AtomicInteger   sequence;
@@ -94,6 +94,8 @@ public abstract class AbstractAppender<WriterConfigType> extends AppenderSkeleto
         this.writerFactory = writerFactory;
 
         batchDelay = 2000;
+        discardThreshold = 10000;
+        discardAction = DiscardAction.oldest;
         rotationMode = RotationMode.none;
         rotationInterval = -1;
         sequence = new AtomicInteger();
@@ -135,11 +137,68 @@ public abstract class AbstractAppender<WriterConfigType> extends AppenderSkeleto
 
 
     /**
-     *  Sets the rule for log stream rotation, for those appenders that support rotation.
-     *  See {@link RotationMode} for allowed values.
+     *  Sets the number of unsent messages that will trigger message discard. A high
+     *  value is useful when network connectivity is intermittent and/or overall AWS
+     *  communication is causing throttling. However, a value that is too high may
+     *  cause out-of-memory errors.
      *  <p>
-     *  Attempting to set an invalid mode is equivalent to "none", but will emit a warning to the
-     *  Log4J internal log.
+     *  The default, 10,000, is based on the assumptions that (1) each message will be
+     *  1k or less, and (2) any app that uses remote logging can afford 10MB.
+     *  <p>
+     *  Note: at present, discard threshold cannot be changed after creating a log
+     *  writer. For appenders that rotate logs, a new configuration value will be
+     *  recognized at the time of rotation.
+     */
+    public void setDiscardThreshold(int value)
+    {
+        this.discardThreshold = value;
+        // TODO - propagate to writer
+    }
+
+
+    /**
+     *  Returns the configured discard threshold.
+     */
+    public int getDiscardThreshold()
+    {
+        return discardThreshold;
+    }
+
+
+    /**
+     *  Sets the action to take when the number of unsent messages exceeds the discard
+     *  threshold. Values are "none" (retain all messages), "oldest" (discard oldest
+     *  messages), and "newest" (discard most recent messages).
+     *  <p>
+     *  The default is "oldest". Attempting to set an incorrect value will throw a
+     *  configuration error.
+     *  <p>
+     *  Note: at present, discard action cannot be changed after creating a log
+     *  writer. For appenders that rotate logs, a new configuration value will be
+     *  recognized at the time of rotation.
+     */
+    public void setDiscardAction(String value)
+    {
+        discardAction = DiscardAction.lookup(value);
+        // TODO - propagate to writer
+    }
+
+
+    /**
+     *  Returns the configured discard action.
+     */
+    public String getDiscardAction()
+    {
+        return discardAction.toString();
+    }
+
+
+    /**
+     *  Sets the rule for log stream rotation, for those appenders that support rotation.
+     *  See {@link com.kdgregory.log4j.aws.internal.shared.RotationMode} for values.
+     *  <p>
+     *  Attempting to set an invalid mode is equivalent to "none", but will emit a warning
+     *  to the Log4J internal log.
      */
     public void setRotationMode(String value)
     {

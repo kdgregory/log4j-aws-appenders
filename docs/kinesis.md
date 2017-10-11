@@ -22,9 +22,10 @@ Your Log4J configuration will look something like this:
     log4j.appender.kinesis.layout=org.apache.log4j.PatternLayout
     log4j.appender.kinesis.layout.ConversionPattern=%d [%t] %-5p %c %x - %m%n
 
-    log4j.appender.kinesis.streamName=AppenderIntegratonTest
-    log4j.appender.kinesis.batchDelay=500
+    log4j.appender.kinesis.streamName={env:APP_NAME}
+    log4j.appender.kinesis.partitionKey={pid}
     log4j.appender.kinesis.shardCount=2
+    log4j.appender.kinesis.batchDelay=500
 
 
 The appender provides the following properties (also described in the JavaDoc):
@@ -35,6 +36,11 @@ Name                | Description
 `partitionKey`      | A string used to assign messages to shards; see below for more information.
 `shardCount`        | When creating a stream, specifies the number of shards to use. Defaults to 1.
 `retentionPeriod`   | When creating a stream, specifies the retention period for messages in hours. Per AWS, the minimum is 24 (the default) and the maximum is 168 (7 days).
+`batchDelay`        | The time, in milliseconds, that the writer will wait to accumulate messages for a batch. See [design doc](design.md#message-batches) for more information.
+`discardThreshold`  | The threshold count for discarding messages; default is 10,000. See [design doc](design.md#message-discard) for more information.
+`discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
+
+The `streamName` and `partitionKey` properties may use [substutions](substitutions.md).
 
 
 ## Partition Keys

@@ -91,8 +91,8 @@ public class JsonConverter
 
     private static void appendDate(StringBuilder builder, Date value)
     {
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'+00:00'");
-        formatter.setTimeZone(TimeZone.getTimeZone("GMT"));
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
         appendString(builder, formatter.format(value));
     }
 

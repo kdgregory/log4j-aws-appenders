@@ -45,6 +45,7 @@
         <junit.version>4.10</junit.version>
         <kdgcommons.version>1.0.15</kdgcommons.version>
         <log4j.version>1.2.16</log4j.version>
+        <practicalxml.version>1.1.18</practicalxml.version>
 
         <plugin.compiler.version>3.1</plugin.compiler.version>
     </properties>
@@ -80,6 +81,12 @@
             <groupId>net.sf.kdgcommons</groupId>
             <artifactId>kdgcommons</artifactId>
             <version>${kdgcommons.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.sf.practicalxml</groupId>
+            <artifactId>practicalxml</artifactId>
+            <version>${practicalxml.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

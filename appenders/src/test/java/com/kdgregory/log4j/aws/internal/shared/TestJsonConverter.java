@@ -84,7 +84,7 @@ public class TestJsonConverter
         String json = JsonConverter.convert(new MapBuilder<String,Object>(new TreeMap<String,Object>())
                                             .put("foo", d)
                                             .toMap());
-        assertEquals("{\"foo\":\"2017-10-11T23:28:10+00:00\"}", json);
+        assertEquals("{\"foo\":\"2017-10-11T23:28:10Z\"}", json);
     }
 
 

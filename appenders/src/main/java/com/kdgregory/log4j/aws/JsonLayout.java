@@ -68,6 +68,15 @@ extends Layout
     private String processId;
     private String hostname;
     private String instanceId;
+    
+    private ThreadLocal<JsonConverter> converterTL = new ThreadLocal<JsonConverter>()
+    {
+        @Override
+        protected JsonConverter initialValue()
+        {
+            return new JsonConverter();
+        }
+    };
 
 //----------------------------------------------------------------------------
 //  Configuration
@@ -192,7 +201,7 @@ extends Layout
             map.put("locationInfo", location);
         }
 
-        return JsonConverter.convert(map);
+        return converterTL.get().convert(map);
     }
 
 

@@ -12,10 +12,21 @@ import java.util.TimeZone;
  *  and null as expected; maps become nested objects; arrays and collections
  *  (list, set, whatever) become arrays; dates become strings formatted as
  *  ISO-8601 timestamps; anything else is converted to a string.
+ *  <p>
+ *  Instances are not thread-safe
  */
 public class JsonConverter
 {
-    public static String convert(Map<String,Object> map)
+    private SimpleDateFormat dateFormatter;
+    
+    public JsonConverter()
+    {
+        dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        dateFormatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+    }
+    
+    
+    public String convert(Map<String,Object> map)
     {
         StringBuilder builder = new StringBuilder(1024);
         appendMap(builder, map);
@@ -23,7 +34,7 @@ public class JsonConverter
     }
 
 
-    private static void append(StringBuilder builder, String key, Object value)
+    private void append(StringBuilder builder, String key, Object value)
     {
         appendString(builder, key);
         builder.append(':');
@@ -31,7 +42,7 @@ public class JsonConverter
     }
 
 
-    private static void appendValue(StringBuilder builder, Object value)
+    private void appendValue(StringBuilder builder, Object value)
     {
         if (value instanceof String)            appendString(builder, (String)value);
         else if (value instanceof Number)       appendNumber(builder, (Number)value);
@@ -45,7 +56,7 @@ public class JsonConverter
     }
 
 
-    private static void appendString(StringBuilder builder, String value)
+    private void appendString(StringBuilder builder, String value)
     {
         builder.append("\"");
         int len = value.length();
@@ -77,33 +88,32 @@ public class JsonConverter
     }
 
 
-    private static void appendNumber(StringBuilder builder, Number value)
+    private void appendNumber(StringBuilder builder, Number value)
     {
         builder.append(value);
     }
 
 
-    private static void appendBoolean(StringBuilder builder, Boolean value)
+    private void appendBoolean(StringBuilder builder, Boolean value)
     {
         builder.append(value.booleanValue() ? "true" : "false");
     }
 
 
-    private static void appendDate(StringBuilder builder, Date value)
+    private void appendDate(StringBuilder builder, Date value)
     {
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-        appendString(builder, formatter.format(value));
+
+        appendString(builder, dateFormatter.format(value));
     }
 
 
-    private static void appendNull(StringBuilder builder)
+    private void appendNull(StringBuilder builder)
     {
         builder.append("null");
     }
 
 
-    private static void appendArray(StringBuilder builder, Object[] value)
+    private void appendArray(StringBuilder builder, Object[] value)
     {
         builder.append("[");
         for (Object entry : value)
@@ -115,7 +125,7 @@ public class JsonConverter
     }
 
 
-    private static void appendCollection(StringBuilder builder, Collection<Object> value)
+    private void appendCollection(StringBuilder builder, Collection<Object> value)
     {
         builder.append("[");
         for (Object entry : value)
@@ -126,7 +136,7 @@ public class JsonConverter
         builder.append("]");
     }
 
-    private static void appendMap(StringBuilder builder, Map<String,Object> map)
+    private void appendMap(StringBuilder builder, Map<String,Object> map)
     {
         builder.append("{");
         for (Map.Entry<String,Object> entry : map.entrySet())
@@ -138,7 +148,7 @@ public class JsonConverter
     }
 
 
-    private static void optAppendComma(StringBuilder builder, char valueInitiator)
+    private void optAppendComma(StringBuilder builder, char valueInitiator)
     {
         if (builder.charAt(builder.length() - 1) != valueInitiator)
             builder.append(",");

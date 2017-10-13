@@ -10,13 +10,15 @@ import org.apache.log4j.spi.LocationInfo;
 import org.apache.log4j.spi.LoggingEvent;
 
 import com.kdgregory.log4j.aws.internal.shared.JsonConverter;
+import com.kdgregory.log4j.aws.internal.shared.Substitutions;
 
 
 /**
  *  Formats a LogMessage as a JSON string. This is useful when directing the
  *  output of the logger into a search engine such as ElasticSearch.
  *  <p>
- *  The JSON object will always contain the following properties:
+ *  The JSON object will always contain the following properties, extracted from the
+ *  Log4J <code>LoggingMessage</code>
  *  <ul>
  *  <li> <code>timestamp</code>:    the date/time that the message was logged.
  *  <li> <code>thread</code>:       the name of the thread where the message was logged.
@@ -38,7 +40,7 @@ import com.kdgregory.log4j.aws.internal.shared.JsonConverter;
  *  </ul>
  *  <p>
  *  The following properties are potentially expensive to compute, so will only
- *  appear if specifically requested via configuration:
+ *  appear if specifically enabled via configuration:
  *  <ul>
  *  <li> <code>locationInfo</code>: the location where the logger was called. This is a
  *                                  child object with the following components:
@@ -48,16 +50,33 @@ import com.kdgregory.log4j.aws.internal.shared.JsonConverter;
  *                                  <li> <code>fileName</code>
  *                                  <li> <code>lineNumber</code>
  *                                  </ul>
+ *  <li> <code>instanceId</code>:   the EC2 instance ID of the machine where the logger is
+ *                                  running. WARNING: do not enable this elsewhere, as the
+ *                                  operation to retrieve this value may take a long time.
+ *  <li> <code>hostname</code>:     the name of the machine where the logger is running, if
+ *                                  available (this is retrieved from <code>RuntimeMxBean</code>
+ *                                  and may not be available on all platforms).
+ *  <li> <code>processId</code>:    the process ID, if available (this is retrieved from
+ *                                  <code>RuntimeMxBean</code> and may not be available on
+ *                                  all platforms).
  *  </ul>
  */
 public class JsonLayout
 extends Layout
 {
+    // these will be lazily populated if enabled
+    private String processId;
+    private String hostname;
+    private String instanceId;
+
 //----------------------------------------------------------------------------
 //  Configuration
 //----------------------------------------------------------------------------
 
     private boolean enableLocation;
+    private boolean enableProcessId;
+    private boolean enableHostname;
+    private boolean enableInstanceId;
 
 
     public void setEnableLocation(boolean value)
@@ -72,6 +91,42 @@ extends Layout
     }
 
 
+    public void setEnableProcessId(boolean value)
+    {
+        enableProcessId = value;
+    }
+
+
+    public boolean getEnableProcessId()
+    {
+        return enableProcessId;
+    }
+
+
+    public void setEnableInstanceId(boolean value)
+    {
+        enableInstanceId = value;
+    }
+
+
+    public boolean getEnableInstanceId()
+    {
+        return enableInstanceId;
+    }
+
+
+    public void setEnableHostname(boolean value)
+    {
+        enableHostname = value;
+    }
+
+
+    public boolean getEnableHostname()
+    {
+        return enableHostname;
+    }
+
+
 //----------------------------------------------------------------------------
 //  Layout Overrides
 //----------------------------------------------------------------------------
@@ -79,7 +134,28 @@ extends Layout
     @Override
     public void activateOptions()
     {
-        // no options that we need to activate
+        Substitutions subs = new Substitutions(new Date(), 0);
+
+        if (enableProcessId)
+        {
+            processId = subs.perform("{pid}");
+            if ("unknown".equals(processId))
+                processId = null;
+        }
+
+        if (enableHostname)
+        {
+            hostname = subs.perform("{hostname}");
+            if ("unknown".equals(hostname))
+                hostname = null;
+        }
+
+        if (enableInstanceId)
+        {
+            instanceId = subs.perform("{instanceId}");
+            if ("{instanceId}".equals(instanceId))
+                instanceId = null;
+        }
     }
 
 
@@ -101,6 +177,10 @@ extends Layout
             map.put("mdc", event.getProperties());
         }
 
+        if (processId != null)  map.put("processId", processId);
+        if (hostname != null)   map.put("hostname", hostname);
+        if (instanceId != null) map.put("instanceId", instanceId);
+
         if (enableLocation)
         {
             LocationInfo info = event.getLocationInformation();
@@ -121,5 +201,4 @@ extends Layout
     {
         return false;
     }
-
 }

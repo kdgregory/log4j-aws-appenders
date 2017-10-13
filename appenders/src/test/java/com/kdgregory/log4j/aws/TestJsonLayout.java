@@ -10,6 +10,7 @@ import java.util.TimeZone;
 
 import org.w3c.dom.Document;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -19,13 +20,13 @@ import org.apache.log4j.NDC;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.WriterAppender;
 
+// I know of a nice library for making XPath-based assertions against a DOM, so convert
+// the generated JSON into XML ... sue me
 import net.sf.practicalxml.converter.JsonConverter;
 import net.sf.practicalxml.junit.DomAsserts;
 import net.sf.practicalxml.xpath.XPathWrapper;
 
 
-// I know of a nice library for making XPath-based assertions against a DOM, so convert
-// the generated JSON into XML ... sue me
 
 public class TestJsonLayout
 {
@@ -175,5 +176,60 @@ public class TestJsonLayout
 
         String lineNumber = new XPathWrapper("/data/locationInfo/lineNumber").evaluateAsString(dom);
         assertFalse("lineNumber", lineNumber.isEmpty());
+    }
+
+
+    @Test
+    public void testProcessId() throws Exception
+    {
+        initialize("TestJsonLayout/testProcessId.properties");
+
+        logger.debug(TEST_MESSAGE);
+
+        captureLoggingOutput();
+        assertCommonElements(TEST_MESSAGE);
+
+        String processId = new XPathWrapper("/data/processId").evaluateAsString(dom);
+        try
+        {
+            Integer.parseInt(processId);
+        }
+        catch (NumberFormatException ex)
+        {
+            fail("process ID was not a number: " + processId);
+        }
+    }
+
+
+    @Test
+    public void testHostname() throws Exception
+    {
+        initialize("TestJsonLayout/testHostname.properties");
+
+        logger.debug(TEST_MESSAGE);
+
+        captureLoggingOutput();
+        assertCommonElements(TEST_MESSAGE);
+
+        String hostname = new XPathWrapper("/data/hostname").evaluateAsString(dom);
+        assertFalse("hostname should be set", hostname.isEmpty());
+    }
+
+
+    @Test
+    @Ignore
+    // don't run this test unless you're on an EC2 instance
+    public void testInstanceId() throws Exception
+    {
+        initialize("TestJsonLayout/testInstanceId.properties");
+
+        logger.debug(TEST_MESSAGE);
+
+        captureLoggingOutput();
+        assertCommonElements(TEST_MESSAGE);
+
+        String instanceId = new XPathWrapper("/data/instanceId").evaluateAsString(dom);
+        assertTrue("instance ID starts with i- (was: " + instanceId + ")",
+                   instanceId.startsWith("i-"));
     }
 }

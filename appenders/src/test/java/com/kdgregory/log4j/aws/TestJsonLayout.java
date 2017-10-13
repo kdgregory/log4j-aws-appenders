@@ -38,6 +38,9 @@ public class TestJsonLayout
     private String rawJson;
     private Document dom;
 
+//----------------------------------------------------------------------------
+//  Support functions
+//----------------------------------------------------------------------------
 
     private void initialize(String propsName)
     throws Exception
@@ -82,11 +85,14 @@ public class TestJsonLayout
         DomAsserts.assertEquals("message", message,                                     dom, "/data/message");
     }
 
+//----------------------------------------------------------------------------
+//  Test cases
+//----------------------------------------------------------------------------
 
     @Test
     public void testSimpleMessage() throws Exception
     {
-        initialize("TestJsonLayout/defaultConfiguration.properties");
+        initialize("TestJsonLayout/default.properties");
 
         logger.debug(TEST_MESSAGE);
 
@@ -98,7 +104,7 @@ public class TestJsonLayout
     @Test
     public void testException() throws Exception
     {
-        initialize("TestJsonLayout/defaultConfiguration.properties");
+        initialize("TestJsonLayout/default.properties");
 
         String exceptionMessage = "throw it out";
         Exception ex = new RuntimeException(exceptionMessage);
@@ -116,7 +122,7 @@ public class TestJsonLayout
     @Test
     public void testNDC() throws Exception
     {
-        initialize("TestJsonLayout/defaultConfiguration.properties");
+        initialize("TestJsonLayout/default.properties");
 
         NDC.push("frist");  // misspelling intentional
         NDC.push("second");
@@ -134,7 +140,7 @@ public class TestJsonLayout
     @Test
     public void testMDC() throws Exception
     {
-        initialize("TestJsonLayout/defaultConfiguration.properties");
+        initialize("TestJsonLayout/default.properties");
 
         MDC.put("foo", "bar");
         MDC.put("argle", "bargle");
@@ -149,5 +155,25 @@ public class TestJsonLayout
         DomAsserts.assertCount("children of mdc",   2,          dom, "/data/mdc/*");
         DomAsserts.assertEquals("mdc child 1",      "bar",      dom, "/data/mdc/foo");
         DomAsserts.assertEquals("mdc child 2",      "bargle",   dom, "/data/mdc/argle");
+    }
+
+
+    @Test
+    public void testLocation() throws Exception
+    {
+        initialize("TestJsonLayout/testLocation.properties");
+
+        logger.debug(TEST_MESSAGE);
+
+        captureLoggingOutput();
+        assertCommonElements(TEST_MESSAGE);
+
+        DomAsserts.assertCount("location present",  1,                                          dom, "/data/locationInfo");
+        DomAsserts.assertEquals("className",        "com.kdgregory.log4j.aws.TestJsonLayout",   dom, "/data/locationInfo/className");
+        DomAsserts.assertEquals("methodName",       "testLocation",                             dom, "/data/locationInfo/methodName");
+        DomAsserts.assertEquals("fileName",         "TestJsonLayout.java",                      dom, "/data/locationInfo/fileName");
+
+        String lineNumber = new XPathWrapper("/data/locationInfo/lineNumber").evaluateAsString(dom);
+        assertFalse("lineNumber", lineNumber.isEmpty());
     }
 }

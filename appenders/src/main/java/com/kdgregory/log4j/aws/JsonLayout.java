@@ -61,14 +61,24 @@ import com.kdgregory.log4j.aws.internal.shared.Substitutions;
  *                                  <code>RuntimeMxBean</code> and may not be available on
  *                                  all platforms).
  *  </ul>
+ *  <p>
+ *  Lastly, you can define a set of user tags, which are written as a child object with
+ *  the key <code>tags</code>. These are intended to provide program-level information,
+ *  in the case where multiple programs send their logs to the same stream. They are set
+ *  as a single comma-separate string, which may contain substitution values (example:
+ *  <code>appName=Fribble,startedAt={startupTimestamp}</code>).
+ *  <p>
+ *  WARNING: you should not rely on the order in which elements are output. Any apparent
+ *  ordering is an implementation choice and subject to change without notice.
  */
 public class JsonLayout
 extends Layout
 {
-    // these will be lazily populated if enabled
+    // if enabled and supported, these will be not-null
     private String processId;
     private String hostname;
     private String instanceId;
+    private Map<String,String> tags;
 
     private ThreadLocal<JsonConverter> converterTL = new ThreadLocal<JsonConverter>()
     {
@@ -86,6 +96,7 @@ extends Layout
     private boolean enableLocation;
     private boolean enableHostname;
     private boolean enableInstanceId;
+    private String rawTags;
 
 
     public void setEnableLocation(boolean value)
@@ -124,6 +135,18 @@ extends Layout
     }
 
 
+    public void setTags(String value)
+    {
+        rawTags = value;
+    }
+
+
+    public String getTags()
+    {
+        return rawTags;
+    }
+
+
 //----------------------------------------------------------------------------
 //  Layout Overrides
 //----------------------------------------------------------------------------
@@ -150,6 +173,23 @@ extends Layout
             if ("{instanceId}".equals(instanceId))
                 instanceId = null;
         }
+
+        if ((rawTags != null) && !rawTags.isEmpty())
+        {
+            tags = new TreeMap<String,String>();
+            for (String tagdef : rawTags.split(","))
+            {
+                String[] splitdef = tagdef.split("=");
+                if (splitdef.length == 2)
+                {
+                    tags.put(splitdef[0], subs.perform(splitdef[1]));
+                }
+                else
+                {
+                    throw new IllegalArgumentException("invalid tag definition: " + tagdef);
+                }
+            }
+        }
     }
 
 
@@ -165,11 +205,13 @@ extends Layout
 
         if (event.getThrowableStrRep() != null) map.put("exception",    event.getThrowableStrRep());
         if (event.getNDC() != null)             map.put("ndc",          event.getNDC());
+        if (tags != null)                       map.put("tags",         tags);
 
         if ((event.getProperties() != null) && ! event.getProperties().isEmpty())
         {
             map.put("mdc", event.getProperties());
         }
+
 
         if (processId != null)  map.put("processId", processId);
         if (hostname != null)   map.put("hostname", hostname);

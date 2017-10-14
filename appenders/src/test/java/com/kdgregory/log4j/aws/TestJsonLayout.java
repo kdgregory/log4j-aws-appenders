@@ -108,6 +108,14 @@ public class TestJsonLayout
 
         captureLoggingOutput();
         assertCommonElements(TEST_MESSAGE);
+
+        DomAsserts.assertCount("no exception",  0,  dom, "/data/exception");
+        DomAsserts.assertCount("no NDC",        0,  dom, "/data/ndc");
+        DomAsserts.assertCount("no MDC",        0,  dom, "/data/mdc");
+        DomAsserts.assertCount("no location",   0,  dom, "/data/locationInfo");
+        DomAsserts.assertCount("no hostname",   0,  dom, "/data/hostname");
+        DomAsserts.assertCount("no instanceId", 0,  dom, "/data/instanceId");
+        DomAsserts.assertCount("no tags",       0,  dom, "/data/tags");
     }
 
 
@@ -218,5 +226,37 @@ public class TestJsonLayout
         String instanceId = new XPathWrapper("/data/instanceId").evaluateAsString(dom);
         assertTrue("instance ID starts with i- (was: " + instanceId + ")",
                    instanceId.startsWith("i-"));
+    }
+
+
+    @Test
+    public void testTags() throws Exception
+    {
+        initialize("TestJsonLayout/testTags.properties");
+
+        logger.debug(TEST_MESSAGE);
+
+        captureLoggingOutput();
+        assertCommonElements(TEST_MESSAGE);
+
+        DomAsserts.assertCount("tags present",  2,          dom, "/data/tags/*");
+        DomAsserts.assertEquals("explicit tag", "bargle",   dom, "/data/tags/argle");
+
+        String dateTag = new XPathWrapper("/data/tags/foo").evaluateAsString(dom);
+        assertTrue("substituted tag (was: " + dateTag + ")", dateTag.startsWith("20") && (dateTag.length() == 8));
+    }
+
+
+    @Test
+    public void testEmptyTags() throws Exception
+    {
+        initialize("TestJsonLayout/testEmptyTags.properties");
+
+        logger.debug(TEST_MESSAGE);
+
+        captureLoggingOutput();
+        assertCommonElements(TEST_MESSAGE);
+
+        DomAsserts.assertCount("tags not present",  0, dom, "/data/tags/*");
     }
 }

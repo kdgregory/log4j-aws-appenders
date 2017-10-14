@@ -70,20 +70,29 @@ public class TestJsonLayout
     private void assertCommonElements(String message)
     throws Exception
     {
+        DomAsserts.assertEquals("thread",  Thread.currentThread().getName(),            dom, "/data/thread");
+        DomAsserts.assertEquals("logger",  "com.kdgregory.log4j.aws.TestJsonLayout",    dom, "/data/logger");
+        DomAsserts.assertEquals("level",   "DEBUG",                                     dom, "/data/level");
+        DomAsserts.assertEquals("message", message,                                     dom, "/data/message");
+
         String timestampAsString = new XPathWrapper("/data/timestamp").evaluateAsString(dom);
         assertFalse("timestamp missing", "".equals(timestampAsString));
 
         SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
         parser.setTimeZone(TimeZone.getTimeZone("UTC"));
         Date timestamp = parser.parse(timestampAsString);
-
-        assertTrue("timestamp > now - 1s", timestamp.getTime() > System.currentTimeMillis() - 1000);
+        assertTrue("timestamp > now - 2s", timestamp.getTime() > System.currentTimeMillis() - 2000);
         assertTrue("timestamp < now",      timestamp.getTime() < System.currentTimeMillis());
 
-        DomAsserts.assertEquals("thread",  Thread.currentThread().getName(),            dom, "/data/thread");
-        DomAsserts.assertEquals("logger",  "com.kdgregory.log4j.aws.TestJsonLayout",    dom, "/data/logger");
-        DomAsserts.assertEquals("level",   "DEBUG",                                     dom, "/data/level");
-        DomAsserts.assertEquals("message", message,                                     dom, "/data/message");
+        String processId = new XPathWrapper("/data/processId").evaluateAsString(dom);
+        try
+        {
+            Integer.parseInt(processId);
+        }
+        catch (NumberFormatException ex)
+        {
+            fail("process ID was not a number: " + processId);
+        }
     }
 
 //----------------------------------------------------------------------------
@@ -176,28 +185,6 @@ public class TestJsonLayout
 
         String lineNumber = new XPathWrapper("/data/locationInfo/lineNumber").evaluateAsString(dom);
         assertFalse("lineNumber", lineNumber.isEmpty());
-    }
-
-
-    @Test
-    public void testProcessId() throws Exception
-    {
-        initialize("TestJsonLayout/testProcessId.properties");
-
-        logger.debug(TEST_MESSAGE);
-
-        captureLoggingOutput();
-        assertCommonElements(TEST_MESSAGE);
-
-        String processId = new XPathWrapper("/data/processId").evaluateAsString(dom);
-        try
-        {
-            Integer.parseInt(processId);
-        }
-        catch (NumberFormatException ex)
-        {
-            fail("process ID was not a number: " + processId);
-        }
     }
 
 

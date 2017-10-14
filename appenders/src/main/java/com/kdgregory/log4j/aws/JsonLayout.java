@@ -17,14 +17,17 @@ import com.kdgregory.log4j.aws.internal.shared.Substitutions;
  *  Formats a LogMessage as a JSON string. This is useful when directing the
  *  output of the logger into a search engine such as ElasticSearch.
  *  <p>
- *  The JSON object will always contain the following properties, extracted from the
- *  Log4J <code>LoggingMessage</code>
+ *  The JSON object will always contain the following properties, most of which
+ *  are extracted from the Log4J <code>LoggingEvent</code>
  *  <ul>
  *  <li> <code>timestamp</code>:    the date/time that the message was logged.
  *  <li> <code>thread</code>:       the name of the thread where the message was logged.
  *  <li> <code>logger</code>:       the name of the logger.
  *  <li> <code>level</code>:        the level of this log message.
  *  <li> <code>message</code>:      the message itself.
+ *  <li> <code>processId</code>:    the PID of the invoking process, if available (this is
+ *                                  retrieved from <code>RuntimeMxBean</code> and may not be
+ *                                  available on all platforms).
  *  </ul>
  *  <p>
  *  The following properties will only appear if they are present in the event:
@@ -54,9 +57,7 @@ import com.kdgregory.log4j.aws.internal.shared.Substitutions;
  *                                  running. WARNING: do not enable this elsewhere, as the
  *                                  operation to retrieve this value may take a long time.
  *  <li> <code>hostname</code>:     the name of the machine where the logger is running, if
- *                                  available (this is retrieved from <code>RuntimeMxBean</code>
- *                                  and may not be available on all platforms).
- *  <li> <code>processId</code>:    the process ID, if available (this is retrieved from
+ *                                  available (this is currently retrieved from
  *                                  <code>RuntimeMxBean</code> and may not be available on
  *                                  all platforms).
  *  </ul>
@@ -68,7 +69,7 @@ extends Layout
     private String processId;
     private String hostname;
     private String instanceId;
-    
+
     private ThreadLocal<JsonConverter> converterTL = new ThreadLocal<JsonConverter>()
     {
         @Override
@@ -83,7 +84,6 @@ extends Layout
 //----------------------------------------------------------------------------
 
     private boolean enableLocation;
-    private boolean enableProcessId;
     private boolean enableHostname;
     private boolean enableInstanceId;
 
@@ -97,18 +97,6 @@ extends Layout
     public boolean getEnableLocation()
     {
         return enableLocation;
-    }
-
-
-    public void setEnableProcessId(boolean value)
-    {
-        enableProcessId = value;
-    }
-
-
-    public boolean getEnableProcessId()
-    {
-        return enableProcessId;
     }
 
 
@@ -145,12 +133,9 @@ extends Layout
     {
         Substitutions subs = new Substitutions(new Date(), 0);
 
-        if (enableProcessId)
-        {
-            processId = subs.perform("{pid}");
-            if ("unknown".equals(processId))
-                processId = null;
-        }
+        processId = subs.perform("{pid}");
+        if ("unknown".equals(processId))
+            processId = null;
 
         if (enableHostname)
         {

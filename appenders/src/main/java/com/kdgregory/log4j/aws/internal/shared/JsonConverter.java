@@ -21,7 +21,7 @@ public class JsonConverter
     
     public JsonConverter()
     {
-        dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         dateFormatter.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
     

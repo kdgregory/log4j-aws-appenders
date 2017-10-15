@@ -82,11 +82,11 @@ public class TestJsonConverter
     @Test
     public void testDate() throws Exception
     {
-        Date d = new Date(1507764490000L);
+        Date d = new Date(1507764490123L);
         String json = converter.convert(new MapBuilder<String,Object>(new TreeMap<String,Object>())
                                             .put("foo", d)
                                             .toMap());
-        assertEquals("{\"foo\":\"2017-10-11T23:28:10Z\"}", json);
+        assertEquals("{\"foo\":\"2017-10-11T23:28:10.123Z\"}", json);
     }
 
 

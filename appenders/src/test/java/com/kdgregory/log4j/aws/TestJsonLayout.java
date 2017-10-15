@@ -78,7 +78,7 @@ public class TestJsonLayout
         String timestampAsString = new XPathWrapper("/data/timestamp").evaluateAsString(dom);
         assertFalse("timestamp missing", "".equals(timestampAsString));
 
-        SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         parser.setTimeZone(TimeZone.getTimeZone("UTC"));
         Date timestamp = parser.parse(timestampAsString);
         assertTrue("timestamp > now - 2s", timestamp.getTime() > System.currentTimeMillis() - 2000);

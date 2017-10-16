@@ -4,6 +4,13 @@
 	</properties>
 
     <body>
+        <release version="1.1.2" date="2017-10-16" description="JSON output">
+            <action dev='kdgregory' type='add'>
+                Added JsonLayout, intended for use with Kinesis/Firehose/ElasticSearch
+                deployments
+            </action>
+        </release>
+
         <release version="1.1.1" date="2017-10-10" description="Message discard">
             <action dev='kdgregory' type='add'>
                 Added configurable message discard, to avoid out-of-memory errors when

@@ -7,6 +7,7 @@ The CloudWatch implementation provides (will provide) the following features:
 * [x] Auto-rotation of log streams, either fixed-delay or hourly/daily
 * [ ] Configurable discard in case of network connectivity issues
 
+
 ## Configuration
 
 Your Log4J configuration will look something like this:
@@ -32,6 +33,22 @@ Name                | Description
 `rotationMode`      | Controls whether auto-rotation is enabled. Values are `none`, `count`, `interval`, `hourly`, and `daily`; default is `none`. See below for more information.
 `rotationInterval`  | Used only for `count` and `interval` rotation modes: for the former, the maximum number of messages, and for the latter, the number of milliseconds between automatic rotations.
 `sequence`          | A value that is incremented each time the stream is rotated. Defaults to 0.
+`batchDelay`        | The time, in milliseconds, that the writer will wait to accumulate messages for a batch. See [design doc](design.md#message-batches) for more information.
+`discardThreshold`  | The threshold count for discarding messages; default is 10,000. See [design doc](design.md#message-discard) for more information.
+`discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
+
+The `logGroup` and `logStream` properties may use [substutions](substitutions.md).
+
+
+## Permissions
+
+To use this appender you will need to grant the following IAM permissions:
+
+* `logs:CreateLogGroup`
+* `logs:CreateLogStream`
+* `logs:DescribeLogGroups`
+* `logs:DescribeLogStreams`
+* `logs:PutLogEvents`
 
 
 ## Logstream rotation

@@ -7,6 +7,7 @@ The CloudWatch implementation provides (will provide) the following features:
 * [x] Auto-rotation of log streams, either fixed-delay or hourly/daily
 * [ ] Configurable discard in case of network connectivity issues
 
+
 ## Configuration
 
 Your Log4J configuration will look something like this:
@@ -37,6 +38,17 @@ Name                | Description
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
 
 The `logGroup` and `logStream` properties may use [substutions](substitutions.md).
+
+
+## Permissions
+
+To use this appender you will need to grant the following IAM permissions:
+
+* `logs:CreateLogGroup`
+* `logs:CreateLogStream`
+* `logs:DescribeLogGroups`
+* `logs:DescribeLogStreams`
+* `logs:PutLogEvents`
 
 
 ## Logstream rotation

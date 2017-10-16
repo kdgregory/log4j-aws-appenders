@@ -43,6 +43,16 @@ Name                | Description
 The `streamName` and `partitionKey` properties may use [substutions](substitutions.md).
 
 
+## Permissions
+
+To use this appender you will need to grant the following IAM permissions:
+
+* `kinesis:CreateStream`
+* `kinesis:DescribeStream`
+* `kinesis:IncreaseStreamRetentionPeriod`
+* `kinesis:PutRecords`
+
+
 ## Partition Keys
 
 Kinesis supports high-performance parallel writes by supporting multiple shards per stream; each

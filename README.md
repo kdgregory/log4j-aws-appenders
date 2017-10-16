@@ -12,18 +12,23 @@ wanted if I was willing to reinvent a wheel. After some thought, I expanded the 
 why not reinvent several wheels, and be able to write to multiple destinations? It's
 been more than a dozen weekends since I started the project; I keep getting new ideas.
 
-Here are the destinations I plan to support. No idea how many weekends they'll take.
+Here are the destinations I (plan to) support:
 
 * [x] [CloudWatch Logs](docs/cloudwatch.md): basic logging that allows keyword search and time ranges
 * [x] [Kinesis Streams](docs/kinesis.md): can be used as a source for Kinesis Firehose, and thence ElasticSearch or S3 storage
 * [ ] SNS: I think it might be useful to create an "error notifier"
+
+In addition to the appenders, I've added a [JSON layout](docs/jsonlayout.md) to make
+it easier to send data to an ElasticSearch/Kibana cluster.
 
 
 ## Usage
 
 To use these appenders, include the `aws-appenders` JAR in your project, and configure
 the desired appender in your Log4J properties. Each appender's documentation gives an
-example configuration.
+example configuration, and I have created an [example project](example) that writes to
+all of the supported destinations (along with a CloudFormation template to set up Kinesis
+Firehose and ElasticSearch).
 
 ### Dependency Versions
 
@@ -33,7 +38,8 @@ depedencies are as follows:
 
 * JDK: 1.6  
   The appender code does not rely on standard libary classes/methods introduced
-  after 1.6. The AWS SDK, however, might.
+  after 1.6. I have compiled and run the example on an OpenJDK 1.6 installation.
+  Be aware, however, that the AWS SDK might change at any time.
 * Log4J: 1.2.16  
   This is the first version that implements `LoggingEvent.getTimeStamp()`, which
   is needed to order messages when sending to AWS. It's been around since 2010,

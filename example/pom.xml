@@ -20,7 +20,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <aws-appenders.version>1.1.2-SNAPSHOT</aws-appenders.version>
+        <aws-appenders.version>1.1.2</aws-appenders.version>
         <aws-sdk.version>1.11.213</aws-sdk.version>
         <log4j.version>1.2.17</log4j.version>
     </properties>

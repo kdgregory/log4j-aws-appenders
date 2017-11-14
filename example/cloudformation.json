@@ -20,6 +20,68 @@
                 "RetentionInDays": 1
             }
         },
+        "CloudWatchWriterPolicy": {
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Properties": {
+                "ManagedPolicyName": "AppenderExampleCloudWatchWriter",
+                "Description": "Allows logger to create/write the example CloudWatch log",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "logs:DescribeLogGroups"
+                            ],
+                            "Resource":
+                                { "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*" }
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "logs:CreateLogGroup",
+                                "logs:CreateLogStream",
+                                "logs:DescribeLogStreams",
+                                "logs:PutLogEvents"
+                            ],
+                            "Resource": [
+                                { "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogGroup}" },
+                                { "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogGroup}:*" }
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "CloudWatchReaderPolicy": {
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Properties": {
+                "ManagedPolicyName": "AppenderExampleCloudWatchReader",
+                "Description": "Allows reading the example CloudWatch log",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "logs:DescribeLogGroups"
+                            ],
+                            "Resource":
+                                { "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*" }
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "logs:DescribeLogStreams",
+                                "logs:GetLogEvents"
+                            ],
+                            "Resource":
+                                { "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogGroup}:*" }
+                        }
+                    ]
+                }
+            }
+        },
         "KinesisStream": {
             "Type": "AWS::Kinesis::Stream",
             "Properties": {
@@ -27,11 +89,31 @@
                 "ShardCount": 1
             }
         },
+        "KinesisWriterPolicy": {
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Properties": {
+                "ManagedPolicyName": "AppenderExampleKinesisWriter",
+                "Description": "Allows logger to create/write example Kinesis stream",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": {
+                        "Effect": "Allow",
+                        "Action": [
+                            "kinesis:CreateStream",
+                            "kinesis:DescribeStream",
+                            "kinesis:IncreaseStreamRetentionPeriod",
+                            "kinesis:PutRecords"
+                        ],
+                        "Resource": { "Fn::Sub": "arn:aws:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${KinesisStream}" }
+                    }
+                }
+            }
+        },
         "KinesisReaderPolicy": {
             "Type": "AWS::IAM::ManagedPolicy",
             "Properties": {
                 "ManagedPolicyName": "AppenderExampleKinesisReader",
-                "Description": "Provides read-only access to the example stream",
+                "Description": "Allows reading the example Kinesis stream (used by Firehose)",
                 "PolicyDocument": {
                     "Version": "2012-10-17",
                     "Statement": {
@@ -41,7 +123,7 @@
                             "kinesis:GetShardIterator",
                             "kinesis:GetRecords"
                         ],
-                        "Resource": { "Fn::Sub": "arn:aws:kinesis:${AWS::Region}:${AWS::AccountId}:stream/AppenderExample" }
+                        "Resource": { "Fn::Sub": "arn:aws:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${KinesisStream}" }
                     }
                 }
             }

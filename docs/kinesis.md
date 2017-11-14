@@ -8,7 +8,7 @@ The Kinesis implementation provides (will provide) the following features:
 
 * [x] Configurable destination stream, with substitution variables to specify stream name
 * [x] Auto-creation of streams, with configurable number of shards
-* [ ] JSON messages (via layout)
+* [x] JSON messages (via layout)
 * [ ] Random partition keys, to support high-volume streams
 
 

@@ -16,7 +16,7 @@ Here are the destinations I (plan to) support:
 
 * [x] [CloudWatch Logs](docs/cloudwatch.md): basic logging that allows keyword search and time ranges
 * [x] [Kinesis Streams](docs/kinesis.md): can be used as a source for Kinesis Firehose, and thence ElasticSearch or S3 storage
-* [ ] SNS: I think it might be useful to create an "error notifier"
+* [x] [SNS](docs/sns.md): usedful for real-time error notifications
 
 In addition to the appenders, I've added a [JSON layout](docs/jsonlayout.md) to make
 it easier to send data to an ElasticSearch/Kibana cluster.
@@ -50,6 +50,15 @@ depedencies are as follows:
   with that version; I have built and tested with 1.10.1. Note, however, that the
   integration tests use client-builder classes that weren't introduced until midway
   in the 1.11.x release sequence.
+
+You will require the following AWS dependencies to use the appenders (all of these
+have the `com.amazonaws` group ID):
+
+* `aws-java-sdk-logs` to use `CloudWatchAppender`
+* `aws-java-sdk-kinesis` to use `KinesisAppender`
+* `aws-java-sdk-sns` to use `SNSAppender`
+* `aws-java-sdk-sts` to use the `aws:accountId` substitution variable (typically used with `SNSAppender`)
+
 
 I have made an intentional effort to limit dependencies to the bare minimum. This
 has in some cases meant that I write internal implementations for functions that

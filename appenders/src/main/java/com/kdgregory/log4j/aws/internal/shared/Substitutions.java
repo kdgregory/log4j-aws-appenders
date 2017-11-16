@@ -56,7 +56,8 @@ public class Substitutions
 
 
     /**
-     *  Applies all substitutions.
+     *  Applies all substitutions. This is not particularly performant, but it
+     *  won't be called frequently.
      */
     public String perform(String input)
     {
@@ -74,10 +75,12 @@ public class Substitutions
                      substitute("{pid}",             pid,
                      substitute("{hostname}",        hostname,
                      substitute("{sequence}",        sequence,
-                     substituteInstanceId(
+                     substituteAwsAccountId(
+                     substituteEC2InstanceId(
+                     substituteEC2Region(
                      substituteSysprop(
                      substituteEnvar(
-                     input))))))))));
+                     input))))))))))));
         }
         while (! output.equals(input));
         return output;
@@ -104,23 +107,65 @@ public class Substitutions
 
 
     /**
+     *  Substitutes the AWS account ID. This makes a call to AWS.
+     */
+    private String substituteAwsAccountId(String input)
+    {
+        String tag = "{aws:accountId}";
+        int index = input.indexOf(tag);
+        if (index < 0)
+            return input;
+
+        String accountId = Utils.retrieveAWSAccountId();
+        return (accountId != null)
+             ? substitute(tag, accountId, input)
+             : input;
+    }
+
+
+    /**
      *  Substitutes the EC2 instance ID. If not running on EC2 we won't be able
      *  to retrieve instance metadata (and it takes a long time to learn that,
      *  waiting for a timeout) so this isn't handled as a "simple" substitution.
      */
-    private String substituteInstanceId(String input)
+    private String substituteEC2InstanceId(String input)
     {
-        int index = input.indexOf("{instanceId}");
+        String tag = "{ec2:instanceId}";
+        int index = input.indexOf(tag);
         if (index < 0)
-            return input;
+        {
+            tag = "{instanceId}";
+            index = input.indexOf(tag);
+            if (index < 0)
+                return input;
+        }
 
         String instanceId = EC2MetadataUtils.getInstanceId();
         if ((instanceId == null) || (instanceId.length() == 0))
             return input;
 
-        return substitute("{instanceId}", instanceId, input);
+        return substitute(tag, instanceId, input);
     }
 
+
+    /**
+     *  Substitutes the EC2 regsion. If not running on EC2 we won't be able
+     *  to retrieve instance metadata (and it takes a long time to learn that,
+     *  waiting for a timeout) so this isn't handled as a "simple" substitution.
+     */
+    private String substituteEC2Region(String input)
+    {
+        String tag = "{ec2:region}";
+        int index = input.indexOf(tag);
+        if (index < 0)
+            return input;
+
+        String region = EC2MetadataUtils.getEC2InstanceRegion();
+        if ((region == null) || (region.length() == 0))
+            return input;
+
+        return substitute(tag, region, input);
+    }
 
     /**
      *  Substitutes system properties, where the property depends on the tag.

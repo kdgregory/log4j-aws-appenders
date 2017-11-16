@@ -22,7 +22,7 @@ The appender provides the following properties (also described in the JavaDoc):
 
 Name                | Description
 --------------------|----------------------------------------------------------------
-`topicArn`          | The SNS topic that will receive messages. This topic must already exist.
+`topicArn`          | The SNS topic that will receive messages. This topic must already exist. You can use [substitutions](substitutions.md) in this name; `aws:accountId` is particularly useful.
 `retries`           | The number of times that the appender will try to send a message before dropping it. Default is 3.
 
 

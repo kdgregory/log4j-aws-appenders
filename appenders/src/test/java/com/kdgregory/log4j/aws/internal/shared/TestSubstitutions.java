@@ -3,13 +3,17 @@ package com.kdgregory.log4j.aws.internal.shared;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
+
+import org.apache.log4j.PropertyConfigurator;
 
 import net.sf.kdgcommons.test.StringAsserts;
 
@@ -21,6 +25,16 @@ import com.kdgregory.log4j.aws.internal.shared.Substitutions;
 public class TestSubstitutions
 {
     private static Date TEST_DATE = new Date(1496082062000L);    // Mon May 29 14:21:02 EDT 2017
+    
+    @Before
+    public void setUp() throws Exception
+    {
+        // since we make AWS calls within this test, we need to configure a logger in
+        // case those calls go awry; otherwise, Log4J will grab whatever it finds
+        
+        URL config = ClassLoader.getSystemResource("log4j.properties");
+        PropertyConfigurator.configure(config);
+    }
 
 
     @Test
@@ -104,6 +118,15 @@ public class TestSubstitutions
     }
 
 
+    @Test
+    public void testAWSAccountId() throws Exception
+    {
+        Substitutions subs = new Substitutions(TEST_DATE, 0);
+
+        StringAsserts.assertRegex("[0-9]+", subs.perform("{aws:accountId}"));
+    }
+
+
     // if not running on EC2 this test will take a long time to run and then fail
     // ... trust me that I've tested it on EC2
     @Test @Ignore
@@ -112,6 +135,18 @@ public class TestSubstitutions
         Substitutions subs = new Substitutions(TEST_DATE, 0);
 
         assertEquals(EC2MetadataUtils.getInstanceId(), subs.perform("{instanceId}"));
+        assertEquals(EC2MetadataUtils.getInstanceId(), subs.perform("{ec2:instanceId}"));
+    }
+
+
+    // if not running on EC2 this test will take a long time to run and then fail
+    // ... trust me that I've tested it on EC2
+    @Test @Ignore
+    public void testEC2Region() throws Exception
+    {
+        Substitutions subs = new Substitutions(TEST_DATE, 0);
+
+        assertEquals(EC2MetadataUtils.getEC2InstanceRegion(), subs.perform("{ec2:region}"));
     }
 
 

@@ -22,7 +22,7 @@ The appender provides the following properties (also described in the JavaDoc):
 
 Name                | Description
 --------------------|----------------------------------------------------------------
-`topicArn`          | The SNS topic that will receive messages. This topic must already exist. You can use [substitutions](substitutions.md) in this name; `aws:accountId` is particularly useful.
+`topicArn`          | The SNS topic that will receive messages. You can use [substitutions](substitutions.md) in this value; `aws:accountId` is particularly useful.
 `retries`           | The number of times that the appender will try to send a message before dropping it. Default is 3.
 
 
@@ -35,9 +35,15 @@ Unlike other appenders in this library, the SNS appender does not attempt to bat
 them as soon as possible after they are logged. While you can configure batching and discard parameters
 (they are common to all appenders) such configuration will have no effect.
 
+Like the other appenders, this appender will attempt to create the topic if it does not already exist.
+This functionality is of dubious utility: the newly created topic won't have any subscriptions, so any
+messages sent to it will be lost.
+
 
 ## Permissions
 
 To use this appender you will need to grant the following IAM permissions:
 
+* `sns:CreateTopic`
+* `sns:ListTopics`
 * `sns:Publish`

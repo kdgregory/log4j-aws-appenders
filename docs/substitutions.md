@@ -17,7 +17,7 @@ Variable            | Description
 `instanceId`        | _Deprecated_: use `ec2:instanceId`
 `aws:accountId`     | AWS account ID. This exists to support SNS topic ARNs, should not be used elsewhere.
 `ec2:instanceId`    | EC2 instance ID; see below
-`ec2:region`        | Current AWS region; see below
+`ec2:region`        | Region where the current instance is running; see below.
 `env:XXX`           | Environment variable `XXX`
 `sysprop:XXX`       | System property `XXX`
 

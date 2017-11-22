@@ -58,11 +58,23 @@ public class TestSNSAppender
 //----------------------------------------------------------------------------
 
     @Test
-    public void testConfiguration() throws Exception
+    public void testConfigurationByName() throws Exception
     {
-        initialize("TestSNSAppender/testConfiguration.properties");
+        initialize("TestSNSAppender/testConfigurationByName.properties");
 
-        assertEquals("topicArn",      "argle",          appender.getTopicArn());
-        assertEquals("batch delay",   1L,               appender.getBatchDelay());
+        assertEquals("topicName",     "example",    appender.getTopicName());
+        assertEquals("topicArn",      null,         appender.getTopicArn());
+        assertEquals("batch delay",   1L,           appender.getBatchDelay());
+    }
+
+
+    @Test
+    public void testConfigurationByArn() throws Exception
+    {
+        initialize("TestSNSAppender/testConfigurationByArn.properties");
+
+        assertEquals("topicName",     null,         appender.getTopicName());
+        assertEquals("topicArn",      "example",    appender.getTopicArn());
+        assertEquals("batch delay",   1L,           appender.getBatchDelay());
     }
 }

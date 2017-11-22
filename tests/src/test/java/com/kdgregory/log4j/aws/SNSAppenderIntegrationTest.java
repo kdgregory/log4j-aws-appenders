@@ -70,7 +70,6 @@ public class SNSAppenderIntegrationTest
 
     /**
      *  Creates the topic and waits for it to become available.
-     *  @throws Exception
      */
     private void createTopic()
     throws Exception

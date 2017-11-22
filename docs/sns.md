@@ -22,28 +22,38 @@ The appender provides the following properties (also described in the JavaDoc):
 
 Name                | Description
 --------------------|----------------------------------------------------------------
-`topicArn`          | The SNS topic that will receive messages. You can use [substitutions](substitutions.md) in this value; `aws:accountId` is particularly useful.
-`retries`           | The number of times that the appender will try to send a message before dropping it. Default is 3.
+`topicName`         | The name of the SNS topic that will receive messages; no default value. See below for more information.
+`topicArn`          | The ARN of the SNS topic that will receive messages; no default value. See below for more information.
+`discardThreshold`  | The threshold count for discarding unsent messages; default is 1,000. See [design doc](design.md#message-discard) for more information.
+`discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
 
 
 ## Operation
 
 At present the SNS appender writes messages as simple text strings, formatted according to the layout
-manager; it does not support platform-specific payloads.
+manager; it does not support platform-specific payloads. Note that, if you send the output to SQS you
+will need to specify that the subscription also accepts raw messages.
 
-Unlike other appenders in this library, the SNS appender does not attempt to batch messages; it will send
-them as soon as possible after they are logged. While you can configure batching and discard parameters
-(they are common to all appenders) such configuration will have no effect.
+You can specify the destination topic either by ARN or name. When specifying topic by ARN, the topic
+must already exist. If you specify the topic by name, the appender will attempt to find an existing
+topic with the specified name. If unable to find an existing topic it will create the topic.
 
-Like the other appenders, this appender will attempt to create the topic if it does not already exist.
-This functionality is of dubious utility: the newly created topic won't have any subscriptions, so any
-messages sent to it will be lost.
+> The appender assumes that, when listing topics, it will only receive topics for the current region.
+  That constraint is _not_ explicitly stated in the [API doc](http://docs.aws.amazon.com/sns/latest/api/API_ListTopics.html)o
+  but is the current observed behavior. If the behavior ever changes, the appender may choose a topic
+  in another region.
+
+You may use [substitutions](substitutions.md) in either the topic name or ARN. When constructing an
+ARN it's particularly useful to use `{env:AWS_REGION}` or `{ec2:region}` along with `{aws:accountId}`.
+
+While the appender exposes the batch delay configuration parameters, these are ignored. Each message
+will be sent as soon as possible after it's passed to the appender (SNS does not support message batching).
 
 
 ## Permissions
 
 To use this appender you will need to grant the following IAM permissions:
 
-* `sns:CreateTopic`
+* `sns:CreateTopic` (may be omitted if topic already exists)
 * `sns:ListTopics`
 * `sns:Publish`

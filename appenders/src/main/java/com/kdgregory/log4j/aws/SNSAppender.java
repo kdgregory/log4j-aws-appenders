@@ -113,7 +113,6 @@ extends AbstractAppender<SNSWriterConfig>
 //  AbstractAppender
 //----------------------------------------------------------------------------
 
-
     @Override
     protected SNSWriterConfig generateWriterConfig()
     {

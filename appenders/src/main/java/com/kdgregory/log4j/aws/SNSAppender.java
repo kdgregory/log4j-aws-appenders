@@ -1,11 +1,15 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.aws;
 
+import java.util.Date;
+
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
+import com.kdgregory.log4j.aws.internal.shared.Substitutions;
 import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
+import com.kdgregory.log4j.aws.internal.sns.SNSConstants;
 import com.kdgregory.log4j.aws.internal.sns.SNSLogWriter;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
 
@@ -113,13 +117,19 @@ extends AbstractAppender<SNSWriterConfig>
     @Override
     protected SNSWriterConfig generateWriterConfig()
     {
-        throw new UnsupportedOperationException("FIXME - implement");
+        Substitutions subs = new Substitutions(new Date(), sequence.get());
+
+        // TODO: validate topic names -- beware nulls
+        String actualTopicName  = subs.perform(topicName);
+        String actualTopicArn   = subs.perform(topicArn);
+
+        return new SNSWriterConfig(actualTopicName, actualTopicArn);
     }
 
     @Override
     protected boolean isMessageTooLarge(LogMessage message)
     {
-        throw new UnsupportedOperationException("FIXME - implement");
+        return message.size() > SNSConstants.MAX_MESSAGE_BYTES;
     }
 
 }

@@ -1,18 +1,19 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.aws;
 
+import static net.sf.kdgcommons.test.StringAsserts.*;
+
 import java.net.URL;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
-import org.apache.log4j.helpers.LogLog;
 
 import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
+import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSWriter;
 import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.sns.TestableSNSAppender;
 
@@ -39,20 +40,6 @@ public class TestSNSAppender
     }
 
 
-    @Before
-    public void setUp()
-    {
-        LogLog.setQuietMode(true);
-    }
-
-
-    @After
-    public void tearDown()
-    {
-        LogLog.setQuietMode(false);
-    }
-
-
 //----------------------------------------------------------------------------
 //  Tests
 //----------------------------------------------------------------------------
@@ -76,5 +63,34 @@ public class TestSNSAppender
         assertEquals("topicName",     null,         appender.getTopicName());
         assertEquals("topicArn",      "example",    appender.getTopicArn());
         assertEquals("batch delay",   1L,           appender.getBatchDelay());
+    }
+
+
+    @Test
+    public void testAppend() throws Exception
+    {
+        initialize("TestSNSAppender/testAppend.properties");
+        MockSNSWriterFactory writerFactory = appender.getWriterFactory();
+
+        assertNull("before messages, writer is null",                   appender.getWriter());
+
+        logger.debug("first message");
+
+        MockSNSWriter writer = appender.getWriter();
+
+        assertNotNull("after message 1, writer is initialized",         writer);
+        assertEquals("after message 1, calls to writer factory",        1,                  writerFactory.invocationCount);
+        assertRegex("topic name",                                       "name-[0-9]{8}",    writer.config.topicName);
+        assertRegex("topic ARN",                                        "arn-[0-9]{8}",     writer.config.topicArn);
+        assertEquals("last message appended",                           "first message",    writer.lastMessage.getMessage());
+        assertEquals("number of messages in writer queue",              1,                  writer.messages.size());
+        assertEquals("first message in queue",                          "first message",    writer.messages.get(0).getMessage());
+
+        logger.debug("second message");
+
+        assertEquals("last message appended",                           "second message",   writer.lastMessage.getMessage());
+        assertEquals("number of messages in writer queue",              2,                  writer.messages.size());
+        assertEquals("first message in queue",                          "first message",    writer.messages.get(0).getMessage());
+        assertEquals("second message in queue",                         "second message",   writer.messages.get(1).getMessage());
     }
 }

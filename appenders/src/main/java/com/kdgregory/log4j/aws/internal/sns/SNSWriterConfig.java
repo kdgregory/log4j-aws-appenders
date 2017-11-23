@@ -8,14 +8,17 @@ package com.kdgregory.log4j.aws.internal.sns;
  */
 public class SNSWriterConfig
 {
+    public String topicName;
     public String topicArn;
 
 
     /**
-     *  @param  topicArn    Identifies the destination topic for messages.
+     *  @param  topicName   Identifies the destination topic by name.
+     *  @param  topicArn    Identifies the destination topic by ARN.
      */
-    public SNSWriterConfig(String topicArn)
+    public SNSWriterConfig(String topicName, String topicArn)
     {
+        this.topicName = topicName;
         this.topicArn = topicArn;
     }
 }

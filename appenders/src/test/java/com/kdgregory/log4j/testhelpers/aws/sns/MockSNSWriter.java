@@ -17,12 +17,12 @@ implements LogWriter
 
     public boolean stopped;
 
-    public String topicArn;
+    public SNSWriterConfig config;
 
 
     public MockSNSWriter(SNSWriterConfig config)
     {
-        this.topicArn = config.topicArn;
+        this.config = config;
     }
 
 

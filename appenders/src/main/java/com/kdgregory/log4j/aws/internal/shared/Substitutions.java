@@ -28,7 +28,7 @@ public class Substitutions
     private String sequence;
 
 
-    public Substitutions(Date curremtDate, int sequence)
+    public Substitutions(Date currentDate, int sequence)
     {
         RuntimeMXBean runtimeMx = ManagementFactory.getRuntimeMXBean();
         String vmName = runtimeMx.getName();
@@ -43,11 +43,11 @@ public class Substitutions
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        date = dateFormat.format(curremtDate);
+        date = dateFormat.format(currentDate);
 
         SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyyMMddHHmmss");
         timestampFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        timestamp = timestampFormat.format(curremtDate);
+        timestamp = timestampFormat.format(currentDate);
         hourlyTimestamp = timestamp.substring(0, 10) + "0000";  // yeah, it's a hack
         startupTimestamp = timestampFormat.format(new Date(runtimeMx.getStartTime()));
 
@@ -57,12 +57,12 @@ public class Substitutions
 
     /**
      *  Applies all substitutions. This is not particularly performant, but it
-     *  won't be called frequently.
+     *  won't be called frequently. If passed <code>null</code> returns it.
      */
     public String perform(String input)
     {
         if (input == null)
-            return "";
+            return null;
 
         String output = input;
         do

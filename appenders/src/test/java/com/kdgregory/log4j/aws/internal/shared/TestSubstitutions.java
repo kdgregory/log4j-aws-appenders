@@ -41,7 +41,7 @@ public class TestSubstitutions
     public void testNullInput() throws Exception
     {
         Substitutions subs = new Substitutions(TEST_DATE, 0);
-        assertEquals("", subs.perform(null));
+        assertEquals(null, subs.perform(null));
     }
 
 

@@ -3,10 +3,12 @@ package com.kdgregory.log4j.aws.internal.kinesis;
 
 import java.util.regex.Pattern;
 
+
 /**
- *  Holds limits and other constants for CloudWatch Logs.
+ *  Holds limits and other constants for Kinesis Streams.
  *  <p>
- *  See http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
+ *  See http://docs.aws.amazon.com/kinesis/latest/APIReference/API_CreateStream.html
+ *  and http://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html
  */
 public class KinesisConstants
 {

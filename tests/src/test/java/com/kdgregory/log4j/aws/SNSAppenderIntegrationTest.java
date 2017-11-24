@@ -23,6 +23,8 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.services.sqs.model.*;
 
+import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
+
 
 public class SNSAppenderIntegrationTest
 {
@@ -36,6 +38,51 @@ public class SNSAppenderIntegrationTest
     private String topicArn;        // set after the topic has been created
     private String queueArn;        // set after the queue has been created
     private String queueUrl;        // ditto
+
+
+//----------------------------------------------------------------------------
+//  Testcases
+//----------------------------------------------------------------------------
+
+    @Test
+    public void smoketestByArn() throws Exception
+    {
+        setUp("SNSAppenderIntegrationTest-smoketestByArn.properties");
+        mainLogger.info("smoketest: starting");
+
+        createTopicAndQueue();
+
+        final int numMessages = 11;
+
+        Logger testLogger = Logger.getLogger("TestLogger");
+        (new MessageWriter(testLogger, numMessages)).run();
+
+        mainLogger.info("smoketest: reading messages");
+        List<String> messages = retrieveMessages(numMessages);
+
+        assertEquals("number of messages", numMessages, messages.size());
+    }
+
+
+    @Test
+    public void smoketestByName() throws Exception
+    {
+        setUp("SNSAppenderIntegrationTest-smoketestByName.properties");
+        mainLogger.info("smoketest: starting");
+
+        createTopicAndQueue();
+
+        final int numMessages = 11;
+
+        Logger testLogger = Logger.getLogger("TestLogger");
+        (new MessageWriter(testLogger, numMessages)).run();
+
+        mainLogger.info("smoketest: reading messages");
+        List<String> messages = retrieveMessages(numMessages);
+
+        assertEquals("number of messages", numMessages, messages.size());
+    }
+
 
 //----------------------------------------------------------------------------
 //  Helpers
@@ -77,6 +124,8 @@ public class SNSAppenderIntegrationTest
         CreateTopicRequest createTopicRequest = new CreateTopicRequest().withName(resourceName);
         CreateTopicResult createTopicResponse = snsClient.createTopic(createTopicRequest);
         topicArn = createTopicResponse.getTopicArn();
+
+        System.setProperty("SNSAppenderIntegrationTest.topicArn", topicArn);
 
         for (int ii = 0 ; ii <  30 ; ii++)
         {
@@ -225,29 +274,5 @@ public class SNSAppenderIntegrationTest
             }
         }
         return result;
-    }
-
-
-//----------------------------------------------------------------------------
-//  Testcases
-//----------------------------------------------------------------------------
-
-    @Test
-    public void smoketest() throws Exception
-    {
-        setUp("SNSAppenderIntegrationTest-smoketest.properties");
-        mainLogger.info("smoketest: starting");
-
-        createTopicAndQueue();
-
-        final int numMessages = 1001;
-
-        Logger testLogger = Logger.getLogger("TestLogger");
-//        (new MessageWriter(testLogger, numMessages)).run();
-
-        mainLogger.info("smoketest: reading messages");
-        List<String> messages = retrieveMessages(numMessages);
-
-        assertEquals("number of messages", numMessages, messages.size());
     }
 }

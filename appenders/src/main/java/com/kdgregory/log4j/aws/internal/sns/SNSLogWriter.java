@@ -24,11 +24,11 @@ import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 public class SNSLogWriter
 extends AbstractLogWriter
 {
-    private SNSWriterConfig config;
-    private AmazonSNS client;
+    protected SNSWriterConfig config;
+    protected AmazonSNS client;
 
     // this is the ARN used to publish messages
-    private String topicArn;
+    protected String topicArn;
 
 
     public SNSLogWriter(SNSWriterConfig config)

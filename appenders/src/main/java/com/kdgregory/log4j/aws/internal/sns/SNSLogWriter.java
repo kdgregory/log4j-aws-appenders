@@ -157,7 +157,7 @@ extends AbstractLogWriter
 
         do
         {
-            response = client.listTopics();
+            response = client.listTopics(request);
             for (Topic topic : response.getTopics())
             {
                 result.add(topic.getTopicArn());
@@ -175,13 +175,11 @@ extends AbstractLogWriter
     private Map<String,String> retrieveAllTopicsByName()
     {
         Map<String,String> result = new HashMap<String,String>();
-        // TODO - verify whether this is restricted to region, try to restrict if yes
         for (String arn : retrieveAllTopics())
         {
             String topicName = arn.replaceFirst(".*:", "");
             result.put(topicName, arn);
         }
-
         return result;
     }
 }

@@ -4,6 +4,7 @@ package com.kdgregory.log4j.aws;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import java.net.URL;
+import java.util.Arrays;
 
 import org.junit.Test;
 
@@ -21,6 +22,7 @@ import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
 import com.kdgregory.log4j.testhelpers.aws.ThrowingWriterFactory;
+import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSClient;
 import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSWriter;
 import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.sns.TestableSNSAppender;
@@ -153,6 +155,124 @@ public class TestSNSAppender
         assertFalse("under max size",          appender.isMessageTooLarge(LogMessage.create(undersizeMessage)));
         assertFalse("at max size",             appender.isMessageTooLarge(LogMessage.create(okMessage)));
         assertFalse("over max size",           appender.isMessageTooLarge(LogMessage.create(oversizeMessage)));
+    }
+
+
+    @Test
+    public void testWriterOperationByArn() throws Exception
+    {
+        initialize("TestSNSAppender/testWriterOperationByArn.properties");
+
+        MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("argle", "example", "bargle"));
+        appender.setWriterFactory(mockClient.newWriterFactory());
+        appender.setThreadFactory(new DefaultThreadFactory());
+
+        logger.info("message one");
+        mockClient.waitForWriter();
+
+        logger.info("message two");
+        mockClient.waitForWriter();
+
+        assertEquals("invocations of listTopics",       1,              mockClient.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
+        assertEquals("invocations of publish",          2,              mockClient.publishInvocationCount);
+        assertEquals("last message published",          "message two",  mockClient.lastMessage);
+    }
+
+
+    @Test
+    public void testWriterOperationByArnMultipleTopicLists() throws Exception
+    {
+        initialize("TestSNSAppender/testWriterOperationByArn.properties");
+
+        MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("argle", "example"), Arrays.asList("bargle"));
+        appender.setWriterFactory(mockClient.newWriterFactory());
+        appender.setThreadFactory(new DefaultThreadFactory());
+
+        logger.info("message one");
+        mockClient.waitForWriter();
+
+        assertEquals("invocations of listTopics",       2,              mockClient.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
+        assertEquals("invocations of publish",          1,              mockClient.publishInvocationCount);
+        assertEquals("last message published",          "message one",  mockClient.lastMessage);
+    }
+
+
+    @Test
+    public void testWriterOperationByArnWithNoExistingTopic() throws Exception
+    {
+        initialize("TestSNSAppender/testWriterOperationByArn.properties");
+
+        MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("argle", "bargle"));
+        appender.setWriterFactory(mockClient.newWriterFactory());
+        appender.setThreadFactory(new InlineThreadFactory());   // since writer never initializes we can run inline
+
+        logger.info("message");
+
+        assertEquals("invocations of listTopics",           1,          mockClient.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",          0,          mockClient.createTopicInvocationCount);
+        assertEquals("invocations of publish",              0,          mockClient.publishInvocationCount);
+    }
+
+
+    @Test
+    public void testWriterOperationByName() throws Exception
+    {
+        initialize("TestSNSAppender/testWriterOperationByName.properties");
+
+        MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("argle", "example", "bargle"));
+        appender.setWriterFactory(mockClient.newWriterFactory());
+        appender.setThreadFactory(new DefaultThreadFactory());
+
+        logger.info("message one");
+        mockClient.waitForWriter();
+
+        logger.info("message two");
+        mockClient.waitForWriter();
+
+        assertEquals("invocations of listTopics",       1,              mockClient.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
+        assertEquals("invocations of publish",          2,              mockClient.publishInvocationCount);
+        assertEquals("last message published",          "message two",  mockClient.lastMessage);
+    }
+
+
+    @Test
+    public void testWriterOperationByNameMultipleTopicLists() throws Exception
+    {
+        initialize("TestSNSAppender/testWriterOperationByName.properties");
+
+        MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("argle", "example"), Arrays.asList("bargle"));
+        appender.setWriterFactory(mockClient.newWriterFactory());
+        appender.setThreadFactory(new DefaultThreadFactory());
+
+        logger.info("message one");
+        mockClient.waitForWriter();
+
+        assertEquals("invocations of listTopics",       2,              mockClient.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
+        assertEquals("invocations of publish",          1,              mockClient.publishInvocationCount);
+        assertEquals("last message published",          "message one",  mockClient.lastMessage);
+    }
+
+
+    @Test
+    public void testWriterOperationByNameNoExistingTopic() throws Exception
+    {
+        initialize("TestSNSAppender/testWriterOperationByName.properties");
+
+        MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("argle", "bargle"));
+        appender.setWriterFactory(mockClient.newWriterFactory());
+        appender.setThreadFactory(new DefaultThreadFactory());
+
+        logger.info("message one");
+        mockClient.waitForWriter();
+
+        assertEquals("invocations of listTopics",       1,              mockClient.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",      1,              mockClient.createTopicInvocationCount);
+        assertEquals("invocations of publish",          1,              mockClient.publishInvocationCount);
+        assertEquals("last message published",          "message one",  mockClient.lastMessage);
     }
 
 

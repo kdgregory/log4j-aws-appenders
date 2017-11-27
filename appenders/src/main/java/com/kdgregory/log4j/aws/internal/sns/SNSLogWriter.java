@@ -10,8 +10,6 @@ import java.util.Set;
 
 import org.apache.log4j.helpers.LogLog;
 
-import net.sf.kdgcommons.lang.StringUtil;
-
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.*;
@@ -163,7 +161,7 @@ extends AbstractLogWriter
                 result.add(topic.getTopicArn());
             }
             request.setNextToken(response.getNextToken());
-        } while (! StringUtil.isEmpty(response.getNextToken()));
+        } while (response.getNextToken() != null);
 
         return result;
     }

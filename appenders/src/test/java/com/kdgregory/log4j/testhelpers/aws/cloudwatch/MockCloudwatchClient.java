@@ -9,14 +9,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
+import net.sf.kdgcommons.lang.StringUtil;
+
 import com.amazonaws.services.logs.AWSLogs;
-import com.amazonaws.services.logs.model.DescribeLogGroupsResult;
-import com.amazonaws.services.logs.model.DescribeLogStreamsResult;
-import com.amazonaws.services.logs.model.InputLogEvent;
-import com.amazonaws.services.logs.model.LogGroup;
-import com.amazonaws.services.logs.model.LogStream;
-import com.amazonaws.services.logs.model.PutLogEventsRequest;
-import com.amazonaws.services.logs.model.PutLogEventsResult;
+import com.amazonaws.services.logs.model.*;
 
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
@@ -26,15 +22,29 @@ import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 
 /**
  *  A proxy-based mock for the CloudWatch client that allows deep testing of
- *  writer behavior. To use, override {@link #putLogEvents} to implement your
- *  own behavior, and call {@link #newWriterFactory} to create a factory that
- *  you attach to the appender. This class also provides semaphores that
- *  control sequencing of the test thread and writer thread; see the function
- *  {@link allowWriterThread}.
+ *  writer behavior. Each of the client methods that we call are exposed as
+ *  protected methods with a default (success behavior). Override as needed
+ *  to test abnormal behavior, and call {@link #newWriterFactory} to create
+ *  a factory for the appender.
+ *  <p>
+ *  Since most of the tests that would use this client will use a separate
+ *  logging thread, this class also provides semaphores that allow sequencing
+ *  of main and writer thread for message publication.
  */
 public abstract class MockCloudwatchClient
 implements InvocationHandler
 {
+    // this token is used for describeLogGroups and describeLogStreams to
+    // indicate the presence of or request for a second batch
+    private final static String NEXT_TOKEN = "qwertyuiop";
+
+    // default lists of groups for describeLogGroups and describeLogStreams
+    // note that the names that we use for testing are in the second batch;
+    // this lets us verify that we retrieve all names
+    protected List<String> describe1 = Arrays.asList("foo", "bar", "barglet", "arglet");
+    protected List<String> describe2 = Arrays.asList("baz", "bargle", "argle", "fribble");
+
+
     // these semaphores coordinate the calls to PutLogEvents with the assertions
     // that we make in the main thread; note that both start unacquired
     private Semaphore allowMainThread = new Semaphore(0);
@@ -95,20 +105,16 @@ implements InvocationHandler
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
     {
-        if (method.getName().equals("describeLogGroups"))
+        String methodName = method.getName();
+        if (methodName.equals("describeLogGroups"))
         {
-            return new DescribeLogGroupsResult()
-                   .withLogGroups(Arrays.asList(
-                       new LogGroup().withLogGroupName("argle")));
+            return describeLogGroups((DescribeLogGroupsRequest)args[0]);
         }
-        else if (method.getName().equals("describeLogStreams"))
+        else if (methodName.equals("describeLogStreams"))
         {
-            return new DescribeLogStreamsResult()
-                   .withLogStreams(Arrays.asList(
-                       new LogStream().withLogStreamName("bargle")
-                                      .withUploadSequenceToken("anything")));
+            return describeLogStreams((DescribeLogStreamsRequest)args[0]);
         }
-        else if (method.getName().equals("putLogEvents"))
+        else if (methodName.equals("putLogEvents"))
         {
             try
             {
@@ -125,14 +131,95 @@ implements InvocationHandler
         }
         else
         {
-            System.err.println("invocation handler called unexpectedly: " + method.getName());
-            return null;
+            System.err.println("invocation handler called unexpectedly: " + methodName);
+            throw new IllegalArgumentException("unexpected client call: " + methodName);
         }
     }
+
+//----------------------------------------------------------------------------
+//  Subclasses can override these
+//----------------------------------------------------------------------------
+
+    /**
+     *  Default implementation returns predefined groups in two batches.
+     */
+    protected DescribeLogGroupsResult describeLogGroups(DescribeLogGroupsRequest request)
+    {
+        List<String> names = (request.getNextToken() == null)
+                           ? filterNames(describe1, request.getLogGroupNamePrefix())
+                           : filterNames(describe2, request.getLogGroupNamePrefix());
+
+        List<LogGroup> logGroups = new ArrayList<LogGroup>();
+        for (String name : names)
+        {
+            logGroups.add(new LogGroup().withLogGroupName(name));
+        }
+
+        // for testing we always return two batches
+        String nextToken = (request.getNextToken() == null)
+                         ? NEXT_TOKEN
+                         : null;
+
+        return new DescribeLogGroupsResult()
+               .withLogGroups(logGroups)
+               .withNextToken(nextToken);
+    }
+
+
+    /**
+     *  Default implementation returns predefined streams in two batches.
+     */
+    protected DescribeLogStreamsResult describeLogStreams(DescribeLogStreamsRequest request)
+    {
+        List<String> names = (request.getNextToken() == null)
+                           ? filterNames(describe1, request.getLogStreamNamePrefix())
+                           : filterNames(describe2, request.getLogStreamNamePrefix());
+
+        List<LogStream> logStreams = new ArrayList<LogStream>();
+        for (String name : names)
+        {
+            LogStream stream = new LogStream()
+                               .withLogStreamName(name)
+                               .withUploadSequenceToken("anything");
+            logStreams.add(stream);
+        }
+
+        // for testing we always return two batches
+        String nextToken = (request.getNextToken() == null)
+                         ? NEXT_TOKEN
+                         : null;
+
+        return new DescribeLogStreamsResult()
+                   .withLogStreams(logStreams)
+                   .withNextToken(nextToken);
+    }
+
 
 
     /**
      *  Override this to provide client-specific behavior.
      */
     protected abstract PutLogEventsResult putLogEvents(PutLogEventsRequest request);
+
+
+//----------------------------------------------------------------------------
+//  Internals
+//----------------------------------------------------------------------------
+
+    /**
+     *  Filters a list of names to find those that start with a given value.
+     */
+    private List<String> filterNames(List<String> source, String startsWith)
+    {
+        if (StringUtil.isEmpty(startsWith))
+            return source;
+
+        List<String> result = new ArrayList<String>();
+        for (String value : source)
+        {
+            if (value.startsWith(startsWith))
+                result.add(value);
+        }
+        return result;
+    }
 }

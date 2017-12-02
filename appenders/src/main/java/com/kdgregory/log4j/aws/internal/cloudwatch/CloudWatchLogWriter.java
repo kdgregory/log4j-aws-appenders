@@ -146,12 +146,18 @@ extends AbstractLogWriter
     private LogGroup findLogGroup()
     {
         DescribeLogGroupsRequest request = new DescribeLogGroupsRequest().withLogGroupNamePrefix(groupName);
-        DescribeLogGroupsResult result = client.describeLogGroups(request);
-        for (LogGroup group : result.getLogGroups())
+        DescribeLogGroupsResult result;
+        do
         {
-            if (group.getLogGroupName().equals(groupName))
-                return group;
-        }
+            result = client.describeLogGroups(request);
+            for (LogGroup group : result.getLogGroups())
+            {
+                if (group.getLogGroupName().equals(groupName))
+                    return group;
+            }
+            request.setNextToken(result.getNextToken());
+        } while (result.getNextToken() != null);
+
         return null;
     }
 
@@ -192,12 +198,17 @@ extends AbstractLogWriter
         DescribeLogStreamsRequest request = new DescribeLogStreamsRequest()
                                             .withLogGroupName(groupName)
                                             .withLogStreamNamePrefix(streamName);
-        DescribeLogStreamsResult result = client.describeLogStreams(request);
-        for (LogStream stream : result.getLogStreams())
+        DescribeLogStreamsResult result;
+        do
         {
-            if (stream.getLogStreamName().equals(streamName))
-                return stream;
-        }
+            result = client.describeLogStreams(request);
+            for (LogStream stream : result.getLogStreams())
+            {
+                if (stream.getLogStreamName().equals(streamName))
+                    return stream;
+            }
+            request.setNextToken(result.getNextToken());
+        } while (result.getNextToken() != null);
         return null;
     }
 

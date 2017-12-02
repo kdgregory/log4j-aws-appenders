@@ -406,7 +406,7 @@ public class TestCloudWatchAppender
                 }
                 else
                 {
-                    return new PutLogEventsResult();
+                    return super.putLogEvents(request);
                 }
             }
         };

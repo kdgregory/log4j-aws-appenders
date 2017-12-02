@@ -44,6 +44,9 @@ implements InvocationHandler
     protected List<String> describe1 = Arrays.asList("foo", "bar", "barglet", "arglet");
     protected List<String> describe2 = Arrays.asList("baz", "bargle", "argle", "fribble");
 
+    // the sequence token used for putLogEvents()
+    protected int putLogEventsSequenceToken = 0;
+
 
     // these semaphores coordinate the calls to PutLogEvents with the assertions
     // that we make in the main thread; note that both start unacquired
@@ -197,9 +200,13 @@ implements InvocationHandler
 
 
     /**
-     *  Override this to provide client-specific behavior.
+     *  Default implementation is success, returning an incremented sequence token.
      */
-    protected abstract PutLogEventsResult putLogEvents(PutLogEventsRequest request);
+    protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
+    {
+        return new PutLogEventsResult()
+               .withNextSequenceToken(String.valueOf(++putLogEventsSequenceToken));
+    }
 
 
 //----------------------------------------------------------------------------

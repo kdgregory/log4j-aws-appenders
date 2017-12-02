@@ -1,5 +1,5 @@
 // Copyright (c) Keith D Gregory, all rights reserved
-package com.kdgregory.log4j.testhelpers.aws;
+package com.kdgregory.log4j.testhelpers;
 
 import java.util.concurrent.CountDownLatch;
 

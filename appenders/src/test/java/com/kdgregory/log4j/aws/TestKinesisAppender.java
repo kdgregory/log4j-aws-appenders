@@ -30,7 +30,7 @@ import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
 import com.kdgregory.log4j.testhelpers.NullThreadFactory;
-import com.kdgregory.log4j.testhelpers.aws.ThrowingWriterFactory;
+import com.kdgregory.log4j.testhelpers.ThrowingWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisClient;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisWriter;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisWriterFactory;

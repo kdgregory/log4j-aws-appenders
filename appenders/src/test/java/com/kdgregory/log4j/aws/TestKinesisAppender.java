@@ -222,10 +222,7 @@ public class TestKinesisAppender
         logger.debug("example message");
         mockClient.allowWriterThread();
 
-        // writer calls describeStream once to see if stream exists, a second time
-        // to verify that it's active -- could perhaps combine those calls?
-
-        assertEquals("describeStream: invocation count",        2,          mockClient.describeStreamInvocationCount);
+        assertEquals("describeStream: invocation count",        1,          mockClient.describeStreamInvocationCount);
         assertEquals("describeStream: stream name",             "argle",    mockClient.describeStreamStreamName);
         assertEquals("createStream: invocation count",          0,          mockClient.createStreamInvocationCount);
         assertEquals("putRecords: invocation count",            1,          mockClient.putRecordsInvocationCount);

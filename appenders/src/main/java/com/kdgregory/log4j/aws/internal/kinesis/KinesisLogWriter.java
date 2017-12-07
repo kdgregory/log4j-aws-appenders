@@ -63,15 +63,16 @@ extends AbstractLogWriter
     {
         try
         {
-            if (getStreamStatus() == null)
+            String streamStatus = getStreamStatus();
+            if (streamStatus == null)
             {
                 createStream();
                 waitForStreamToBeActive();
                 setRetentionPeriodIfNeeded();
             }
-            else
+            else if (! StreamStatus.ACTIVE.toString().equals(streamStatus))
             {
-                // already created but might just be created
+                // just created or being modifed by someone else
                 waitForStreamToBeActive();
             }
             return true;

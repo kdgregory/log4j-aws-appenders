@@ -210,6 +210,140 @@ public class TestKinesisAppender
 
 
     @Test
+    public void testWriterWithExistingStream() throws Exception
+    {
+        initialize("TestKinesisAppender/testWriterWithExistingStream.properties");
+
+        MockKinesisClient mockClient = new MockKinesisClient();
+
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("example message");
+        mockClient.allowWriterThread();
+
+        // writer calls describeStream once to see if stream exists, a second time
+        // to verify that it's active -- could perhaps combine those calls?
+
+        assertEquals("describeStream: invocation count",        2,          mockClient.describeStreamInvocationCount);
+        assertEquals("describeStream: stream name",             "argle",    mockClient.describeStreamStreamName);
+        assertEquals("createStream: invocation count",          0,          mockClient.createStreamInvocationCount);
+        assertEquals("putRecords: invocation count",            1,          mockClient.putRecordsInvocationCount);
+        assertEquals("putRecords: source record count",         1,          mockClient.putRecordsSourceRecords.size());
+        assertEquals("putRecords: source record partition key", "bargle",   mockClient.putRecordsSourceRecords.get(0).getPartitionKey());
+        assertEquals("putRecords: source record content",       "example message\n",
+                                                                new String(
+                                                                    BinaryUtils.copyAllBytesFrom(mockClient.putRecordsSourceRecords.get(0).getData()),
+                                                                    "UTF-8"));
+    }
+
+
+    @Test
+    public void testWriterWithNewStream() throws Exception
+    {
+        initialize("TestKinesisAppender/testWriterWithNewStream.properties");
+
+        MockKinesisClient mockClient = new MockKinesisClient();
+
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("example message");
+        mockClient.allowWriterThread();
+
+        // writer calls describeStream once to see if stream exists, a second time
+        // to verify that it's active -- could perhaps combine those calls?
+
+        assertEquals("describeStream: invocation count",        3,          mockClient.describeStreamInvocationCount);
+        assertEquals("describeStream: stream name",             "foo",      mockClient.describeStreamStreamName);
+        assertEquals("createStream: invocation count",          1,          mockClient.createStreamInvocationCount);
+        assertEquals("createStream: stream name",               "foo",      mockClient.createStreamStreamName);
+        assertEquals("putRecords: invocation count",            1,          mockClient.putRecordsInvocationCount);
+        assertEquals("putRecords: source record count",         1,          mockClient.putRecordsSourceRecords.size());
+        assertEquals("putRecords: source record partition key", "bar",      mockClient.putRecordsSourceRecords.get(0).getPartitionKey());
+        assertEquals("putRecords: source record content",       "example message\n",
+                                                                new String(
+                                                                    BinaryUtils.copyAllBytesFrom(mockClient.putRecordsSourceRecords.get(0).getData()),
+                                                                    "UTF-8"));
+    }
+
+
+    @Test
+    public void testMessageErrorHandling() throws Exception
+    {
+        // WARNING: this test may break if the internal implementation changes
+
+        initialize("TestKinesisAppender/testMessageErrorHandling.properties");
+
+        // the mock client will report an error on every third record
+        MockKinesisClient mockClient = new MockKinesisClient()
+        {
+            @Override
+            public PutRecordsResult putRecords(PutRecordsRequest request)
+            {
+                int failedRecordCount = 0;
+                List<PutRecordsResultEntry> resultRecords = new ArrayList<PutRecordsResultEntry>();
+                for (int ii = 0 ; ii < request.getRecords().size() ; ii++)
+                {
+                    PutRecordsResultEntry resultRecord = new PutRecordsResultEntry();
+                    resultRecords.add(resultRecord);
+                    if ((ii % 3) == 1)
+                    {
+                        failedRecordCount++;
+                        resultRecord.setErrorCode("anything, really");
+                    }
+                }
+                return new PutRecordsResult()
+                       .withFailedRecordCount(Integer.valueOf(failedRecordCount))
+                       .withRecords(resultRecords);
+            }
+        };
+
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        for (int ii = 0 ; ii < 10 ; ii++)
+        {
+            logger.debug("message " + ii);
+        }
+
+        mockClient.allowWriterThread();
+
+        assertEquals("first batch, number of successful messages", 7, mockClient.putRecordsSuccesses.size());
+        assertEquals("first batch, number of failed messages",     3, mockClient.putRecordsFailures.size());
+
+        PutRecordsRequestEntry savedFailure1 = mockClient.putRecordsFailures.get(0);
+        PutRecordsRequestEntry savedFailure2 = mockClient.putRecordsFailures.get(1);
+        PutRecordsRequestEntry savedFailure3 = mockClient.putRecordsFailures.get(2);
+
+        mockClient.allowWriterThread();
+
+        assertEquals("second batch, number of successful messages", 2, mockClient.putRecordsSuccesses.size());
+        assertEquals("second batch, number of failed messages",     1, mockClient.putRecordsFailures.size());
+
+        assertTrue("first failure is now first success",
+                   Arrays.equals(
+                       BinaryUtils.copyAllBytesFrom(savedFailure1.getData()),
+                       BinaryUtils.copyAllBytesFrom(mockClient.putRecordsSuccesses.get(0).getData())));
+        assertTrue("third failure is now second success (second failure failed again)",
+                   Arrays.equals(
+                       BinaryUtils.copyAllBytesFrom(savedFailure3.getData()),
+                       BinaryUtils.copyAllBytesFrom(mockClient.putRecordsSuccesses.get(1).getData())));
+
+
+        mockClient.allowWriterThread();
+
+        assertEquals("third batch, number of successful messages", 1, mockClient.putRecordsSuccesses.size());
+        assertEquals("third batch, number of failed messages",     0, mockClient.putRecordsFailures.size());
+
+        assertTrue("second original failure is now a success",
+                   Arrays.equals(
+                       BinaryUtils.copyAllBytesFrom(savedFailure2.getData()),
+                       BinaryUtils.copyAllBytesFrom(mockClient.putRecordsSuccesses.get(0).getData())));
+    }
+
+
+    @Test
     public void testUncaughtExceptionHandling() throws Exception
     {
         initialize("TestKinesisAppender/testUncaughtExceptionHandling.properties");
@@ -233,78 +367,6 @@ public class TestKinesisAppender
 
         assertNull("writer has been reset",         appender.getWriter());
         assertEquals("last writer exception class", IllegalStateException.class, appender.getLastWriterException().getClass());
-    }
-
-
-    @Test
-    public void testMessageErrorHandling() throws Exception
-    {
-        // WARNING: this test may break if the internal implementation changes
-
-        initialize("TestKinesisAppender/testMessageErrorHandling.properties");
-
-        // the mock client will report an error on every third record
-        MockKinesisClient mockClient = new MockKinesisClient()
-        {
-            @Override
-            public PutRecordsResult putRecords(PutRecordsRequest request)
-            {
-                List<PutRecordsResultEntry> resultRecords = new ArrayList<PutRecordsResultEntry>();
-                for (int ii = 0 ; ii < request.getRecords().size() ; ii++)
-                {
-                    PutRecordsResultEntry resultRecord = new PutRecordsResultEntry();
-                    resultRecords.add(resultRecord);
-                    if ((ii % 3) == 1)
-                    {
-                        resultRecord.setErrorCode("anything, really");
-                    }
-                }
-                return new PutRecordsResult().withRecords(resultRecords);
-
-            }
-        };
-
-        appender.setThreadFactory(new DefaultThreadFactory());
-        appender.setWriterFactory(mockClient.newWriterFactory());
-
-        for (int ii = 0 ; ii < 10 ; ii++)
-        {
-            logger.debug("message " + ii);
-        }
-
-        mockClient.allowWriterThread();
-
-        assertEquals("first batch, number of successful messages", 7, mockClient.successRecords.size());
-        assertEquals("first batch, number of failed messages",     3, mockClient.failedRecords.size());
-
-        PutRecordsRequestEntry savedFailure1 = mockClient.failedRecords.get(0);
-        PutRecordsRequestEntry savedFailure2 = mockClient.failedRecords.get(1);
-        PutRecordsRequestEntry savedFailure3 = mockClient.failedRecords.get(2);
-
-        mockClient.allowWriterThread();
-
-        assertEquals("second batch, number of successful messages", 2, mockClient.successRecords.size());
-        assertEquals("second batch, number of failed messages",     1, mockClient.failedRecords.size());
-
-        assertTrue("first failure is now first success",
-                   Arrays.equals(
-                       BinaryUtils.copyAllBytesFrom(savedFailure1.getData()),
-                       BinaryUtils.copyAllBytesFrom(mockClient.successRecords.get(0).getData())));
-        assertTrue("third failure is now second success (second failure failed again)",
-                   Arrays.equals(
-                       BinaryUtils.copyAllBytesFrom(savedFailure3.getData()),
-                       BinaryUtils.copyAllBytesFrom(mockClient.successRecords.get(1).getData())));
-
-
-        mockClient.allowWriterThread();
-
-        assertEquals("third batch, number of successful messages", 1, mockClient.successRecords.size());
-        assertEquals("third batch, number of failed messages",     0, mockClient.failedRecords.size());
-
-        assertTrue("second original failure is now a success",
-                   Arrays.equals(
-                       BinaryUtils.copyAllBytesFrom(savedFailure2.getData()),
-                       BinaryUtils.copyAllBytesFrom(mockClient.successRecords.get(0).getData())));
     }
 
 

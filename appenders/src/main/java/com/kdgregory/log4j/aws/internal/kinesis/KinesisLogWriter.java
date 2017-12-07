@@ -21,11 +21,13 @@ public class KinesisLogWriter
 extends AbstractLogWriter
 {
     // this controls the number of tries that we wait for a stream to become active
-    // each try takes 1 second
-    private final static int STREAM_ACTIVE_TRIES = 60;
+    private final static int STREAM_ACTIVE_TRIES = 240;
+
+    // and the number of milliseconds that we wait between tries
+    private final static long STREAM_ACTIVE_SLEEP = 250;
 
     // this controls the number of times that we retry a send
-    private final static int RETRY_LIMIT = 3;
+    private final static int SEND_RETRY_LIMIT = 3;
 
     // this controls the number of times that we attempt to create a stream
     private final static int CREATE_RETRY_LIMIT = 12;
@@ -163,7 +165,7 @@ extends AbstractLogWriter
             {
                 return;
             }
-            Utils.sleepQuietly(1000);
+            Utils.sleepQuietly(STREAM_ACTIVE_SLEEP);
         }
         throw new IllegalStateException("stream did not become active within " + STREAM_ACTIVE_TRIES + " seconds");
     }
@@ -237,7 +239,7 @@ extends AbstractLogWriter
         List<Integer> failures = new ArrayList<Integer>(request.getRecords().size());
 
         Exception lastException = null;
-        for (int attempt = 0 ; attempt < RETRY_LIMIT ; attempt++)
+        for (int attempt = 0 ; attempt < SEND_RETRY_LIMIT ; attempt++)
         {
             try
             {
@@ -260,7 +262,7 @@ extends AbstractLogWriter
             }
         }
 
-        LogLog.error("failed to send batch after " + RETRY_LIMIT + " retries", lastException);
+        LogLog.error("failed to send batch after " + SEND_RETRY_LIMIT + " retries", lastException);
         for (int ii = 0 ; ii < request.getRecords().size() ; ii++)
         {
             failures.add(Integer.valueOf(ii));

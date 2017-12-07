@@ -22,14 +22,27 @@ import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 
 /**
  *  A proxy-based mock for the CloudWatch client that allows deep testing of
- *  writer behavior. Each of the client methods that we call are exposed as
- *  protected methods with a default (success behavior). Override as needed
- *  to test abnormal behavior, and call {@link #newWriterFactory} to create
- *  a factory for the appender.
+ *  writer behavior. I don't particularly like using mock objects with this
+ *  level of  complexity, but they're the only way to experiement with error
+ *  conditions.
  *  <p>
- *  Since most of the tests that would use this client will use a separate
- *  logging thread, this class also provides semaphores that allow sequencing
- *  of main and writer thread for message publication.
+ *  The basic implementation knows a list of names that are used for both
+ *  logstreams and loggroups; both of the "describe" operations return this
+ *  list, split into two parts. It also supports creating groups and streams,
+ *  and the new names will be added to the lists returned by describe. Lastly,
+ *  it supports putLogEvents, always returning success unless it's passed an
+ *  invalid sequence token. If you need additional functionality (such as
+ *  throwing from within any call), override the appropriate protected client
+ *  method(s).
+ *  <p>
+ *  The tests that use this writer will have a background thread running, so will
+ *  to coordinate behaviors between the main thread and writer thread. There are
+ *  semaphores to control interaction with message publication: call {@link
+ *  #allowWriterThread} after logging a message to wait for that message to be
+ *  passed to putRecords.
+ *  <p>
+ *  To use this writer you'll also need to install a factory into the appender;
+ *  {@link #newWriterFactory} will create it for you..
  */
 public class MockCloudWatchClient
 implements InvocationHandler

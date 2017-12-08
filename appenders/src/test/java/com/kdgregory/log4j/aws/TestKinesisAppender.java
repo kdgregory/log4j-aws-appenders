@@ -118,11 +118,11 @@ public class TestKinesisAppender
         // this sleep is to make timestamps discernable
         Thread.sleep(100);
 
-        assertNull("before messages, writer is null",                           appender.getWriter());
+        assertNull("before messages, writer is null",                           appender.getMockWriter());
 
         logger.debug("first message");
 
-        MockKinesisWriter writer = appender.getWriter();
+        MockKinesisWriter writer = appender.getMockWriter();
 
         assertNotNull("after message 1, writer is initialized",                 writer);
         assertEquals("after message 1, calls to writer factory",                1,              writerFactory.invocationCount);
@@ -182,7 +182,7 @@ public class TestKinesisAppender
         logger.debug("blah blah blah");
 
         // must retrieve writer before we shut down
-        MockKinesisWriter writer = appender.getWriter();
+        MockKinesisWriter writer = appender.getMockWriter();
         LogManager.shutdown();
 
         assertEquals("number of messages written to log", 3, writer.messages.size());
@@ -362,7 +362,7 @@ public class TestKinesisAppender
             Thread.sleep(10);
         }
 
-        assertNull("writer has been reset",         appender.getWriter());
+        assertNull("writer has been reset",         appender.getMockWriter());
         assertEquals("last writer exception class", IllegalStateException.class, appender.getLastWriterException().getClass());
     }
 

@@ -18,14 +18,14 @@ import java.util.TimeZone;
 public class JsonConverter
 {
     private SimpleDateFormat dateFormatter;
-    
+
     public JsonConverter()
     {
         dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         dateFormatter.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
-    
-    
+
+
     public String convert(Map<String,Object> map)
     {
         StringBuilder builder = new StringBuilder(1024);

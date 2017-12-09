@@ -32,7 +32,6 @@ extends AbstractLogWriter
         this.streamName = config.logStream;
     }
 
-
 //----------------------------------------------------------------------------
 //  Hooks for superclass
 //----------------------------------------------------------------------------
@@ -87,14 +86,12 @@ extends AbstractLogWriter
     }
 
 
-
     @Override
     protected boolean withinServiceLimits(int batchBytes, int numMessages)
     {
         return (batchBytes < CloudWatchConstants.MAX_BATCH_BYTES)
             && (numMessages < CloudWatchConstants.MAX_BATCH_COUNT);
     }
-
 
 //----------------------------------------------------------------------------
 //  Internals

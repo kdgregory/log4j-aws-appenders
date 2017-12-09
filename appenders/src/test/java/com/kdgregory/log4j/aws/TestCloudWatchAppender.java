@@ -442,7 +442,6 @@ public class TestCloudWatchAppender
     }
 
 
-
     @Test
     public void testWriterWithNewGroupAndStream() throws Exception
     {
@@ -527,7 +526,6 @@ public class TestCloudWatchAppender
                      "not now, not ever",
                      writer.getInitializationException().getMessage());
     }
-
 
 
     @Test

@@ -56,7 +56,6 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
         shardCount = 1;
     }
 
-
 //----------------------------------------------------------------------------
 //  Configuration
 //----------------------------------------------------------------------------
@@ -170,14 +169,13 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
              : KinesisConstants.MINIMUM_RETENTION_PERIOD;
     }
 
-
 //----------------------------------------------------------------------------
 //  Appender-specific methods
 //----------------------------------------------------------------------------
 
 
 //----------------------------------------------------------------------------
-//  Subclass hooks
+//  AbstractAppender overrides
 //----------------------------------------------------------------------------
 
     @Override

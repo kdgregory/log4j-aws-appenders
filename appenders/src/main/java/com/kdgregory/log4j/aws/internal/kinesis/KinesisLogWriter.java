@@ -20,6 +20,12 @@ import com.kdgregory.log4j.aws.internal.shared.Utils;
 public class KinesisLogWriter
 extends AbstractLogWriter
 {
+    // this controls the number of times that we'll accept rate limiting on describe
+    private final static int DESCRIBE_TRIES = 300;
+
+    // and the number of milliseconds to sleep between tries
+    private final static int DESCRIBE_SLEEP = 100;
+
     // this controls the number of tries that we wait for a stream to become active
     private final static int STREAM_ACTIVE_TRIES = 240;
 
@@ -107,7 +113,6 @@ extends AbstractLogWriter
     }
 
 
-
     @Override
     protected boolean withinServiceLimits(int batchBytes, int numMessages)
     {
@@ -172,20 +177,30 @@ extends AbstractLogWriter
 
 
     /**
-     *  Returns current stream status, null if the stream doesn't exist.
+     *  Returns current stream status, null if the stream doesn't exist. Will
+     *  internally handle rate-limit exceptions, retrying every 100 milliseconds
+     *  and eventually timing out after 30 seconds with an IllegalStateException.
      */
     private String getStreamStatus()
     {
-        try
+        for (int ii = 0 ; ii < DESCRIBE_TRIES ; ii++)
         {
-            DescribeStreamRequest request = new DescribeStreamRequest().withStreamName(config.streamName);
-            DescribeStreamResult response = client.describeStream(request);
-            return response.getStreamDescription().getStreamStatus();
+            try
+            {
+                DescribeStreamRequest request = new DescribeStreamRequest().withStreamName(config.streamName);
+                DescribeStreamResult response = client.describeStream(request);
+                return response.getStreamDescription().getStreamStatus();
+            }
+            catch (ResourceNotFoundException ex)
+            {
+                return null;
+            }
+            catch (LimitExceededException ex)
+            {
+                Utils.sleepQuietly(DESCRIBE_SLEEP);
+            }
         }
-        catch (ResourceNotFoundException ex)
-        {
-            return null;
-        }
+        throw new IllegalStateException("unable to describe stream after 30 seconds");
     }
 
 

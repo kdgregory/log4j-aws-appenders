@@ -267,6 +267,39 @@ public class TestKinesisAppender
 
 
     @Test
+    public void testRateLimitedDescribe() throws Exception
+    {
+        initialize("TestKinesisAppender/testRateLimitedDescribe.properties");
+
+        MockKinesisClient mockClient = new MockKinesisClient()
+        {
+            @Override
+            protected DescribeStreamResult describeStream(DescribeStreamRequest request)
+            {
+                if (describeStreamInvocationCount < 3)
+                    throw new LimitExceededException("uh oh!");
+                else
+                    return super.describeStream(request);
+            }
+        };
+
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("example message");
+        mockClient.allowWriterThread();
+
+        // even with exceptions we should be able to write our message
+
+        assertEquals("describeStream: invocation count",        3,          mockClient.describeStreamInvocationCount);
+        assertEquals("describeStream: stream name",             "argle",    mockClient.describeStreamStreamName);
+        assertEquals("createStream: invocation count",          0,          mockClient.createStreamInvocationCount);
+        assertEquals("putRecords: invocation count",            1,          mockClient.putRecordsInvocationCount);
+        assertEquals("putRecords: source record count",         1,          mockClient.putRecordsSourceRecords.size());
+    }
+
+
+    @Test
     public void testInitializationErrorHandling() throws Exception
     {
         initialize("TestKinesisAppender/testInitializationErrorHandling.properties");

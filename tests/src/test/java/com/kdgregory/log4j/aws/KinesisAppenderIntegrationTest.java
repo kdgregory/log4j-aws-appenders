@@ -163,8 +163,8 @@ public class KinesisAppenderIntegrationTest
 //----------------------------------------------------------------------------
 
     /**
-     *  Returns the stream description, null if the stream doesn't exist.
-     *  @return
+     *  Returns the stream description, null for any exception (which will
+     *  eventually time out if continued).
      */
     private StreamDescription describeStream()
     {
@@ -174,7 +174,7 @@ public class KinesisAppenderIntegrationTest
             DescribeStreamResult describeReponse  = client.describeStream(describeRequest);
             return describeReponse.getStreamDescription();
         }
-        catch (ResourceNotFoundException ignored)
+        catch (Exception ignored)
         {
             return null;
         }

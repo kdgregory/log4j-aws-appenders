@@ -127,12 +127,6 @@ implements LogWriter
             return;
         }
 
-        // this is set after initialization because the integration tests were telling
-        // the writer to shut down while it was still initializing; in the real world
-        // that should never happen without the appender being shut down as well
-
-        dispatchThread = Thread.currentThread();
-
         // this reports that initialization succeeded
 
         initializationMessage = "";
@@ -270,6 +264,7 @@ implements LogWriter
     {
         try
         {
+            dispatchThread = Thread.currentThread();
             createAWSClient();
             return ensureDestinationAvailable();
         }

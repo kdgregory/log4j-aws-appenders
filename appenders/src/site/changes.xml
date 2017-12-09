@@ -11,6 +11,11 @@
                 similarly-named groups or streams).
             </action>
             <action dev='kdgregory' type='add'>
+                Bugfix: KinesisAppender is now more resilient to rate limiting when initializing. This was a problem
+                turned up by integration tests, which would create multiple appenders in short order, exceeding the
+                rate limit for DescribeStream.
+            </action>
+            <action dev='kdgregory' type='add'>
                 AbstractLogWriter now tracks whether an error happened during initialization. This is used for testing
                 at the moment, but will be exposed via JMX at some future point.
             </action>

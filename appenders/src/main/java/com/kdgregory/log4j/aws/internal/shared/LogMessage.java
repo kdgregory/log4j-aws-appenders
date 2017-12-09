@@ -25,6 +25,10 @@ import org.apache.log4j.spi.LoggingEvent;
 public class LogMessage
 implements Comparable<LogMessage>
 {
+//----------------------------------------------------------------------------
+//  Static factory methods
+//----------------------------------------------------------------------------
+
     /**
      *  Creates an instance from an arbitrary string.
      */
@@ -75,7 +79,7 @@ implements Comparable<LogMessage>
 
 
 //----------------------------------------------------------------------------
-//
+//  Instance
 //----------------------------------------------------------------------------
 
     private long timestamp;
@@ -87,7 +91,6 @@ implements Comparable<LogMessage>
         this.timestamp = timestamp;
         this.messageBytes = messageBytes;
     }
-
 
 
     /**
@@ -139,6 +142,8 @@ implements Comparable<LogMessage>
     {
         return (this.timestamp < that.timestamp) ? -1
              : (this.timestamp > that.timestamp) ? 1
+             : (System.identityHashCode(this) < System.identityHashCode(that)) ? -1
+             : (System.identityHashCode(this) > System.identityHashCode(that)) ? 1
              : 0;
     }
 }

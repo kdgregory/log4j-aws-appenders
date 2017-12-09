@@ -102,7 +102,7 @@ implements LogWriter
     @Override
     public void stop()
     {
-        shutdownTime = new Long(System.currentTimeMillis() + batchDelay);
+        shutdownTime = Long.valueOf(System.currentTimeMillis() + batchDelay);
         if (dispatchThread != null)
         {
             dispatchThread.interrupt();

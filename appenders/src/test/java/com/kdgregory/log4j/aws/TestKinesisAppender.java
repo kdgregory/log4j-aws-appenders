@@ -25,6 +25,7 @@ import com.amazonaws.services.kinesis.model.*;
 import com.amazonaws.util.BinaryUtils;
 
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;
+import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
@@ -266,10 +267,53 @@ public class TestKinesisAppender
 
 
     @Test
+    public void testInitializationErrorHandling() throws Exception
+    {
+        initialize("TestKinesisAppender/testInitializationErrorHandling.properties");
+
+        // the mock client will report an error on every third record
+        MockKinesisClient mockClient = new MockKinesisClient()
+        {
+            @Override
+            protected CreateStreamResult createStream(CreateStreamRequest request)
+            {
+                throw new UnsupportedOperationException("not now, not ever");
+            }
+        };
+
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("example message");
+
+        // we never get to putRecords so can't use the semaphore; spinning is an alternative
+        AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+        while (writer.getInitializationMessage() == null)
+        {
+            Thread.sleep(100);
+        }
+
+        // these first assertions are window dressing
+        assertEquals("describeStream: invocation count",        1,          mockClient.describeStreamInvocationCount);
+        assertEquals("describeStream: stream name",             "foo",      mockClient.describeStreamStreamName);
+        assertEquals("createStream: invocation count",          1,          mockClient.createStreamInvocationCount);
+        assertEquals("createStream: stream name",               "foo",      mockClient.createStreamStreamName);
+
+        // these are the ones we care about
+        assertTrue("initialization message non-blank",
+                   ! writer.getInitializationMessage().equals(""));
+        assertEquals("initialization error class",
+                     UnsupportedOperationException.class,
+                     writer.getInitializationException().getClass());
+        assertEquals("initialization error message",
+                     "not now, not ever",
+                     writer.getInitializationException().getMessage());
+    }
+
+
+    @Test
     public void testMessageErrorHandling() throws Exception
     {
-        // WARNING: this test may break if the internal implementation changes
-
         initialize("TestKinesisAppender/testMessageErrorHandling.properties");
 
         // the mock client will report an error on every third record

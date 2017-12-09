@@ -67,8 +67,7 @@ extends AbstractLogWriter
         }
         catch (Exception ex)
         {
-            LogLog.error("unable to configure log group/stream", ex);
-            return false;
+            return initializationFailure("unable to configure log group/stream", ex);
         }
     }
 

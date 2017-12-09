@@ -10,6 +10,10 @@
                 (should be unlikely given that we're using exact matches, but possible in sites with large numbers of
                 similarly-named groups or streams).
             </action>
+            <action dev='kdgregory' type='add'>
+                AbstractLogWriter now tracks whether an error happened during initialization. This is used for testing
+                at the moment, but will be exposed via JMX at some future point.
+            </action>
         </release>
 
         <release version="1.1.2" date="2017-10-16" description="JSON output">

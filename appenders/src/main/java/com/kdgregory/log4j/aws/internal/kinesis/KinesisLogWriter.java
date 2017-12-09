@@ -79,8 +79,7 @@ extends AbstractLogWriter
         }
         catch (Exception ex)
         {
-            LogLog.error("unable to configure logging stream: " + config.streamName, ex);
-            return false;
+            return initializationFailure("unable to configure stream: " + config.streamName, ex);
         }
     }
 

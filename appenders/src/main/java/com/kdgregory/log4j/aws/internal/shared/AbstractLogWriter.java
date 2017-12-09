@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.log4j.helpers.LogLog;
+
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 
 
@@ -19,8 +21,11 @@ implements LogWriter
 
     private Thread dispatchThread;
 
-    private volatile Long shutdownTime;     // this is an actual timestamp, not an elapsed time
-    private volatile int batchCount;        // can be read via accessor method by other threads
+    private volatile Long shutdownTime;                     // this is an actual timestamp, not an elapsed time
+
+    private volatile int batchCount;                        // these can be read via accessor methods; they're intended for testing
+    private volatile String initializationMessage;
+    private volatile Throwable initializationException;
 
 
     public AbstractLogWriter(long batchDelay, int discardThreshold, DiscardAction discardAction)
@@ -50,6 +55,30 @@ implements LogWriter
     {
         return batchCount;
     }
+
+
+    /**
+     *  Returns any initialization error. This will be null until initialization
+     *  completes, and an empty string if initialization was successful. A non-empty
+     *  string indicates that an error took place, and you can call {@link
+     *  #getInitializationException} to get more information.
+     */
+    public String getInitializationMessage()
+    {
+        return initializationMessage;
+    }
+
+
+    /**
+     *  Returns the exception associated with an initialization error. This might
+     *  be null; initialization can dail due to invalid conditions rather than a thrown
+     *  exception.
+     */
+    public Throwable getInitializationException()
+    {
+        return initializationException;
+    }
+
 
 
 //----------------------------------------------------------------------------
@@ -88,17 +117,24 @@ implements LogWriter
     @Override
     public void run()
     {
-        createAWSClient();
-        if (! ensureDestinationAvailable()) return;
+        if (! initialize())
+        {
+            if (initializationException != null)
+                LogLog.error("initialization failed: " + initializationMessage, initializationException);
+            else
+                LogLog.error("initialization failed: " + initializationMessage);
 
-        // initialize the dispatch thread here so that an interrupt will only affect the code
-        // that waits for messages; not likely to happen in real world, but does in smoketest
+            return;
+        }
 
-        dispatchThread = Thread.currentThread();
+        // this reports that initialization succeeded
+
+        initializationMessage = "";
 
         // the do-while loop ensures that we attempt to process at least one batch, even if
-        // the writer is started and immediately stopped; again, that's not likely to happen
-        // in the real world, but was causing problems with the smoketest
+        // the writer is started and immediately stopped; that's not likely to happen in the
+        // real world, but was causing problems with the smoketest (which is configured to
+        // quickly transition writers)
 
         do
         {
@@ -159,6 +195,19 @@ implements LogWriter
 //----------------------------------------------------------------------------
 
     /**
+     *  Records an initialization failure in the "post-mortem" variables. This
+     *  method returns false so that the failure handler can return its result
+     *  to the caller.
+     */
+    protected boolean initializationFailure(String message, Exception exception)
+    {
+        initializationMessage = message;
+        initializationException = exception;
+        return false;
+    }
+
+
+    /**
      *  Attempts to read a list of messages from the queue. Will wait "forever"
      *  (or until shutdown) for the first message, then read as many messages
      *  as possible within the batch delay.
@@ -205,6 +254,26 @@ implements LogWriter
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
+
+    /**
+     *  Performs initialization at the start of {@link #run}. Extracted so that
+     *  we can be a bit cleaner about try/catch behavior. Returns true if successful,
+     *  false if not.
+     */
+    private boolean initialize()
+    {
+        try
+        {
+            dispatchThread = Thread.currentThread();
+            createAWSClient();
+            return ensureDestinationAvailable();
+        }
+        catch (Exception ex)
+        {
+            return initializationFailure("uncaught exception", ex);
+        }
+    }
+
 
     /**
      *  A check for whether we should keep running: either we haven't been shut

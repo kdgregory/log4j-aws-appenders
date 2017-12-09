@@ -19,12 +19,15 @@ import org.apache.log4j.helpers.LogLog;
 
 import net.sf.kdgcommons.lang.StringUtil;
 
+import com.amazonaws.services.logs.model.DescribeLogGroupsRequest;
+import com.amazonaws.services.logs.model.DescribeLogGroupsResult;
 import com.amazonaws.services.logs.model.InputLogEvent;
 import com.amazonaws.services.logs.model.InvalidSequenceTokenException;
 import com.amazonaws.services.logs.model.PutLogEventsRequest;
 import com.amazonaws.services.logs.model.PutLogEventsResult;
 
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
+import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.testhelpers.*;
@@ -482,6 +485,49 @@ public class TestCloudWatchAppender
         assertEquals("putLogEvents: last call #/messages",    1,                mockClient.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",            "message two\n",  mockClient.mostRecentEvents.get(0).getMessage());
     }
+
+
+    @Test
+    public void testInitializationErrorHandling() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testInitializationErrorHandling.properties");
+
+        MockCloudWatchClient mockClient = new MockCloudWatchClient()
+        {
+            @Override
+            protected DescribeLogGroupsResult describeLogGroups(
+                DescribeLogGroupsRequest request)
+            {
+                throw new UnsupportedOperationException("not now, not ever");
+            }
+        };
+
+        // note that we will be running the writer on a separate thread
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        // trigger writer creation
+        logger.debug("message one");
+
+        // since we'll never get to the point of sending the message we need to spin rather than use semaphore
+        AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+        while (writer.getInitializationMessage() == null)
+        {
+            Thread.sleep(100);
+        }
+
+        assertEquals("describeLogGroups: invocation count",   1,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  0,                mockClient.describeLogStreamsInvocationCount);
+        assertTrue("initialization message non-blank",
+                   ! writer.getInitializationMessage().equals(""));
+        assertEquals("initialization error class",
+                     UnsupportedOperationException.class,
+                     writer.getInitializationException().getClass());
+        assertEquals("initialization error message",
+                     "not now, not ever",
+                     writer.getInitializationException().getMessage());
+    }
+
 
 
     @Test

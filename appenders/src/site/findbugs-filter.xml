@@ -29,14 +29,8 @@
 
     <Match>
         <Class name='com.kdgregory.log4j.aws.internal.shared.LogMessage' />
-        <Bug pattern='EI_EXPOSE_REP2' />
-        <!-- this object is used internally; if someone wants to muck with it they just hurt themselves -->
-    </Match>
-
-    <Match>
-        <Class name='com.kdgregory.log4j.aws.internal.shared.LogMessage' />
         <Bug pattern='EQ_COMPARETO_USE_OBJECT_EQUALS' />
-        <!-- this object should have instance identity but needs to be sortable -->
+        <!-- we need to sort the objects by timestamp, retaining original order for objects with same timestamp; we never check equality -->
     </Match>
 
 </FindBugsFilter>

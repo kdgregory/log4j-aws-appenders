@@ -28,8 +28,8 @@ import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
 
 public class KinesisAppenderIntegrationTest
 {
-    // CHANGE THESE IF YOU CHANGE THE CONFIG
-    private final static String STREAM_NAME     = "AppenderIntegratonTest";
+    // CHANGE THIS IF YOU CHANGE THE CONFIG
+    private final static String STREAM_NAME = "AppenderIntegrationTest";
 
     private Logger mainLogger;
     private AmazonKinesis client;

@@ -205,8 +205,8 @@ public class TestKinesisAppender
         initialize("TestKinesisAppender/testMaximumMessageSize.properties");
         logger.debug("this message triggers writer configuration");
 
-        assertFalse("max message size",             appender.isMessageTooLarge(LogMessage.create(bigMessage)));
-        assertTrue("bigger than max message size",  appender.isMessageTooLarge(LogMessage.create(bigMessage + "1")));
+        assertFalse("max message size",             appender.isMessageTooLarge(new LogMessage(System.currentTimeMillis(), bigMessage)));
+        assertTrue("bigger than max message size",  appender.isMessageTooLarge(new LogMessage(System.currentTimeMillis(), bigMessage + "1")));
     }
 
 

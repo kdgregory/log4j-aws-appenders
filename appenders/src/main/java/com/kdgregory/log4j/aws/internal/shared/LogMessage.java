@@ -1,62 +1,61 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.aws.internal.shared;
 
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStreamWriter;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 
 import org.apache.log4j.Layout;
-import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
 
 
 /**
- *  Holder for an in-queue logging message. Instances hold the message bytes
- *  (encoded using UTF-8) as well as the timestamp (either provided by Log4J
- *  event or time of construction). Instances are comparable based on timestamp,
- *  but <code>compareTo()</code> is not  consistent with <code>equals()</code>.
+ *  Holder for an in-queue logging message. Each instance has a timestamp and the
+ *  message, stored as both a string and UTF-8 encoded bytes.
  *  <p>
- *  Instances are normally constructed using one of the provided factory methods,
- *  rather than the constructor. These methods will log any exceptions using the
- *  Log4J internal logger, and return null if unable to construct an instance.
- *  Such exceptions are defined by the classes used, and therefore must be
- *  handled, but are not expected to ever occur.
+ *  Note:: instances are Comparable, but comparison is not consistent with equality.
+ *  This is intentional: we need to sort instances by timestamp, but want to retain
+ *  insert ordering when two instances have the same timestamp.
  */
 public class LogMessage
 implements Comparable<LogMessage>
 {
-//----------------------------------------------------------------------------
-//  Static factory methods
-//----------------------------------------------------------------------------
+    private long timestamp;
+    private String message;
+    private byte[] messageBytes;
+
 
     /**
-     *  Creates an instance from an arbitrary string.
+     *  Constructs an instance from a simple string.
+     *
+     *  @throws RuntimeException if UTF-8 encoding is not supported by the JVM (which
+     *          should never happen).
      */
-    public static LogMessage create(String message)
+    public LogMessage(long timestamp, String message)
     {
+        this.timestamp = timestamp;
+        this.message = message;
         try
         {
-            return new LogMessage(System.currentTimeMillis(), message.getBytes("UTF-8"));
+            this.messageBytes = message.getBytes("UTF-8");
         }
-        catch (UnsupportedEncodingException ex)
+        catch (UnsupportedEncodingException e)
         {
-            LogLog.error("unsupported encoding: UTF-8 (should never happen!)");
-            return null;
+            throw new RuntimeException("UnsupportedEncodingException when converting to UTF-8");
         }
     }
 
 
     /**
-     *  Creates an instance from a Log4J LoggingEvent, applying the provided
-     *  Log4J layout.
+     *  Constructs an instance from a Log4J event, using the specified layout.
+     *
+     *  @throws RuntimeException if any error occurred during formatting or conversion.
+     *          Will include any root cause other than UnsupportedEncodingException.
      */
-    public static LogMessage create(LoggingEvent event, Layout layout)
+    public LogMessage(LoggingEvent event, Layout layout)
     {
         try
         {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            OutputStreamWriter out = new OutputStreamWriter(bos, "UTF-8");
-
+            StringWriter out = new StringWriter(1024);
             out.write(layout.format(event));
             if ((event.getThrowableInformation() != null) && layout.ignoresThrowable())
             {
@@ -68,28 +67,18 @@ implements Comparable<LogMessage>
             }
             out.close();
 
-            return new LogMessage(event.getTimeStamp(), bos.toByteArray());
+            this.timestamp = event.getTimeStamp();
+            this.message = out.toString();
+            this.messageBytes = this.message.getBytes("UTF-8");
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            throw new RuntimeException("UnsupportedEncodingException when converting to UTF-8");
         }
         catch (Exception ex)
         {
-            LogLog.error("error creating LogMessage (should never happen!)", ex);
-            return null;
+            throw new RuntimeException("error creating LogMessage", ex);
         }
-    }
-
-
-//----------------------------------------------------------------------------
-//  Instance
-//----------------------------------------------------------------------------
-
-    private long timestamp;
-    private byte[] messageBytes;
-
-
-    public LogMessage(long timestamp, byte[] messageBytes)
-    {
-        this.timestamp = timestamp;
-        this.messageBytes = messageBytes;
     }
 
 
@@ -112,6 +101,15 @@ implements Comparable<LogMessage>
 
 
     /**
+     *  Returns the original message string.
+     */
+    public String getMessage()
+    {
+        return message;
+    }
+
+
+    /**
      *  Returns the UTF-8 message bytes.
      */
     public byte[] getBytes()
@@ -120,30 +118,11 @@ implements Comparable<LogMessage>
     }
 
 
-    /**
-     *  Returns the message content as a string (unfortunately, the CloudWatch
-     *  API doesn't allow us to write raw bytes).
-     */
-    public String getMessage()
-    {
-        try
-        {
-            return new String(messageBytes, "UTF-8");
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException("caught UnsupportedEncodingException for UTF-8; should never happen!");
-        }
-    }
-
-
     @Override
     public int compareTo(LogMessage that)
     {
         return (this.timestamp < that.timestamp) ? -1
-             : (this.timestamp > that.timestamp) ? 1
-             : (System.identityHashCode(this) < System.identityHashCode(that)) ? -1
-             : (System.identityHashCode(this) > System.identityHashCode(that)) ? 1
-             : 0;
+               : (this.timestamp > that.timestamp) ? 1
+               : 0;
     }
 }

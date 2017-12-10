@@ -14,9 +14,9 @@ import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 
 public class TestMessageQueue
 {
-    LogMessage m1 = LogMessage.create("m1");
-    LogMessage m2 = LogMessage.create("m2");
-    LogMessage m3 = LogMessage.create("m3");
+    LogMessage m1 = new LogMessage(System.currentTimeMillis(), "m1");
+    LogMessage m2 = new LogMessage(System.currentTimeMillis(), "m2");
+    LogMessage m3 = new LogMessage(System.currentTimeMillis(), "m3");
 
 
     @Test
@@ -110,7 +110,7 @@ public class TestMessageQueue
                 {
                     long myThreadId = Thread.currentThread().getId();
                     Random rnd = new Random(myThreadId);
-                    LogMessage myMessage = LogMessage.create(String.valueOf(myThreadId));
+                    LogMessage myMessage = new LogMessage(System.currentTimeMillis(), String.valueOf(myThreadId));
 
                     for (int ii = 0 ; ii < operationsPerThread ; ii++)
                     {
@@ -154,7 +154,7 @@ public class TestMessageQueue
 
         for (int ii = 0 ; ii < messagesToEnqueue ; ii++)
         {
-            queue.enqueue(LogMessage.create(String.valueOf(ii)));
+            queue.enqueue(new LogMessage(System.currentTimeMillis(), String.valueOf(ii)));
         }
 
         assertEquals("queue ignores discard threshold", messagesToEnqueue, queue.size());
@@ -171,7 +171,7 @@ public class TestMessageQueue
 
         for (int ii = 0 ; ii < messagesToEnqueue ; ii++)
         {
-            queue.enqueue(LogMessage.create(String.valueOf(ii)));
+            queue.enqueue(new LogMessage(System.currentTimeMillis(), String.valueOf(ii)));
         }
 
         assertEquals("queue size at threshold", discardThreshold, queue.size());
@@ -192,7 +192,7 @@ public class TestMessageQueue
 
         for (int ii = 0 ; ii < messagesToEnqueue ; ii++)
         {
-            queue.enqueue(LogMessage.create(String.valueOf(ii)));
+            queue.enqueue(new LogMessage(System.currentTimeMillis(), String.valueOf(ii)));
         }
 
         assertEquals("queue size at threshold", discardThreshold, queue.size());

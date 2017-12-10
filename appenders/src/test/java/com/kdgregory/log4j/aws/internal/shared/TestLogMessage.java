@@ -11,6 +11,7 @@ import org.apache.log4j.spi.LoggingEvent;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Arrays;
 
 
 public class TestLogMessage
@@ -37,74 +38,76 @@ public class TestLogMessage
     @Test
     public void testAsciiMessageFromString() throws Exception
     {
+        final long timestamp = System.currentTimeMillis();
         final String text = "test";
 
-        LogMessage message = LogMessage.create(text);
+        LogMessage message = new LogMessage(timestamp, text);
 
-        assertEquals("size",                        4,                      message.size());
-        assertArrayEquals("content of byte array",  text.getBytes("UTF-8"), message.getBytes());
-        assertEquals("message as string",           text,                   message.getMessage());
-
-        assertTrue("timestamp is recent",           message.getTimestamp() > System.currentTimeMillis() - 200);
-        assertTrue("timestamp is not in future",    message.getTimestamp() < System.currentTimeMillis() + 200);
+        assertEquals("timestmap",               timestamp,              message.getTimestamp());
+        assertEquals("message",                 text,                   message.getMessage());
+        assertArrayEquals("message as bytes",   text.getBytes("UTF-8"), message.getBytes());
+        assertEquals("size",                    4,                      message.size());
     }
 
 
     @Test
     public void testUnicodeMessageFromString() throws Exception
     {
+        final long timestamp = System.currentTimeMillis();
         final String text = "\u0024\u00a2\u20ac";
 
-        LogMessage message = LogMessage.create(text);
+        LogMessage message = new LogMessage(timestamp, text);
 
-        assertEquals("size",                        6,          message.size());
-        assertArrayEquals("content of byte array",  text.getBytes("UTF-8"), message.getBytes());
-        assertEquals("message as string",           text,                   message.getMessage());
-        assertTrue("timestamp is recent",           message.getTimestamp() > System.currentTimeMillis() - 200);
-        assertTrue("timestamp is not in future",    message.getTimestamp() < System.currentTimeMillis() + 200);
+        assertEquals("timestmap",               timestamp,              message.getTimestamp());
+        assertEquals("message",                 text,                   message.getMessage());
+        assertArrayEquals("message as bytes",   text.getBytes("UTF-8"), message.getBytes());
+        assertEquals("size",                    6,                      message.size());
     }
 
 
     @Test
     public void testAsciiMessageFromEventDefaultLayout() throws Exception
     {
-        final long timestamp = System.currentTimeMillis() - 10000;
+        final long timestamp = System.currentTimeMillis();
         final String text = "test";
 
         LoggingEvent event = createLoggingEvent(timestamp, text, null);
-        LogMessage message = LogMessage.create(event, new PatternLayout());
+        LogMessage message = new LogMessage(event, new PatternLayout());
 
-        // note: the default pattern appends a newline
+        // the default pattern appends a newline
+        String expectedText = text + "\n";
 
-        assertEquals("size",                        5,                               message.size());
-        assertArrayEquals("content of byte array",  (text + "\n").getBytes("UTF-8"), message.getBytes());
-        assertEquals("message as string",           (text + "\n"),                   message.getMessage());
-        assertEquals("explicit timestamp",          timestamp,                       message.getTimestamp());
+        assertEquals("timestmap",               timestamp,                      message.getTimestamp());
+        assertEquals("message",                 expectedText,                   message.getMessage());
+        assertArrayEquals("message as bytes",   expectedText.getBytes("UTF-8"), message.getBytes());
+        assertEquals("size",                    5,                              message.size());
     }
 
 
     @Test
     public void testUnicodeMessageFromEventDefaultLayout() throws Exception
     {
-        final long timestamp = System.currentTimeMillis() - 10000;
+        final long timestamp = System.currentTimeMillis();
         final String text = "\u0024\u00a2\u20ac";
 
         LoggingEvent event = createLoggingEvent(timestamp, text, null);
-        LogMessage message = LogMessage.create(event, new PatternLayout());
+        LogMessage message = new LogMessage(event, new PatternLayout());
 
-        // note: the default pattern appends a newline
+        // the default pattern appends a newline
+        String expectedText = text + "\n";
 
-        assertEquals("size",                        7,                               message.size());
-        assertArrayEquals("content of byte array",  (text + "\n").getBytes("UTF-8"), message.getBytes());
-        assertEquals("message as string",           (text + "\n"),                   message.getMessage());
-        assertEquals("explicit timestamp",          timestamp,                       message.getTimestamp());
+        assertEquals("timestmap",               timestamp,                      message.getTimestamp());
+        assertEquals("message",                 expectedText,                   message.getMessage());
+        assertArrayEquals("message as bytes",   expectedText.getBytes("UTF-8"), message.getBytes());
+        assertEquals("size",                    7,                              message.size());
     }
 
 
     @Test
+    // at this point we'll assume that UTF-8 conversion works as expected
     public void testAsciiMessageFromEventDefaultLayoutWithException() throws Exception
     {
-        final long timestamp = System.currentTimeMillis() - 10000;
+        final long timestamp = System.currentTimeMillis();
         final String text = "test";
         final Exception ex = new Exception();
 
@@ -116,10 +119,28 @@ public class TestLogMessage
         String expectedText = sw.toString();
 
         LoggingEvent event = createLoggingEvent(timestamp, text, ex);
-        LogMessage message = LogMessage.create(event, new PatternLayout());
+        LogMessage message = new LogMessage(event, new PatternLayout());
 
-        // we'll assume that the UTF-8 conversion works as expected
-        assertEquals("message as string",   expectedText,   message.getMessage());
         assertEquals("explicit timestamp",  timestamp,      message.getTimestamp());
+        assertEquals("message as string",   expectedText,   message.getMessage());
     }
+
+    @Test
+    public void testOrdering() throws Exception
+    {
+        final long timestamp = System.currentTimeMillis();
+
+        LogMessage m1 = new LogMessage(timestamp - 1, "foo");
+        LogMessage m2 = new LogMessage(timestamp, "foo");
+        LogMessage m3 = new LogMessage(timestamp, "bar");
+        LogMessage m4 = new LogMessage(timestamp, "fooble");
+        LogMessage m5 = new LogMessage(timestamp + 1, "foo");
+
+        LogMessage[] testArray = new LogMessage[] { m2, m5, m3, m1, m4 };
+        Arrays.sort(testArray);
+
+        assertEquals(Arrays.asList(m1, m2, m3, m4, m5),
+                     Arrays.asList(testArray));
+    }
+
 }

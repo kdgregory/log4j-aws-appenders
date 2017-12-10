@@ -274,7 +274,14 @@ extends AppenderSkeleton
             initialize();
         }
 
-        internalAppend(LogMessage.create(event, getLayout()));
+        try
+        {
+            internalAppend(new LogMessage(event, getLayout()));
+        }
+        catch (Exception ex)
+        {
+            LogLog.warn("unable to append event", ex);
+        }
     }
 
 
@@ -386,7 +393,7 @@ extends AppenderSkeleton
 
                 if (layout.getHeader() != null)
                 {
-                    internalAppend(LogMessage.create(layout.getHeader()));
+                    internalAppend(new LogMessage(System.currentTimeMillis(), layout.getHeader()));
                 }
 
                 lastRotationTimestamp = System.currentTimeMillis();
@@ -407,15 +414,22 @@ extends AppenderSkeleton
     {
         synchronized (initializationLock)
         {
-            if (writer == null)
-                return;
-
-            if (layout.getFooter() != null)
+            try
             {
-                internalAppend(LogMessage.create(layout.getFooter()));
-            }
+                if (writer == null)
+                    return;
 
-            writer.stop();
+                if (layout.getFooter() != null)
+                {
+                    internalAppend(new LogMessage(System.currentTimeMillis(), layout.getFooter()));
+                }
+
+                writer.stop();
+            }
+            catch (Exception ex)
+            {
+                LogLog.error("exception while shutting down writer", ex);
+            }
             writer = null;
         }
     }

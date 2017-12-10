@@ -357,8 +357,8 @@ public class TestCloudWatchAppender
         initialize("TestCloudWatchAppender/testMaximumMessageSize.properties");
         // no need to create a writer; cloudwatch messages not dependent on any names
 
-        assertFalse("max message size",             appender.isMessageTooLarge(LogMessage.create(bigMessage)));
-        assertTrue("bigger than max message size",  appender.isMessageTooLarge(LogMessage.create(bigMessage + "1")));
+        assertFalse("max message size",             appender.isMessageTooLarge(new LogMessage(System.currentTimeMillis(), bigMessage)));
+        assertTrue("bigger than max message size",  appender.isMessageTooLarge(new LogMessage(System.currentTimeMillis(), bigMessage + "1")));
     }
 
 

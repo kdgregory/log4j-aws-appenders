@@ -28,14 +28,11 @@ import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
 
 public class KinesisAppenderIntegrationTest
 {
-    // CHANGE THIS IF YOU CHANGE THE CONFIG
-    private final static String STREAM_NAME = "AppenderIntegrationTest";
-
     private Logger mainLogger;
     private AmazonKinesis client;
 
 
-    public void setUp(String propertiesName) throws Exception
+    public void setUp(String propertiesName, String streamName) throws Exception
     {
         URL config = ClassLoader.getSystemResource(propertiesName);
         PropertyConfigurator.configure(config);
@@ -43,7 +40,8 @@ public class KinesisAppenderIntegrationTest
         mainLogger = Logger.getLogger(getClass());
 
         client = AmazonKinesisClientBuilder.defaultClient();
-        deleteStreamIfExists();
+
+        deleteStreamIfExists(streamName);
     }
 
 
@@ -54,24 +52,25 @@ public class KinesisAppenderIntegrationTest
     @Test
     public void smoketest() throws Exception
     {
-        setUp("KinesisAppenderIntegrationTest-smoketest.properties");
-        mainLogger.info("smoketest: starting");
-
+        final String streamName = "AppenderIntegrationTest-smoketest";
         final int numMessages = 1001;
+
+        setUp("KinesisAppenderIntegrationTest-smoketest.properties", streamName);
+        mainLogger.info("smoketest: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
         (new MessageWriter(testLogger, numMessages)).run();
 
         mainLogger.info("smoketest: waiting for stream to become ready");
-        waitForStreamToBeReady();
+        waitForStreamToBeReady(streamName);
 
         mainLogger.info("smoketest: reading messages");
-        List<RetrievedRecord> messages = retrieveAllMessages(numMessages);
+        List<RetrievedRecord> messages = retrieveAllMessages(streamName, numMessages);
 
         assertMessages(messages, 1, numMessages, "test");
 
-        assertShardCount(1);
-        assertRetentionPeriod(48);
+        assertShardCount(streamName, 1);
+        assertRetentionPeriod(streamName, 48);
 
         mainLogger.info("smoketest: finished");
     }
@@ -80,10 +79,12 @@ public class KinesisAppenderIntegrationTest
     @Test
     public void testMultipleThreadsSingleAppender() throws Exception
     {
-        setUp("KinesisAppenderIntegrationTest-testMultipleThreadsSingleAppender.properties");
+        final String streamName = "AppenderIntegrationTest-testMultipleThreadsSingleAppender";
+        int messagesPerThread = 500;
+
+        setUp("KinesisAppenderIntegrationTest-testMultipleThreadsSingleAppender.properties", streamName);
         mainLogger.info("multi-thread/single-appender: starting");
 
-        int messagesPerThread = 500;
         Logger testLogger = Logger.getLogger("TestLogger");
 
         MessageWriter[] writers = new MessageWriter[]
@@ -99,18 +100,18 @@ public class KinesisAppenderIntegrationTest
         int expectedMessages = writers.length * messagesPerThread;
 
         mainLogger.info("multi-thread/single-appender: waiting for stream to become ready");
-        waitForStreamToBeReady();
+        waitForStreamToBeReady(streamName);
 
         mainLogger.info("multi-thread/single-appender: reading messages");
-        List<RetrievedRecord> messages = retrieveAllMessages(expectedMessages);
+        List<RetrievedRecord> messages = retrieveAllMessages(streamName, expectedMessages);
 
         assertMessages(messages, writers.length, messagesPerThread * writers.length, "test");
 
         Map<String,List<RetrievedRecord>> groupedByShard = groupByShard(messages);
         assertEquals("all messages written to same shard", 1, groupedByShard.size());
 
-        assertShardCount(2);
-        assertRetentionPeriod(24);
+        assertShardCount(streamName, 2);
+        assertRetentionPeriod(streamName, 24);
 
         mainLogger.info("multi-thread/single-appender: finished");
     }
@@ -119,10 +120,12 @@ public class KinesisAppenderIntegrationTest
     @Test
     public void testMultipleThreadsMultipleAppendersDistinctPartitions() throws Exception
     {
-        setUp("KinesisAppenderIntegrationTest-testMultipleThreadsMultipleAppendersMultiplePartitions.properties");
+        final String streamName = "AppenderIntegrationTest-testMultipleThreadsMultipleAppenders";
+        int messagesPerThread = 500;
+
+        setUp("KinesisAppenderIntegrationTest-testMultipleThreadsMultipleAppendersMultiplePartitions.properties", streamName);
         mainLogger.info("multi-thread/multi-appender: starting");
 
-        int messagesPerThread = 500;
         Logger testLogger1 = Logger.getLogger("TestLogger1");
         Logger testLogger2 = Logger.getLogger("TestLogger2");
         Logger testLogger3 = Logger.getLogger("TestLogger3");
@@ -141,18 +144,18 @@ public class KinesisAppenderIntegrationTest
         int expectedMessages = writers.length * messagesPerThread;
 
         mainLogger.info("multi-thread/multi-appender: waiting for stream to become ready");
-        waitForStreamToBeReady();
+        waitForStreamToBeReady(streamName);
 
         mainLogger.info("multi-thread/multi-appender: reading messages");
-        List<RetrievedRecord> messages = retrieveAllMessages(expectedMessages);
+        List<RetrievedRecord> messages = retrieveAllMessages(streamName, expectedMessages);
 
         assertMessages(messages, writers.length, messagesPerThread * 2, "test1", "test2", "test3");
 
         Map<String,List<RetrievedRecord>> groupedByShard = groupByShard(messages);
         assertEquals("messages written to multiple shards", 2, groupedByShard.size());
 
-        assertShardCount(2);
-        assertRetentionPeriod(24);
+        assertShardCount(streamName, 2);
+        assertRetentionPeriod(streamName, 24);
 
         mainLogger.info("multi-thread/multi-appender: finished");
     }
@@ -166,11 +169,11 @@ public class KinesisAppenderIntegrationTest
      *  Returns the stream description, null for any exception (which will
      *  eventually time out if continued).
      */
-    private StreamDescription describeStream()
+    private StreamDescription describeStream(String streamName)
     {
         try
         {
-            DescribeStreamRequest describeRequest = new DescribeStreamRequest().withStreamName(STREAM_NAME);
+            DescribeStreamRequest describeRequest = new DescribeStreamRequest().withStreamName(streamName);
             DescribeStreamResult describeReponse  = client.describeStream(describeRequest);
             return describeReponse.getStreamDescription();
         }
@@ -181,13 +184,13 @@ public class KinesisAppenderIntegrationTest
     }
 
 
-    private void deleteStreamIfExists() throws Exception
+    private void deleteStreamIfExists(String streamName) throws Exception
     {
-        if (describeStream() != null)
+        if (describeStream(streamName) != null)
         {
-            client.deleteStream(new DeleteStreamRequest().withStreamName(STREAM_NAME));
+            client.deleteStream(new DeleteStreamRequest().withStreamName(streamName));
             mainLogger.info("deleted stream; waiting for it to be gone");
-            while (describeStream() != null)
+            while (describeStream(streamName) != null)
             {
                 Thread.sleep(1000);
             }
@@ -195,18 +198,18 @@ public class KinesisAppenderIntegrationTest
     }
 
 
-    private StreamDescription waitForStreamToBeReady() throws Exception
+    private StreamDescription waitForStreamToBeReady(String streamName) throws Exception
     {
         for (int ii = 0 ; ii < 60 ; ii++)
         {
             Thread.sleep(1000);
-            StreamDescription desc = describeStream();
+            StreamDescription desc = describeStream(streamName);
             if ((desc != null) && (StreamStatus.ACTIVE.toString().equals(desc.getStreamStatus())))
             {
                 return desc;
             }
         }
-        throw new RuntimeException("stream wasn't ready within 60 seconds");
+        throw new RuntimeException("stream \"" + streamName + "\" wasn't ready within 60 seconds");
     }
 
 
@@ -218,7 +221,7 @@ public class KinesisAppenderIntegrationTest
      *  Returns the records grouped by shard, so that multi-shard tests can verify that
      *  all shards were written.
      */
-    List<RetrievedRecord> retrieveAllMessages(int expectedRecords)
+    List<RetrievedRecord> retrieveAllMessages(String streamName, int expectedRecords)
     throws Exception
     {
         List<RetrievedRecord> result = new ArrayList<RetrievedRecord>();
@@ -226,7 +229,7 @@ public class KinesisAppenderIntegrationTest
         // this sleep gives all writers a chance to do their work
         Thread.sleep(1000);
 
-        Map<String,String> shardItxs = getInitialShardIterators();
+        Map<String,String> shardItxs = getInitialShardIterators(streamName);
         List<String> shardIds = new ArrayList<String>(shardItxs.keySet());
 
         int readAttempts = 60;
@@ -251,14 +254,14 @@ public class KinesisAppenderIntegrationTest
     }
 
 
-    private Map<String,String> getInitialShardIterators()
+    private Map<String,String> getInitialShardIterators(String streamName)
     {
         Map<String,String> result = new HashMap<String,String>();
-        for (Shard shard : describeStream().getShards())
+        for (Shard shard : describeStream(streamName).getShards())
         {
             String shardId = shard.getShardId();
             GetShardIteratorRequest shardItxRequest = new GetShardIteratorRequest()
-                                                      .withStreamName(STREAM_NAME)
+                                                      .withStreamName(streamName)
                                                       .withShardIteratorType(ShardIteratorType.TRIM_HORIZON)
                                                       .withShardId(shardId);
             GetShardIteratorResult shardItxResponse = client.getShardIterator(shardItxRequest);
@@ -348,9 +351,9 @@ public class KinesisAppenderIntegrationTest
      *  This is a method for consistency with assertRetentionPeriod() (ie, so that
      *  test code makes two named calls rather than one named call and one assert).
      */
-    private void assertShardCount(int expectedShardCount)
+    private void assertShardCount(String streamName, int expectedShardCount)
     {
-        assertEquals("shard count", expectedShardCount, describeStream().getShards().size());
+        assertEquals("shard count", expectedShardCount, describeStream(streamName).getShards().size());
     }
 
 
@@ -361,11 +364,11 @@ public class KinesisAppenderIntegrationTest
      *  <p>
      *  To minimize the time taken by this method, call after retrieving messages.
      */
-    private void assertRetentionPeriod(Integer expectedRetentionPeriod) throws Exception
+    private void assertRetentionPeriod(String streamName, Integer expectedRetentionPeriod) throws Exception
     {
         for (int ii = 0 ; ii < 60 ; ii++)
         {
-            Integer actualRetentionPeriod = describeStream().getRetentionPeriodHours();
+            Integer actualRetentionPeriod = describeStream(streamName).getRetentionPeriodHours();
             if ((actualRetentionPeriod != null) && (actualRetentionPeriod.equals(expectedRetentionPeriod)))
                 return;
             else

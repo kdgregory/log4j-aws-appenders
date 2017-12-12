@@ -19,16 +19,18 @@ import org.apache.log4j.helpers.LogLog;
 
 import net.sf.kdgcommons.lang.StringUtil;
 
+import com.amazonaws.services.logs.model.DescribeLogGroupsRequest;
+import com.amazonaws.services.logs.model.DescribeLogGroupsResult;
 import com.amazonaws.services.logs.model.InputLogEvent;
 import com.amazonaws.services.logs.model.InvalidSequenceTokenException;
 import com.amazonaws.services.logs.model.PutLogEventsRequest;
 import com.amazonaws.services.logs.model.PutLogEventsResult;
 
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
+import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.testhelpers.*;
-import com.kdgregory.log4j.testhelpers.aws.*;
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.*;
 
 
@@ -66,7 +68,6 @@ public class TestCloudWatchAppender
     {
         LogLog.setQuietMode(false);
     }
-
 
 //----------------------------------------------------------------------------
 //  Tests
@@ -118,7 +119,7 @@ public class TestCloudWatchAppender
 
         logger.debug("first message");
 
-        MockCloudWatchWriter writer = appender.getWriter();
+        MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
 
         assertNotNull("after message 1, writer is initialized",         writer);
         assertEquals("after message 1, calls to writer factory",        1,              writerFactory.invocationCount);
@@ -182,7 +183,7 @@ public class TestCloudWatchAppender
         logger.debug("blah blah blah");
 
         // must retrieve writer before we shut down
-        MockCloudWatchWriter mockWriter = appender.getWriter();
+        MockCloudWatchWriter mockWriter = appender.getMockWriter();
         LogManager.shutdown();
 
         assertEquals("number of messages written to log", 3, mockWriter.messages.size());
@@ -202,7 +203,7 @@ public class TestCloudWatchAppender
         // need to trigger append to apply substitutions
         logger.debug("doesn't matter what's written");
 
-        MockCloudWatchWriter writer = appender.getWriter();
+        MockCloudWatchWriter writer = appender.getMockWriter();
 
         assertEquals("appender's log group name",   "MyLog-{sysprop:TestCloudWatchAppender.testSubstitution}", appender.getLogGroup());
         assertEquals("appender's log stream name",  "MyStream-{timestamp}-{bogus}",                            appender.getLogStream());
@@ -220,14 +221,14 @@ public class TestCloudWatchAppender
 
         logger.debug("first message");
 
-        MockCloudWatchWriter writer0 = appender.getWriter();
+        MockCloudWatchWriter writer0 = appender.getMockWriter();
 
         assertEquals("pre-rotate, writer factory calls",            1,          writerFactory.invocationCount);
         assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.logStream);
 
         appender.rotate();
 
-        MockCloudWatchWriter writer1 = appender.getWriter();
+        MockCloudWatchWriter writer1 = appender.getMockWriter();
 
         assertEquals("post-rotate, writer factory calls",           2,          writerFactory.invocationCount);
         assertNotSame("post-rotate, writer has been replaced",      writer0,    writer1);
@@ -245,7 +246,7 @@ public class TestCloudWatchAppender
         logger.debug("message 1");
 
         // writer gets created on first append; we want to hold onto it
-        MockCloudWatchWriter writer0 = appender.getWriter();
+        MockCloudWatchWriter writer0 = appender.getMockWriter();
 
         assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.logStream);
 
@@ -254,7 +255,7 @@ public class TestCloudWatchAppender
         logger.debug("message 3");
         logger.debug("message 4");
 
-        MockCloudWatchWriter writer1 = appender.getWriter();
+        MockCloudWatchWriter writer1 = appender.getMockWriter();
 
         assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.logStream);
         assertEquals("post-rotate, messages passed to old writer",  3,          writer0.messages.size());
@@ -269,7 +270,7 @@ public class TestCloudWatchAppender
 
         logger.debug("first message");
 
-        MockCloudWatchWriter writer0 = appender.getWriter();
+        MockCloudWatchWriter writer0 = appender.getMockWriter();
 
         assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.logStream);
 
@@ -277,7 +278,7 @@ public class TestCloudWatchAppender
 
         logger.debug("second message");
 
-        MockCloudWatchWriter writer1 = appender.getWriter();
+        MockCloudWatchWriter writer1 = appender.getMockWriter();
 
         assertNotSame("post-rotate, writer has been replaced",      writer0,    writer1);
         assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.logStream);
@@ -302,7 +303,7 @@ public class TestCloudWatchAppender
 
         logger.debug("first message");
 
-        MockCloudWatchWriter writer0 = appender.getWriter();
+        MockCloudWatchWriter writer0 = appender.getMockWriter();
 
         assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.logStream);
 
@@ -310,7 +311,7 @@ public class TestCloudWatchAppender
 
         logger.debug("second message");
 
-        MockCloudWatchWriter writer1 = appender.getWriter();
+        MockCloudWatchWriter writer1 = appender.getMockWriter();
 
         assertNotSame("post-rotate, writer has been replaced",      writer0,    writer1);
         assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.logStream);
@@ -326,7 +327,7 @@ public class TestCloudWatchAppender
 
         logger.debug("first message");
 
-        MockCloudWatchWriter writer0 = appender.getWriter();
+        MockCloudWatchWriter writer0 = appender.getMockWriter();
 
         assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.logStream);
 
@@ -334,7 +335,7 @@ public class TestCloudWatchAppender
 
         logger.debug("second message");
 
-        MockCloudWatchWriter writer1 = appender.getWriter();
+        MockCloudWatchWriter writer1 = appender.getMockWriter();
 
         assertNotSame("post-rotate, writer has been replaced",      writer0,    writer1);
         assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.logStream);
@@ -356,8 +357,174 @@ public class TestCloudWatchAppender
         initialize("TestCloudWatchAppender/testMaximumMessageSize.properties");
         // no need to create a writer; cloudwatch messages not dependent on any names
 
-        assertFalse("max message size",             appender.isMessageTooLarge(LogMessage.create(bigMessage)));
-        assertTrue("bigger than max message size",  appender.isMessageTooLarge(LogMessage.create(bigMessage + "1")));
+        assertFalse("max message size",             appender.isMessageTooLarge(new LogMessage(System.currentTimeMillis(), bigMessage)));
+        assertTrue("bigger than max message size",  appender.isMessageTooLarge(new LogMessage(System.currentTimeMillis(), bigMessage + "1")));
+    }
+
+
+    @Test
+    public void testWriterWithExistingGroupAndStream() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testWriterWithExistingGroupAndStream.properties");
+
+        MockCloudWatchClient mockClient = new MockCloudWatchClient();
+
+        // note that we will be running the writer on a separate thread
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("message one");
+        mockClient.allowWriterThread();
+
+        // will call describeLogGroups when checking group existence
+        // will call describeLogStreams when checking stream existence, as well as for each putLogEvents
+
+        assertEquals("describeLogGroups: invocation count",   2,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  4,                mockClient.describeLogStreamsInvocationCount);
+        assertEquals("createLogGroup: invocation count",      0,                mockClient.createLogGroupInvocationCount);
+        assertEquals("createLogStream: invocation count",     0,                mockClient.createLogStreamInvocationCount);
+        assertEquals("putLogEvents: invocation count",        1,                mockClient.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",    1,                mockClient.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",            "message one\n",  mockClient.mostRecentEvents.get(0).getMessage());
+
+        logger.debug("message two");
+        mockClient.allowWriterThread();
+
+        assertEquals("describeLogGroups: invocation count",   2,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  6,                mockClient.describeLogStreamsInvocationCount);
+        assertEquals("createLogGroup: invocation count",      0,                mockClient.createLogGroupInvocationCount);
+        assertEquals("createLogStream: invocation count",     0,                mockClient.createLogStreamInvocationCount);
+        assertEquals("putLogEvents: invocation count",        2,                mockClient.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",    1,                mockClient.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",            "message two\n",  mockClient.mostRecentEvents.get(0).getMessage());
+    }
+
+
+    @Test
+    public void testWriterWithExistingGroupNewStream() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testWriterWithExistingGroupNewStream.properties");
+
+        MockCloudWatchClient mockClient = new MockCloudWatchClient();
+
+        // note that we will be running the writer on a separate thread
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("message one");
+        mockClient.allowWriterThread();
+
+        // will call describeLogGroups when checking group existence
+        // will call describeLogStreams before and after creating stream, as well as for each putLogEvents
+
+        assertEquals("describeLogGroups: invocation count",   2,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  6,                mockClient.describeLogStreamsInvocationCount);
+        assertEquals("createLogGroup: invocation count",      0,                mockClient.createLogGroupInvocationCount);
+        assertEquals("createLogStream: invocation count",     1,                mockClient.createLogStreamInvocationCount);
+        assertEquals("createLogStream: group name",           "argle",          mockClient.createLogStreamGroupName);
+        assertEquals("createLogStream: stream name",          "zippy",          mockClient.createLogStreamStreamName);
+        assertEquals("putLogEvents: invocation count",        1,                mockClient.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",    1,                mockClient.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",            "message one\n",  mockClient.mostRecentEvents.get(0).getMessage());
+
+        logger.debug("message two");
+        mockClient.allowWriterThread();
+
+        assertEquals("describeLogGroups: invocation count",   2,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  8,                mockClient.describeLogStreamsInvocationCount);
+        assertEquals("createLogGroup: invocation count",      0,                mockClient.createLogGroupInvocationCount);
+        assertEquals("createLogStream: invocation count",     1,                mockClient.createLogStreamInvocationCount);
+        assertEquals("createLogStream: group name",           "argle",          mockClient.createLogStreamGroupName);
+        assertEquals("createLogStream: stream name",          "zippy",          mockClient.createLogStreamStreamName);
+        assertEquals("putLogEvents: invocation count",        2,                mockClient.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",    1,                mockClient.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",            "message two\n",  mockClient.mostRecentEvents.get(0).getMessage());
+    }
+
+
+    @Test
+    public void testWriterWithNewGroupAndStream() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testWriterWithNewGroupAndStream.properties");
+
+        MockCloudWatchClient mockClient = new MockCloudWatchClient();
+
+        // note that we will be running the writer on a separate thread
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("message one");
+        mockClient.allowWriterThread();
+
+        // will call describeLogGroups both before and after creating group
+        // will call describeLogStreams before and after creating stream, as well as for each putLogEvents
+
+        assertEquals("describeLogGroups: invocation count",   4,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  6,                mockClient.describeLogStreamsInvocationCount);
+        assertEquals("createLogGroup: invocation count",      1,                mockClient.createLogGroupInvocationCount);
+        assertEquals("createLogGroup: group name",            "griffy",         mockClient.createLogGroupGroupName);
+        assertEquals("createLogStream: invocation count",     1,                mockClient.createLogStreamInvocationCount);
+        assertEquals("createLogStream: group name",           "griffy",         mockClient.createLogStreamGroupName);
+        assertEquals("createLogStream: stream name",          "zippy",          mockClient.createLogStreamStreamName);
+        assertEquals("putLogEvents: invocation count",        1,                mockClient.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",    1,                mockClient.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",            "message one\n",  mockClient.mostRecentEvents.get(0).getMessage());
+
+        logger.debug("message two");
+        mockClient.allowWriterThread();
+
+        assertEquals("describeLogGroups: invocation count",   4,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  8,                mockClient.describeLogStreamsInvocationCount);
+        assertEquals("createLogGroup: invocation count",      1,                mockClient.createLogGroupInvocationCount);
+        assertEquals("createLogGroup: group name",            "griffy",         mockClient.createLogGroupGroupName);
+        assertEquals("createLogStream: invocation count",     1,                mockClient.createLogStreamInvocationCount);
+        assertEquals("createLogStream: group name",           "griffy",         mockClient.createLogStreamGroupName);
+        assertEquals("createLogStream: stream name",          "zippy",          mockClient.createLogStreamStreamName);
+        assertEquals("putLogEvents: invocation count",        2,                mockClient.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",    1,                mockClient.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",            "message two\n",  mockClient.mostRecentEvents.get(0).getMessage());
+    }
+
+
+    @Test
+    public void testInitializationErrorHandling() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testInitializationErrorHandling.properties");
+
+        MockCloudWatchClient mockClient = new MockCloudWatchClient()
+        {
+            @Override
+            protected DescribeLogGroupsResult describeLogGroups(
+                DescribeLogGroupsRequest request)
+            {
+                throw new UnsupportedOperationException("not now, not ever");
+            }
+        };
+
+        // note that we will be running the writer on a separate thread
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        // trigger writer creation
+        logger.debug("message one");
+
+        // since we'll never get to the point of sending the message we need to spin rather than use semaphore
+        AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+        while (writer.getInitializationMessage() == null)
+        {
+            Thread.sleep(100);
+        }
+
+        assertEquals("describeLogGroups: invocation count",   1,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  0,                mockClient.describeLogStreamsInvocationCount);
+        assertTrue("initialization message non-blank",
+                   ! writer.getInitializationMessage().equals(""));
+        assertEquals("initialization error class",
+                     UnsupportedOperationException.class,
+                     writer.getInitializationException().getClass());
+        assertEquals("initialization error message",
+                     "not now, not ever",
+                     writer.getInitializationException().getMessage());
     }
 
 
@@ -396,18 +563,18 @@ public class TestCloudWatchAppender
         initialize("TestCloudWatchAppender/testMessageErrorHandling.properties");
 
         // the mock client -- will throw on odd invocations
-        MockCloudwatchClient mockClient = new MockCloudwatchClient()
+        MockCloudWatchClient mockClient = new MockCloudWatchClient()
         {
             @Override
             protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
             {
-                if (invocationCount++ == 0)
+                if (putLogEventsInvocationCount % 2 == 1)
                 {
                     throw new InvalidSequenceTokenException("anything");
                 }
                 else
                 {
-                    return new PutLogEventsResult();
+                    return super.putLogEvents(request);
                 }
             }
         };
@@ -457,7 +624,7 @@ public class TestCloudWatchAppender
 
         // this is a dummy client: never actually run the writer thread, but
         // need to test the real writer
-        MockCloudwatchClient mockClient = new MockCloudwatchClient()
+        MockCloudWatchClient mockClient = new MockCloudWatchClient()
         {
             @Override
             protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
@@ -489,7 +656,7 @@ public class TestCloudWatchAppender
 
         // this is a dummy client: never actually run the writer thread, but
         // need to test the real writer
-        MockCloudwatchClient mockClient = new MockCloudwatchClient()
+        MockCloudWatchClient mockClient = new MockCloudWatchClient()
         {
             @Override
             protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
@@ -521,7 +688,7 @@ public class TestCloudWatchAppender
 
         // this is a dummy client: never actually run the writer thread, but
         // need to test the real writer
-        MockCloudwatchClient mockClient = new MockCloudwatchClient()
+        MockCloudWatchClient mockClient = new MockCloudWatchClient()
         {
             @Override
             protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)

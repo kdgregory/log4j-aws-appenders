@@ -20,12 +20,20 @@ import com.kdgregory.log4j.aws.internal.shared.Utils;
 public class KinesisLogWriter
 extends AbstractLogWriter
 {
+    // this controls the number of times that we'll accept rate limiting on describe
+    private final static int DESCRIBE_TRIES = 300;
+
+    // and the number of milliseconds to sleep between tries
+    private final static int DESCRIBE_SLEEP = 100;
+
     // this controls the number of tries that we wait for a stream to become active
-    // each try takes 1 second
-    private final static int STREAM_ACTIVE_TRIES = 60;
+    private final static int STREAM_ACTIVE_TRIES = 240;
+
+    // and the number of milliseconds that we wait between tries
+    private final static long STREAM_ACTIVE_SLEEP = 250;
 
     // this controls the number of times that we retry a send
-    private final static int RETRY_LIMIT = 3;
+    private final static int SEND_RETRY_LIMIT = 3;
 
     // this controls the number of times that we attempt to create a stream
     private final static int CREATE_RETRY_LIMIT = 12;
@@ -61,23 +69,23 @@ extends AbstractLogWriter
     {
         try
         {
-            if (getStreamStatus() == null)
+            String streamStatus = getStreamStatus();
+            if (streamStatus == null)
             {
                 createStream();
                 waitForStreamToBeActive();
                 setRetentionPeriodIfNeeded();
             }
-            else
+            else if (! StreamStatus.ACTIVE.toString().equals(streamStatus))
             {
-                // already created but might just be created
+                // just created or being modifed by someone else
                 waitForStreamToBeActive();
             }
             return true;
         }
         catch (Exception ex)
         {
-            LogLog.error("unable to configure logging stream: " + config.streamName, ex);
-            return false;
+            return initializationFailure("unable to configure stream: " + config.streamName, ex);
         }
     }
 
@@ -103,7 +111,6 @@ extends AbstractLogWriter
     {
         return message.size() + config.partitionKeyLength;
     }
-
 
 
     @Override
@@ -163,27 +170,37 @@ extends AbstractLogWriter
             {
                 return;
             }
-            Utils.sleepQuietly(1000);
+            Utils.sleepQuietly(STREAM_ACTIVE_SLEEP);
         }
         throw new IllegalStateException("stream did not become active within " + STREAM_ACTIVE_TRIES + " seconds");
     }
 
 
     /**
-     *  Returns current stream status, null if the stream doesn't exist.
+     *  Returns current stream status, null if the stream doesn't exist. Will
+     *  internally handle rate-limit exceptions, retrying every 100 milliseconds
+     *  and eventually timing out after 30 seconds with an IllegalStateException.
      */
     private String getStreamStatus()
     {
-        try
+        for (int ii = 0 ; ii < DESCRIBE_TRIES ; ii++)
         {
-            DescribeStreamRequest request = new DescribeStreamRequest().withStreamName(config.streamName);
-            DescribeStreamResult response = client.describeStream(request);
-            return response.getStreamDescription().getStreamStatus();
+            try
+            {
+                DescribeStreamRequest request = new DescribeStreamRequest().withStreamName(config.streamName);
+                DescribeStreamResult response = client.describeStream(request);
+                return response.getStreamDescription().getStreamStatus();
+            }
+            catch (ResourceNotFoundException ex)
+            {
+                return null;
+            }
+            catch (LimitExceededException ex)
+            {
+                Utils.sleepQuietly(DESCRIBE_SLEEP);
+            }
         }
-        catch (ResourceNotFoundException ex)
-        {
-            return null;
-        }
+        throw new IllegalStateException("unable to describe stream after 30 seconds");
     }
 
 
@@ -237,7 +254,7 @@ extends AbstractLogWriter
         List<Integer> failures = new ArrayList<Integer>(request.getRecords().size());
 
         Exception lastException = null;
-        for (int attempt = 0 ; attempt < RETRY_LIMIT ; attempt++)
+        for (int attempt = 0 ; attempt < SEND_RETRY_LIMIT ; attempt++)
         {
             try
             {
@@ -260,7 +277,7 @@ extends AbstractLogWriter
             }
         }
 
-        LogLog.error("failed to send batch after " + RETRY_LIMIT + " retries", lastException);
+        LogLog.error("failed to send batch after " + SEND_RETRY_LIMIT + " retries", lastException);
         for (int ii = 0 ; ii < request.getRecords().size() ; ii++)
         {
             failures.add(Integer.valueOf(ii));

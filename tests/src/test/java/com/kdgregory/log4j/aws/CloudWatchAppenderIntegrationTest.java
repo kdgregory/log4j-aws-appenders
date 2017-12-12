@@ -28,21 +28,21 @@ import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
 public class CloudWatchAppenderIntegrationTest
 {
     // CHANGE THESE IF YOU CHANGE THE CONFIG
-    private final static String LOGGROUP_NAME   = "AppenderIntegratonTest";
     private final static String LOGSTREAM_BASE  = "AppenderTest-";
 
     private Logger mainLogger;
     private AWSLogs client;
 
 
-    public void setUp(String propertiesName) throws Exception
+    public void setUp(String propertiesName, String logGroupName) throws Exception
     {
         URL config = ClassLoader.getSystemResource(propertiesName);
         PropertyConfigurator.configure(config);
 
         mainLogger = Logger.getLogger(getClass());
         client = AWSLogsClientBuilder.defaultClient();
-        deleteLogGroupIfExists();
+
+        deleteLogGroupIfExists(logGroupName);
     }
 
 
@@ -53,11 +53,12 @@ public class CloudWatchAppenderIntegrationTest
     @Test
     public void smoketest() throws Exception
     {
-        setUp("CloudWatchAppenderIntegrationTest-smoketest.properties");
-        mainLogger.info("smoketest: starting");
+        final String logGroupName = "AppenderIntegrationTest-smoketest";
+        final int numMessages     = 1001;
+        final int rotationCount   = 333;
 
-        final int numMessages = 1001;
-        final int rotationCount  = 333;
+        setUp("CloudWatchAppenderIntegrationTest-smoketest.properties", logGroupName);
+        mainLogger.info("smoketest: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
         CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test");
@@ -67,10 +68,10 @@ public class CloudWatchAppenderIntegrationTest
         mainLogger.info("smoketest: all messages written; sleeping to give writers chance to run");
         Thread.sleep(5000);
 
-        assertMessages(LOGSTREAM_BASE + "1", rotationCount);
-        assertMessages(LOGSTREAM_BASE + "2", rotationCount);
-        assertMessages(LOGSTREAM_BASE + "3", rotationCount);
-        assertMessages(LOGSTREAM_BASE + "4", numMessages % rotationCount);
+        assertMessages(logGroupName, LOGSTREAM_BASE + "1", rotationCount);
+        assertMessages(logGroupName, LOGSTREAM_BASE + "2", rotationCount);
+        assertMessages(logGroupName, LOGSTREAM_BASE + "3", rotationCount);
+        assertMessages(logGroupName, LOGSTREAM_BASE + "4", numMessages % rotationCount);
 
         CloudWatchLogWriter lastWriter = getWriter(appender);
         assertEquals("number of batches for last writer", 1, lastWriter.getBatchCount());
@@ -86,11 +87,12 @@ public class CloudWatchAppenderIntegrationTest
     @Test
     public void testMultipleThreadsSingleAppender() throws Exception
     {
-        setUp("CloudWatchAppenderIntegrationTest-testMultipleThreadsSingleAppender.properties");
-        mainLogger.info("multi-thread/single-appender: starting");
-
+        final String logGroupName   = "AppenderIntegrationTest-testMultipleThreadsSingleAppender";
         final int messagesPerThread = 200;
-        final int rotationCount  = 333;
+        final int rotationCount     = 333;
+
+        setUp("CloudWatchAppenderIntegrationTest-testMultipleThreadsSingleAppender.properties", logGroupName);
+        mainLogger.info("multi-thread/single-appender: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
 
@@ -107,10 +109,10 @@ public class CloudWatchAppenderIntegrationTest
         mainLogger.info("multi-thread/single-appender: all threads started; sleeping to give writer chance to run");
         Thread.sleep(3000);
 
-        assertMessages(LOGSTREAM_BASE + "1", rotationCount);
-        assertMessages(LOGSTREAM_BASE + "2", rotationCount);
-        assertMessages(LOGSTREAM_BASE + "3", rotationCount);
-        assertMessages(LOGSTREAM_BASE + "4", (messagesPerThread * writers.length) % rotationCount);
+        assertMessages(logGroupName, LOGSTREAM_BASE + "1", rotationCount);
+        assertMessages(logGroupName, LOGSTREAM_BASE + "2", rotationCount);
+        assertMessages(logGroupName, LOGSTREAM_BASE + "3", rotationCount);
+        assertMessages(logGroupName, LOGSTREAM_BASE + "4", (messagesPerThread * writers.length) % rotationCount);
 
         mainLogger.info("multi-thread/single-appender: finished");
     }
@@ -119,10 +121,11 @@ public class CloudWatchAppenderIntegrationTest
     @Test
     public void testMultipleThreadsMultipleAppenders() throws Exception
     {
-        setUp("CloudWatchAppenderIntegrationTest-testMultipleThreadsMultipleAppenders.properties");
-        mainLogger.info("multi-thread/multi-appender: starting");
-
+        final String logGroupName   = "AppenderIntegrationTest-testMultipleThreadsMultipleAppenders";
         final int messagesPerThread = 300;
+
+        setUp("CloudWatchAppenderIntegrationTest-testMultipleThreadsMultipleAppenders.properties", logGroupName);
+        mainLogger.info("multi-thread/multi-appender: starting");
 
         MessageWriter.runOnThreads(
             new MessageWriter(Logger.getLogger("TestLogger1"), messagesPerThread),
@@ -132,9 +135,9 @@ public class CloudWatchAppenderIntegrationTest
         mainLogger.info("multi-thread/multi-appender: all threads started; sleeping to give writer chance to run");
         Thread.sleep(3000);
 
-        assertMessages(LOGSTREAM_BASE + "1", messagesPerThread);
-        assertMessages(LOGSTREAM_BASE + "2", messagesPerThread);
-        assertMessages(LOGSTREAM_BASE + "3", messagesPerThread);
+        assertMessages(logGroupName, LOGSTREAM_BASE + "1", messagesPerThread);
+        assertMessages(logGroupName, LOGSTREAM_BASE + "2", messagesPerThread);
+        assertMessages(logGroupName, LOGSTREAM_BASE + "3", messagesPerThread);
 
         mainLogger.info("multi-thread/multi-appender: finished");
     }
@@ -148,10 +151,10 @@ public class CloudWatchAppenderIntegrationTest
      *  Asserts that the stream contains the expected number of messages, and that
      *  they're in order. Properly handles multi-threaded writes.
      */
-    private void assertMessages(String streamName, int expectedMessageCount) throws Exception
+    private void assertMessages(String logGroupName, String logStreamName, int expectedMessageCount) throws Exception
     {
-        LinkedHashSet<OutputLogEvent> events = retrieveAllMessages(streamName);
-        assertEquals("number of events in " + streamName, expectedMessageCount, events.size());
+        LinkedHashSet<OutputLogEvent> events = retrieveAllMessages(logGroupName, logStreamName);
+        assertEquals("number of events in " + logStreamName, expectedMessageCount, events.size());
 
         Map<Integer,Integer> lastMessageByThread = new HashMap<Integer,Integer>();
         for (OutputLogEvent event : events)
@@ -179,13 +182,14 @@ public class CloudWatchAppenderIntegrationTest
     /**
      *  Reads all messages from a stream.
      */
-    private LinkedHashSet<OutputLogEvent> retrieveAllMessages(String logStreamName) throws Exception
+    private LinkedHashSet<OutputLogEvent> retrieveAllMessages(String logGroupName, String logStreamName)
+    throws Exception
     {
         LinkedHashSet<OutputLogEvent> result = new LinkedHashSet<OutputLogEvent>();
 
-        ensureLogStreamAvailable(logStreamName);
+        ensureLogStreamAvailable(logGroupName, logStreamName);
         GetLogEventsRequest request = new GetLogEventsRequest()
-                              .withLogGroupName(LOGGROUP_NAME)
+                              .withLogGroupName(logGroupName)
                               .withLogStreamName(logStreamName)
                               .withStartFromHead(Boolean.TRUE);
 
@@ -213,7 +217,7 @@ public class CloudWatchAppenderIntegrationTest
      *  after one minute. If the log group isn't available, that's considered equal
      *  to the stream not being ready.
      */
-    private void ensureLogStreamAvailable(String streamName)
+    private void ensureLogStreamAvailable(String logGroupName, String logStreamName)
     throws Exception
     {
         for (int ii = 0 ; ii < 60 ; ii++)
@@ -221,8 +225,8 @@ public class CloudWatchAppenderIntegrationTest
             try
             {
                 DescribeLogStreamsRequest reqest = new DescribeLogStreamsRequest()
-                                                   .withLogGroupName(LOGGROUP_NAME)
-                                                   .withLogStreamNamePrefix(streamName);
+                                                   .withLogGroupName(logGroupName)
+                                                   .withLogStreamNamePrefix(logStreamName);
                 DescribeLogStreamsResult response = client.describeLogStreams(reqest);
                 List<LogStream> streams = response.getLogStreams();
                 if ((streams != null) && (streams.size() > 0))
@@ -236,7 +240,7 @@ public class CloudWatchAppenderIntegrationTest
             }
             Thread.sleep(1000);
         }
-        fail("stream not ready within 60 seconds");
+        fail("stream \"" + logGroupName + "/" + logStreamName + "\" wasn't ready within 60 seconds");
     }
 
 
@@ -244,14 +248,14 @@ public class CloudWatchAppenderIntegrationTest
      *  We leave the log group for post-mortem analysis, but want to ensure
      *  that it's gone before starting a new test.
      */
-    private void deleteLogGroupIfExists() throws Exception
+    private void deleteLogGroupIfExists(String logGroupName) throws Exception
     {
         try
         {
-            client.deleteLogGroup(new DeleteLogGroupRequest().withLogGroupName(LOGGROUP_NAME));
+            client.deleteLogGroup(new DeleteLogGroupRequest().withLogGroupName(logGroupName));
             while (true)
             {
-                DescribeLogGroupsRequest request = new DescribeLogGroupsRequest().withLogGroupNamePrefix(LOGGROUP_NAME);
+                DescribeLogGroupsRequest request = new DescribeLogGroupsRequest().withLogGroupNamePrefix(logGroupName);
                 DescribeLogGroupsResult response = client.describeLogGroups(request);
                 if ((response.getLogGroups() == null) || (response.getLogGroups().size() == 0))
                 {

@@ -10,6 +10,8 @@ import java.util.TimeZone;
 
 import org.w3c.dom.Document;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -19,13 +21,13 @@ import org.apache.log4j.MDC;
 import org.apache.log4j.NDC;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.WriterAppender;
+import org.apache.log4j.helpers.LogLog;
 
 // I know of a nice library for making XPath-based assertions against a DOM, so convert
 // the generated JSON into XML ... sue me
 import net.sf.practicalxml.converter.JsonConverter;
 import net.sf.practicalxml.junit.DomAsserts;
 import net.sf.practicalxml.xpath.XPathWrapper;
-
 
 
 public class TestJsonLayout
@@ -93,6 +95,23 @@ public class TestJsonLayout
         {
             fail("process ID was not a number: " + processId);
         }
+    }
+
+//----------------------------------------------------------------------------
+//  Setup/teardown
+//----------------------------------------------------------------------------
+
+    @Before
+    public void setUp()
+    {
+        LogLog.setQuietMode(true);
+    }
+
+
+    @After
+    public void tearDown()
+    {
+        LogLog.setQuietMode(false);
     }
 
 //----------------------------------------------------------------------------

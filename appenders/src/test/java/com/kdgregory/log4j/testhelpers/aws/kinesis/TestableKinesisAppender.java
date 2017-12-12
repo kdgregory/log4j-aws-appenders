@@ -6,6 +6,7 @@ import java.lang.reflect.Field;
 import com.kdgregory.log4j.aws.KinesisAppender;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
+import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
 import com.kdgregory.log4j.aws.internal.shared.ThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
@@ -36,7 +37,13 @@ public class TestableKinesisAppender extends KinesisAppender
     }
 
 
-    public MockKinesisWriter getWriter()
+    public LogWriter getWriter()
+    {
+        return writer;
+    }
+
+
+    public MockKinesisWriter getMockWriter()
     {
         return (MockKinesisWriter)writer;
     }

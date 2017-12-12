@@ -7,6 +7,7 @@ import com.kdgregory.log4j.aws.CloudWatchAppender;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
+import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
 import com.kdgregory.log4j.aws.internal.shared.ThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
@@ -37,7 +38,14 @@ public class TestableCloudWatchAppender extends CloudWatchAppender
     }
 
 
-    public MockCloudWatchWriter getWriter()
+    public LogWriter getWriter()
+    {
+        return writer;
+    }
+
+
+    // a convenience function so that we're not always casting
+    public MockCloudWatchWriter getMockWriter()
     {
         return (MockCloudWatchWriter)writer;
     }

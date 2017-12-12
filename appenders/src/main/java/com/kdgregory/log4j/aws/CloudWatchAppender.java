@@ -49,7 +49,6 @@ public class CloudWatchAppender extends AbstractAppender<CloudWatchWriterConfig>
         logStream = "{startupTimestamp}";
     }
 
-
 //----------------------------------------------------------------------------
 //  Configuration
 //----------------------------------------------------------------------------
@@ -102,7 +101,6 @@ public class CloudWatchAppender extends AbstractAppender<CloudWatchWriterConfig>
         return logStream;
     }
 
-
 //----------------------------------------------------------------------------
 //  Appender-specific methods
 //----------------------------------------------------------------------------
@@ -118,9 +116,8 @@ public class CloudWatchAppender extends AbstractAppender<CloudWatchWriterConfig>
         super.rotate();
     }
 
-
 //----------------------------------------------------------------------------
-//  Subclass hooks
+//  AbstractAppender overrides
 //----------------------------------------------------------------------------
 
     @Override

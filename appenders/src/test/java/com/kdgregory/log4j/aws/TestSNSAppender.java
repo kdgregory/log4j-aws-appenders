@@ -21,7 +21,7 @@ import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
-import com.kdgregory.log4j.testhelpers.aws.ThrowingWriterFactory;
+import com.kdgregory.log4j.testhelpers.ThrowingWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSClient;
 import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSWriter;
 import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSWriterFactory;
@@ -152,9 +152,9 @@ public class TestSNSAppender
 
         logger.debug("this message triggers writer configuration");
 
-        assertFalse("under max size",          appender.isMessageTooLarge(LogMessage.create(undersizeMessage)));
-        assertFalse("at max size",             appender.isMessageTooLarge(LogMessage.create(okMessage)));
-        assertFalse("over max size",           appender.isMessageTooLarge(LogMessage.create(oversizeMessage)));
+        assertFalse("under max size",          appender.isMessageTooLarge(new LogMessage(0, undersizeMessage)));
+        assertFalse("at max size",             appender.isMessageTooLarge(new LogMessage(0, okMessage)));
+        assertFalse("over max size",           appender.isMessageTooLarge(new LogMessage(0, oversizeMessage)));
     }
 
 

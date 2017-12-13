@@ -49,9 +49,16 @@ extends AbstractLogWriter
     @Override
     protected boolean ensureDestinationAvailable()
     {
-        return (config.topicArn != null)
-             ? configureByArn()
-             : configureByName();
+        try
+        {
+            return (config.topicArn != null)
+                 ? configureByArn()
+                 : configureByName();
+        }
+        catch (Exception ex)
+        {
+            return initializationFailure("exception in initializer", ex);
+        }
     }
 
 
@@ -108,8 +115,7 @@ extends AbstractLogWriter
         }
         else
         {
-            LogLog.warn("unable to find specified topicArn: " + config.topicArn);
-            return false;
+            return initializationFailure("unable to find specified topicArn: " + config.topicArn, null);
         }
     }
 
@@ -123,22 +129,14 @@ extends AbstractLogWriter
     private boolean configureByName()
     {
         topicArn = retrieveAllTopicsByName().get(config.topicName);
-        if (topicArn == null)
+        if (topicArn != null)
         {
-            try
-            {
-                CreateTopicResult response = client.createTopic(config.topicName);
-                topicArn = response.getTopicArn();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                LogLog.warn("unable to create topic: " + config.topicName, ex);
-                return false;
-            }
+            return true;
         }
         else
         {
+            CreateTopicResult response = client.createTopic(config.topicName);
+            topicArn = response.getTopicArn();
             return true;
         }
     }

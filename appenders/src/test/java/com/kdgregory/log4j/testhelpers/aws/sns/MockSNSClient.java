@@ -148,7 +148,7 @@ public class MockSNSClient implements InvocationHandler
      *  Invocation handler for ListTopics. This returns the appropriate segment
      *  of the list passed to the constructor.
      */
-    private ListTopicsResult listTopics(ListTopicsRequest request)
+    protected ListTopicsResult listTopics(ListTopicsRequest request)
     {
         int currentSublist = (request.getNextToken() == null)
                            ? 0
@@ -168,7 +168,7 @@ public class MockSNSClient implements InvocationHandler
      *  Invocation handler for CreateTopic. Returns an ARN based on the name passed
      *  to the constructor.
      */
-    private CreateTopicResult createTopic(String name)
+    protected CreateTopicResult createTopic(String name)
     {
         if (topicName.equals(name))
             return new CreateTopicResult().withTopicArn(topicArn);

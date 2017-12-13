@@ -16,6 +16,9 @@ import org.apache.log4j.PropertyConfigurator;
 
 import net.sf.kdgcommons.lang.StringUtil;
 
+import com.amazonaws.services.sns.model.CreateTopicResult;
+
+import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
@@ -50,6 +53,26 @@ public class TestSNSAppender
     }
 
 
+    /**
+     *  A spin loop that waits for an writer running in another thread to
+     *  finish initialization. Times out after 5 seconds, otherwise returns
+     *  the initialization message.
+     */
+    private String waitForInitialization() throws Exception
+    {
+        for (int ii = 0 ; ii < 50 ; ii++)
+        {
+            AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+            if ((writer != null) && (writer.getInitializationMessage() != null))
+                return writer.getInitializationMessage();
+            else
+                Thread.sleep(100);
+        }
+        fail("timed out waiting for initialization");
+        return null; // never reached
+    }
+
+
 //----------------------------------------------------------------------------
 //  Tests
 //----------------------------------------------------------------------------
@@ -80,13 +103,13 @@ public class TestSNSAppender
     public void testAppend() throws Exception
     {
         initialize("TestSNSAppender/testAppend.properties");
-        MockSNSWriterFactory writerFactory = appender.getWriterFactory();
+        MockSNSWriterFactory writerFactory = (MockSNSWriterFactory)appender.getWriterFactory();
 
-        assertNull("before messages, writer is null",                   appender.getWriter());
+        assertNull("before messages, writer is null",                   appender.getMockWriter());
 
         logger.debug("first message");
 
-        MockSNSWriter writer = appender.getWriter();
+        MockSNSWriter writer = appender.getMockWriter();
 
         assertNotNull("after message 1, writer is initialized",         writer);
         assertEquals("after message 1, calls to writer factory",        1,                  writerFactory.invocationCount);
@@ -128,7 +151,7 @@ public class TestSNSAppender
         logger.debug("message");
 
         // must retrieve writer before we shut down
-        MockSNSWriter writer = appender.getWriter();
+        MockSNSWriter writer = appender.getMockWriter();
         LogManager.shutdown();
 
         assertEquals("number of messages written to log",   3,                          writer.messages.size());
@@ -173,6 +196,7 @@ public class TestSNSAppender
         logger.info("message two");
         mockClient.waitForWriter();
 
+        assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
         assertEquals("invocations of listTopics",       1,              mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",          2,              mockClient.publishInvocationCount);
@@ -192,6 +216,7 @@ public class TestSNSAppender
         logger.info("message one");
         mockClient.waitForWriter();
 
+        assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
         assertEquals("invocations of listTopics",       2,              mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",          1,              mockClient.publishInvocationCount);
@@ -206,9 +231,13 @@ public class TestSNSAppender
 
         MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("argle", "bargle"));
         appender.setWriterFactory(mockClient.newWriterFactory());
-        appender.setThreadFactory(new InlineThreadFactory());   // since writer never initializes we can run inline
+        appender.setThreadFactory(new DefaultThreadFactory());
 
         logger.info("message");
+
+        String initializationError = waitForInitialization();
+        assertTrue("initialization error mentions topic name (was: " + initializationError + ")",
+                   initializationError.contains("example"));
 
         assertEquals("invocations of listTopics",           1,          mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",          0,          mockClient.createTopicInvocationCount);
@@ -231,6 +260,7 @@ public class TestSNSAppender
         logger.info("message two");
         mockClient.waitForWriter();
 
+        assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
         assertEquals("invocations of listTopics",       1,              mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",          2,              mockClient.publishInvocationCount);
@@ -250,6 +280,7 @@ public class TestSNSAppender
         logger.info("message one");
         mockClient.waitForWriter();
 
+        assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
         assertEquals("invocations of listTopics",       2,              mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",          1,              mockClient.publishInvocationCount);
@@ -269,10 +300,39 @@ public class TestSNSAppender
         logger.info("message one");
         mockClient.waitForWriter();
 
+        assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
         assertEquals("invocations of listTopics",       1,              mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",      1,              mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",          1,              mockClient.publishInvocationCount);
         assertEquals("last message published",          "message one",  mockClient.lastMessage);
+    }
+
+
+    @Test
+    public void testExceptionInInitializer() throws Exception
+    {
+        initialize("TestSNSAppender/testWriterOperationByName.properties");
+
+        MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("argle", "bargle"))
+        {
+            @Override
+            protected CreateTopicResult createTopic(String name)
+            {
+                // TODO - turn this into a project-specific testing exception
+                throw new IllegalArgumentException("arbitrary failure");
+            }
+        };
+
+        appender.setWriterFactory(mockClient.newWriterFactory());
+        appender.setThreadFactory(new DefaultThreadFactory());
+
+        logger.info("message one");
+
+        String initializationError = waitForInitialization();
+        AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+
+        assertTrue("initialization message was non-blank",  ! initializationError.equals(""));
+        assertEquals("initialization exception retained",   IllegalArgumentException.class,     writer.getInitializationException().getClass());
     }
 
 
@@ -298,7 +358,8 @@ public class TestSNSAppender
             Thread.sleep(10);
         }
 
-        assertNull("writer has been reset",         appender.getWriter());
+        assertNull("writer has been reset",         appender.getMockWriter());
         assertEquals("last writer exception class", IllegalStateException.class, appender.getLastWriterException().getClass());
     }
+
 }

@@ -1,11 +1,13 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.testhelpers.aws.sns;
 
+
 import java.lang.reflect.Field;
 
 import com.kdgregory.log4j.aws.SNSAppender;
 import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
+import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
 import com.kdgregory.log4j.aws.internal.shared.ThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
@@ -32,13 +34,19 @@ extends SNSAppender
     }
 
 
-    public MockSNSWriterFactory getWriterFactory()
+    public WriterFactory<SNSWriterConfig> getWriterFactory()
     {
-        return (MockSNSWriterFactory)writerFactory;
+        return writerFactory;
     }
 
 
-    public MockSNSWriter getWriter()
+    public LogWriter getWriter()
+    {
+        return writer;
+    }
+
+
+    public MockSNSWriter getMockWriter()
     {
         return (MockSNSWriter)writer;
     }
@@ -46,7 +54,7 @@ extends SNSAppender
 
     public MessageQueue getMessageQueue()
     {
-        // note: will only work with the regular CloudWatchLogWriter
+        // TODO - refactor this to a utility class
         try
         {
             Field field = AbstractLogWriter.class.getDeclaredField("messageQueue");
@@ -55,7 +63,7 @@ extends SNSAppender
         }
         catch (Exception ex)
         {
-            throw new RuntimeException(ex);
+            throw new RuntimeException("unable to retrieve field from writer", ex);
         }
     }
 

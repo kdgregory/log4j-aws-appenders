@@ -27,7 +27,7 @@ public class ThrowingWriterFactory<T> implements WriterFactory<T>
                     try
                     {
                         appendLatch.await();
-                        throw new IllegalStateException("danger, danger Will Robinson!");
+                        throw new TestingException("danger, danger Will Robinson!");
                     }
                     catch (InterruptedException ignored2)
                     { /* nothing to do */ }

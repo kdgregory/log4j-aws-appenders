@@ -24,6 +24,7 @@ import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
+import com.kdgregory.log4j.testhelpers.TestingException;
 import com.kdgregory.log4j.testhelpers.ThrowingWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSClient;
 import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSWriter;
@@ -318,8 +319,7 @@ public class TestSNSAppender
             @Override
             protected CreateTopicResult createTopic(String name)
             {
-                // TODO - turn this into a project-specific testing exception
-                throw new IllegalArgumentException("arbitrary failure");
+                throw new TestingException("arbitrary failure");
             }
         };
 
@@ -332,7 +332,7 @@ public class TestSNSAppender
         AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
 
         assertTrue("initialization message was non-blank",  ! initializationError.equals(""));
-        assertEquals("initialization exception retained",   IllegalArgumentException.class,     writer.getInitializationException().getClass());
+        assertEquals("initialization exception retained",   TestingException.class,     writer.getInitializationException().getClass());
     }
 
 
@@ -348,7 +348,7 @@ public class TestSNSAppender
 
         logger.debug("this should trigger writer creation");
 
-        assertNull("writer has not yet thrown",         appender.getLastWriterException());
+        assertNull("writer has not yet thrown", appender.getLastWriterException());
 
         logger.debug("this should trigger writer throwage");
 
@@ -359,7 +359,7 @@ public class TestSNSAppender
         }
 
         assertNull("writer has been reset",         appender.getMockWriter());
-        assertEquals("last writer exception class", IllegalStateException.class, appender.getLastWriterException().getClass());
+        assertEquals("last writer exception class", TestingException.class, appender.getLastWriterException().getClass());
     }
 
 }

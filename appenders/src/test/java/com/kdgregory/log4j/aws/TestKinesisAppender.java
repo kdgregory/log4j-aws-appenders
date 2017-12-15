@@ -31,6 +31,7 @@ import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
 import com.kdgregory.log4j.testhelpers.NullThreadFactory;
+import com.kdgregory.log4j.testhelpers.TestingException;
 import com.kdgregory.log4j.testhelpers.ThrowingWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisClient;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisWriter;
@@ -310,7 +311,7 @@ public class TestKinesisAppender
             @Override
             protected CreateStreamResult createStream(CreateStreamRequest request)
             {
-                throw new UnsupportedOperationException("not now, not ever");
+                throw new TestingException("not now, not ever");
             }
         };
 
@@ -336,7 +337,7 @@ public class TestKinesisAppender
         assertTrue("initialization message non-blank",
                    ! writer.getInitializationMessage().equals(""));
         assertEquals("initialization error class",
-                     UnsupportedOperationException.class,
+                     TestingException.class,
                      writer.getInitializationException().getClass());
         assertEquals("initialization error message",
                      "not now, not ever",
@@ -440,7 +441,7 @@ public class TestKinesisAppender
         }
 
         assertNull("writer has been reset",         appender.getMockWriter());
-        assertEquals("last writer exception class", IllegalStateException.class, appender.getLastWriterException().getClass());
+        assertEquals("last writer exception class", TestingException.class, appender.getLastWriterException().getClass());
     }
 
 

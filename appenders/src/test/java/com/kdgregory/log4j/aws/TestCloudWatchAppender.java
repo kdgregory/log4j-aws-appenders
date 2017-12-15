@@ -22,7 +22,6 @@ import net.sf.kdgcommons.lang.StringUtil;
 import com.amazonaws.services.logs.model.DescribeLogGroupsRequest;
 import com.amazonaws.services.logs.model.DescribeLogGroupsResult;
 import com.amazonaws.services.logs.model.InputLogEvent;
-import com.amazonaws.services.logs.model.InvalidSequenceTokenException;
 import com.amazonaws.services.logs.model.PutLogEventsRequest;
 import com.amazonaws.services.logs.model.PutLogEventsResult;
 
@@ -497,7 +496,7 @@ public class TestCloudWatchAppender
             protected DescribeLogGroupsResult describeLogGroups(
                 DescribeLogGroupsRequest request)
             {
-                throw new UnsupportedOperationException("not now, not ever");
+                throw new TestingException("not now, not ever");
             }
         };
 
@@ -520,7 +519,7 @@ public class TestCloudWatchAppender
         assertTrue("initialization message non-blank",
                    ! writer.getInitializationMessage().equals(""));
         assertEquals("initialization error class",
-                     UnsupportedOperationException.class,
+                     TestingException.class,
                      writer.getInitializationException().getClass());
         assertEquals("initialization error message",
                      "not now, not ever",
@@ -551,7 +550,7 @@ public class TestCloudWatchAppender
         }
 
         assertNull("writer has been reset",         appender.getWriter());
-        assertEquals("last writer exception class", IllegalStateException.class, appender.getLastWriterException().getClass());
+        assertEquals("last writer exception class", TestingException.class, appender.getLastWriterException().getClass());
     }
 
 
@@ -570,7 +569,7 @@ public class TestCloudWatchAppender
             {
                 if (putLogEventsInvocationCount % 2 == 1)
                 {
-                    throw new InvalidSequenceTokenException("anything");
+                    throw new TestingException("anything");
                 }
                 else
                 {

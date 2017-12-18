@@ -55,7 +55,7 @@ public class TestMessageQueue
 
 
     @Test
-    public void testTimedDequeue() throws Exception
+    public void testDequeueWithTimout() throws Exception
     {
         MessageQueue queue = new MessageQueue(1000, DiscardAction.none);
 
@@ -200,5 +200,37 @@ public class TestMessageQueue
         List<LogMessage> messages = queue.toList();
         assertEquals("first message in queue",  "0", messages.get(0).getMessage());
         assertEquals("last message in queue",   "9", messages.get(discardThreshold - 1).getMessage());
+    }
+
+
+    @Test
+    public void testUpdateDiscard() throws Exception
+    {
+        final int originalDiscardThreshold = 10;
+        final int newDiscardThreshold = 5;
+        final int messagesToEnqueue = 20;
+
+        MessageQueue queue = new MessageQueue(originalDiscardThreshold, DiscardAction.newest);
+
+        for (int ii = 0 ; ii < messagesToEnqueue ; ii++)
+        {
+            queue.enqueue(new LogMessage(System.currentTimeMillis(), String.valueOf(ii)));
+        }
+
+        LogMessage originalOldestMessage = queue.toList().get(0);
+
+        assertEquals("queue size with original threshold", originalDiscardThreshold, queue.size());
+
+        queue.setDiscardThreshold(newDiscardThreshold);
+        queue.setDiscardAction(DiscardAction.oldest);
+
+        assertEquals("queue size didn't change after setting threshold", originalDiscardThreshold,  queue.size());
+        assertEquals("messages not deleted after enqueue",               originalDiscardThreshold,  queue.toList().size());
+
+        queue.enqueue(new LogMessage(System.currentTimeMillis(), "foo"));
+
+        assertEquals("queue size changed after next enqueue",   newDiscardThreshold,    queue.size());
+        assertEquals("messages were deleted after enqueue",     newDiscardThreshold,    queue.toList().size());
+        assertNotSame("oldest message was discarded",           originalOldestMessage,  queue.toList().get(0));
     }
 }

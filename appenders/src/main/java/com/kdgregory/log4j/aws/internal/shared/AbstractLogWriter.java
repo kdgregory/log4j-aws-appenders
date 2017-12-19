@@ -124,6 +124,8 @@ implements LogWriter
             else
                 LogLog.error("initialization failed: " + initializationMessage);
 
+            messageQueue.setDiscardThreshold(0);
+            messageQueue.setDiscardAction(DiscardAction.oldest);
             return;
         }
 

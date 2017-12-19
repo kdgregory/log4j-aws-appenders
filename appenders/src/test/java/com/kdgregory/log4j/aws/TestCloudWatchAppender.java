@@ -29,6 +29,8 @@ import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 import com.kdgregory.log4j.testhelpers.*;
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.*;
 
@@ -53,6 +55,30 @@ public class TestCloudWatchAppender
         appender.setThreadFactory(new InlineThreadFactory());
         appender.setWriterFactory(new MockCloudWatchWriterFactory(appender));
     }
+
+
+    /**
+     *  A spin loop that waits for an writer running in another thread to
+     *  finish initialization. Times out after 5 seconds, otherwise returns
+     *  the initialization message.
+     */
+    private String waitForInitialization() throws Exception
+    {
+        for (int ii = 0 ; ii < 50 ; ii++)
+        {
+            AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+            if ((writer != null) && (writer.getInitializationMessage() != null))
+                return writer.getInitializationMessage();
+            else
+                Thread.sleep(100);
+        }
+        fail("timed out waiting for initialization");
+        return null; // never reached
+    }
+
+//----------------------------------------------------------------------------
+//  JUnit-controlled configuration
+//----------------------------------------------------------------------------
 
 
     @Before
@@ -504,26 +530,30 @@ public class TestCloudWatchAppender
         appender.setThreadFactory(new DefaultThreadFactory());
         appender.setWriterFactory(mockClient.newWriterFactory());
 
-        // trigger writer creation
+        // first message triggers writer creation
+
         logger.debug("message one");
+        waitForInitialization();
 
-        // since we'll never get to the point of sending the message we need to spin rather than use semaphore
         AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
-        while (writer.getInitializationMessage() == null)
-        {
-            Thread.sleep(100);
-        }
+        MessageQueue messageQueue = appender.getMessageQueue();
 
-        assertEquals("describeLogGroups: invocation count",   1,                mockClient.describeLogGroupsInvocationCount);
-        assertEquals("describeLogStreams: invocation count",  0,                mockClient.describeLogStreamsInvocationCount);
-        assertTrue("initialization message non-blank",
-                   ! writer.getInitializationMessage().equals(""));
-        assertEquals("initialization error class",
-                     TestingException.class,
-                     writer.getInitializationException().getClass());
-        assertEquals("initialization error message",
-                     "not now, not ever",
-                     writer.getInitializationException().getMessage());
+        assertEquals("describeLogGroups: invocation count",     1,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",    0,                mockClient.describeLogStreamsInvocationCount);
+
+        assertTrue("initialization message was non-blank",      ! writer.getInitializationMessage().equals(""));
+        assertEquals("initialization exception retained",       TestingException.class,     writer.getInitializationException().getClass());
+        assertEquals("initialization error message",            "not now, not ever",        writer.getInitializationException().getMessage());
+
+
+        assertEquals("message queue set to discard all",        0,                          messageQueue.getDiscardThreshold());
+        assertEquals("message queue set to discard all",        DiscardAction.oldest,       messageQueue.getDiscardAction());
+        assertEquals("messages in queue (initial)",             1,                          messageQueue.toList().size());
+
+        // trying to log another message should clear the queue
+
+        logger.info("message two");
+        assertEquals("messages in queue (second try)",          0,                          messageQueue.toList().size());
     }
 
 

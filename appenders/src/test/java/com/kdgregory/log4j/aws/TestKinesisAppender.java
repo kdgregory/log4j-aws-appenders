@@ -28,6 +28,8 @@ import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
 import com.kdgregory.log4j.testhelpers.NullThreadFactory;
@@ -60,6 +62,29 @@ public class TestKinesisAppender
         appender.setWriterFactory(new MockKinesisWriterFactory(appender));
     }
 
+
+    /**
+     *  A spin loop that waits for an writer running in another thread to
+     *  finish initialization. Times out after 5 seconds, otherwise returns
+     *  the initialization message.
+     */
+    private String waitForInitialization() throws Exception
+    {
+        for (int ii = 0 ; ii < 50 ; ii++)
+        {
+            AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+            if ((writer != null) && (writer.getInitializationMessage() != null))
+                return writer.getInitializationMessage();
+            else
+                Thread.sleep(100);
+        }
+        fail("timed out waiting for initialization");
+        return null; // never reached
+    }
+
+//----------------------------------------------------------------------------
+//  JUnit-controlled configuration
+//----------------------------------------------------------------------------
 
     @Before
     public void setUp()
@@ -318,30 +343,31 @@ public class TestKinesisAppender
         appender.setThreadFactory(new DefaultThreadFactory());
         appender.setWriterFactory(mockClient.newWriterFactory());
 
+        // first message triggers writer creation
+
         logger.debug("example message");
+        waitForInitialization();
 
-        // we never get to putRecords so can't use the semaphore; spinning is an alternative
         AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
-        while (writer.getInitializationMessage() == null)
-        {
-            Thread.sleep(100);
-        }
+        MessageQueue messageQueue = appender.getMessageQueue();
 
-        // these first assertions are window dressing
-        assertEquals("describeStream: invocation count",        1,          mockClient.describeStreamInvocationCount);
-        assertEquals("describeStream: stream name",             "foo",      mockClient.describeStreamStreamName);
-        assertEquals("createStream: invocation count",          1,          mockClient.createStreamInvocationCount);
-        assertEquals("createStream: stream name",               "foo",      mockClient.createStreamStreamName);
+        assertEquals("describeStream: invocation count",    1,          mockClient.describeStreamInvocationCount);
+        assertEquals("describeStream: stream name",         "foo",      mockClient.describeStreamStreamName);
+        assertEquals("createStream: invocation count",      1,          mockClient.createStreamInvocationCount);
+        assertEquals("createStream: stream name",           "foo",      mockClient.createStreamStreamName);
 
-        // these are the ones we care about
-        assertTrue("initialization message non-blank",
-                   ! writer.getInitializationMessage().equals(""));
-        assertEquals("initialization error class",
-                     TestingException.class,
-                     writer.getInitializationException().getClass());
-        assertEquals("initialization error message",
-                     "not now, not ever",
-                     writer.getInitializationException().getMessage());
+        assertTrue("initialization message non-blank",      ! writer.getInitializationMessage().equals(""));
+        assertEquals("initialization error class",          TestingException.class,     writer.getInitializationException().getClass());
+        assertEquals("initialization error message",        "not now, not ever",        writer.getInitializationException().getMessage());
+
+        assertEquals("message queue set to discard all",    0,                          messageQueue.getDiscardThreshold());
+        assertEquals("message queue set to discard all",    DiscardAction.oldest,       messageQueue.getDiscardAction());
+        assertEquals("messages in queue (initial)",         1,                          messageQueue.toList().size());
+
+        // trying to log another message should clear the queue
+
+        logger.info("message two");
+        assertEquals("messages in queue (second try)",      0,                          messageQueue.toList().size());
     }
 
 

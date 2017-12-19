@@ -21,6 +21,8 @@ import com.amazonaws.services.sns.model.CreateTopicResult;
 import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
@@ -326,13 +328,24 @@ public class TestSNSAppender
         appender.setWriterFactory(mockClient.newWriterFactory());
         appender.setThreadFactory(new DefaultThreadFactory());
 
+        // first message triggers writer creation
+
         logger.info("message one");
+        waitForInitialization();
 
-        String initializationError = waitForInitialization();
         AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+        MessageQueue messageQueue = appender.getMessageQueue();
 
-        assertTrue("initialization message was non-blank",  ! initializationError.equals(""));
+        assertTrue("initialization message was non-blank",  ! writer.getInitializationMessage().equals(""));
         assertEquals("initialization exception retained",   TestingException.class,     writer.getInitializationException().getClass());
+        assertEquals("message queue set to discard all",    0,                          messageQueue.getDiscardThreshold());
+        assertEquals("message queue set to discard all",    DiscardAction.oldest,       messageQueue.getDiscardAction());
+        assertEquals("messages in queue (initial)",         1,                          messageQueue.toList().size());
+
+        // trying to log another message should clear the queue
+
+        logger.info("message two");
+        assertEquals("messages in queue (second try)",      0,                          messageQueue.toList().size());
     }
 
 

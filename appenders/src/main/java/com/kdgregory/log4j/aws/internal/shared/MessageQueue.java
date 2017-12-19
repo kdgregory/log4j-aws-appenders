@@ -66,6 +66,46 @@ public class MessageQueue
         this.discardThreshold = discardThreshold;
         this.discardAction = discardAction;
     }
+    
+    
+//----------------------------------------------------------------------------
+//  Accessors
+//----------------------------------------------------------------------------
+    
+    /**
+     *  Changes the discard threshold.
+     */
+    public void setDiscardThreshold(int value)
+    {
+        discardThreshold = value;
+    }    
+    
+    
+    /**
+     *  Returns the current discard threshold; this is intended for testing.
+     */
+    public int getDiscardThreshold()
+    {
+        return discardThreshold;
+    }
+
+
+    /**
+     *  Changes the discard action
+     */
+    public void setDiscardAction(DiscardAction value)
+    {
+        discardAction = value;
+    } 
+    
+    
+    /**
+     *  Returns the current discard action; this is intended for testing.
+     */
+    public DiscardAction getDiscardAction()
+    {
+        return discardAction;
+    }
 
 
 //----------------------------------------------------------------------------
@@ -177,24 +217,6 @@ public class MessageQueue
     public List<LogMessage> toList()
     {
         return new ArrayList<LogMessage>(messageQueue);
-    }
-
-
-    /**
-     *  Changes the discard threshold.
-     */
-    public void setDiscardThreshold(int value)
-    {
-        discardThreshold = value;
-    }
-
-
-    /**
-     *  Changes the discard action
-     */
-    public void setDiscardAction(DiscardAction value)
-    {
-        discardAction = value;
     }
 
 

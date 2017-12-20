@@ -79,8 +79,6 @@ implements LogWriter
         return initializationException;
     }
 
-
-
 //----------------------------------------------------------------------------
 //  Implementation of LogWriter
 //----------------------------------------------------------------------------
@@ -109,6 +107,19 @@ implements LogWriter
         }
     }
 
+
+    @Override
+    public void setDiscardThreshold(int value)
+    {
+        messageQueue.setDiscardThreshold(value);
+    }
+
+
+    @Override
+    public void setDiscardAction(DiscardAction value)
+    {
+        messageQueue.setDiscardAction(value);
+    }
 
 //----------------------------------------------------------------------------
 //  Implementation of Runnable

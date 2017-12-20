@@ -26,6 +26,7 @@ import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
+import com.kdgregory.log4j.testhelpers.NullThreadFactory;
 import com.kdgregory.log4j.testhelpers.TestingException;
 import com.kdgregory.log4j.testhelpers.ThrowingWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSClient;
@@ -375,4 +376,34 @@ public class TestSNSAppender
         assertEquals("last writer exception class", TestingException.class, appender.getLastWriterException().getClass());
     }
 
+
+    @Test
+    public void testReconfigureDiscardProperties() throws Exception
+    {
+        initialize("TestSNSAppender/testReconfigureDiscardProperties.properties");
+
+        // another test where we don't actually do anything but need to verify actual writer
+
+        appender.setThreadFactory(new NullThreadFactory());
+        appender.setWriterFactory(new MockSNSClient("example", Arrays.asList("example")).newWriterFactory());
+
+        logger.debug("trigger writer creation");
+
+        MessageQueue messageQueue = appender.getMessageQueue();
+
+        assertEquals("initial discard threshold, from appender",    12345,                              appender.getDiscardThreshold());
+        assertEquals("initial discard action, from appender",       DiscardAction.newest.toString(),    appender.getDiscardAction());
+
+        assertEquals("initial discard threshold, from queue",       12345,                              messageQueue.getDiscardThreshold());
+        assertEquals("initial discard action, from queue",          DiscardAction.newest.toString(),    messageQueue.getDiscardAction().toString());
+
+        appender.setDiscardThreshold(54321);
+        appender.setDiscardAction(DiscardAction.oldest.toString());
+
+        assertEquals("updated discard threshold, from appender",    54321,                              appender.getDiscardThreshold());
+        assertEquals("updated discard action, from appender",       DiscardAction.oldest.toString(),    appender.getDiscardAction());
+
+        assertEquals("updated discard threshold, from queue",       54321,                              messageQueue.getDiscardThreshold());
+        assertEquals("updated discard action, from queue",          DiscardAction.oldest.toString(),    messageQueue.getDiscardAction().toString());
+    }
 }

@@ -5,6 +5,7 @@ import java.util.concurrent.CountDownLatch;
 
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 
 
@@ -34,6 +35,12 @@ public class ThrowingWriterFactory<T> implements WriterFactory<T>
                 }
 
                 @Override
+                public void addMessage(LogMessage message)
+                {
+                    appendLatch.countDown();
+                }
+
+                @Override
                 public void stop()
                 {
                     // not used
@@ -46,9 +53,15 @@ public class ThrowingWriterFactory<T> implements WriterFactory<T>
                 }
 
                 @Override
-                public void addMessage(LogMessage message)
+                public void setDiscardThreshold(int value)
                 {
-                    appendLatch.countDown();
+                    // not used
+                }
+
+                @Override
+                public void setDiscardAction(DiscardAction value)
+                {
+                    // not used
                 }
             };
         }

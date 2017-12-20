@@ -715,7 +715,7 @@ public class TestCloudWatchAppender
     {
         initialize("TestCloudWatchAppender/testDiscardNone.properties");
 
-        // this is a dummy client: never actually run the writer thread, but
+        // this is a dummy client: we never actually run the writer thread, but
         // need to test the real writer
         MockCloudWatchClient mockClient = new MockCloudWatchClient()
         {
@@ -739,5 +739,36 @@ public class TestCloudWatchAppender
         assertEquals("number of messages in queue", 20, messages.size());
         assertEquals("oldest message", "message 0\n", messages.get(0).getMessage());
         assertEquals("newest message", "message 19\n", messages.get(19).getMessage());
+    }
+
+
+    @Test
+    public void testReconfigureDiscardProperties() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testReconfigureDiscardProperties.properties");
+
+        // another test where we don't actually do anything but need to verify actual writer
+
+        appender.setThreadFactory(new NullThreadFactory());
+        appender.setWriterFactory(new MockCloudWatchClient().newWriterFactory());
+
+        logger.debug("trigger writer creation");
+
+        MessageQueue messageQueue = appender.getMessageQueue();
+
+        assertEquals("initial discard threshold, from appender",    12345,                              appender.getDiscardThreshold());
+        assertEquals("initial discard action, from appender",       DiscardAction.newest.toString(),    appender.getDiscardAction());
+
+        assertEquals("initial discard threshold, from queue",       12345,                              messageQueue.getDiscardThreshold());
+        assertEquals("initial discard action, from queue",          DiscardAction.newest.toString(),    messageQueue.getDiscardAction().toString());
+
+        appender.setDiscardThreshold(54321);
+        appender.setDiscardAction(DiscardAction.oldest.toString());
+
+        assertEquals("updated discard threshold, from appender",    54321,                              appender.getDiscardThreshold());
+        assertEquals("updated discard action, from appender",       DiscardAction.oldest.toString(),    appender.getDiscardAction());
+
+        assertEquals("updated discard threshold, from queue",       54321,                              messageQueue.getDiscardThreshold());
+        assertEquals("updated discard action, from queue",          DiscardAction.oldest.toString(),    messageQueue.getDiscardAction().toString());
     }
 }

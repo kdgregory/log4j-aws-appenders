@@ -5,6 +5,12 @@
 
     <body>
         <release version="1.2.0" date="TBD" description="support for SNS as a destination">
+            <action dev='kdgregory' type='add'>
+                Add SNSAppender, intended for notification of runtime errors.
+            </action>
+            <action dev='kdgregory' type='add'>
+                Allow discard threshold and action to be reconfigured at runtime.
+            </action>
             <action dev='kdgregory' type='update'>
                 If there's an initialization error the internal message queue is set to discard
                 all messages (avoids memory issues, especially with an unbounded queue).
@@ -31,8 +37,7 @@
 
         <release version="1.1.2" date="2017-10-16" description="JSON output">
             <action dev='kdgregory' type='add'>
-                Added JsonLayout, intended for use with Kinesis/Firehose/ElasticSearch
-                deployments
+                Added JsonLayout, intended for use with Kinesis/Firehose/ElasticSearch deployments
             </action>
         </release>
 

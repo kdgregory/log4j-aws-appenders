@@ -122,7 +122,9 @@ extends AppenderSkeleton
     {
         this.batchDelay = value;
         if (writer != null)
+        {
             writer.setBatchDelay(value);
+        }
     }
 
 
@@ -152,7 +154,10 @@ extends AppenderSkeleton
     public void setDiscardThreshold(int value)
     {
         this.discardThreshold = value;
-        // TODO - propagate to writer
+        if (writer != null)
+        {
+            writer.setDiscardThreshold(value);
+        }
     }
 
 
@@ -180,7 +185,10 @@ extends AppenderSkeleton
     public void setDiscardAction(String value)
     {
         discardAction = DiscardAction.lookup(value);
-        // TODO - propagate to writer
+        if (writer != null)
+        {
+            writer.setDiscardAction(discardAction);
+        }
     }
 
 

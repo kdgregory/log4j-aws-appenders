@@ -16,7 +16,6 @@ import com.amazonaws.services.sns.model.*;
 
 import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 
 
 public class SNSLogWriter
@@ -31,7 +30,7 @@ extends AbstractLogWriter
 
     public SNSLogWriter(SNSWriterConfig config)
     {
-        super(1, 1000, DiscardAction.oldest);
+        super(1, config.discardThreshold, config.discardAction);
         this.config = config;
     }
 

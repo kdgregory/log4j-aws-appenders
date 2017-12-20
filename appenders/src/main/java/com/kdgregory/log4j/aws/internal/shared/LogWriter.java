@@ -1,6 +1,7 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.aws.internal.shared;
 
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 
 /**
  *  Defines the contract between appenders and writers.
@@ -21,6 +22,14 @@ extends Runnable
 
 
     /**
+     *  Signals the writer that it will no longer receive batches. It should, however,
+     *  make a best effort to send any batches that it already has before exiting its
+     *  <code>run()</code> method.
+     */
+    void stop();
+
+
+    /**
      *  Sets the batch delay for the writer. The appender is assumed to expose a delay
      *  parameter, and this method allows it to change the writer's delay at runtime.
      *  Changes may or may not take place immediately.
@@ -31,9 +40,15 @@ extends Runnable
 
 
     /**
-     *  Signals the writer that it will no longer receive batches. It should, however,
-     *  make a best effort to send any batches that it already has before exiting its
-     *  <code>run()</code> method.
+     *  Updates the writer's discard threshold: the maximum number of message stored
+     *  in its queue.
      */
-    void stop();
+    void setDiscardThreshold(int value);
+
+
+    /**
+     *  Updates the writer's discard action: how it discards messages once the threshold
+     *  has been reached.
+     */
+    void setDiscardAction(DiscardAction value);
 }

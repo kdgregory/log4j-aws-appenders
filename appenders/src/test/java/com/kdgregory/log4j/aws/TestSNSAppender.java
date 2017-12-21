@@ -5,6 +5,7 @@ import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import java.net.URL;
 import java.util.Arrays;
+import java.util.List;
 
 import org.junit.Test;
 
@@ -17,6 +18,7 @@ import org.apache.log4j.PropertyConfigurator;
 import net.sf.kdgcommons.lang.StringUtil;
 
 import com.amazonaws.services.sns.model.CreateTopicResult;
+import com.amazonaws.services.sns.model.PublishResult;
 
 import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
@@ -24,6 +26,7 @@ import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
+
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
 import com.kdgregory.log4j.testhelpers.NullThreadFactory;
@@ -374,6 +377,102 @@ public class TestSNSAppender
 
         assertNull("writer has been reset",         appender.getMockWriter());
         assertEquals("last writer exception class", TestingException.class, appender.getLastWriterException().getClass());
+    }
+
+
+    @Test
+    public void testDiscardOldest() throws Exception
+    {
+        initialize("TestSNSAppender/testDiscardOldest.properties");
+
+        // this is a dummy client: never actually run the writer thread, but
+        // need to test the real writer
+        MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("example"))
+        {
+            @Override
+            protected PublishResult publish0(String arn, String message)
+            {
+                throw new TestingException("this isn't going to work");
+            }
+        };
+
+        appender.setThreadFactory(new NullThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        for (int ii = 0 ; ii < 20 ; ii++)
+        {
+            logger.debug("message " + ii);
+        }
+
+        List<LogMessage> messages = appender.getMessageQueue().toList();
+
+        assertEquals("number of messages in queue", 10, messages.size());
+        assertEquals("oldest message", "message 10\n", messages.get(0).getMessage());
+        assertEquals("newest message", "message 19\n", messages.get(9).getMessage());
+    }
+
+
+    @Test
+    public void testDiscardNewest() throws Exception
+    {
+        initialize("TestSNSAppender/testDiscardNewest.properties");
+
+        // this is a dummy client: never actually run the writer thread, but
+        // need to test the real writer
+        MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("example"))
+        {
+            @Override
+            protected PublishResult publish0(String arn, String message)
+            {
+                throw new TestingException("this isn't going to work");
+            }
+        };
+
+        appender.setThreadFactory(new NullThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        for (int ii = 0 ; ii < 20 ; ii++)
+        {
+            logger.debug("message " + ii);
+        }
+
+        List<LogMessage> messages = appender.getMessageQueue().toList();
+
+        assertEquals("number of messages in queue", 10, messages.size());
+        assertEquals("oldest message", "message 0\n", messages.get(0).getMessage());
+        assertEquals("newest message", "message 9\n", messages.get(9).getMessage());
+    }
+
+
+    @Test
+    public void testDiscardNone() throws Exception
+    {
+        initialize("TestSNSAppender/testDiscardNone.properties");
+
+        // this is a dummy client: we never actually run the writer thread, but
+        // need to test the real writer
+        MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("example"))
+        {
+            @Override
+            protected PublishResult publish0(String arn, String message)
+            {
+                throw new TestingException("this isn't going to work");
+            }
+        };
+
+        appender.setThreadFactory(new NullThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        for (int ii = 0 ; ii < 20 ; ii++)
+        {
+            logger.debug("message " + ii);
+        }
+
+        List<LogMessage> messages = appender.getMessageQueue().toList();
+
+        assertEquals("number of messages in queue", 20, messages.size());
+        assertEquals("oldest message", "message 0\n", messages.get(0).getMessage());
+        assertEquals("newest message", "message 19\n", messages.get(19).getMessage());
     }
 
 

@@ -18,6 +18,7 @@ import org.apache.log4j.PropertyConfigurator;
 import net.sf.kdgcommons.lang.StringUtil;
 
 import com.amazonaws.services.sns.model.CreateTopicResult;
+import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
 
 import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
@@ -40,6 +41,9 @@ import com.kdgregory.log4j.testhelpers.aws.sns.TestableSNSAppender;
 
 public class TestSNSAppender
 {
+    // this ARN is used for all configuration files
+    private final static String EXPECTED_ARN = "arn:aws:sns:us-east-1:123456789012:example";
+
     private Logger logger;
     private TestableSNSAppender appender;
 
@@ -189,6 +193,78 @@ public class TestSNSAppender
 
 
     @Test
+    public void testWriterOperationByName() throws Exception
+    {
+        initialize("TestSNSAppender/testWriterOperationByName.properties");
+
+        MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("argle", "example", "bargle"));
+        appender.setWriterFactory(mockClient.newWriterFactory());
+        appender.setThreadFactory(new DefaultThreadFactory());
+
+        logger.info("message one");
+        mockClient.allowWriterThread();
+
+        logger.info("message two");
+        mockClient.allowWriterThread();
+
+        assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
+        assertEquals("invocations of listTopics",       1,              mockClient.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
+        assertEquals("invocations of publish",          2,              mockClient.publishInvocationCount);
+
+        assertEquals("last message published, arn",     EXPECTED_ARN,   mockClient.lastPublishArn);
+        assertEquals("last message published, subject", null,           mockClient.lastPublishSubject);
+        assertEquals("last message published, body",    "message two",  mockClient.lastPublishMessage);
+    }
+
+
+    @Test
+    public void testWriterOperationByNameMultipleTopicLists() throws Exception
+    {
+        initialize("TestSNSAppender/testWriterOperationByName.properties");
+
+        MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("argle", "example"), Arrays.asList("bargle"));
+        appender.setWriterFactory(mockClient.newWriterFactory());
+        appender.setThreadFactory(new DefaultThreadFactory());
+
+        logger.info("message one");
+        mockClient.allowWriterThread();
+
+        assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
+        assertEquals("invocations of listTopics",       2,              mockClient.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
+        assertEquals("invocations of publish",          1,              mockClient.publishInvocationCount);
+
+        assertEquals("last message published, arn",     EXPECTED_ARN,   mockClient.lastPublishArn);
+        assertEquals("last message published, subject", null,           mockClient.lastPublishSubject);
+        assertEquals("last message published, body",    "message one",  mockClient.lastPublishMessage);
+    }
+
+
+    @Test
+    public void testWriterOperationByNameNoExistingTopic() throws Exception
+    {
+        initialize("TestSNSAppender/testWriterOperationByName.properties");
+
+        MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("argle", "bargle"));
+        appender.setWriterFactory(mockClient.newWriterFactory());
+        appender.setThreadFactory(new DefaultThreadFactory());
+
+        logger.info("message one");
+        mockClient.allowWriterThread();
+
+        assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
+        assertEquals("invocations of listTopics",       1,              mockClient.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",      1,              mockClient.createTopicInvocationCount);
+        assertEquals("invocations of publish",          1,              mockClient.publishInvocationCount);
+
+        assertEquals("last message published, arn",     EXPECTED_ARN,   mockClient.lastPublishArn);
+        assertEquals("last message published, subject", null,           mockClient.lastPublishSubject);
+        assertEquals("last message published, body",    "message one",  mockClient.lastPublishMessage);
+    }
+
+
+    @Test
     public void testWriterOperationByArn() throws Exception
     {
         initialize("TestSNSAppender/testWriterOperationByArn.properties");
@@ -198,16 +274,19 @@ public class TestSNSAppender
         appender.setThreadFactory(new DefaultThreadFactory());
 
         logger.info("message one");
-        mockClient.waitForWriter();
+        mockClient.allowWriterThread();
 
         logger.info("message two");
-        mockClient.waitForWriter();
+        mockClient.allowWriterThread();
 
         assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
         assertEquals("invocations of listTopics",       1,              mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",          2,              mockClient.publishInvocationCount);
-        assertEquals("last message published",          "message two",  mockClient.lastMessage);
+
+        assertEquals("last message published, arn",     EXPECTED_ARN,   mockClient.lastPublishArn);
+        assertEquals("last message published, subject", null,           mockClient.lastPublishSubject);
+        assertEquals("last message published, body",    "message two",  mockClient.lastPublishMessage);
     }
 
 
@@ -221,13 +300,16 @@ public class TestSNSAppender
         appender.setThreadFactory(new DefaultThreadFactory());
 
         logger.info("message one");
-        mockClient.waitForWriter();
+        mockClient.allowWriterThread();
 
         assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
         assertEquals("invocations of listTopics",       2,              mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",          1,              mockClient.publishInvocationCount);
-        assertEquals("last message published",          "message one",  mockClient.lastMessage);
+
+        assertEquals("last message published, arn",     EXPECTED_ARN,   mockClient.lastPublishArn);
+        assertEquals("last message published, subject", null,           mockClient.lastPublishSubject);
+        assertEquals("last message published, body",    "message one",  mockClient.lastPublishMessage);
     }
 
 
@@ -253,65 +335,25 @@ public class TestSNSAppender
 
 
     @Test
-    public void testWriterOperationByName() throws Exception
+    public void testWriterOperationWithSubject() throws Exception
     {
-        initialize("TestSNSAppender/testWriterOperationByName.properties");
+        initialize("TestSNSAppender/testWriterOperationWithSubject.properties");
 
         MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("argle", "example", "bargle"));
         appender.setWriterFactory(mockClient.newWriterFactory());
         appender.setThreadFactory(new DefaultThreadFactory());
 
         logger.info("message one");
-        mockClient.waitForWriter();
-
-        logger.info("message two");
-        mockClient.waitForWriter();
+        mockClient.allowWriterThread();
 
         assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
         assertEquals("invocations of listTopics",       1,              mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
-        assertEquals("invocations of publish",          2,              mockClient.publishInvocationCount);
-        assertEquals("last message published",          "message two",  mockClient.lastMessage);
-    }
-
-
-    @Test
-    public void testWriterOperationByNameMultipleTopicLists() throws Exception
-    {
-        initialize("TestSNSAppender/testWriterOperationByName.properties");
-
-        MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("argle", "example"), Arrays.asList("bargle"));
-        appender.setWriterFactory(mockClient.newWriterFactory());
-        appender.setThreadFactory(new DefaultThreadFactory());
-
-        logger.info("message one");
-        mockClient.waitForWriter();
-
-        assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
-        assertEquals("invocations of listTopics",       2,              mockClient.listTopicsInvocationCount);
-        assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",          1,              mockClient.publishInvocationCount);
-        assertEquals("last message published",          "message one",  mockClient.lastMessage);
-    }
 
-
-    @Test
-    public void testWriterOperationByNameNoExistingTopic() throws Exception
-    {
-        initialize("TestSNSAppender/testWriterOperationByName.properties");
-
-        MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("argle", "bargle"));
-        appender.setWriterFactory(mockClient.newWriterFactory());
-        appender.setThreadFactory(new DefaultThreadFactory());
-
-        logger.info("message one");
-        mockClient.waitForWriter();
-
-        assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
-        assertEquals("invocations of listTopics",       1,              mockClient.listTopicsInvocationCount);
-        assertEquals("invocations of createTopic",      1,              mockClient.createTopicInvocationCount);
-        assertEquals("invocations of publish",          1,              mockClient.publishInvocationCount);
-        assertEquals("last message published",          "message one",  mockClient.lastMessage);
+        assertEquals("last message published, arn",     EXPECTED_ARN,   mockClient.lastPublishArn);
+        assertEquals("last message published, subject", "fribble-0",    mockClient.lastPublishSubject);
+        assertEquals("last message published, body",    "message one",  mockClient.lastPublishMessage);
     }
 
 
@@ -390,7 +432,7 @@ public class TestSNSAppender
         MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("example"))
         {
             @Override
-            protected PublishResult publish0(String arn, String message)
+            protected PublishResult publish0(PublishRequest request)
             {
                 throw new TestingException("this isn't going to work");
             }
@@ -422,7 +464,7 @@ public class TestSNSAppender
         MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("example"))
         {
             @Override
-            protected PublishResult publish0(String arn, String message)
+            protected PublishResult publish0(PublishRequest request)
             {
                 throw new TestingException("this isn't going to work");
             }
@@ -454,7 +496,7 @@ public class TestSNSAppender
         MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("example"))
         {
             @Override
-            protected PublishResult publish0(String arn, String message)
+            protected PublishResult publish0(PublishRequest request)
             {
                 throw new TestingException("this isn't going to work");
             }

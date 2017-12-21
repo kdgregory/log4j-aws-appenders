@@ -7,13 +7,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.w3c.dom.Element;
+
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
+import net.sf.practicalxml.converter.json.Json2XmlConverter;
+import net.sf.practicalxml.xpath.XPathWrapper;
 import net.sf.kdgcommons.lang.StringUtil;
+import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.amazonaws.services.logs.model.ResourceNotFoundException;
 import com.amazonaws.services.sns.AmazonSNS;
@@ -61,6 +66,7 @@ public class SNSAppenderIntegrationTest
         List<String> messages = retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
+        assertMessageContent(messages, "");
     }
 
 
@@ -81,6 +87,7 @@ public class SNSAppenderIntegrationTest
         List<String> messages = retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
+        assertMessageContent(messages, "Example");
     }
 
 
@@ -204,14 +211,7 @@ public class SNSAppenderIntegrationTest
                                             .withTopicArn(topicArn)
                                             .withProtocol("sqs")
                                             .withEndpoint(queueArn);
-        SubscribeResult subscribeResponse = snsClient.subscribe(subscribeRequest);
-        String subscriptionArn = subscribeResponse.getSubscriptionArn();
-
-        SetSubscriptionAttributesRequest setRawMessaeRequest = new SetSubscriptionAttributesRequest()
-                                                               .withSubscriptionArn(subscriptionArn)
-                                                               .withAttributeName("RawMessageDelivery")
-                                                               .withAttributeValue("true");
-        snsClient.setSubscriptionAttributes(setRawMessaeRequest);
+        snsClient.subscribe(subscribeRequest);
     }
 
 
@@ -247,7 +247,7 @@ public class SNSAppenderIntegrationTest
 
     /**
      *  Attempts to read the expected number of messages from the queue, extracting
-     *  the message content.
+     *  the message message body (which is a JSON blob).
      */
     private List<String> retrieveMessages(int expectedMessageCount)
     throws Exception
@@ -274,5 +274,29 @@ public class SNSAppenderIntegrationTest
             }
         }
         return result;
+    }
+
+
+    /**
+     *  Performs assertions on the content of each message. In general, these should
+     *  fail on the first message.
+     *  <p>
+     *  It may seem strange that I'm converting the message JSON to XML for assertions.
+     *  The answer is that I have a library that makes XPath easy, and also transforms
+     *  JSON into XML, so JSON looks like an angle-bracketed nail.
+     */
+    private void assertMessageContent(List<String> messages, String expectedSubject)
+    {
+        XPathWrapper arnXPath = new XPathWrapper("//TopicArn");
+        XPathWrapper subjectXPath = new XPathWrapper("//Subject");
+        XPathWrapper messageXPath = new XPathWrapper("//Message");
+
+        for (String message : messages)
+        {
+            Element root = new Json2XmlConverter(message).convert();
+            assertEquals("topic ARN",       topicArn,               arnXPath.evaluateAsString(root));
+            assertEquals("message subject", expectedSubject,        subjectXPath.evaluateAsString(root));
+            assertRegex("message text",     MessageWriter.REGEX,    messageXPath.evaluateAsString(root));
+        }
     }
 }

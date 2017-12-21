@@ -15,10 +15,9 @@ import org.apache.log4j.Logger;
  */
 public class MessageWriter implements Runnable
 {
-    /**
-     *  This is useful when asserting the messages that were written.
-     */
-    public final static Pattern PATTERN = Pattern.compile(".*message on thread (\\d+): (\\d+)");
+    // these are useful
+    public final static String  REGEX   = ".*message on thread (\\d+): (\\d+)";
+    public final static Pattern PATTERN = Pattern.compile(REGEX);
 
 
     private Logger logger;

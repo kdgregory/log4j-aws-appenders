@@ -24,6 +24,7 @@ extends AbstractAppender<SNSWriterConfig>
 
     private String topicName;
     private String topicArn;
+    private String subject = "";
 
 
     public SNSAppender()
@@ -109,6 +110,25 @@ extends AbstractAppender<SNSWriterConfig>
     }
 
 
+    /**
+     *  Sets the subject that will be applied to messages; blank disables subjects.
+     *  At present this may only be configured at appender start.
+     */
+    public void setSubject(String value)
+    {
+        this.subject = value;
+    }
+
+
+    /**
+     *  Returns the current subject value, as set.
+     */
+    public String getSubject()
+    {
+        return this.subject;
+    }
+
+
 //----------------------------------------------------------------------------
 //  AbstractAppender
 //----------------------------------------------------------------------------
@@ -121,8 +141,9 @@ extends AbstractAppender<SNSWriterConfig>
         // TODO: validate topic names -- beware nulls
         String actualTopicName  = subs.perform(topicName);
         String actualTopicArn   = subs.perform(topicArn);
+        String actualSubject    = subs.perform(subject);
 
-        return new SNSWriterConfig(actualTopicName, actualTopicArn, discardThreshold, discardAction);
+        return new SNSWriterConfig(actualTopicName, actualTopicArn, actualSubject, discardThreshold, discardAction);
     }
 
     @Override

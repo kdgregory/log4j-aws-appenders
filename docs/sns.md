@@ -9,13 +9,14 @@ the ERROR level, and then hook the destination SNS topic to feed a messaging app
 
 Your Log4J configuration will look something like this:
 
-    log4j.rootLogger=INFO, sns
+    log4j.rootLogger=ERROR, sns
 
     log4j.appender.sns=com.kdgregory.log4j.aws.SNSAppender
     log4j.appender.sns.layout=org.apache.log4j.PatternLayout
     log4j.appender.sns.layout.ConversionPattern=%d [%t] %-5p %c %x - %m%n
 
     log4j.appender.sns.topicArn=arn:aws:sns:us-east-1:123456789012:LoggingExample
+    log4j.appender.sns.subject=Error from {env:APPNAME}
 
 
 The appender provides the following properties (also described in the JavaDoc):
@@ -24,15 +25,18 @@ Name                | Description
 --------------------|----------------------------------------------------------------
 `topicName`         | The name of the SNS topic that will receive messages; no default value. See below for more information.
 `topicArn`          | The ARN of the SNS topic that will receive messages; no default value. See below for more information.
+`subject`           | If used, attaches a subject to each message sent; no default value. See below for more information.
 `discardThreshold`  | The threshold count for discarding unsent messages; default is 1,000. See [design doc](design.md#message-discard) for more information.
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
 
 
 ## Operation
 
-At present the SNS appender writes messages as simple text strings, formatted according to the layout
-manager; it does not support platform-specific payloads. Note that, if you send the output to SQS you
-will need to specify that the subscription also accepts raw messages.
+The SNS appender writes messages as simple text strings, formatted according to the layout manager;
+it does not support platform-specific payloads. Messages can have an optional subject, and this text
+may use [substitutions](substitutions.md). This is useful to identify the source of a message when
+sending to an email address. Note that substitutions are applied when the appender starts, not on a
+per-message basis.
 
 You can specify the destination topic either by ARN or name. When specifying topic by ARN, the topic
 must already exist. If you specify the topic by name, the appender will attempt to find an existing

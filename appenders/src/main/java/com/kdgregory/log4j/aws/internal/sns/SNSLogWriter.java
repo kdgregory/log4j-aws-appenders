@@ -22,9 +22,8 @@ public class SNSLogWriter
 extends AbstractLogWriter
 {
     protected SNSWriterConfig config;
-    protected AmazonSNS client;
 
-    // this is the ARN used to publish messages
+    protected AmazonSNS client;
     protected String topicArn;
 
 
@@ -70,7 +69,14 @@ extends AbstractLogWriter
         {
             try
             {
-                client.publish(topicArn, message.getMessage());
+                PublishRequest request = new PublishRequest()
+                                         .withTopicArn(topicArn)
+                                         .withMessage(message.getMessage());
+                if (! "".equals(config.subject))
+                {
+                    request.setSubject(config.subject);
+                }
+                client.publish(request);
             }
             catch (Exception ex)
             {

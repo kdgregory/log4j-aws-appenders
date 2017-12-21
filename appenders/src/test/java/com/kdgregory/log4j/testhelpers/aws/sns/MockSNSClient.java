@@ -31,20 +31,26 @@ import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
 public class MockSNSClient implements InvocationHandler
 {
     // this prefix transforms a topic name into an ARN
-    private final static String ARN_PREFIX = "arn:aws:sns:us-east-1:123456789012:";
+    public final static String ARN_PREFIX = "arn:aws:sns:us-east-1:123456789012:";
 
+    // configuration
     private String topicName;
     private String topicArn;
     private ArrayList<List<Topic>> allTopics = new ArrayList<List<Topic>>();
+
+    // these semaphores coordinate the calls to Publish with the assertions
+    // that we make in the main thread; note that both start unacquired
+    private Semaphore allowMainThread = new Semaphore(0);
+    private Semaphore allowWriterThread = new Semaphore(0);
 
     // the following record invocations and are exposed for testing
     public volatile int listTopicsInvocationCount;
     public volatile int createTopicInvocationCount;
     public volatile int publishInvocationCount;
-    public volatile String lastMessage;
 
-    // this semaphore blocks the main thread until the writer calls publish()
-    private Semaphore mainLock = new Semaphore(0);
+    public volatile String lastPublishArn;
+    public volatile String lastPublishSubject;
+    public volatile String lastPublishMessage;
 
 
     public MockSNSClient(String topicName, List<String>... allTopicNames)
@@ -100,19 +106,13 @@ public class MockSNSClient implements InvocationHandler
 
 
     /**
-     *  The main thread should call this to wait until the writer thread runs.
+     *  Pauses the main thread and allows the writer thread to proceed.
      */
-    public void waitForWriter()
+    public void allowWriterThread() throws Exception
     {
-        try
-        {
-            Thread.sleep(100);
-            mainLock.acquire();
-        }
-        catch (InterruptedException ex)
-        {
-            throw new IllegalStateException("lock wait interrupted", ex);
-        }
+        allowWriterThread.release();
+        Thread.sleep(100);
+        allowMainThread.acquire();
     }
 
 
@@ -134,10 +134,14 @@ public class MockSNSClient implements InvocationHandler
             createTopicInvocationCount++;
             return createTopic((String)args[0]);
         }
-        else if ((methodName.equals("publish")) && (args.length == 2) && (args[0] instanceof String) && (args[1] instanceof String))
+        else if (methodName.equals("publish"))
         {
             publishInvocationCount++;
-            return publish((String)args[0], (String)args[1]);
+            PublishRequest request = (PublishRequest)args[0];
+            lastPublishArn     = request.getTopicArn();
+            lastPublishSubject = request.getSubject();
+            lastPublishMessage = request.getMessage();
+            return publish(request);
         }
 
         throw new IllegalStateException("unexpected method called: " + methodName);
@@ -178,33 +182,32 @@ public class MockSNSClient implements InvocationHandler
 
 
     /**
-     *  Invocation handler for Publish. This method handles the locking, and calls
-     *  {@link #publish0} to create the result. Override that method if you want to
-     *  test things like exceptions.
+     *  Invocation handler for Publish. The default implementation waits until the
+     *  main thread releases the writer, then calls publish0() to return a success
+     *  message. Override this method if you don't want thread coordination,
+     *  publish0() if you want to change the result.
      */
-    private PublishResult publish(String arn, String message)
+    protected PublishResult publish(PublishRequest request)
     {
         try
         {
-            if (! topicArn.equals(arn))
-                throw new IllegalArgumentException("invalid ARN passed to publish: " + arn);
-
-            lastMessage = message;
-            return publish0(arn, message);
+            allowWriterThread.acquire();
+            return publish0(request);
+        }
+        catch (InterruptedException ex)
+        {
+            // this should never happen
+            throw new RuntimeException("publish lock interrupted");
         }
         finally
         {
-            mainLock.release();
+            allowMainThread.release();
         }
     }
 
 
-    /**
-     *  Accepts a single publish request and returns the result.
-     */
-    protected PublishResult publish0(String arn, String message)
+    protected PublishResult publish0(PublishRequest request)
     {
-        // default behavior: all messages succeed
         return new PublishResult().withMessageId(UUID.randomUUID().toString());
     }
 

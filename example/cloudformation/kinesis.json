@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
-    "Description": "CloudFormation template to create all resources for logging example",
+    "Description": "CloudFormation template to create resources for Kinesis logging example",
     "Parameters": {
         "FailedRecordsBucket": {
             "Type": "String",
@@ -13,75 +13,6 @@
         }
     },
     "Resources": {
-        "CloudWatchLogGroup": {
-            "Type": "AWS::Logs::LogGroup",
-            "Properties": {
-                "LogGroupName": "AppenderExample",
-                "RetentionInDays": 1
-            }
-        },
-        "CloudWatchWriterPolicy": {
-            "Type": "AWS::IAM::ManagedPolicy",
-            "Properties": {
-                "ManagedPolicyName": "AppenderExampleCloudWatchWriter",
-                "Description": "Allows logger to create/write the example CloudWatch log",
-                "PolicyDocument": {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Action": [
-                                "logs:DescribeLogGroups"
-                            ],
-                            "Resource":
-                                { "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*" }
-                        },
-                        {
-                            "Effect": "Allow",
-                            "Action": [
-                                "logs:CreateLogGroup",
-                                "logs:CreateLogStream",
-                                "logs:DescribeLogStreams",
-                                "logs:PutLogEvents"
-                            ],
-                            "Resource": [
-                                { "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogGroup}" },
-                                { "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogGroup}:*" }
-                            ]
-                        }
-                    ]
-                }
-            }
-        },
-        "CloudWatchReaderPolicy": {
-            "Type": "AWS::IAM::ManagedPolicy",
-            "Properties": {
-                "ManagedPolicyName": "AppenderExampleCloudWatchReader",
-                "Description": "Allows reading the example CloudWatch log",
-                "PolicyDocument": {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Action": [
-                                "logs:DescribeLogGroups"
-                            ],
-                            "Resource":
-                                { "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*" }
-                        },
-                        {
-                            "Effect": "Allow",
-                            "Action": [
-                                "logs:DescribeLogStreams",
-                                "logs:GetLogEvents"
-                            ],
-                            "Resource":
-                                { "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogGroup}:*" }
-                        }
-                    ]
-                }
-            }
-        },
         "KinesisStream": {
             "Type": "AWS::Kinesis::Stream",
             "Properties": {
@@ -134,7 +65,7 @@
                 "DomainName": "logging-example",
                 "ElasticsearchVersion": "5.5",
                 "ElasticsearchClusterConfig": {
-                    "InstanceType": "m4.large.elasticsearch",
+                    "InstanceType": "t2.small.elasticsearch",
                     "InstanceCount": 1,
                     "DedicatedMasterEnabled": false,
                     "ZoneAwarenessEnabled": false

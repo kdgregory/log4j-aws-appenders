@@ -7,14 +7,14 @@ the ERROR level, and then hook the destination SNS topic to feed a messaging app
 
 ## Configuration
 
-Your Log4J configuration will look something like this:
+Your Log4J configuration will look something like this (note the `threshold` setting):
 
     log4j.rootLogger=ERROR, sns
 
     log4j.appender.sns=com.kdgregory.log4j.aws.SNSAppender
     log4j.appender.sns.layout=org.apache.log4j.PatternLayout
     log4j.appender.sns.layout.ConversionPattern=%d [%t] %-5p %c %x - %m%n
-
+    log4j.appender.sns.threshold=ERROR
     log4j.appender.sns.topicArn=arn:aws:sns:us-east-1:123456789012:LoggingExample
     log4j.appender.sns.subject=Error from {env:APPNAME}
 

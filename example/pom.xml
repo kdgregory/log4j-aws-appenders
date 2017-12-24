@@ -4,7 +4,7 @@
 
     <groupId>com.kdgregory.log4j</groupId>
     <artifactId>aws-appenders-example</artifactId>
-    <version>1.1.3</version>
+    <version>1.2.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Log4J Example</name>
@@ -20,7 +20,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <aws-appenders.version>1.1.3</aws-appenders.version>
+        <aws-appenders.version>1.2.0-SNAPSHOT</aws-appenders.version>
         <aws-sdk.version>1.11.213</aws-sdk.version>
         <log4j.version>1.2.17</log4j.version>
     </properties>

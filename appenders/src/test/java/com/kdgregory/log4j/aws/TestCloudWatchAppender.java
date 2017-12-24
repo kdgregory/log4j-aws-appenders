@@ -77,9 +77,8 @@ public class TestCloudWatchAppender
     }
 
 //----------------------------------------------------------------------------
-//  JUnit-controlled configuration
+//  JUnit stuff
 //----------------------------------------------------------------------------
-
 
     @Before
     public void setUp()

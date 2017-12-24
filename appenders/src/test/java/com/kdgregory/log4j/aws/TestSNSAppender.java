@@ -7,6 +7,8 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -14,6 +16,7 @@ import static org.junit.Assert.*;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
+import org.apache.log4j.helpers.LogLog;
 
 import net.sf.kdgcommons.lang.StringUtil;
 
@@ -81,6 +84,23 @@ public class TestSNSAppender
         }
         fail("timed out waiting for initialization");
         return null; // never reached
+    }
+
+//----------------------------------------------------------------------------
+//  JUnit stuff
+//----------------------------------------------------------------------------
+
+    @Before
+    public void setUp()
+    {
+        LogLog.setQuietMode(true);
+    }
+
+
+    @After
+    public void tearDown()
+    {
+        LogLog.setQuietMode(false);
     }
 
 

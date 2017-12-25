@@ -10,8 +10,7 @@ records](http://docs.aws.amazon.com/firehose/latest/dev/data-transformation.html
 that will increase your logging costs.
 
 You can find several solutions for writing JSON via Log4J. I decided to write my own so that I
-could tailor its features and also include AWS-only data (right now limited to the EC2 instance
-ID).
+could tailor its features and also include AWS-only data (such as the EC2 instance ID).
 
 
 ## Usage
@@ -19,19 +18,19 @@ ID).
 You can use the JSON layout with any appender (including the standard Log4J appenders, but beware
 that you will need the AWS SDK in your classpath). However, it's most useful with the Kinesis
 appender, feeding a [Kinesis Firehose](http://docs.aws.amazon.com/firehose/latest/dev/what-is-this-service.html)
-delivery stream that feeds an ElasticSearch cluster. Setting up such a cluster is beyond the scope
-of this document, but see the [example CloudFormation template](../example/cloudformation.json)
+delivery stream that sends data to an ElasticSearch cluster. Setting up such a cluster is beyond
+the scope of this document, but see the [example CloudFormation template](../example/cloudformation/kinesis.json)
 for a starting point.
 
 Your appender configuration will look something like this:
 
-    log4j.appender.kinesis=com.kdgregory.log4j.aws.KinesisAppender
-    log4j.appender.kinesis.streamName=AppenderExample
-    log4j.appender.kinesis.layout=com.kdgregory.log4j.aws.JsonLayout
-    log4j.appender.kinesis.layout.tags=applicationName=Example,runDate={date}
-    log4j.appender.kinesis.layout.enableHostname=true
-    log4j.appender.kinesis.layout.enableInstanceId=true
-    log4j.appender.kinesis.layout.enableLocation=true
+```
+log4j.appender.kinesis.layout=com.kdgregory.log4j.aws.JsonLayout
+log4j.appender.kinesis.layout.tags=applicationName=Example
+log4j.appender.kinesis.layout.enableHostname=true
+log4j.appender.kinesis.layout.enableLocation=true
+log4j.appender.kinesis.layout.enableInstanceId=true
+```
 
 The various "enable" properties are used to enable content that is potentially expensive to
 generate.  In particular, `enableInstanceId` enables the inclusion of the EC2 instance ID;

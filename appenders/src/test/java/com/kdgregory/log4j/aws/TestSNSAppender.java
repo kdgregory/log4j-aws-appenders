@@ -416,6 +416,30 @@ public class TestSNSAppender
 
 
     @Test
+    public void testInvalidTopicName() throws Exception
+    {
+        initialize("TestSNSAppender/testInvalidTopicName.properties");
+
+        MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("argle", "example", "bargle"));
+        appender.setWriterFactory(mockClient.newWriterFactory());
+        appender.setThreadFactory(new DefaultThreadFactory());
+
+        // first message triggers writer creation
+
+        logger.info("message one");
+        waitForInitialization();
+
+        String initializationMessage = ((AbstractLogWriter)appender.getWriter()).getInitializationMessage();
+        assertTrue("initialization message includes topic name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("x%$!"));
+
+        assertEquals("invocations of listTopics",       0,              mockClient.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
+        assertEquals("invocations of publish",          0,              mockClient.publishInvocationCount);
+    }
+
+
+    @Test
     public void testUncaughtExceptionHandling() throws Exception
     {
         initialize("TestSNSAppender/testUncaughtExceptionHandling.properties");

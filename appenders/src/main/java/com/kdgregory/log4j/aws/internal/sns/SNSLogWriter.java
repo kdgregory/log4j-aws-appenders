@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.helpers.LogLog;
 
@@ -113,6 +114,9 @@ extends AbstractLogWriter
      */
     private boolean configureByArn()
     {
+        // note: we don't validate topic ARN because an invalid ARN won't be
+        //       found in the list and therefore will fail initialization
+
         if (retrieveAllTopics().contains(config.topicArn))
         {
             topicArn = config.topicArn;
@@ -133,6 +137,11 @@ extends AbstractLogWriter
      */
     private boolean configureByName()
     {
+        if (! Pattern.matches(SNSConstants.TOPIC_NAME_REGEX, config.topicName))
+        {
+            return initializationFailure("invalid topic name: " + config.topicName, null);
+        }
+
         topicArn = retrieveAllTopicsByName().get(config.topicName);
         if (topicArn != null)
         {

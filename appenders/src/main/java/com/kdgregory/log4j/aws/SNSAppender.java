@@ -138,7 +138,6 @@ extends AbstractAppender<SNSWriterConfig>
     {
         Substitutions subs = new Substitutions(new Date(), sequence.get());
 
-        // TODO: validate topic names -- beware nulls
         String actualTopicName  = subs.perform(topicName);
         String actualTopicArn   = subs.perform(topicArn);
         String actualSubject    = subs.perform(subject);

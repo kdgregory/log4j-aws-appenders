@@ -79,7 +79,7 @@ public class TestKinesisAppender
                 Thread.sleep(100);
         }
         fail("timed out waiting for initialization");
-        return null; // never reached
+        return null; // never reached, but the compiler doesn't know that
     }
 
 //----------------------------------------------------------------------------
@@ -293,6 +293,50 @@ public class TestKinesisAppender
 
 
     @Test
+    public void testInvalidStreamName() throws Exception
+    {
+        initialize("TestKinesisAppender/testInvalidStreamName.properties");
+
+        MockKinesisClient mockClient = new MockKinesisClient();
+
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("this triggers writer creation");
+
+        String initializationMessage = waitForInitialization();
+
+        assertTrue("initialization message indicates invalid stream name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("invalid stream name"));
+        assertTrue("initialization message contains invalid name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("helpme!"));
+
+        assertEquals("describeStream: should not be invoked", 0, mockClient.describeStreamInvocationCount);
+    }
+
+
+    @Test
+    public void testInvalidPartitionKey() throws Exception
+    {
+        initialize("TestKinesisAppender/testInvalidPartitionKey.properties");
+
+        MockKinesisClient mockClient = new MockKinesisClient();
+
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("this triggers writer creation");
+
+        String initializationMessage = waitForInitialization();
+
+        assertTrue("initialization message indicates invalid partition key (was: " + initializationMessage + ")",
+                   initializationMessage.contains("invalid partition key"));
+
+        assertEquals("describeStream: should not be invoked", 0, mockClient.describeStreamInvocationCount);
+    }
+
+
+    @Test
     public void testRateLimitedDescribe() throws Exception
     {
         initialize("TestKinesisAppender/testRateLimitedDescribe.properties");
@@ -466,7 +510,7 @@ public class TestKinesisAppender
             Thread.sleep(10);
         }
 
-        assertNull("writer has been reset",         appender.getMockWriter());
+        assertNull("writer has been reset",         appender.getWriter());
         assertEquals("last writer exception class", TestingException.class, appender.getLastWriterException().getClass());
     }
 

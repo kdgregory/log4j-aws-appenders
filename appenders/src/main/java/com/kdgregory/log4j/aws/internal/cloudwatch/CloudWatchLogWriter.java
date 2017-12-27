@@ -4,6 +4,7 @@ package com.kdgregory.log4j.aws.internal.cloudwatch;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.helpers.LogLog;
 
@@ -46,6 +47,16 @@ extends AbstractLogWriter
     @Override
     protected boolean ensureDestinationAvailable()
     {
+        if (! Pattern.matches(CloudWatchConstants.ALLOWED_GROUP_NAME_REGEX, groupName))
+        {
+            return initializationFailure("invalid log group name: " + groupName, null);
+        }
+
+        if (! Pattern.matches(CloudWatchConstants.ALLOWED_STREAM_NAME_REGEX, streamName))
+        {
+            return initializationFailure("invalid log stream name: " + streamName, null);
+        }
+
         try
         {
             LogGroup logGroup = findLogGroup();

@@ -15,6 +15,10 @@
                 If there's an initialization error the internal message queue is set to discard
                 all messages (avoids memory issues, especially with an unbounded queue).
             </action>
+            <action dev='kdgregory' type='update'>
+                CloudWatchAppender and KinesisAppender now fail to initialize if given an invalid
+                destination name (would try to make them valid).
+            </action>
         </release>
 
         <release version="1.1.3" date="2017-12-12" description="improved testing, minor bugfixes">

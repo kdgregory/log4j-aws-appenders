@@ -224,16 +224,15 @@ public class TestCloudWatchAppender
 
         initialize("TestCloudWatchAppender/testSubstitution.properties");
 
-        // need to trigger append to apply substitutions
-        logger.debug("doesn't matter what's written");
-
-        MockCloudWatchWriter writer = appender.getMockWriter();
-
         assertEquals("appender's log group name",   "MyLog-{sysprop:TestCloudWatchAppender.testSubstitution}", appender.getLogGroup());
         assertEquals("appender's log stream name",  "MyStream-{timestamp}-{bogus}",                            appender.getLogStream());
 
-        assertEquals("writers log group name",      "MyLog-foobar",             writer.logGroup);
-        assertRegex("writers log stream name",      "MyStream-20\\d{12}-bogus", writer.logStream);
+        logger.debug("this triggers writer creation");
+
+        MockCloudWatchWriter writer = appender.getMockWriter();
+
+        assertEquals("writers log group name",      "MyLog-foo/bar",                writer.logGroup);
+        assertRegex("writers log stream name",      "MyStream-20\\d{12}-\\{bogus}", writer.logStream);
     }
 
 
@@ -507,6 +506,56 @@ public class TestCloudWatchAppender
         assertEquals("putLogEvents: invocation count",        2,                mockClient.putLogEventsInvocationCount);
         assertEquals("putLogEvents: last call #/messages",    1,                mockClient.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",            "message two\n",  mockClient.mostRecentEvents.get(0).getMessage());
+    }
+
+
+    @Test
+    public void testInvalidGroupName() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testInvalidGroupName.properties");
+
+        MockCloudWatchClient mockClient = new MockCloudWatchClient();
+
+        // note that we will be running the writer on a separate thread
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("message one");
+
+        String initializationMessage = waitForInitialization();
+
+        assertTrue("initialization message indicates invalid group name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("invalid log group name"));
+        assertTrue("initialization message contains invalid name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("helpme!"));
+
+        assertEquals("describeLogGroups: should not be invoked",    0,  mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: should not be invoked",   0,  mockClient.describeLogStreamsInvocationCount);
+    }
+
+
+    @Test
+    public void testInvalidStreamName() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testInvalidStreamName.properties");
+
+        MockCloudWatchClient mockClient = new MockCloudWatchClient();
+
+        // note that we will be running the writer on a separate thread
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("message one");
+
+        String initializationMessage = waitForInitialization();
+
+        assertTrue("initialization message indicates invalid stream name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("invalid log stream name"));
+        assertTrue("initialization message contains invalid name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("I:Am:Not"));
+
+        assertEquals("describeLogGroups: should not be invoked",    0,  mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: should not be invoked",   0,  mockClient.describeLogStreamsInvocationCount);
     }
 
 

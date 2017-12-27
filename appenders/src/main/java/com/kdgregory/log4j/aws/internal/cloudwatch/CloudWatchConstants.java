@@ -1,7 +1,6 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.aws.internal.cloudwatch;
 
-import java.util.regex.Pattern;
 
 /**
  *  Holds limits and other constants for CloudWatch Logs.
@@ -31,8 +30,14 @@ public class CloudWatchConstants
 
 
     /**
-     *  Allowed characters for log-stream and log-group names.
+     *  Used to validate log stream names.
      */
-    public final static Pattern ALLOWED_NAME_REGEX = Pattern.compile("[^A-Za-z0-9-_]");
+    public final static String ALLOWED_GROUP_NAME_REGEX = "[A-Za-z0-9_/.-]{1,512}";
+
+
+    /**
+     *  Used to validate log group names.
+     */
+    public final static String ALLOWED_STREAM_NAME_REGEX = "[^:*]{1,512}";
 
 }

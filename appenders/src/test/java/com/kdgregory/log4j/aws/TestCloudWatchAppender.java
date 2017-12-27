@@ -45,6 +45,7 @@ public class TestCloudWatchAppender
     throws Exception
     {
         URL config = ClassLoader.getSystemResource(propsName);
+        assertNotNull("was able to retrieve config", config);
         PropertyConfigurator.configure(config);
 
         logger = Logger.getLogger(getClass());
@@ -83,6 +84,7 @@ public class TestCloudWatchAppender
     @Before
     public void setUp()
     {
+        LogManager.resetConfiguration();
         LogLog.setQuietMode(true);
     }
 

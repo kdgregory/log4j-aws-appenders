@@ -13,6 +13,7 @@ import java.util.regex.Matcher;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
@@ -30,20 +31,6 @@ public class KinesisAppenderIntegrationTest
 {
     private Logger mainLogger;
     private AmazonKinesis client;
-
-
-    public void setUp(String propertiesName, String streamName) throws Exception
-    {
-        URL config = ClassLoader.getSystemResource(propertiesName);
-        PropertyConfigurator.configure(config);
-
-        mainLogger = Logger.getLogger(getClass());
-
-        client = AmazonKinesisClientBuilder.defaultClient();
-
-        deleteStreamIfExists(streamName);
-    }
-
 
 //----------------------------------------------------------------------------
 //  Tests
@@ -164,6 +151,25 @@ public class KinesisAppenderIntegrationTest
 //----------------------------------------------------------------------------
 //  Helpers
 //----------------------------------------------------------------------------
+
+    /**
+     *  Loads the test-specific Log4J configuration and resets the environment.
+     */
+    public void setUp(String propertiesName, String streamName) throws Exception
+    {
+        URL config = ClassLoader.getSystemResource(propertiesName);
+        assertNotNull("missing configuration: " + propertiesName, config);
+
+        LogManager.resetConfiguration();
+        PropertyConfigurator.configure(config);
+
+        mainLogger = Logger.getLogger(getClass());
+
+        client = AmazonKinesisClientBuilder.defaultClient();
+
+        deleteStreamIfExists(streamName);
+    }
+
 
     /**
      *  Returns the stream description, null for any exception (which will

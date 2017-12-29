@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import org.apache.log4j.helpers.LogLog;
 
 import com.amazonaws.services.logs.AWSLogs;
@@ -39,7 +40,7 @@ extends AbstractLogWriter
     @Override
     protected void createAWSClient()
     {
-        client = new AWSLogsClient();
+        client = AWSLogsClientBuilder.defaultClient();
     }
 
 

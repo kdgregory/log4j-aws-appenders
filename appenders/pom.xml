@@ -40,7 +40,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <aws-sdk.version>1.11.0</aws-sdk.version>
+        <aws-sdk.version>1.11.254</aws-sdk.version>
         <junit.version>4.10</junit.version>
         <kdgcommons.version>1.0.15</kdgcommons.version>
         <log4j.version>1.2.16</log4j.version>

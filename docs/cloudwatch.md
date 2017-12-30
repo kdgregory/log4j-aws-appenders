@@ -1,28 +1,29 @@
 # CloudWatch Logs
 
-The CloudWatch implementation provides (will provide) the following features:
+The CloudWatch implementation provides the following features:
 
-* [x] User-specified log-group and log-stream names
-* [x] Substitution variables to customize log-group and log-stream names
-* [x] Auto-rotation of log streams, either fixed-delay or hourly/daily
-* [ ] Configurable discard in case of network connectivity issues
+* User-specified log-group and log-stream names
+* Substitution variables to customize log-group and log-stream names
+* Auto-rotation of log streams, based either on a time delay (explicity, hourly, or daily) or number of messages
+* Configurable discard in case of network connectivity issues
 
 
 ## Configuration
 
 Your Log4J configuration will look something like this:
 
-    log4j.rootLogger=DEBUG, cloudwatch
+```
+log4j.rootLogger=DEBUG, cloudwatch
 
-    log4j.appender.cloudwatch=com.kdgregory.log4j.aws.CloudWatchAppender
-    log4j.appender.cloudwatch.layout=org.apache.log4j.PatternLayout
-    log4j.appender.cloudwatch.layout.ConversionPattern=%d [%t] %-5p %c %x - %m%n
+log4j.appender.cloudwatch=com.kdgregory.log4j.aws.CloudWatchAppender
+log4j.appender.cloudwatch.logGroup={env:APP_NAME}
+log4j.appender.cloudwatch.logStream={date}-{hostname}-{pid}
+log4j.appender.cloudwatch.batchDelay=1000
+log4j.appender.cloudwatch.rotationMode=daily
 
-    log4j.appender.cloudwatch.logGroup={env:APP_NAME}
-    log4j.appender.cloudwatch.logStream={date}-{pid}
-    log4j.appender.cloudwatch.batchDelay=1000
-    log4j.appender.cloudwatch.rotationMode=daily
-
+log4j.appender.cloudwatch.layout=org.apache.log4j.PatternLayout
+log4j.appender.cloudwatch.layout.ConversionPattern=%d [%t] %-5p %c %x - %m%n
+```
 
 The appender provides the following properties (also described in the JavaDoc):
 
@@ -37,7 +38,7 @@ Name                | Description
 `discardThreshold`  | The threshold count for discarding messages; default is 10,000. See [design doc](design.md#message-discard) for more information.
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
 
-The `logGroup` and `logStream` properties may use [substutions](substitutions.md).
+The `logGroup` and `logStream` properties may use [substitutions](substitutions.md).
 
 
 ## Permissions

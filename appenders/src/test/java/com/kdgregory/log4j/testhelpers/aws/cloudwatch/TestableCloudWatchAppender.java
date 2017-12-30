@@ -1,16 +1,14 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.testhelpers.aws.cloudwatch;
 
-import java.lang.reflect.Field;
-
 import com.kdgregory.log4j.aws.CloudWatchAppender;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
-import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
 import com.kdgregory.log4j.aws.internal.shared.ThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
+import com.kdgregory.log4j.testhelpers.TestUtils;
 
 
 /**
@@ -53,17 +51,7 @@ public class TestableCloudWatchAppender extends CloudWatchAppender
 
     public MessageQueue getMessageQueue()
     {
-        // note: will only work with the regular CloudWatchLogWriter
-        try
-        {
-            Field field = AbstractLogWriter.class.getDeclaredField("messageQueue");
-            field.setAccessible(true);
-            return (MessageQueue)field.get(writer);
-        }
-        catch (Exception ex)
-        {
-            throw new RuntimeException(ex);
-        }
+        return TestUtils.getFieldValue(writer, "messageQueue", MessageQueue.class);
     }
 
 

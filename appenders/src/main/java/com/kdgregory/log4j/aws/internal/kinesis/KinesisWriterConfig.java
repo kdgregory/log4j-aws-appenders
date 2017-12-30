@@ -3,6 +3,7 @@ package com.kdgregory.log4j.aws.internal.kinesis;
 
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 
+
 /**
  *  Holds configuration for the LogWriter. This is a simple struct, with writable fields
  *  (because config can change). It is not exposed to the outside world.

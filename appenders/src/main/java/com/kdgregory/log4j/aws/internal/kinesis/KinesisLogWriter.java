@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.helpers.LogLog;
 
@@ -67,6 +68,16 @@ extends AbstractLogWriter
     @Override
     protected boolean ensureDestinationAvailable()
     {
+        if (! Pattern.matches(KinesisConstants.ALLOWED_STREAM_NAME_REGEX, config.streamName))
+        {
+            return initializationFailure("invalid stream name: " + config.streamName, null);
+        }
+
+        if ((config.partitionKey == null) || config.partitionKey.isEmpty() || (config.partitionKey.length() > 256))
+        {
+            return initializationFailure("invalid partition key: length must be 1-256", null);
+        }
+
         try
         {
             String streamStatus = getStreamStatus();

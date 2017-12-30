@@ -28,9 +28,12 @@ import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
 import com.kdgregory.log4j.testhelpers.NullThreadFactory;
+import com.kdgregory.log4j.testhelpers.TestingException;
 import com.kdgregory.log4j.testhelpers.ThrowingWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisClient;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisWriter;
@@ -48,6 +51,7 @@ public class TestKinesisAppender
     throws Exception
     {
         URL config = ClassLoader.getSystemResource(propsName);
+        assertNotNull("was able to retrieve config", config);
         PropertyConfigurator.configure(config);
 
         logger = Logger.getLogger(getClass());
@@ -60,9 +64,33 @@ public class TestKinesisAppender
     }
 
 
+    /**
+     *  A spin loop that waits for an writer running in another thread to
+     *  finish initialization. Times out after 5 seconds, otherwise returns
+     *  the initialization message.
+     */
+    private String waitForInitialization() throws Exception
+    {
+        for (int ii = 0 ; ii < 50 ; ii++)
+        {
+            AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+            if ((writer != null) && (writer.getInitializationMessage() != null))
+                return writer.getInitializationMessage();
+            else
+                Thread.sleep(100);
+        }
+        fail("timed out waiting for initialization");
+        return null; // never reached, but the compiler doesn't know that
+    }
+
+//----------------------------------------------------------------------------
+//  JUnit stuff
+//----------------------------------------------------------------------------
+
     @Before
     public void setUp()
     {
+        LogManager.resetConfiguration();
         LogLog.setQuietMode(true);
     }
 
@@ -267,6 +295,50 @@ public class TestKinesisAppender
 
 
     @Test
+    public void testInvalidStreamName() throws Exception
+    {
+        initialize("TestKinesisAppender/testInvalidStreamName.properties");
+
+        MockKinesisClient mockClient = new MockKinesisClient();
+
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("this triggers writer creation");
+
+        String initializationMessage = waitForInitialization();
+
+        assertTrue("initialization message indicates invalid stream name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("invalid stream name"));
+        assertTrue("initialization message contains invalid name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("helpme!"));
+
+        assertEquals("describeStream: should not be invoked", 0, mockClient.describeStreamInvocationCount);
+    }
+
+
+    @Test
+    public void testInvalidPartitionKey() throws Exception
+    {
+        initialize("TestKinesisAppender/testInvalidPartitionKey.properties");
+
+        MockKinesisClient mockClient = new MockKinesisClient();
+
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("this triggers writer creation");
+
+        String initializationMessage = waitForInitialization();
+
+        assertTrue("initialization message indicates invalid partition key (was: " + initializationMessage + ")",
+                   initializationMessage.contains("invalid partition key"));
+
+        assertEquals("describeStream: should not be invoked", 0, mockClient.describeStreamInvocationCount);
+    }
+
+
+    @Test
     public void testRateLimitedDescribe() throws Exception
     {
         initialize("TestKinesisAppender/testRateLimitedDescribe.properties");
@@ -310,37 +382,38 @@ public class TestKinesisAppender
             @Override
             protected CreateStreamResult createStream(CreateStreamRequest request)
             {
-                throw new UnsupportedOperationException("not now, not ever");
+                throw new TestingException("not now, not ever");
             }
         };
 
         appender.setThreadFactory(new DefaultThreadFactory());
         appender.setWriterFactory(mockClient.newWriterFactory());
 
+        // first message triggers writer creation
+
         logger.debug("example message");
+        waitForInitialization();
 
-        // we never get to putRecords so can't use the semaphore; spinning is an alternative
         AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
-        while (writer.getInitializationMessage() == null)
-        {
-            Thread.sleep(100);
-        }
+        MessageQueue messageQueue = appender.getMessageQueue();
 
-        // these first assertions are window dressing
-        assertEquals("describeStream: invocation count",        1,          mockClient.describeStreamInvocationCount);
-        assertEquals("describeStream: stream name",             "foo",      mockClient.describeStreamStreamName);
-        assertEquals("createStream: invocation count",          1,          mockClient.createStreamInvocationCount);
-        assertEquals("createStream: stream name",               "foo",      mockClient.createStreamStreamName);
+        assertEquals("describeStream: invocation count",    1,          mockClient.describeStreamInvocationCount);
+        assertEquals("describeStream: stream name",         "foo",      mockClient.describeStreamStreamName);
+        assertEquals("createStream: invocation count",      1,          mockClient.createStreamInvocationCount);
+        assertEquals("createStream: stream name",           "foo",      mockClient.createStreamStreamName);
 
-        // these are the ones we care about
-        assertTrue("initialization message non-blank",
-                   ! writer.getInitializationMessage().equals(""));
-        assertEquals("initialization error class",
-                     UnsupportedOperationException.class,
-                     writer.getInitializationException().getClass());
-        assertEquals("initialization error message",
-                     "not now, not ever",
-                     writer.getInitializationException().getMessage());
+        assertTrue("initialization message non-blank",      ! writer.getInitializationMessage().equals(""));
+        assertEquals("initialization error class",          TestingException.class,     writer.getInitializationException().getClass());
+        assertEquals("initialization error message",        "not now, not ever",        writer.getInitializationException().getMessage());
+
+        assertEquals("message queue set to discard all",    0,                          messageQueue.getDiscardThreshold());
+        assertEquals("message queue set to discard all",    DiscardAction.oldest,       messageQueue.getDiscardAction());
+        assertEquals("messages in queue (initial)",         1,                          messageQueue.toList().size());
+
+        // trying to log another message should clear the queue
+
+        logger.info("message two");
+        assertEquals("messages in queue (second try)",      0,                          messageQueue.toList().size());
     }
 
 
@@ -439,8 +512,8 @@ public class TestKinesisAppender
             Thread.sleep(10);
         }
 
-        assertNull("writer has been reset",         appender.getMockWriter());
-        assertEquals("last writer exception class", IllegalStateException.class, appender.getLastWriterException().getClass());
+        assertNull("writer has been reset",         appender.getWriter());
+        assertEquals("last writer exception class", TestingException.class, appender.getLastWriterException().getClass());
     }
 
 
@@ -537,5 +610,36 @@ public class TestKinesisAppender
         assertEquals("number of messages in queue", 20, messages.size());
         assertEquals("oldest message", "message 0\n", messages.get(0).getMessage());
         assertEquals("newest message", "message 19\n", messages.get(19).getMessage());
+    }
+
+
+    @Test
+    public void testReconfigureDiscardProperties() throws Exception
+    {
+        initialize("TestKinesisAppender/testReconfigureDiscardProperties.properties");
+
+        // another test where we don't actually do anything but need to verify actual writer
+
+        appender.setThreadFactory(new NullThreadFactory());
+        appender.setWriterFactory(new MockKinesisClient().newWriterFactory());
+
+        logger.debug("trigger writer creation");
+
+        MessageQueue messageQueue = appender.getMessageQueue();
+
+        assertEquals("initial discard threshold, from appender",    12345,                              appender.getDiscardThreshold());
+        assertEquals("initial discard action, from appender",       DiscardAction.newest.toString(),    appender.getDiscardAction());
+
+        assertEquals("initial discard threshold, from queue",       12345,                              messageQueue.getDiscardThreshold());
+        assertEquals("initial discard action, from queue",          DiscardAction.newest.toString(),    messageQueue.getDiscardAction().toString());
+
+        appender.setDiscardThreshold(54321);
+        appender.setDiscardAction(DiscardAction.oldest.toString());
+
+        assertEquals("updated discard threshold, from appender",    54321,                              appender.getDiscardThreshold());
+        assertEquals("updated discard action, from appender",       DiscardAction.oldest.toString(),    appender.getDiscardAction());
+
+        assertEquals("updated discard threshold, from queue",       54321,                              messageQueue.getDiscardThreshold());
+        assertEquals("updated discard action, from queue",          DiscardAction.oldest.toString(),    messageQueue.getDiscardAction().toString());
     }
 }

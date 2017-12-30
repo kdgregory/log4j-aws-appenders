@@ -1,0 +1,70 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "CloudFormation template to create resources for the SNS logging example",
+    "Parameters": {
+        "EmailAddress" : {
+            "Type" : "String",
+            "Description" : "The email where logging messages will be sent",
+            "Default" : "logging-example@mailinator.com"
+        }
+    },
+    "Resources": {
+        "SNSTopic": {
+            "Type": "AWS::SNS::Topic",
+            "Properties": {
+                "TopicName": "AppenderExample",
+                "Subscription": [
+                    {
+                        "Protocol" : "email",
+                        "Endpoint" : { "Ref": "EmailAddress" }
+                    }
+                ]
+            }
+        },
+        "SNSWriterPolicy": {
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Properties": {
+                "ManagedPolicyName": "AppenderExampleSNSWriter",
+                "Description": "Allows logger to create/write the example SNS topic",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "sns:CreateTopic",
+                                "sns:ListTopics",
+                                "sns:Publish"
+                            ],
+                            "Resource":
+                                { "Fn::Sub": "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:*" }
+                        }
+                    ]
+                }
+            }
+        },
+        "SNSWriterPolicy": {
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Properties": {
+                "ManagedPolicyName": "AppenderExampleSNSSubscriber",
+                "Description": "Allows subscribers to access the example SNS topic",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "sns:ListTopics",
+                                "sns:Subscribe",
+                                "sns:SetSubscriptionAttributes",
+                                "sns:Unsubscribe"
+                            ],
+                            "Resource":
+                                { "Fn::Sub": "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:*" }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

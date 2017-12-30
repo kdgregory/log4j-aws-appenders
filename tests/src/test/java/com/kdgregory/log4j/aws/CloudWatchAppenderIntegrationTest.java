@@ -13,6 +13,7 @@ import java.util.regex.Matcher;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
@@ -32,19 +33,6 @@ public class CloudWatchAppenderIntegrationTest
 
     private Logger mainLogger;
     private AWSLogs client;
-
-
-    public void setUp(String propertiesName, String logGroupName) throws Exception
-    {
-        URL config = ClassLoader.getSystemResource(propertiesName);
-        PropertyConfigurator.configure(config);
-
-        mainLogger = Logger.getLogger(getClass());
-        client = AWSLogsClientBuilder.defaultClient();
-
-        deleteLogGroupIfExists(logGroupName);
-    }
-
 
 //----------------------------------------------------------------------------
 //  Tests
@@ -146,6 +134,25 @@ public class CloudWatchAppenderIntegrationTest
 //----------------------------------------------------------------------------
 //  Helpers
 //----------------------------------------------------------------------------
+
+    /**
+     *  Loads the test-specific Log4J configuration and resets the environment.
+     */
+    public void setUp(String propertiesName, String logGroupName) throws Exception
+    {
+        URL config = ClassLoader.getSystemResource(propertiesName);
+        assertNotNull("missing configuration: " + propertiesName, config);
+
+        LogManager.resetConfiguration();
+        PropertyConfigurator.configure(config);
+
+        mainLogger = Logger.getLogger(getClass());
+
+        client = AWSLogsClientBuilder.defaultClient();
+
+        deleteLogGroupIfExists(logGroupName);
+    }
+
 
     /**
      *  Asserts that the stream contains the expected number of messages, and that

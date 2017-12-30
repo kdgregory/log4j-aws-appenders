@@ -13,8 +13,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  *  and optionally discards messages after its size reaches a given threshold.
  *  <p>
  *  Implementation note: all operations are coded as update queue followed by update
- *  count. This means that it is possible that {@link #size()} will not indicate the
- *  actual size of the queue.
+ *  count. This means that it is possible that {@link #size()} may not reflect the
+ *  actual size of the queue at any given point in time (but usually will).
  */
 public class MessageQueue
 {
@@ -57,14 +57,54 @@ public class MessageQueue
     private LinkedBlockingDeque<LogMessage> messageQueue = new LinkedBlockingDeque<LogMessage>();
     private AtomicInteger messageCount = new AtomicInteger();
 
-    private int discardThreshold;
-    private DiscardAction discardAction;
+    private volatile int discardThreshold;
+    private volatile DiscardAction discardAction;
 
 
     public MessageQueue(int discardThreshold, DiscardAction discardAction)
     {
         this.discardThreshold = discardThreshold;
         this.discardAction = discardAction;
+    }
+    
+    
+//----------------------------------------------------------------------------
+//  Accessors
+//----------------------------------------------------------------------------
+    
+    /**
+     *  Changes the discard threshold.
+     */
+    public void setDiscardThreshold(int value)
+    {
+        discardThreshold = value;
+    }    
+    
+    
+    /**
+     *  Returns the current discard threshold; this is intended for testing.
+     */
+    public int getDiscardThreshold()
+    {
+        return discardThreshold;
+    }
+
+
+    /**
+     *  Changes the discard action
+     */
+    public void setDiscardAction(DiscardAction value)
+    {
+        discardAction = value;
+    } 
+    
+    
+    /**
+     *  Returns the current discard action; this is intended for testing.
+     */
+    public DiscardAction getDiscardAction()
+    {
+        return discardAction;
     }
 
 

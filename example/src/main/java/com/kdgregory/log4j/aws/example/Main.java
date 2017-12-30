@@ -13,8 +13,9 @@ import org.apache.log4j.Logger;
  *      java -jar target/aws-appenders-example-1.0.0.jar NUM_THREADS
  *  </pre>
  *  Each thread will generate one message per second, writing a short message
- *  with a random number between 0 and 99. If the value is < 75, the message
- *  is logged at DEBUG level; if between 75 and 95, INFO; 95 or above, WARN.
+ *  with a random number between 0 and 99. If the value is < 65, the message
+ *  is logged at DEBUG level; if between 65 and 84, INFO; 85 to 95, WARN; and
+ *  over 95 is ERROR.
  *  <p>
  *  Any non-example warnings will be logged to the console.
  *  <p>
@@ -46,12 +47,14 @@ public class Main
                         {
                             Thread.sleep(1000);
                             int value = rnd.nextInt(100);
-                            if (value < 75)
+                            if (value < 65)
                                 logger.debug("value is " + value);
-                            else if (value < 95)
+                            else if (value < 85)
                                 logger.info("value is " + value);
-                            else
+                            else if (value < 95)
                                 logger.warn("value is " + value);
+                            else
+                                logger.error("value is " + value);
                         }
                         catch (InterruptedException ignored) { /* */ }
                     }

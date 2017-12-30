@@ -22,7 +22,6 @@ import net.sf.kdgcommons.lang.StringUtil;
 import com.amazonaws.services.logs.model.DescribeLogGroupsRequest;
 import com.amazonaws.services.logs.model.DescribeLogGroupsResult;
 import com.amazonaws.services.logs.model.InputLogEvent;
-import com.amazonaws.services.logs.model.InvalidSequenceTokenException;
 import com.amazonaws.services.logs.model.PutLogEventsRequest;
 import com.amazonaws.services.logs.model.PutLogEventsResult;
 
@@ -30,6 +29,8 @@ import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
+import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 import com.kdgregory.log4j.testhelpers.*;
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.*;
 
@@ -44,6 +45,7 @@ public class TestCloudWatchAppender
     throws Exception
     {
         URL config = ClassLoader.getSystemResource(propsName);
+        assertNotNull("was able to retrieve config", config);
         PropertyConfigurator.configure(config);
 
         logger = Logger.getLogger(getClass());
@@ -56,9 +58,33 @@ public class TestCloudWatchAppender
     }
 
 
+    /**
+     *  A spin loop that waits for an writer running in another thread to
+     *  finish initialization. Times out after 5 seconds, otherwise returns
+     *  the initialization message.
+     */
+    private String waitForInitialization() throws Exception
+    {
+        for (int ii = 0 ; ii < 50 ; ii++)
+        {
+            AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+            if ((writer != null) && (writer.getInitializationMessage() != null))
+                return writer.getInitializationMessage();
+            else
+                Thread.sleep(100);
+        }
+        fail("timed out waiting for initialization");
+        return null; // never reached
+    }
+
+//----------------------------------------------------------------------------
+//  JUnit stuff
+//----------------------------------------------------------------------------
+
     @Before
     public void setUp()
     {
+        LogManager.resetConfiguration();
         LogLog.setQuietMode(true);
     }
 
@@ -200,16 +226,15 @@ public class TestCloudWatchAppender
 
         initialize("TestCloudWatchAppender/testSubstitution.properties");
 
-        // need to trigger append to apply substitutions
-        logger.debug("doesn't matter what's written");
-
-        MockCloudWatchWriter writer = appender.getMockWriter();
-
         assertEquals("appender's log group name",   "MyLog-{sysprop:TestCloudWatchAppender.testSubstitution}", appender.getLogGroup());
         assertEquals("appender's log stream name",  "MyStream-{timestamp}-{bogus}",                            appender.getLogStream());
 
-        assertEquals("writers log group name",      "MyLog-foobar",             writer.logGroup);
-        assertRegex("writers log stream name",      "MyStream-20\\d{12}-bogus", writer.logStream);
+        logger.debug("this triggers writer creation");
+
+        MockCloudWatchWriter writer = appender.getMockWriter();
+
+        assertEquals("writers log group name",      "MyLog-foo/bar",                writer.logGroup);
+        assertRegex("writers log stream name",      "MyStream-20\\d{12}-\\{bogus}", writer.logStream);
     }
 
 
@@ -487,6 +512,56 @@ public class TestCloudWatchAppender
 
 
     @Test
+    public void testInvalidGroupName() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testInvalidGroupName.properties");
+
+        MockCloudWatchClient mockClient = new MockCloudWatchClient();
+
+        // note that we will be running the writer on a separate thread
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("message one");
+
+        String initializationMessage = waitForInitialization();
+
+        assertTrue("initialization message indicates invalid group name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("invalid log group name"));
+        assertTrue("initialization message contains invalid name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("helpme!"));
+
+        assertEquals("describeLogGroups: should not be invoked",    0,  mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: should not be invoked",   0,  mockClient.describeLogStreamsInvocationCount);
+    }
+
+
+    @Test
+    public void testInvalidStreamName() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testInvalidStreamName.properties");
+
+        MockCloudWatchClient mockClient = new MockCloudWatchClient();
+
+        // note that we will be running the writer on a separate thread
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("message one");
+
+        String initializationMessage = waitForInitialization();
+
+        assertTrue("initialization message indicates invalid stream name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("invalid log stream name"));
+        assertTrue("initialization message contains invalid name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("I:Am:Not"));
+
+        assertEquals("describeLogGroups: should not be invoked",    0,  mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: should not be invoked",   0,  mockClient.describeLogStreamsInvocationCount);
+    }
+
+
+    @Test
     public void testInitializationErrorHandling() throws Exception
     {
         initialize("TestCloudWatchAppender/testInitializationErrorHandling.properties");
@@ -497,7 +572,7 @@ public class TestCloudWatchAppender
             protected DescribeLogGroupsResult describeLogGroups(
                 DescribeLogGroupsRequest request)
             {
-                throw new UnsupportedOperationException("not now, not ever");
+                throw new TestingException("not now, not ever");
             }
         };
 
@@ -505,26 +580,30 @@ public class TestCloudWatchAppender
         appender.setThreadFactory(new DefaultThreadFactory());
         appender.setWriterFactory(mockClient.newWriterFactory());
 
-        // trigger writer creation
+        // first message triggers writer creation
+
         logger.debug("message one");
+        waitForInitialization();
 
-        // since we'll never get to the point of sending the message we need to spin rather than use semaphore
         AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
-        while (writer.getInitializationMessage() == null)
-        {
-            Thread.sleep(100);
-        }
+        MessageQueue messageQueue = appender.getMessageQueue();
 
-        assertEquals("describeLogGroups: invocation count",   1,                mockClient.describeLogGroupsInvocationCount);
-        assertEquals("describeLogStreams: invocation count",  0,                mockClient.describeLogStreamsInvocationCount);
-        assertTrue("initialization message non-blank",
-                   ! writer.getInitializationMessage().equals(""));
-        assertEquals("initialization error class",
-                     UnsupportedOperationException.class,
-                     writer.getInitializationException().getClass());
-        assertEquals("initialization error message",
-                     "not now, not ever",
-                     writer.getInitializationException().getMessage());
+        assertEquals("describeLogGroups: invocation count",     1,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",    0,                mockClient.describeLogStreamsInvocationCount);
+
+        assertTrue("initialization message was non-blank",      ! writer.getInitializationMessage().equals(""));
+        assertEquals("initialization exception retained",       TestingException.class,     writer.getInitializationException().getClass());
+        assertEquals("initialization error message",            "not now, not ever",        writer.getInitializationException().getMessage());
+
+
+        assertEquals("message queue set to discard all",        0,                          messageQueue.getDiscardThreshold());
+        assertEquals("message queue set to discard all",        DiscardAction.oldest,       messageQueue.getDiscardAction());
+        assertEquals("messages in queue (initial)",             1,                          messageQueue.toList().size());
+
+        // trying to log another message should clear the queue
+
+        logger.info("message two");
+        assertEquals("messages in queue (second try)",          0,                          messageQueue.toList().size());
     }
 
 
@@ -551,7 +630,7 @@ public class TestCloudWatchAppender
         }
 
         assertNull("writer has been reset",         appender.getWriter());
-        assertEquals("last writer exception class", IllegalStateException.class, appender.getLastWriterException().getClass());
+        assertEquals("last writer exception class", TestingException.class, appender.getLastWriterException().getClass());
     }
 
 
@@ -570,7 +649,7 @@ public class TestCloudWatchAppender
             {
                 if (putLogEventsInvocationCount % 2 == 1)
                 {
-                    throw new InvalidSequenceTokenException("anything");
+                    throw new TestingException("anything");
                 }
                 else
                 {
@@ -686,7 +765,7 @@ public class TestCloudWatchAppender
     {
         initialize("TestCloudWatchAppender/testDiscardNone.properties");
 
-        // this is a dummy client: never actually run the writer thread, but
+        // this is a dummy client: we never actually run the writer thread, but
         // need to test the real writer
         MockCloudWatchClient mockClient = new MockCloudWatchClient()
         {
@@ -710,5 +789,36 @@ public class TestCloudWatchAppender
         assertEquals("number of messages in queue", 20, messages.size());
         assertEquals("oldest message", "message 0\n", messages.get(0).getMessage());
         assertEquals("newest message", "message 19\n", messages.get(19).getMessage());
+    }
+
+
+    @Test
+    public void testReconfigureDiscardProperties() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testReconfigureDiscardProperties.properties");
+
+        // another test where we don't actually do anything but need to verify actual writer
+
+        appender.setThreadFactory(new NullThreadFactory());
+        appender.setWriterFactory(new MockCloudWatchClient().newWriterFactory());
+
+        logger.debug("trigger writer creation");
+
+        MessageQueue messageQueue = appender.getMessageQueue();
+
+        assertEquals("initial discard threshold, from appender",    12345,                              appender.getDiscardThreshold());
+        assertEquals("initial discard action, from appender",       DiscardAction.newest.toString(),    appender.getDiscardAction());
+
+        assertEquals("initial discard threshold, from queue",       12345,                              messageQueue.getDiscardThreshold());
+        assertEquals("initial discard action, from queue",          DiscardAction.newest.toString(),    messageQueue.getDiscardAction().toString());
+
+        appender.setDiscardThreshold(54321);
+        appender.setDiscardAction(DiscardAction.oldest.toString());
+
+        assertEquals("updated discard threshold, from appender",    54321,                              appender.getDiscardThreshold());
+        assertEquals("updated discard action, from appender",       DiscardAction.oldest.toString(),    appender.getDiscardAction());
+
+        assertEquals("updated discard threshold, from queue",       54321,                              messageQueue.getDiscardThreshold());
+        assertEquals("updated discard action, from queue",          DiscardAction.oldest.toString(),    messageQueue.getDiscardAction().toString());
     }
 }

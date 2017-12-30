@@ -182,8 +182,8 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
     protected KinesisWriterConfig generateWriterConfig()
     {
         Substitutions subs = new Substitutions(new Date(), sequence.get());
-        actualStreamName  = KinesisConstants.ALLOWED_NAME_REGEX.matcher(subs.perform(streamName)).replaceAll("");
-        actualPartitionKey  = KinesisConstants.ALLOWED_NAME_REGEX.matcher(subs.perform(partitionKey)).replaceAll("");
+        actualStreamName   = subs.perform(streamName);
+        actualPartitionKey = subs.perform(partitionKey);
 
         try
         {

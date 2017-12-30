@@ -1,12 +1,12 @@
 // Copyright (c) Keith D Gregory, all rights reserved
 package com.kdgregory.log4j.aws.internal.kinesis;
 
-import java.util.regex.Pattern;
 
 /**
- *  Holds limits and other constants for CloudWatch Logs.
+ *  Holds limits and other constants for Kinesis Streams.
  *  <p>
- *  See http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
+ *  See http://docs.aws.amazon.com/kinesis/latest/APIReference/API_CreateStream.html
+ *  and http://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html
  */
 public class KinesisConstants
 {
@@ -34,7 +34,13 @@ public class KinesisConstants
     /**
      *  Allowed characters for stream name.
      */
-    public final static Pattern ALLOWED_NAME_REGEX = Pattern.compile("[^A-Za-z0-9-_]");
+    public final static String ALLOWED_STREAM_NAME_REGEX = "[a-zA-Z0-9_.-]{1,128}";
+
+
+    /**
+     *  Allowed characters for partition key.
+     */
+    public final static String ALLOWED_PARITION_KEY_REGEX = "[a-zA-Z0-9_.-]{1,128}";
 
 
     /**

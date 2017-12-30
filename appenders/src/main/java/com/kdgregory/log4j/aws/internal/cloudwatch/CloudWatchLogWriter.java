@@ -35,6 +35,7 @@ extends AbstractLogWriter
 {
     private String groupName;
     private String streamName;
+    private String clientFactoryMethod;
 
     protected AWSLogs client;
 
@@ -44,6 +45,7 @@ extends AbstractLogWriter
         super(config.batchDelay, config.discardThreshold, config.discardAction);
         this.groupName = config.logGroup;
         this.streamName = config.logStream;
+        this.clientFactoryMethod = config.clientFactoryMethod;
     }
 
 //----------------------------------------------------------------------------
@@ -53,7 +55,11 @@ extends AbstractLogWriter
     @Override
     protected void createAWSClient()
     {
-        client = new AWSLogsClient();
+        client = callClientFactory(clientFactoryMethod, AWSLogs.class);
+        if (client == null)
+        {
+            client = new AWSLogsClient();
+        }
     }
 
 

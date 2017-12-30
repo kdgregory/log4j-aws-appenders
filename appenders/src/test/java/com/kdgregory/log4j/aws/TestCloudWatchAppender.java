@@ -32,6 +32,7 @@ import org.apache.log4j.helpers.LogLog;
 
 import net.sf.kdgcommons.lang.StringUtil;
 
+import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.DescribeLogGroupsRequest;
 import com.amazonaws.services.logs.model.DescribeLogGroupsResult;
 import com.amazonaws.services.logs.model.InputLogEvent;
@@ -39,6 +40,7 @@ import com.amazonaws.services.logs.model.PutLogEventsRequest;
 import com.amazonaws.services.logs.model.PutLogEventsResult;
 
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
+import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterFactory;
 import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
@@ -88,6 +90,17 @@ public class TestCloudWatchAppender
         }
         fail("timed out waiting for initialization");
         return null; // never reached
+    }
+    
+
+    // the following variable and function are used by testStaticClientFactory
+    
+    private static MockCloudWatchClient staticFactoryMock = null;
+    
+    public static AWSLogs createMockClient()
+    {
+        staticFactoryMock = new MockCloudWatchClient();
+        return staticFactoryMock.createClient();
     }
 
 //----------------------------------------------------------------------------
@@ -834,4 +847,32 @@ public class TestCloudWatchAppender
         assertEquals("updated discard threshold, from queue",       54321,                              messageQueue.getDiscardThreshold());
         assertEquals("updated discard action, from queue",          DiscardAction.oldest.toString(),    messageQueue.getDiscardAction().toString());
     }
+    
+    
+    @Test
+    public void testStaticClientFactory() throws Exception 
+    {
+        initialize("TestCloudWatchAppender/testStaticClientFactory.properties");
+        
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(new CloudWatchWriterFactory());
+
+        // first message triggers writer creation
+
+        logger.debug("message one");
+        waitForInitialization();
+        
+        assertNotNull("factory was called to create client", staticFactoryMock);
+        
+        // these asserts were copied from testWriterWithExistingGroupAndStream()
+
+        assertEquals("describeLogGroups: invocation count",   2,                staticFactoryMock.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  2,                staticFactoryMock.describeLogStreamsInvocationCount);
+        assertEquals("createLogGroup: invocation count",      0,                staticFactoryMock.createLogGroupInvocationCount);
+        assertEquals("createLogStream: invocation count",     0,                staticFactoryMock.createLogStreamInvocationCount);
+        assertEquals("putLogEvents: invocation count",        1,                staticFactoryMock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",    1,                staticFactoryMock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",            "message one\n",  staticFactoryMock.mostRecentEvents.get(0).getMessage());
+    }
+    
 }

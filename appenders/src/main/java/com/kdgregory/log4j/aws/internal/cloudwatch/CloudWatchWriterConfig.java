@@ -26,14 +26,16 @@ public class CloudWatchWriterConfig
     public long batchDelay;
     public int discardThreshold;
     public DiscardAction discardAction;
+    public String clientFactoryMethod;
 
 
-    public CloudWatchWriterConfig(String actualLogGroup, String actualLogStream, long batchDelay, int discardThreshold, DiscardAction discardAction)
+    public CloudWatchWriterConfig(String actualLogGroup, String actualLogStream, long batchDelay, int discardThreshold, DiscardAction discardAction, String clientFactoryMethod)
     {
         this.logGroup = actualLogGroup;
         this.logStream = actualLogStream;
         this.batchDelay = batchDelay;
         this.discardThreshold = discardThreshold;
         this.discardAction = discardAction;
+        this.clientFactoryMethod = clientFactoryMethod;
     }
 }

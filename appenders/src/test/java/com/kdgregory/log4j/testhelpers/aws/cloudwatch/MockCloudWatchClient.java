@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -108,6 +108,19 @@ implements InvocationHandler
 
 
     /**
+     *  Creates the client proxy. This is used internally, and also by the test
+     *  for calling a static factory method.
+     */
+    public AWSLogs createClient()
+    {
+        return (AWSLogs)Proxy.newProxyInstance(
+                            getClass().getClassLoader(),
+                            new Class<?>[] { AWSLogs.class },
+                            MockCloudWatchClient.this);
+    }
+
+
+    /**
      *  Creates a new WriterFactory, with the stock CloudWatch writer.
      */
     public WriterFactory<CloudWatchWriterConfig> newWriterFactory()
@@ -122,10 +135,7 @@ implements InvocationHandler
                     @Override
                     protected void createAWSClient()
                     {
-                        client = (AWSLogs)Proxy.newProxyInstance(
-                                    getClass().getClassLoader(),
-                                    new Class<?>[] { AWSLogs.class },
-                                    MockCloudWatchClient.this);
+                        client = createClient();
                     }
                 };
             }

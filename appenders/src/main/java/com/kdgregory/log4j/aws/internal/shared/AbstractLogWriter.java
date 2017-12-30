@@ -14,6 +14,7 @@
 
 package com.kdgregory.log4j.aws.internal.shared;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -280,6 +281,33 @@ implements LogWriter
         }
 
         return batch;
+    }
+    
+    
+    /**
+     *  Attempts to create the AWS client via reflection. The passed factory
+     *  name is of the form <code>com.example.Classname.methodName</code>.
+     *  Returns null if the passed value is null or empty. Wraps and rethrows
+     *  any reflection exceptions.
+     */
+    protected <T> T callClientFactory(String clientFactoryName, Class<T> expectedClientClass)
+    {
+        if ((clientFactoryName == null) || clientFactoryName.isEmpty())
+            return null;
+        
+        try
+        {
+            int methodIdx = clientFactoryName.lastIndexOf('.');
+            if (methodIdx < 0)
+                throw new RuntimeException("invalid AWS client factory specified: " + clientFactoryName);
+            Class<?> factoryKlass = Class.forName(clientFactoryName.substring(0, methodIdx));
+            Method factoryMethod = factoryKlass.getDeclaredMethod(clientFactoryName.substring(methodIdx + 1));
+            return expectedClientClass.cast(factoryMethod.invoke(null));
+        }
+        catch (Exception ex)
+        {
+            throw new RuntimeException("unable to invoke AWS client factory", ex);
+        }
     }
 
 

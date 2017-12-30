@@ -95,6 +95,7 @@ extends AppenderSkeleton
     protected RotationMode    rotationMode;
     protected long            rotationInterval;
     protected AtomicInteger   sequence;
+    protected String          clientFactory;
 
 
 //----------------------------------------------------------------------------
@@ -275,6 +276,34 @@ extends AppenderSkeleton
     public int getSequence()
     {
         return sequence.get();
+    }
+    
+    
+    /**
+     *  Sets a static AWS client factory method, which will be called instead of
+     *  the writer's internal client factory. This may be useful if the default
+     *  client is not appropriate (for example, to set a non-default region).
+     *  <p>
+     *  The passed string is of the form <code>com.example.Classname.methodName</code>.
+     *  If this does not reference a class/method on the classpath then writer
+     *  initialization will fail.
+     *  <p>
+     *  Calling this method after the writer has been initialized will have no
+     *  effect (except for those appenders that rotate logs, in which case it
+     *  will apply to the post-rotate writer).
+     */
+    public void setClientFactory(String value)
+    {
+        clientFactory = value;
+    }
+    
+    
+    /**
+     *  Returns the current AWS client factory class/method name.
+     */
+    public String getClientFactory()
+    {
+        return clientFactory;
     }
 
 

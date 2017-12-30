@@ -18,6 +18,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 import net.sf.kdgcommons.collections.DefaultMap;
+import net.sf.kdgcommons.lang.ThreadUtil;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
@@ -47,9 +48,6 @@ public class KinesisAppenderIntegrationTest
 
         Logger testLogger = Logger.getLogger("TestLogger");
         (new MessageWriter(testLogger, numMessages)).run();
-
-        mainLogger.info("smoketest: waiting for stream to become ready");
-        waitForStreamToBeReady(streamName);
 
         mainLogger.info("smoketest: reading messages");
         List<RetrievedRecord> messages = retrieveAllMessages(streamName, numMessages);
@@ -85,9 +83,6 @@ public class KinesisAppenderIntegrationTest
 
         MessageWriter.runOnThreads(writers);
         int expectedMessages = writers.length * messagesPerThread;
-
-        mainLogger.info("multi-thread/single-appender: waiting for stream to become ready");
-        waitForStreamToBeReady(streamName);
 
         mainLogger.info("multi-thread/single-appender: reading messages");
         List<RetrievedRecord> messages = retrieveAllMessages(streamName, expectedMessages);
@@ -130,9 +125,6 @@ public class KinesisAppenderIntegrationTest
         MessageWriter.runOnThreads(writers);
         int expectedMessages = writers.length * messagesPerThread;
 
-        mainLogger.info("multi-thread/multi-appender: waiting for stream to become ready");
-        waitForStreamToBeReady(streamName);
-
         mainLogger.info("multi-thread/multi-appender: reading messages");
         List<RetrievedRecord> messages = retrieveAllMessages(streamName, expectedMessages);
 
@@ -172,8 +164,8 @@ public class KinesisAppenderIntegrationTest
 
 
     /**
-     *  Returns the stream description, null for any exception (which will
-     *  eventually time out if continued).
+     *  Returns the stream description, null if the stream doesn't exist. Will
+     *  automatically retry after a wait if throttled.
      */
     private StreamDescription describeStream(String streamName)
     {
@@ -183,9 +175,14 @@ public class KinesisAppenderIntegrationTest
             DescribeStreamResult describeReponse  = client.describeStream(describeRequest);
             return describeReponse.getStreamDescription();
         }
-        catch (Exception ignored)
+        catch (ResourceNotFoundException ex)
         {
             return null;
+        }
+        catch (LimitExceededException ignored)
+        {
+            ThreadUtil.sleepQuietly(1000);
+            return describeStream(streamName);
         }
     }
 
@@ -230,10 +227,9 @@ public class KinesisAppenderIntegrationTest
     List<RetrievedRecord> retrieveAllMessages(String streamName, int expectedRecords)
     throws Exception
     {
-        List<RetrievedRecord> result = new ArrayList<RetrievedRecord>();
+        waitForStreamToBeReady(streamName);
 
-        // this sleep gives all writers a chance to do their work
-        Thread.sleep(1000);
+        List<RetrievedRecord> result = new ArrayList<RetrievedRecord>();
 
         Map<String,String> shardItxs = getInitialShardIterators(streamName);
         List<String> shardIds = new ArrayList<String>(shardItxs.keySet());

@@ -4,7 +4,7 @@
 	</properties>
 
     <body>
-        <release version="1.2.0" date="TBD" description="support for SNS as a destination">
+        <release version="1.2.0" date="2017-12-30" description="support for SNS as a destination">
             <action dev='kdgregory' type='add'>
                 Add SNSAppender, intended for notification of runtime errors.
             </action>

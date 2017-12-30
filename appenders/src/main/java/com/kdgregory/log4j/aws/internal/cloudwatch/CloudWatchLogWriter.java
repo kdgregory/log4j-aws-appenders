@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import org.apache.log4j.helpers.LogLog;
 
 import com.amazonaws.services.logs.AWSLogs;
@@ -40,7 +41,7 @@ extends AbstractLogWriter
     @Override
     protected void createAWSClient()
     {
-        client = new AWSLogsClient();
+        client = AWSLogsClientBuilder.defaultClient();
     }
 
 

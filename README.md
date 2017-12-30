@@ -14,9 +14,9 @@ been more than a dozen weekends since I started the project; I keep getting new 
 
 Here are the supported destinations:
 
-* [x] [CloudWatch Logs](docs/cloudwatch.md): basic logging that allows keyword search and time ranges
-* [x] [Kinesis Streams](docs/kinesis.md): can be used as a source for Kinesis Firehose, and thence ElasticSearch or S3 storage
-* [x] [SNS](docs/sns.md): useful for real-time error notifications
+* [CloudWatch Logs](docs/cloudwatch.md): basic logging that allows keyword search and time ranges
+* [Kinesis Streams](docs/kinesis.md): can be used as a source for Kinesis Firehose, and thence ElasticSearch or S3 storage
+* [SNS](docs/sns.md): useful for real-time error notifications
 
 In addition to the appenders, I've added a [JSON layout](docs/jsonlayout.md) to make
 it easier to send data to an ElasticSearch/Kibana cluster.
@@ -24,11 +24,11 @@ it easier to send data to an ElasticSearch/Kibana cluster.
 
 ## Usage
 
-To use these appenders, include the `aws-appenders` JAR in your project and configure
-the desired appender in your Log4J properties. Each appender's documentation gives an
-example configuration, and I have created an [example project](example) that writes to
-all of the supported destinations (along with CloudFormation templates to set up those
-destinations).
+To use these appenders, include the `aws-appenders` JAR in your project along with the
+relevant AWS JAR(s), and configure the desired appender in your Log4J properties. Each
+appender's documentation gives an example configuration, and I have created an [example
+project](example) that writes to all of the supported destinations (along with
+CloudFormation templates to set up those destinations).
 
 
 ### Dependency Versions
@@ -44,10 +44,11 @@ to ensure that your project includes necessary dependencies, as follows:
 The minimum supported depedency versions are as follows:
 
 * JDK: 1.6  
-  The appender code does not rely on standard libary classes/methods introduced
-  after 1.6. Before each release, I have compiled and run the integration tests
-  using OpenJDK 1.6. However, Amazon might change the JDK version supported by
-  the AWS SDK at any time.
+  The build script generates 1.6 compatible classfiles, and the appender code
+  does not rely on standard libary classes/methods introduced after 1.6. Before
+  each release, I have compiled and run the integration tests using OpenJDK 1.6.
+  However, Amazon releases the SDK on a daily basis, and a newer version may not
+  support 1.6.
 * Log4J: 1.2.16  
   This is the first version that implements `LoggingEvent.getTimeStamp()`, which
   is needed to order messages when sending to AWS. It's been around since 2010,
@@ -63,9 +64,6 @@ I have made an intentional effort to limit dependencies to the bare minimum. Thi
 has in some cases meant that I write internal implementations for functions that
 are found in common libraries (including my own).
 
-Note that tests introduce their own dependencies. All are available from Maven
-Central, and will be marked as `test` scope in the POM.
-
 
 ## Building
 
@@ -73,15 +71,16 @@ There are three projects in this repository:
 
 * `appender` is the actual appender code.
 * `tests` is a set of integration tests. These are in a separate module so that they
-  can be run as desired, rather than as part of every build.
+  can be run as desired, rather than as part of every build. *Beware: these tests
+  create resources that incur AWS charges, and does not delete them automatically.*
 * `example` is a simple example that writes log message to all supported destinations.
   It includes CloudFormation templates to create those destinations. *Note: you will
-  incur AWS charges when running this example.*
+  incur AWS charges to run this example.*
 
 Classes in the top-level `com.kdgregory.log4j.aws` package are expected to remain backwards
-compatible. Any other classes, particularly those in the `com.kdgregory.log4j.aws.internal`
-package, may change arbitrarily and should not be relied-upon by user code. This caveat also
-applies to all test classes and packages.
+compatible. Any other classes, particularly those under packages named `internal`, may
+change arbitrarily and should not be relied-upon by user code. This caveat also applies
+to all test classes and packages.
 
 
 ### Versions

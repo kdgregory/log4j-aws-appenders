@@ -15,7 +15,7 @@ could tailor its features and also include AWS-only data (such as the EC2 instan
 
 ## Usage
 
-You can use the JSON layout with any appender (including the standard Log4J appenders, but beware
+You can use the JSON layout with any appender, including the standard Log4J appenders (but beware
 that you will need the AWS SDK in your classpath). However, it's most useful with the Kinesis
 appender, feeding a [Kinesis Firehose](http://docs.aws.amazon.com/firehose/latest/dev/what-is-this-service.html)
 delivery stream that sends data to an ElasticSearch cluster. Setting up such a cluster is beyond
@@ -35,7 +35,7 @@ log4j.appender.kinesis.layout.enableInstanceId=true
 The various "enable" properties are used to enable content that is potentially expensive to
 generate.  In particular, `enableInstanceId` enables the inclusion of the EC2 instance ID;
 if you aren't running on EC2, this will introduce a delay of possibly several minutes while
-the SDK tries to retrieve the value.
+the SDK tries (and fails) to retrieve the value.
 
 The `tags` property allows you to specify application-specific tags, including the use of
 [substitutions](substitutions.md). These are specified as a comma-separated list of
@@ -51,8 +51,8 @@ from the layout configuration. The resulting JSON will have the following items:
 ----------------|------------------------------------------------------------------------------------------------------------------------
  `timestamp`    | The date/time that the message was logged, formatted as an [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp with milliseconds (example: `2017-10-15T23:19:02.123Z`)
  `thread`       | The name of the thread where the message was logged.
- `logger`       | The name of the logger (normally the class that's invoking the logger).
- `level`        | The level of the log message.
+ `logger`       | The name of the logger (normally the class that's writing the message, but you can use custom loggers).
+ `level`        | The level of the log message: DEBUG, INFO, WARNING, ERROR.
  `message`      | The message itself.
  `processId`    | The PID of the invoking process, if available (this is retrieved from `RuntimeMxBean` and may not be available on all platforms).
  `exception`    | The stack trace of an associated exception, if one exists. This is exposed as an array of strings, with the first element being the location where the exception was caught.
@@ -61,7 +61,7 @@ from the layout configuration. The resulting JSON will have the following items:
  `locationInfo` | The location where the logger was called. This is a child object with the following components: `className`, `methodName`, `fileName`, `lineNumber`.
  `instanceId`   | The EC2 instance ID of the machine where the logger is running. WARNING: do not enable this elsewhere, as the operation to retrieve this value may take a long time.
  `hostname`     | The name of the machine where the logger is running, if available (this is currently retrieved from `RuntimeMxBean` and may not be available on all platforms).
- `tags`         | Tags defined as part of the logger configuration (omitted if not defined). This is a child object.
+ `tags`         | Arbitrary strings defined as part of the logger configuration. This is a child object, and is omitted if not configured.
 
 
 ## Example

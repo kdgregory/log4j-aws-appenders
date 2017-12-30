@@ -70,6 +70,23 @@ Things to know:
 
 The template is [here](cloudformation/sns.json); it will create the following resources:
 
+* An SNS topic named "AppenderExample" that is the destination for log output.
+* An IAM managed policy named "AppenderExampleSNSWriter" that grants access to create and
+  write to the SNS topic.
+* An IAM managed policy named "AppenderExampleSNSSubscriber" that grants access to subscribe
+  to the SNS topic. This is not used by the example but is here as a base for your own SNS
+  policies.
+
+Things to know:
+
+* The SNS topic is created with an email subscription. You will be able to change the email
+  address during stack creation; by default it's [logging-example@mailinator.com](https://www.mailinator.com/v2/inbox.jsp?zone=public&query=logging-example).
+  Messages sent to this address are deleted within a few hours, but are publicly available
+  to anyone with the link.
+* You must explicit confirm this subscription to receive messages. SNS sends a confirmation
+  email immediately after the topic is created, and there's a link that you must click to
+  confirm the subscription.
+
 
 ## Building and running the example
 
@@ -77,14 +94,13 @@ To build the example program, use Maven:
 
     mvn clean package
 
-This will produce an executable JAR, which you can run from the command-line:
+This will produce an executable JAR, which you can run from the command-line (the wildcard
+works with Linux; if you're running elsewhere you might need to specify the exact name):
 
-    java -jar target/aws-appenders-example-1.0.0.jar
+    java -jar target/aws-appenders-example-*.0.0.jar
 
-This program will spawn two threads, each of which writes a log message at one-second intervals. To spawn
-more threads, give the number of desired threads as a command-line argument. Kill the program to stop writing.
+This program will spawn two threads, each of which writes a log message at one-second intervals.
+Log levels are randomly assigned: 65% DEBUG, 20% INFO, 10% WARN, and 5% ERROR.
 
-
-
-
-
+To spawn more threads, give the number of desired threads as a command-line argument. Kill the
+program to stop logging.

@@ -2,10 +2,10 @@
 
 The CloudWatch implementation provides the following features:
 
-* [x] User-specified log-group and log-stream names
-* [x] Substitution variables to customize log-group and log-stream names
-* [x] Auto-rotation of log streams, based either on a time delay (including hourly/daily) or number of messages
-* [x] Configurable discard in case of network connectivity issues
+* User-specified log-group and log-stream names
+* Substitution variables to customize log-group and log-stream names
+* Auto-rotation of log streams, based either on a time delay (explicity, hourly, or daily) or number of messages
+* Configurable discard in case of network connectivity issues
 
 
 ## Configuration
@@ -38,7 +38,7 @@ Name                | Description
 `discardThreshold`  | The threshold count for discarding messages; default is 10,000. See [design doc](design.md#message-discard) for more information.
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
 
-The `logGroup` and `logStream` properties may use [substutions](substitutions.md).
+The `logGroup` and `logStream` properties may use [substitutions](substitutions.md).
 
 
 ## Permissions

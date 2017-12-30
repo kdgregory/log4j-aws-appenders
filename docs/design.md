@@ -19,12 +19,12 @@ the service. In addition to retries embedded within the AWS SDK, the writer will
 that can't be sent, dropping messages once a user-configurable threshold is reached.
 
 The writer thread is lazily started on the first call to `append()`. There's a factory for writer
-objects and writer threads, to support testing (_not_ to be enterprisey!). If unable to start the
-writer thread, messages are dropped and the situation is reported to the internal logger.
+objects and writer threads, to support testing. If unable to start the writer thread, messages are
+dropped and the situation is reported to the internal logger.
 
 The writer thread handles most exceptions internally. Unexpected exceptions are reported using an
 uncaught exception handler in the appender. This will trigger the appender to discard the writer
-and create a new one (and report the failure to the internal logger).
+and create a new one (and also to report the failure to the internal logger).
 
 The writer uses the default constructor for each AWS service, which in turn uses the default credential
 provider chain. This allows you to specify explicit credentials using several mechanisms, or to use
@@ -32,7 +32,7 @@ instance roles for applications running on EC2 or Lambda.
 
 ## Message Batches
 
-Most AWS services allow batching of messages for efficiency. While sending maxmimum-sized requests is
+Most AWS services allow batching of messages for efficiency. While sending maximum-sized requests is
 more efficient when there's a high volume of logging, it could excessively delay writing when there's
 a low volume (and potentially leave more messages unwritten if the program crashes).
 
@@ -42,7 +42,7 @@ read additional messages until it either fills the batch or the timer is at zero
 sends the batch and starts a new one.
 
 This timeout is also used as a "cooldown" timer when the writer is closed (as when the appender rotates
-its log stream): the writer will continue to look for messages for this amount of time. Note that the writer
+its log stream): the writer will continue to wait for messages for this amount of time. Note that the writer
 might actually take longer to shut down, if there is a large backlog of messages or communication errors
 that prevent the batch being written.
 

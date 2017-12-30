@@ -6,15 +6,17 @@ the ERROR level, and then hook the destination SNS topic to feed a messaging app
 
 The SNS appender provides the following features:
 
-* [x] Configurable destination topic, with substitution variables to specify topic name
-* [x] Optional message subjects, useful for email reporting.
-* [x] Auto-creation of topics
-* [x] Configurable discard in case of network connectivity issues
+* Configurable destination topic, with substitution variables to specify topic name
+* Optional message subjects, useful for email reporting.
+* Auto-creation of topics
+* Configurable discard in case of network connectivity issues
 
 
 ## Configuration
 
-Your Log4J configuration will look something like this (note the `threshold` setting):
+Your Log4J configuration will look something like this (note the `threshold` setting;
+this is a Log4J feature that allows different appenders to receive different levels
+of output):
 
 ```
 log4j.rootLogger=ERROR, sns
@@ -37,6 +39,8 @@ Name                | Description
 `subject`           | If used, attaches a subject to each message sent; no default value. See below for more information.
 `discardThreshold`  | The threshold count for discarding unsent messages; default is 1,000. See [design doc](design.md#message-discard) for more information.
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
+
+The `topicName`, `topicArn`, and `subject` properties may use [substitutions](substitutions.md).
 
 
 ## Permissions
@@ -61,8 +65,8 @@ must already exist. If you specify the topic by name, the appender will attempt 
 topic with the specified name. If unable to find an existing topic it will create the topic.
 
 > The appender assumes that, when listing topics, it will only receive topics for the current region.
-  That constraint is _not_ explicitly stated in the [API doc](http://docs.aws.amazon.com/sns/latest/api/API_ListTopics.html)o
-  but is the current observed behavior. If this behavior ever changes, the appender may choose aan
+  That constraint is _not_ explicitly stated in the [API docs](http://docs.aws.amazon.com/sns/latest/api/API_ListTopics.html)
+  but is the current observed behavior. If this behavior ever changes, the appender may choose an
   unexpected topic.
 
 You may use [substitutions](substitutions.md) in either the topic name or ARN. When constructing an

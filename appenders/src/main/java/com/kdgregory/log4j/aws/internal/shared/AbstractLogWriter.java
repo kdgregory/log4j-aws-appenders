@@ -290,7 +290,7 @@ implements LogWriter
      *  Returns null if the passed value is null or empty. Wraps and rethrows
      *  any reflection exceptions.
      */
-    protected <T> T callClientFactory(String clientFactoryName, Class<T> expectedClientClass)
+    protected <T> T tryClientFactory(String clientFactoryName, Class<T> expectedClientClass)
     {
         if ((clientFactoryName == null) || clientFactoryName.isEmpty())
             return null;

@@ -17,15 +17,12 @@ package com.kdgregory.log4j.aws;
 import java.util.Date;
 
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchConstants;
-import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterFactory;
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 import com.kdgregory.log4j.aws.internal.shared.Substitutions;
-import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 
 
 /**

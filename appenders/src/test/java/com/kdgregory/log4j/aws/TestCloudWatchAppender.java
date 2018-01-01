@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -91,12 +91,12 @@ public class TestCloudWatchAppender
         fail("timed out waiting for initialization");
         return null; // never reached
     }
-    
+
 
     // the following variable and function are used by testStaticClientFactory
-    
+
     private static MockCloudWatchClient staticFactoryMock = null;
-    
+
     public static AWSLogs createMockClient()
     {
         staticFactoryMock = new MockCloudWatchClient();
@@ -847,13 +847,13 @@ public class TestCloudWatchAppender
         assertEquals("updated discard threshold, from queue",       54321,                              messageQueue.getDiscardThreshold());
         assertEquals("updated discard action, from queue",          DiscardAction.oldest.toString(),    messageQueue.getDiscardAction().toString());
     }
-    
-    
+
+
     @Test
-    public void testStaticClientFactory() throws Exception 
+    public void testStaticClientFactory() throws Exception
     {
         initialize("TestCloudWatchAppender/testStaticClientFactory.properties");
-        
+
         appender.setThreadFactory(new DefaultThreadFactory());
         appender.setWriterFactory(new CloudWatchWriterFactory());
 
@@ -861,18 +861,21 @@ public class TestCloudWatchAppender
 
         logger.debug("message one");
         waitForInitialization();
-        
+
         assertNotNull("factory was called to create client", staticFactoryMock);
-        
-        // these asserts were copied from testWriterWithExistingGroupAndStream()
+        assertEquals("no initialization errors",             "",    ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
+
+        // at this point we know that the factory was called, but we'll let the client write
+        // the message and use the same asserts as in testWriterWithExistingGroupAndStream()
+
+        staticFactoryMock.allowWriterThread();
 
         assertEquals("describeLogGroups: invocation count",   2,                staticFactoryMock.describeLogGroupsInvocationCount);
-        assertEquals("describeLogStreams: invocation count",  2,                staticFactoryMock.describeLogStreamsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  4,                staticFactoryMock.describeLogStreamsInvocationCount);
         assertEquals("createLogGroup: invocation count",      0,                staticFactoryMock.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",     0,                staticFactoryMock.createLogStreamInvocationCount);
         assertEquals("putLogEvents: invocation count",        1,                staticFactoryMock.putLogEventsInvocationCount);
         assertEquals("putLogEvents: last call #/messages",    1,                staticFactoryMock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",            "message one\n",  staticFactoryMock.mostRecentEvents.get(0).getMessage());
     }
-    
 }

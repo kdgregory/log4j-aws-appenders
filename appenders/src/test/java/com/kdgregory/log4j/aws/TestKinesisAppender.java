@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,10 +34,12 @@ import org.apache.log4j.helpers.LogLog;
 
 import net.sf.kdgcommons.lang.StringUtil;
 
+import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
 import com.amazonaws.util.BinaryUtils;
 
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;
+import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterFactory;
 import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
@@ -94,6 +96,17 @@ public class TestKinesisAppender
         }
         fail("timed out waiting for initialization");
         return null; // never reached, but the compiler doesn't know that
+    }
+
+
+    // the following variable and function are used by testStaticClientFactory
+
+    private static MockKinesisClient staticFactoryMock = null;
+
+    public static AmazonKinesis createMockClient()
+    {
+        staticFactoryMock = new MockKinesisClient();
+        return staticFactoryMock.createClient();
     }
 
 //----------------------------------------------------------------------------
@@ -654,5 +667,38 @@ public class TestKinesisAppender
 
         assertEquals("updated discard threshold, from queue",       54321,                              messageQueue.getDiscardThreshold());
         assertEquals("updated discard action, from queue",          DiscardAction.oldest.toString(),    messageQueue.getDiscardAction().toString());
+    }
+
+
+    @Test
+    public void testStaticClientFactory() throws Exception
+    {
+        initialize("TestKinesisAppender/testStaticClientFactory.properties");
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(new KinesisWriterFactory());
+
+        // first message triggers writer creation
+
+        logger.debug("example message");
+        waitForInitialization();
+
+        assertNotNull("factory was called to create client", staticFactoryMock);
+        assertEquals("no initialization errors",             "",    ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
+
+        // although we should be happy at this point, we'll actually verify that the
+        // message got written; assertions copied from testWriterWithExistingStream()
+
+        staticFactoryMock.allowWriterThread();
+
+        assertEquals("describeStream: invocation count",        1,          staticFactoryMock.describeStreamInvocationCount);
+        assertEquals("describeStream: stream name",             "argle",    staticFactoryMock.describeStreamStreamName);
+        assertEquals("createStream: invocation count",          0,          staticFactoryMock.createStreamInvocationCount);
+        assertEquals("putRecords: invocation count",            1,          staticFactoryMock.putRecordsInvocationCount);
+        assertEquals("putRecords: source record count",         1,          staticFactoryMock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: source record partition key", "bargle",   staticFactoryMock.putRecordsSourceRecords.get(0).getPartitionKey());
+        assertEquals("putRecords: source record content",       "example message\n",
+                                                                new String(
+                                                                    BinaryUtils.copyAllBytesFrom(staticFactoryMock.putRecordsSourceRecords.get(0).getData()),
+                                                                    "UTF-8"));
     }
 }

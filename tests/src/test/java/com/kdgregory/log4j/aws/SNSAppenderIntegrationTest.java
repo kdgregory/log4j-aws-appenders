@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -58,6 +58,16 @@ public class SNSAppenderIntegrationTest
     private String queueArn;        // set after the queue has been created
     private String queueUrl;        // ditto
 
+    // these are used for smoketest
+
+    private static volatile boolean wasFactoryCalled;
+
+    public static AmazonSNS createClient()
+    {
+        wasFactoryCalled = true;
+        return AmazonSNSClientBuilder.defaultClient();
+    }
+
 
 //----------------------------------------------------------------------------
 //  Testcases
@@ -81,6 +91,8 @@ public class SNSAppenderIntegrationTest
 
         assertEquals("number of messages", numMessages, messages.size());
         assertMessageContent(messages, "");
+
+        assertFalse("client factory called", wasFactoryCalled);
     }
 
 
@@ -102,8 +114,12 @@ public class SNSAppenderIntegrationTest
 
         assertEquals("number of messages", numMessages, messages.size());
         assertMessageContent(messages, "Example");
+
+        assertTrue("client factory called", wasFactoryCalled);
     }
 
+
+    // TODO - add multi-appender tests, test that creates topic
 
 //----------------------------------------------------------------------------
 //  Helpers
@@ -117,6 +133,8 @@ public class SNSAppenderIntegrationTest
     {
         URL config = ClassLoader.getSystemResource(propertiesName);
         assertNotNull("missing configuration: " + propertiesName, config);
+
+        wasFactoryCalled = false;
 
         LogManager.resetConfiguration();
         PropertyConfigurator.configure(config);

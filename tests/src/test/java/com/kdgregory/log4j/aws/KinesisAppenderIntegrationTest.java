@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,6 +46,16 @@ public class KinesisAppenderIntegrationTest
     private Logger localLogger;
     private AmazonKinesis localClient;
 
+    // these are used for smoketest
+
+    private static volatile boolean wasFactoryCalled;
+
+    public static AmazonKinesis createClient()
+    {
+        wasFactoryCalled = true;
+        return AmazonKinesisClientBuilder.defaultClient();
+    }
+
 //----------------------------------------------------------------------------
 //  Tests
 //----------------------------------------------------------------------------
@@ -69,6 +79,8 @@ public class KinesisAppenderIntegrationTest
 
         assertShardCount(streamName, 1);
         assertRetentionPeriod(streamName, 48);
+
+        assertTrue("client factory called", wasFactoryCalled);
 
         localLogger.info("smoketest: finished");
     }
@@ -107,6 +119,8 @@ public class KinesisAppenderIntegrationTest
 
         assertShardCount(streamName, 2);
         assertRetentionPeriod(streamName, 24);
+
+        assertFalse("client factory called", wasFactoryCalled);
 
         localLogger.info("multi-thread/single-appender: finished");
     }
@@ -149,6 +163,8 @@ public class KinesisAppenderIntegrationTest
         assertShardCount(streamName, 2);
         assertRetentionPeriod(streamName, 24);
 
+        assertFalse("client factory called", wasFactoryCalled);
+
         localLogger.info("multi-thread/multi-appender: finished");
     }
 
@@ -164,6 +180,8 @@ public class KinesisAppenderIntegrationTest
     {
         URL config = ClassLoader.getSystemResource(propertiesName);
         assertNotNull("missing configuration: " + propertiesName, config);
+
+        wasFactoryCalled = false;
 
         LogManager.resetConfiguration();
         PropertyConfigurator.configure(config);

@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,6 +47,16 @@ public class CloudWatchAppenderIntegrationTest
     private Logger localLogger;
     private AWSLogs localClient;
 
+    // these are used for smoketest
+
+    private static volatile boolean wasFactoryCalled;
+
+    public static AWSLogs createClient()
+    {
+        wasFactoryCalled = true;
+        return AWSLogsClientBuilder.defaultClient();
+    }
+
 //----------------------------------------------------------------------------
 //  Tests
 //----------------------------------------------------------------------------
@@ -76,6 +86,8 @@ public class CloudWatchAppenderIntegrationTest
 
         CloudWatchLogWriter lastWriter = getWriter(appender);
         assertEquals("number of batches for last writer", 1, lastWriter.getBatchCount());
+
+        assertTrue("client factory called", wasFactoryCalled);
 
         // while we're here, verify that batch delay is propagated
         appender.setBatchDelay(1234L);
@@ -115,6 +127,8 @@ public class CloudWatchAppenderIntegrationTest
         assertMessages(logGroupName, LOGSTREAM_BASE + "3", rotationCount);
         assertMessages(logGroupName, LOGSTREAM_BASE + "4", (messagesPerThread * writers.length) % rotationCount);
 
+        assertFalse("client factory called", wasFactoryCalled);
+
         localLogger.info("multi-thread/single-appender: finished");
     }
 
@@ -140,6 +154,8 @@ public class CloudWatchAppenderIntegrationTest
         assertMessages(logGroupName, LOGSTREAM_BASE + "2", messagesPerThread);
         assertMessages(logGroupName, LOGSTREAM_BASE + "3", messagesPerThread);
 
+        assertFalse("client factory called", wasFactoryCalled);
+
         localLogger.info("multi-thread/multi-appender: finished");
     }
 
@@ -155,6 +171,8 @@ public class CloudWatchAppenderIntegrationTest
     {
         URL config = ClassLoader.getSystemResource(propertiesName);
         assertNotNull("missing configuration: " + propertiesName, config);
+
+        wasFactoryCalled = false;
 
         LogManager.resetConfiguration();
         PropertyConfigurator.configure(config);

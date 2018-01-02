@@ -47,10 +47,10 @@ import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
 
 public class SNSAppenderIntegrationTest
 {
-    private Logger mainLogger;
+    private Logger localLogger;
 
-    private AmazonSNS snsClient;
-    private AmazonSQS sqsClient;
+    private AmazonSNS localSNSclient;
+    private AmazonSQS localSQSclient;
 
     private String runId;           // used to create unique names for queues and topic
     private String resourceName;    // used for both topic and queue
@@ -67,7 +67,7 @@ public class SNSAppenderIntegrationTest
     public void smoketestByArn() throws Exception
     {
         setUp("SNSAppenderIntegrationTest-smoketestByArn.properties");
-        mainLogger.info("smoketest: starting");
+        localLogger.info("smoketest: starting");
 
         createTopicAndQueue();
 
@@ -76,7 +76,7 @@ public class SNSAppenderIntegrationTest
         Logger testLogger = Logger.getLogger("TestLogger");
         (new MessageWriter(testLogger, numMessages)).run();
 
-        mainLogger.info("smoketest: reading messages");
+        localLogger.info("smoketest: reading messages");
         List<String> messages = retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
@@ -88,7 +88,7 @@ public class SNSAppenderIntegrationTest
     public void smoketestByName() throws Exception
     {
         setUp("SNSAppenderIntegrationTest-smoketestByName.properties");
-        mainLogger.info("smoketest: starting");
+        localLogger.info("smoketest: starting");
 
         createTopicAndQueue();
 
@@ -97,7 +97,7 @@ public class SNSAppenderIntegrationTest
         Logger testLogger = Logger.getLogger("TestLogger");
         (new MessageWriter(testLogger, numMessages)).run();
 
-        mainLogger.info("smoketest: reading messages");
+        localLogger.info("smoketest: reading messages");
         List<String> messages = retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
@@ -121,21 +121,21 @@ public class SNSAppenderIntegrationTest
         LogManager.resetConfiguration();
         PropertyConfigurator.configure(config);
 
-        mainLogger = Logger.getLogger(getClass());
+        localLogger = Logger.getLogger(getClass());
 
         runId = String.valueOf(System.currentTimeMillis());
         resourceName = "SNSAppenderIntegrationTest-" + runId;
         System.setProperty("SNSAppenderIntegrationTest.resourceName", resourceName);
 
-        snsClient = AmazonSNSClientBuilder.defaultClient();
-        sqsClient = AmazonSQSClientBuilder.defaultClient();
+        localSNSclient = AmazonSNSClientBuilder.defaultClient();
+        localSQSclient = AmazonSQSClientBuilder.defaultClient();
     }
 
 
     private void createTopicAndQueue()
     throws Exception
     {
-        mainLogger.info("creating queue and topic with name: " + resourceName);
+        localLogger.info("creating queue and topic with name: " + resourceName);
         createTopic();
         createQueue();
         subscribeQueueToTopic();
@@ -149,7 +149,7 @@ public class SNSAppenderIntegrationTest
     throws Exception
     {
         CreateTopicRequest createTopicRequest = new CreateTopicRequest().withName(resourceName);
-        CreateTopicResult createTopicResponse = snsClient.createTopic(createTopicRequest);
+        CreateTopicResult createTopicResponse = localSNSclient.createTopic(createTopicRequest);
         topicArn = createTopicResponse.getTopicArn();
 
         System.setProperty("SNSAppenderIntegrationTest.topicArn", topicArn);
@@ -159,7 +159,7 @@ public class SNSAppenderIntegrationTest
             try
             {
                 GetTopicAttributesRequest attribsRequest = new GetTopicAttributesRequest().withTopicArn(topicArn);
-                snsClient.getTopicAttributes(attribsRequest);
+                localSNSclient.getTopicAttributes(attribsRequest);
                 // no exception means the topic is available
                 return;
             }
@@ -182,7 +182,7 @@ public class SNSAppenderIntegrationTest
     throws Exception
     {
         CreateQueueRequest createRequest = new CreateQueueRequest().withQueueName(resourceName);
-        CreateQueueResult createResponse = sqsClient.createQueue(createRequest);
+        CreateQueueResult createResponse = localSQSclient.createQueue(createRequest);
         queueUrl = createResponse.getQueueUrl();
         queueArn = retrieveQueueAttribute("QueueArn");
     }
@@ -221,7 +221,7 @@ public class SNSAppenderIntegrationTest
         SetQueueAttributesRequest setPolicyRequest = new SetQueueAttributesRequest()
                                                          .withQueueUrl(queueUrl)
                                                          .withAttributes(queueAttributes);
-        sqsClient.setQueueAttributes(setPolicyRequest);
+        localSQSclient.setQueueAttributes(setPolicyRequest);
 
         // according to docs, it can take up to 60 seconds for an attribute to propagate
         // we'll just wait until it's non-blank
@@ -231,7 +231,7 @@ public class SNSAppenderIntegrationTest
                                             .withTopicArn(topicArn)
                                             .withProtocol("sqs")
                                             .withEndpoint(queueArn);
-        snsClient.subscribe(subscribeRequest);
+        localSNSclient.subscribe(subscribeRequest);
     }
 
 
@@ -249,7 +249,7 @@ public class SNSAppenderIntegrationTest
                 GetQueueAttributesRequest attribsRequest = new GetQueueAttributesRequest()
                                                                 .withQueueUrl(queueUrl)
                                                                 .withAttributeNames(attributeName);
-                GetQueueAttributesResult attribsResponse = sqsClient.getQueueAttributes(attribsRequest);
+                GetQueueAttributesResult attribsResponse = localSQSclient.getQueueAttributes(attribsRequest);
                 Map<String,String> attribs = attribsResponse.getAttributes();
                 if (! StringUtil.isEmpty(attribs.get(attributeName)))
                     return attribs.get(attributeName);
@@ -279,7 +279,7 @@ public class SNSAppenderIntegrationTest
             ReceiveMessageRequest retrieveRequest = new ReceiveMessageRequest()
                                                         .withQueueUrl(queueUrl)
                                                         .withWaitTimeSeconds(5);
-            ReceiveMessageResult retrieveResponse = sqsClient.receiveMessage(retrieveRequest);
+            ReceiveMessageResult retrieveResponse = localSQSclient.receiveMessage(retrieveRequest);
             if (retrieveResponse.getMessages().isEmpty())
             {
                 emptyBatchCount++;
@@ -289,7 +289,7 @@ public class SNSAppenderIntegrationTest
                 for (Message message : retrieveResponse.getMessages())
                 {
                     result.add(message.getBody());
-                    sqsClient.deleteMessage(queueUrl, message.getReceiptHandle());
+                    localSQSclient.deleteMessage(queueUrl, message.getReceiptHandle());
                 }
             }
         }

@@ -17,14 +17,12 @@ package com.kdgregory.log4j.aws;
 import java.util.Date;
 
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchConstants;
-import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
+import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterFactory;
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 import com.kdgregory.log4j.aws.internal.shared.Substitutions;
-import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 
 
 /**
@@ -50,14 +48,7 @@ public class CloudWatchAppender extends AbstractAppender<CloudWatchWriterConfig>
     public CloudWatchAppender()
     {
         super(new DefaultThreadFactory(),
-              new WriterFactory<CloudWatchWriterConfig>()
-                  {
-                        @Override
-                        public LogWriter newLogWriter(CloudWatchWriterConfig config)
-                        {
-                            return new CloudWatchLogWriter(config);
-                        }
-                   });
+              new CloudWatchWriterFactory());
 
         logStream = "{startupTimestamp}";
     }
@@ -140,7 +131,7 @@ public class CloudWatchAppender extends AbstractAppender<CloudWatchWriterConfig>
         actualLogGroup     = subs.perform(logGroup);
         actualLogStream    = subs.perform(logStream);
 
-        return new CloudWatchWriterConfig(actualLogGroup, actualLogStream, batchDelay, discardThreshold, discardAction);
+        return new CloudWatchWriterConfig(actualLogGroup, actualLogStream, batchDelay, discardThreshold, discardAction, clientFactory);
     }
 
 

@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,14 +18,12 @@ import java.io.UnsupportedEncodingException;
 import java.util.Date;
 
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisConstants;
-import com.kdgregory.log4j.aws.internal.kinesis.KinesisLogWriter;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;
+import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterFactory;
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 import com.kdgregory.log4j.aws.internal.shared.Substitutions;
-import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 
 
 /**
@@ -56,14 +54,7 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
     public KinesisAppender()
     {
         super(new DefaultThreadFactory(),
-              new WriterFactory<KinesisWriterConfig>()
-                  {
-                        @Override
-                        public LogWriter newLogWriter(KinesisWriterConfig config)
-                        {
-                            return new KinesisLogWriter(config);
-                        }
-                   });
+              new KinesisWriterFactory());
 
         partitionKey = "{startupTimestamp}";
         shardCount = 1;
@@ -209,7 +200,8 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
 
         return new KinesisWriterConfig(actualStreamName, shardCount, retentionPeriod,
                                        actualPartitionKey, partitionKeyLength, batchDelay,
-                                       discardThreshold, discardAction);
+                                       discardThreshold, discardAction,
+                                       clientFactory);
     }
 
 

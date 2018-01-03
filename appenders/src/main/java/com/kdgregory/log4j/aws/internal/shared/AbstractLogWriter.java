@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,6 +14,7 @@
 
 package com.kdgregory.log4j.aws.internal.shared;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -280,6 +281,33 @@ implements LogWriter
         }
 
         return batch;
+    }
+
+
+    /**
+     *  Attempts to create the AWS client via reflection. The passed factory
+     *  name is of the form <code>com.example.Classname.methodName</code>.
+     *  Returns null if the passed value is null or empty. Wraps and rethrows
+     *  any reflection exceptions.
+     */
+    protected <T> T tryClientFactory(String clientFactoryName, Class<T> expectedClientClass)
+    {
+        if ((clientFactoryName == null) || clientFactoryName.isEmpty())
+            return null;
+
+        try
+        {
+            int methodIdx = clientFactoryName.lastIndexOf('.');
+            if (methodIdx < 0)
+                throw new RuntimeException("invalid AWS client factory specified: " + clientFactoryName);
+            Class<?> factoryKlass = Class.forName(clientFactoryName.substring(0, methodIdx));
+            Method factoryMethod = factoryKlass.getDeclaredMethod(clientFactoryName.substring(methodIdx + 1));
+            return expectedClientClass.cast(factoryMethod.invoke(null));
+        }
+        catch (Exception ex)
+        {
+            throw new RuntimeException("unable to invoke AWS client factory", ex);
+        }
     }
 
 

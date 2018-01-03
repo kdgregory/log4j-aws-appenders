@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,8 +43,18 @@ import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
 
 public class KinesisAppenderIntegrationTest
 {
-    private Logger mainLogger;
-    private AmazonKinesis client;
+    private Logger localLogger;
+    private AmazonKinesis localClient;
+
+    // these are used for smoketest
+
+    private static volatile boolean wasFactoryCalled;
+
+    public static AmazonKinesis createClient()
+    {
+        wasFactoryCalled = true;
+        return AmazonKinesisClientBuilder.defaultClient();
+    }
 
 //----------------------------------------------------------------------------
 //  Tests
@@ -57,12 +67,12 @@ public class KinesisAppenderIntegrationTest
         final int numMessages = 1001;
 
         setUp("KinesisAppenderIntegrationTest-smoketest.properties", streamName);
-        mainLogger.info("smoketest: starting");
+        localLogger.info("smoketest: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
         (new MessageWriter(testLogger, numMessages)).run();
 
-        mainLogger.info("smoketest: reading messages");
+        localLogger.info("smoketest: reading messages");
         List<RetrievedRecord> messages = retrieveAllMessages(streamName, numMessages);
 
         assertMessages(messages, 1, numMessages, "test");
@@ -70,7 +80,9 @@ public class KinesisAppenderIntegrationTest
         assertShardCount(streamName, 1);
         assertRetentionPeriod(streamName, 48);
 
-        mainLogger.info("smoketest: finished");
+        assertTrue("client factory called", wasFactoryCalled);
+
+        localLogger.info("smoketest: finished");
     }
 
 
@@ -81,7 +93,7 @@ public class KinesisAppenderIntegrationTest
         int messagesPerThread = 500;
 
         setUp("KinesisAppenderIntegrationTest-testMultipleThreadsSingleAppender.properties", streamName);
-        mainLogger.info("multi-thread/single-appender: starting");
+        localLogger.info("multi-thread/single-appender: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
 
@@ -97,7 +109,7 @@ public class KinesisAppenderIntegrationTest
         MessageWriter.runOnThreads(writers);
         int expectedMessages = writers.length * messagesPerThread;
 
-        mainLogger.info("multi-thread/single-appender: reading messages");
+        localLogger.info("multi-thread/single-appender: reading messages");
         List<RetrievedRecord> messages = retrieveAllMessages(streamName, expectedMessages);
 
         assertMessages(messages, writers.length, messagesPerThread * writers.length, "test");
@@ -108,7 +120,9 @@ public class KinesisAppenderIntegrationTest
         assertShardCount(streamName, 2);
         assertRetentionPeriod(streamName, 24);
 
-        mainLogger.info("multi-thread/single-appender: finished");
+        assertFalse("client factory called", wasFactoryCalled);
+
+        localLogger.info("multi-thread/single-appender: finished");
     }
 
 
@@ -119,7 +133,7 @@ public class KinesisAppenderIntegrationTest
         int messagesPerThread = 500;
 
         setUp("KinesisAppenderIntegrationTest-testMultipleThreadsMultipleAppendersMultiplePartitions.properties", streamName);
-        mainLogger.info("multi-thread/multi-appender: starting");
+        localLogger.info("multi-thread/multi-appender: starting");
 
         Logger testLogger1 = Logger.getLogger("TestLogger1");
         Logger testLogger2 = Logger.getLogger("TestLogger2");
@@ -138,7 +152,7 @@ public class KinesisAppenderIntegrationTest
         MessageWriter.runOnThreads(writers);
         int expectedMessages = writers.length * messagesPerThread;
 
-        mainLogger.info("multi-thread/multi-appender: reading messages");
+        localLogger.info("multi-thread/multi-appender: reading messages");
         List<RetrievedRecord> messages = retrieveAllMessages(streamName, expectedMessages);
 
         assertMessages(messages, writers.length, messagesPerThread * 2, "test1", "test2", "test3");
@@ -149,7 +163,9 @@ public class KinesisAppenderIntegrationTest
         assertShardCount(streamName, 2);
         assertRetentionPeriod(streamName, 24);
 
-        mainLogger.info("multi-thread/multi-appender: finished");
+        assertFalse("client factory called", wasFactoryCalled);
+
+        localLogger.info("multi-thread/multi-appender: finished");
     }
 
 
@@ -165,12 +181,14 @@ public class KinesisAppenderIntegrationTest
         URL config = ClassLoader.getSystemResource(propertiesName);
         assertNotNull("missing configuration: " + propertiesName, config);
 
+        wasFactoryCalled = false;
+
         LogManager.resetConfiguration();
         PropertyConfigurator.configure(config);
 
-        mainLogger = Logger.getLogger(getClass());
+        localLogger = Logger.getLogger(getClass());
 
-        client = AmazonKinesisClientBuilder.defaultClient();
+        localClient = AmazonKinesisClientBuilder.defaultClient();
 
         deleteStreamIfExists(streamName);
     }
@@ -185,7 +203,7 @@ public class KinesisAppenderIntegrationTest
         try
         {
             DescribeStreamRequest describeRequest = new DescribeStreamRequest().withStreamName(streamName);
-            DescribeStreamResult describeReponse  = client.describeStream(describeRequest);
+            DescribeStreamResult describeReponse  = localClient.describeStream(describeRequest);
             return describeReponse.getStreamDescription();
         }
         catch (ResourceNotFoundException ex)
@@ -204,8 +222,8 @@ public class KinesisAppenderIntegrationTest
     {
         if (describeStream(streamName) != null)
         {
-            client.deleteStream(new DeleteStreamRequest().withStreamName(streamName));
-            mainLogger.info("deleted stream; waiting for it to be gone");
+            localClient.deleteStream(new DeleteStreamRequest().withStreamName(streamName));
+            localLogger.info("deleted stream; waiting for it to be gone");
             while (describeStream(streamName) != null)
             {
                 Thread.sleep(1000);
@@ -279,7 +297,7 @@ public class KinesisAppenderIntegrationTest
                                                       .withStreamName(streamName)
                                                       .withShardIteratorType(ShardIteratorType.TRIM_HORIZON)
                                                       .withShardId(shardId);
-            GetShardIteratorResult shardItxResponse = client.getShardIterator(shardItxRequest);
+            GetShardIteratorResult shardItxResponse = localClient.getShardIterator(shardItxRequest);
             result.put(shardId, shardItxResponse.getShardIterator());
         }
         return result;
@@ -290,7 +308,7 @@ public class KinesisAppenderIntegrationTest
     throws Exception
     {
         GetRecordsRequest recordsRequest = new GetRecordsRequest().withShardIterator(shardItx);
-        GetRecordsResult recordsResponse = client.getRecords(recordsRequest);
+        GetRecordsResult recordsResponse = localClient.getRecords(recordsRequest);
         for (Record record : recordsResponse.getRecords())
         {
             messages.add(new RetrievedRecord(shardId, record));

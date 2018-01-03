@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -90,6 +90,18 @@ implements InvocationHandler
 
 
     /**
+     *  Creates a client proxy outside of the writer factory.
+     */
+    public AmazonKinesis createClient()
+    {
+        return (AmazonKinesis)Proxy.newProxyInstance(
+                                    getClass().getClassLoader(),
+                                    new Class<?>[] { AmazonKinesis.class },
+                                    MockKinesisClient.this);
+    }
+
+
+    /**
      *  Returns a Kinesis WriterFactory that includes our mock client.
      */
     public WriterFactory<KinesisWriterConfig> newWriterFactory()
@@ -104,10 +116,7 @@ implements InvocationHandler
                     @Override
                     protected void createAWSClient()
                     {
-                        client = (AmazonKinesis)Proxy.newProxyInstance(
-                                    getClass().getClassLoader(),
-                                    new Class<?>[] { AmazonKinesis.class },
-                                    MockKinesisClient.this);
+                        client = createClient();
                     }
                 };
             }

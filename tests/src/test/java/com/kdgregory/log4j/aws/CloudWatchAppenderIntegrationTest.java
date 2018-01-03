@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,8 +44,18 @@ public class CloudWatchAppenderIntegrationTest
     // CHANGE THESE IF YOU CHANGE THE CONFIG
     private final static String LOGSTREAM_BASE  = "AppenderTest-";
 
-    private Logger mainLogger;
-    private AWSLogs client;
+    private Logger localLogger;
+    private AWSLogs localClient;
+
+    // these are used for smoketest
+
+    private static volatile boolean wasFactoryCalled;
+
+    public static AWSLogs createClient()
+    {
+        wasFactoryCalled = true;
+        return AWSLogsClientBuilder.defaultClient();
+    }
 
 //----------------------------------------------------------------------------
 //  Tests
@@ -59,14 +69,14 @@ public class CloudWatchAppenderIntegrationTest
         final int rotationCount   = 333;
 
         setUp("CloudWatchAppenderIntegrationTest-smoketest.properties", logGroupName);
-        mainLogger.info("smoketest: starting");
+        localLogger.info("smoketest: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
         CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test");
 
         (new MessageWriter(testLogger, numMessages)).run();
 
-        mainLogger.info("smoketest: all messages written; sleeping to give writers chance to run");
+        localLogger.info("smoketest: all messages written; sleeping to give writers chance to run");
         Thread.sleep(5000);
 
         assertMessages(logGroupName, LOGSTREAM_BASE + "1", rotationCount);
@@ -77,11 +87,13 @@ public class CloudWatchAppenderIntegrationTest
         CloudWatchLogWriter lastWriter = getWriter(appender);
         assertEquals("number of batches for last writer", 1, lastWriter.getBatchCount());
 
+        assertTrue("client factory called", wasFactoryCalled);
+
         // while we're here, verify that batch delay is propagated
         appender.setBatchDelay(1234L);
         assertEquals("batch delay", 1234L, lastWriter.getBatchDelay());
 
-        mainLogger.info("smoketest: finished");
+        localLogger.info("smoketest: finished");
     }
 
 
@@ -93,7 +105,7 @@ public class CloudWatchAppenderIntegrationTest
         final int rotationCount     = 333;
 
         setUp("CloudWatchAppenderIntegrationTest-testMultipleThreadsSingleAppender.properties", logGroupName);
-        mainLogger.info("multi-thread/single-appender: starting");
+        localLogger.info("multi-thread/single-appender: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
 
@@ -107,7 +119,7 @@ public class CloudWatchAppenderIntegrationTest
         };
         MessageWriter.runOnThreads(writers);
 
-        mainLogger.info("multi-thread/single-appender: all threads started; sleeping to give writer chance to run");
+        localLogger.info("multi-thread/single-appender: all threads started; sleeping to give writer chance to run");
         Thread.sleep(3000);
 
         assertMessages(logGroupName, LOGSTREAM_BASE + "1", rotationCount);
@@ -115,7 +127,9 @@ public class CloudWatchAppenderIntegrationTest
         assertMessages(logGroupName, LOGSTREAM_BASE + "3", rotationCount);
         assertMessages(logGroupName, LOGSTREAM_BASE + "4", (messagesPerThread * writers.length) % rotationCount);
 
-        mainLogger.info("multi-thread/single-appender: finished");
+        assertFalse("client factory called", wasFactoryCalled);
+
+        localLogger.info("multi-thread/single-appender: finished");
     }
 
 
@@ -126,21 +140,23 @@ public class CloudWatchAppenderIntegrationTest
         final int messagesPerThread = 300;
 
         setUp("CloudWatchAppenderIntegrationTest-testMultipleThreadsMultipleAppenders.properties", logGroupName);
-        mainLogger.info("multi-thread/multi-appender: starting");
+        localLogger.info("multi-thread/multi-appender: starting");
 
         MessageWriter.runOnThreads(
             new MessageWriter(Logger.getLogger("TestLogger1"), messagesPerThread),
             new MessageWriter(Logger.getLogger("TestLogger2"), messagesPerThread),
             new MessageWriter(Logger.getLogger("TestLogger3"), messagesPerThread));
 
-        mainLogger.info("multi-thread/multi-appender: all threads started; sleeping to give writer chance to run");
+        localLogger.info("multi-thread/multi-appender: all threads started; sleeping to give writer chance to run");
         Thread.sleep(3000);
 
         assertMessages(logGroupName, LOGSTREAM_BASE + "1", messagesPerThread);
         assertMessages(logGroupName, LOGSTREAM_BASE + "2", messagesPerThread);
         assertMessages(logGroupName, LOGSTREAM_BASE + "3", messagesPerThread);
 
-        mainLogger.info("multi-thread/multi-appender: finished");
+        assertFalse("client factory called", wasFactoryCalled);
+
+        localLogger.info("multi-thread/multi-appender: finished");
     }
 
 
@@ -156,12 +172,14 @@ public class CloudWatchAppenderIntegrationTest
         URL config = ClassLoader.getSystemResource(propertiesName);
         assertNotNull("missing configuration: " + propertiesName, config);
 
+        wasFactoryCalled = false;
+
         LogManager.resetConfiguration();
         PropertyConfigurator.configure(config);
 
-        mainLogger = Logger.getLogger(getClass());
+        localLogger = Logger.getLogger(getClass());
 
-        client = AWSLogsClientBuilder.defaultClient();
+        localClient = AWSLogsClientBuilder.defaultClient();
 
         deleteLogGroupIfExists(logGroupName);
     }
@@ -221,7 +239,7 @@ public class CloudWatchAppenderIntegrationTest
         do
         {
             prevToken = nextToken;
-            GetLogEventsResult response = client.getLogEvents(request);
+            GetLogEventsResult response = localClient.getLogEvents(request);
             result.addAll(response.getEvents());
             nextToken = response.getNextForwardToken();
             request.setNextToken(nextToken);
@@ -247,7 +265,7 @@ public class CloudWatchAppenderIntegrationTest
                 DescribeLogStreamsRequest reqest = new DescribeLogStreamsRequest()
                                                    .withLogGroupName(logGroupName)
                                                    .withLogStreamNamePrefix(logStreamName);
-                DescribeLogStreamsResult response = client.describeLogStreams(reqest);
+                DescribeLogStreamsResult response = localClient.describeLogStreams(reqest);
                 List<LogStream> streams = response.getLogStreams();
                 if ((streams != null) && (streams.size() > 0))
                 {
@@ -272,11 +290,11 @@ public class CloudWatchAppenderIntegrationTest
     {
         try
         {
-            client.deleteLogGroup(new DeleteLogGroupRequest().withLogGroupName(logGroupName));
+            localClient.deleteLogGroup(new DeleteLogGroupRequest().withLogGroupName(logGroupName));
             while (true)
             {
                 DescribeLogGroupsRequest request = new DescribeLogGroupsRequest().withLogGroupNamePrefix(logGroupName);
-                DescribeLogGroupsResult response = client.describeLogGroups(request);
+                DescribeLogGroupsResult response = localClient.describeLogGroups(request);
                 if ((response.getLogGroups() == null) || (response.getLogGroups().size() == 0))
                 {
                     return;

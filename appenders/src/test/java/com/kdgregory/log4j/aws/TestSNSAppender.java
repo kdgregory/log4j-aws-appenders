@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,6 +33,7 @@ import org.apache.log4j.helpers.LogLog;
 
 import net.sf.kdgcommons.lang.StringUtil;
 
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.CreateTopicResult;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
@@ -43,7 +44,7 @@ import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
-
+import com.kdgregory.log4j.aws.internal.sns.SNSWriterFactory;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
 import com.kdgregory.log4j.testhelpers.NullThreadFactory;
@@ -98,6 +99,17 @@ public class TestSNSAppender
         }
         fail("timed out waiting for initialization");
         return null; // never reached
+    }
+
+
+    // the following variable and function are used by testStaticClientFactory
+
+    private static MockSNSClient staticFactoryMock = null;
+
+    public static AmazonSNS createMockClient()
+    {
+        staticFactoryMock = new MockSNSClient("example", Arrays.asList("argle", "example", "bargle"));
+        return staticFactoryMock.createClient();
     }
 
 //----------------------------------------------------------------------------
@@ -605,5 +617,33 @@ public class TestSNSAppender
 
         assertEquals("updated discard threshold, from queue",       54321,                              messageQueue.getDiscardThreshold());
         assertEquals("updated discard action, from queue",          DiscardAction.oldest.toString(),    messageQueue.getDiscardAction().toString());
+    }
+
+
+    @Test
+    public void testStaticClientFactory() throws Exception
+    {
+        initialize("TestSNSAppender/testStaticClientFactory.properties");
+
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(new SNSWriterFactory());
+
+        logger.info("message one");
+        waitForInitialization();
+
+        assertNotNull("factory was called to create client", staticFactoryMock);
+        assertEquals("no initialization errors",             "",    ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
+
+        // this should be a sufficient assertion, but we'll go on and let the message get written
+
+        staticFactoryMock.allowWriterThread();
+
+        assertEquals("invocations of listTopics",       1,              staticFactoryMock.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",      0,              staticFactoryMock.createTopicInvocationCount);
+        assertEquals("invocations of publish",          1,              staticFactoryMock.publishInvocationCount);
+
+        assertEquals("last message published, arn",     EXPECTED_ARN,   staticFactoryMock.lastPublishArn);
+        assertEquals("last message published, subject", null,           staticFactoryMock.lastPublishSubject);
+        assertEquals("last message published, body",    "message one",  staticFactoryMock.lastPublishMessage);
     }
 }

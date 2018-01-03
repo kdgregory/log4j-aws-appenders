@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,6 +31,7 @@ public class KinesisWriterConfig
     public long             batchDelay;
     public int              discardThreshold;
     public DiscardAction    discardAction;
+    public String           clientFactoryMethod;
 
 
     /**
@@ -47,11 +48,13 @@ public class KinesisWriterConfig
      *                              ready to send.
      *  @param discardThreshold     Maximum number of messages to retain if unable to send.
      *  @param discardAction        What to do with unsent messages over the threshold.
+     *  @parma clientFactoryMethod  Possibly-null FQN of a static method to create client.
      */
     public KinesisWriterConfig(
         String streamName, int shardCount, Integer retentionPeriod,
         String partitionKey, int partitionKeyLength, long batchDelay,
-        int discardThreshold, DiscardAction discardAction)
+        int discardThreshold, DiscardAction discardAction,
+        String clientFactoryMethod)
     {
         this.streamName = streamName;
         this.shardCount = shardCount;
@@ -61,5 +64,6 @@ public class KinesisWriterConfig
         this.batchDelay = batchDelay;
         this.discardThreshold = discardThreshold;
         this.discardAction = discardAction;
+        this.clientFactoryMethod = clientFactoryMethod;
     }
 }

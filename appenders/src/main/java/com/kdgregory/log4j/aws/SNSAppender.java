@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,12 +19,10 @@ import java.util.Date;
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 import com.kdgregory.log4j.aws.internal.shared.Substitutions;
-import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 import com.kdgregory.log4j.aws.internal.sns.SNSConstants;
-import com.kdgregory.log4j.aws.internal.sns.SNSLogWriter;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
+import com.kdgregory.log4j.aws.internal.sns.SNSWriterFactory;
 
 
 /**
@@ -43,14 +41,7 @@ extends AbstractAppender<SNSWriterConfig>
     public SNSAppender()
     {
         super(new DefaultThreadFactory(),
-              new WriterFactory<SNSWriterConfig>()
-                  {
-                        @Override
-                        public LogWriter newLogWriter(SNSWriterConfig config)
-                        {
-                            return new SNSLogWriter(config);
-                        }
-                   });
+              new SNSWriterFactory());
 
         super.setDiscardThreshold(1000);
         super.setBatchDelay(1);
@@ -155,7 +146,7 @@ extends AbstractAppender<SNSWriterConfig>
         String actualTopicArn   = subs.perform(topicArn);
         String actualSubject    = subs.perform(subject);
 
-        return new SNSWriterConfig(actualTopicName, actualTopicArn, actualSubject, discardThreshold, discardAction);
+        return new SNSWriterConfig(actualTopicName, actualTopicArn, actualSubject, discardThreshold, discardAction, clientFactory);
     }
 
     @Override

@@ -69,3 +69,44 @@ that threshold is crossed, messages will be discarded according to one of the fo
 
 The default threshold is 10,000 messages. Assuming 1kb per message, that's 10MB of heap that will be used
 by the queue. 
+
+## Service Client
+
+In order to support all AWS releases in the 1.11.x sequence, the appenders natively use the default
+service client constructors. However, these constructors have a few limitations:
+
+* While they use a [credentials provider chain](https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/auth/DefaultAWSCredentialsProviderChain.html)
+  that looks for client credentials in multiple locations, they don't do the same for region.
+  Instead, they default to the `us-east-1` region and expect applications to change the region
+  as appropriate.
+* Some use cases require providing credentials other than those that the will be picked up by
+  the default provider chain. For example, you might direct logging to a stream or topic owned
+  by a different AWS account.
+
+To work-around these limitations, the appenders provide several mechanisms for application control
+of the service client. These are applied in the order listed:
+
+* You can specify a static factory method to create the client, using the `clientFactory`
+  configuration parameter. This is specified as a fully-qualified classname, followed by
+  a dot and the method name. For example, to use the default CloudWatch Logs factory (this
+  is shown for example only, as the appender will use this method if available):
+
+  ```
+  log4j.appender.cloudwatch.clientFactory=com.amazonaws.services.logs.AWSLogsClientBuilder.defaultClient
+  ```
+
+* (to be implemented)
+  You can specify the client endpoint using the `clientEndpoint` configuration parameter;
+  see the [AWS docs](https://docs.aws.amazon.com/general/latest/gr/rande.html) for a list
+  of endpoint names. This parameter is primarily intended for applications that must use
+  an older AWS SDK version but want to log outside the `us-east-1` region. For example,
+  to direct Kinesis logging to a stream in the `us-west-1` region:
+
+  ```
+  log4j.appender.kinesis.clientEndpoint=kinesis.us-west-1.amazonaws.com
+  ```
+
+* (to be implemented)
+  The appender will use reflection to look for the presence of the default client factory.
+  This first appeared in release 1.11.16, so is probably available for your application
+  (and if not, you should consider upgrading).

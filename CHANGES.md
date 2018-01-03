@@ -1,5 +1,13 @@
 # Change History
 
+
+## 1.2.1 (TBD)
+
+* Added the `clientFactory` property, which instructs appenders to call a static factory
+  method to create their AWS service client.
+  ([#28](https://github.com/kdgregory/log4j-aws-appenders/issues/28)
+
+
 ## 1.2.0 (2017-12-30)
 
 * Added [SNS](docs/sns.md) as a destination.
@@ -34,7 +42,8 @@
 ## 1.1.1 (2017-10-10)
 
 * Added configurable message discard, to avoid out-of-memory errors when
-  connectivity to AWS is spotty. ([#15](https://github.com/kdgregory/log4j-aws-appenders/issues/15))
+  connectivity to AWS is spotty.
+  ([#15](https://github.com/kdgregory/log4j-aws-appenders/issues/15))
 
 
 ## 1.1.0 (2017-09-29)

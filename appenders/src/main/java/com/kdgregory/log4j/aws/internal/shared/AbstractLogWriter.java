@@ -40,6 +40,7 @@ implements LogWriter
     private volatile int batchCount;                        // these can be read via accessor methods; they're intended for testing
     private volatile String initializationMessage;
     private volatile Throwable initializationException;
+    private volatile String factoryMethodUsed;
 
 
     public AbstractLogWriter(long batchDelay, int discardThreshold, DiscardAction discardAction)
@@ -91,6 +92,15 @@ implements LogWriter
     public Throwable getInitializationException()
     {
         return initializationException;
+    }
+
+
+    /**
+     *  Returns the factory method used to create the client, if any. Null if
+     *  the client was created via constructor.
+     */
+    public String getClientFactoryUsed() {
+        return factoryMethodUsed;
     }
 
 //----------------------------------------------------------------------------
@@ -285,12 +295,36 @@ implements LogWriter
 
 
     /**
-     *  Attempts to create the AWS client via reflection. The passed factory
-     *  name is of the form <code>com.example.Classname.methodName</code>.
-     *  Returns null if the passed value is null or empty. Wraps and rethrows
-     *  any reflection exceptions.
+     *  Implements the logic of factory-based service client creation. Subclasses
+     *  should call this before creating the client themselves via constructor.
      */
-    protected <T> T tryClientFactory(String clientFactoryName, Class<T> expectedClientClass)
+    protected <T> T tryClientFactories(String explicitFactoryName, String defaultFactoryName, Class<T> expectedClientClass)
+    {
+        T client = tryClientFactory(explicitFactoryName, expectedClientClass);
+        if (client != null)
+            return client;
+
+        try
+        {
+            return tryClientFactory(defaultFactoryName, expectedClientClass);
+        }
+        catch (Exception ignored)
+        {
+            // most likely cause of exception is an SDK that doesn't have the
+            // factory class; regardless, we'll let subclass do its thing
+            return null;
+        }
+    }
+
+
+//----------------------------------------------------------------------------
+//  Internals
+//----------------------------------------------------------------------------
+
+    /**
+     *  Reused method for client factory initialization.
+     */
+    private <T> T tryClientFactory(String clientFactoryName, Class<T> expectedClientClass)
     {
         if ((clientFactoryName == null) || clientFactoryName.isEmpty())
             return null;
@@ -302,7 +336,9 @@ implements LogWriter
                 throw new RuntimeException("invalid AWS client factory specified: " + clientFactoryName);
             Class<?> factoryKlass = Class.forName(clientFactoryName.substring(0, methodIdx));
             Method factoryMethod = factoryKlass.getDeclaredMethod(clientFactoryName.substring(methodIdx + 1));
-            return expectedClientClass.cast(factoryMethod.invoke(null));
+            T client = expectedClientClass.cast(factoryMethod.invoke(null));
+            factoryMethodUsed = clientFactoryName;
+            return client;
         }
         catch (Exception ex)
         {
@@ -310,10 +346,6 @@ implements LogWriter
         }
     }
 
-
-//----------------------------------------------------------------------------
-//  Internals
-//----------------------------------------------------------------------------
 
     /**
      *  Performs initialization at the start of {@link #run}. Extracted so that

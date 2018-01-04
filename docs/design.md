@@ -99,14 +99,13 @@ of the service client. These are applied in the order listed:
   You can specify the client endpoint using the `clientEndpoint` configuration parameter;
   see the [AWS docs](https://docs.aws.amazon.com/general/latest/gr/rande.html) for a list
   of endpoint names. This parameter is primarily intended for applications that must use
-  an older AWS SDK version but want to log outside the `us-east-1` region. For example,
-  to direct Kinesis logging to a stream in the `us-west-1` region:
+  an older AWS SDK version (including 1.10.x) but want to log outside the `us-east-1` region.
+  For example, to direct Kinesis logging to a stream in the `us-west-1` region:
 
   ```
   log4j.appender.kinesis.clientEndpoint=kinesis.us-west-1.amazonaws.com
   ```
 
-* (to be implemented)
-  The appender will use reflection to look for the presence of the default client factory.
+* The appender will use reflection to look for the presence of the default client factory.
   This first appeared in release 1.11.16, so is probably available for your application
   (and if not, you should consider upgrading).

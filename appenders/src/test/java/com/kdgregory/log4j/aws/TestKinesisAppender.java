@@ -681,9 +681,13 @@ public class TestKinesisAppender
 
         logger.debug("example message");
         waitForInitialization();
+        AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
 
         assertNotNull("factory was called to create client", staticFactoryMock);
-        assertEquals("no initialization errors",             "",    ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
+        assertEquals("no initialization errors",             "",    
+                                                             writer.getInitializationMessage());
+        assertEquals("factory method called",                "com.kdgregory.log4j.aws.TestKinesisAppender.createMockClient",    
+                                                             writer.getClientFactoryUsed());
 
         // although we should be happy at this point, we'll actually verify that the
         // message got written; assertions copied from testWriterWithExistingStream()

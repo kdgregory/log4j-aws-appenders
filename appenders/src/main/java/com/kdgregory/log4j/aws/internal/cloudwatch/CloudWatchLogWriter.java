@@ -55,7 +55,7 @@ extends AbstractLogWriter
     @Override
     protected void createAWSClient()
     {
-        client = tryClientFactory(clientFactoryMethod, AWSLogs.class);
+        client = tryClientFactories(clientFactoryMethod, "com.amazonaws.services.logs.AWSLogsClientBuilder.defaultClient", AWSLogs.class);
         if (client == null)
         {
             client = new AWSLogsClient();

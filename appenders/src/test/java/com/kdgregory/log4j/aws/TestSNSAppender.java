@@ -631,8 +631,13 @@ public class TestSNSAppender
         logger.info("message one");
         waitForInitialization();
 
+        AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+
         assertNotNull("factory was called to create client", staticFactoryMock);
-        assertEquals("no initialization errors",             "",    ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
+        assertEquals("no initialization errors",             "",
+                                                             writer.getInitializationMessage());
+        assertEquals("called explicit client factory",       "com.kdgregory.log4j.aws.TestSNSAppender.createMockClient",
+                                                             writer.getClientFactoryUsed());
 
         // this should be a sufficient assertion, but we'll go on and let the message get written
 

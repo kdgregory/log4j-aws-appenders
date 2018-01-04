@@ -54,7 +54,7 @@ extends AbstractLogWriter
     @Override
     protected void createAWSClient()
     {
-        client = tryClientFactory(config.clientFactoryMethod, AmazonSNS.class);
+        client = tryClientFactories(config.clientFactoryMethod, "com.amazonaws.services.sns.AmazonSNSClientBuilder.defaultClient", AmazonSNS.class);
         if (client == null)
         {
             client = new AmazonSNSClient();

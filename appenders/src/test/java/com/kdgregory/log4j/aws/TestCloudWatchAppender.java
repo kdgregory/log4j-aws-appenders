@@ -862,8 +862,13 @@ public class TestCloudWatchAppender
         logger.debug("message one");
         waitForInitialization();
 
+        AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+
         assertNotNull("factory was called to create client", staticFactoryMock);
-        assertEquals("no initialization errors",             "",    ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
+        assertEquals("no initialization errors",        "",
+                                                        writer.getInitializationMessage());
+        assertEquals("writer called factory method",    "com.kdgregory.log4j.aws.TestCloudWatchAppender.createMockClient",
+                                                        writer.getClientFactoryUsed());
 
         // at this point we know that the factory was called, but we'll let the client write
         // the message and use the same asserts as in testWriterWithExistingGroupAndStream()

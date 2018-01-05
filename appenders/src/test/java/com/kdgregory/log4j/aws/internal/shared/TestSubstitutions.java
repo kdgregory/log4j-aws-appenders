@@ -131,7 +131,7 @@ public class TestSubstitutions
     }
 
 
-    @Test
+    @Test @Ignore
     public void testAWSAccountId() throws Exception
     {
         Substitutions subs = new Substitutions(TEST_DATE, 0);

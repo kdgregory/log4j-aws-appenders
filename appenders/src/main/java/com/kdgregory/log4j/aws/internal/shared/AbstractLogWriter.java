@@ -295,36 +295,16 @@ implements LogWriter
 
 
     /**
-     *  Implements the logic of factory-based service client creation. Subclasses
-     *  should call this before creating the client themselves via constructor.
+     *  Attempts to use a factory method to create the service client.
+     *
+     *  @param  clientFactoryName   Fully qualified name of a static factory method.
+     *                              If empty or null, this function returns null (used
+     *                              to handle optionally-configured factories).
+     *  @param  expectedClientClass The interface fullfilled by this client.
+     *  @param  rethrow             If true, any reflection exceptions will be wrapped
+     *                              and rethrown; if false, exceptions return null
      */
-    protected <T> T tryClientFactories(String explicitFactoryName, String defaultFactoryName, Class<T> expectedClientClass)
-    {
-        T client = tryClientFactory(explicitFactoryName, expectedClientClass);
-        if (client != null)
-            return client;
-
-        try
-        {
-            return tryClientFactory(defaultFactoryName, expectedClientClass);
-        }
-        catch (Exception ignored)
-        {
-            // most likely cause of exception is an SDK that doesn't have the
-            // factory class; regardless, we'll let subclass do its thing
-            return null;
-        }
-    }
-
-
-//----------------------------------------------------------------------------
-//  Internals
-//----------------------------------------------------------------------------
-
-    /**
-     *  Reused method for client factory initialization.
-     */
-    private <T> T tryClientFactory(String clientFactoryName, Class<T> expectedClientClass)
+    protected <T> T tryClientFactory(String clientFactoryName, Class<T> expectedClientClass, boolean rethrow)
     {
         if ((clientFactoryName == null) || clientFactoryName.isEmpty())
             return null;
@@ -342,10 +322,16 @@ implements LogWriter
         }
         catch (Exception ex)
         {
-            throw new RuntimeException("unable to invoke AWS client factory", ex);
+            if (rethrow)
+                throw new RuntimeException("unable to invoke AWS client factory", ex);
+            else
+                return null;
         }
     }
 
+//----------------------------------------------------------------------------
+//  Internals
+//----------------------------------------------------------------------------
 
     /**
      *  Performs initialization at the start of {@link #run}. Extracted so that

@@ -1,7 +1,7 @@
 # Change History
 
 
-## 1.2.1 (TBD)
+## 1.2.1 (2018-01-06)
 
 * Use reflection to create AWS service clients from default factory methods. This will
   be the default behavior for most SDK versions (unless explicit `clientFactory` or
@@ -19,6 +19,9 @@
   available regions is dependent on your SDK version. For example, SDK 1.11.0 doesn't
   know about the `us-east-2` region.
   ([#30](https://github.com/kdgregory/log4j-aws-appenders/issues/30)
+* Enable per-record random partition keys for `KinesisAppender`. This can make better
+  use of a multi-shard stream for applications with high logging output.
+  ([#24](https://github.com/kdgregory/log4j-aws-appenders/issues/24)
 
 
 ## 1.2.0 (2017-12-30)

@@ -54,10 +54,15 @@ extends AbstractLogWriter
     @Override
     protected void createAWSClient()
     {
-        client = tryClientFactory(config.clientFactoryMethod, AmazonSNS.class);
+        client = tryClientFactory(config.clientFactoryMethod, AmazonSNS.class, true);
+        if ((client == null) && (config.clientEndpoint == null))
+        {
+            client = tryClientFactory("com.amazonaws.services.sns.AmazonSNSClientBuilder.defaultClient", AmazonSNS.class, false);
+        }
         if (client == null)
         {
-            client = new AmazonSNSClient();
+            LogLog.debug(getClass().getSimpleName() + ": creating service client via constructor");
+            client = tryConfigureEndpointOrRegion(new AmazonSNSClient(), config.clientEndpoint);
         }
     }
 
@@ -166,6 +171,7 @@ extends AbstractLogWriter
         }
         else
         {
+            LogLog.debug("creating SNS topic: " + config.topicName);
             CreateTopicResult response = client.createTopic(config.topicName);
             topicArn = response.getTopicArn();
             return true;

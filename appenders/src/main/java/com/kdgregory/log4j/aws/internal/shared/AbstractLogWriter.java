@@ -21,6 +21,9 @@ import java.util.List;
 
 import org.apache.log4j.helpers.LogLog;
 
+import com.amazonaws.AmazonWebServiceClient;
+import com.amazonaws.regions.Regions;
+
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 
 
@@ -40,6 +43,7 @@ implements LogWriter
     private volatile int batchCount;                        // these can be read via accessor methods; they're intended for testing
     private volatile String initializationMessage;
     private volatile Throwable initializationException;
+    private volatile String factoryMethodUsed;
 
 
     public AbstractLogWriter(long batchDelay, int discardThreshold, DiscardAction discardAction)
@@ -91,6 +95,15 @@ implements LogWriter
     public Throwable getInitializationException()
     {
         return initializationException;
+    }
+
+
+    /**
+     *  Returns the factory method used to create the client, if any. Null if
+     *  the client was created via constructor.
+     */
+    public String getClientFactoryUsed() {
+        return factoryMethodUsed;
     }
 
 //----------------------------------------------------------------------------
@@ -285,12 +298,16 @@ implements LogWriter
 
 
     /**
-     *  Attempts to create the AWS client via reflection. The passed factory
-     *  name is of the form <code>com.example.Classname.methodName</code>.
-     *  Returns null if the passed value is null or empty. Wraps and rethrows
-     *  any reflection exceptions.
+     *  Attempts to use a factory method to create the service client.
+     *
+     *  @param  clientFactoryName   Fully qualified name of a static factory method.
+     *                              If empty or null, this function returns null (used
+     *                              to handle optionally-configured factories).
+     *  @param  expectedClientClass The interface fullfilled by this client.
+     *  @param  rethrow             If true, any reflection exceptions will be wrapped
+     *                              and rethrown; if false, exceptions return null
      */
-    protected <T> T tryClientFactory(String clientFactoryName, Class<T> expectedClientClass)
+    protected <T> T tryClientFactory(String clientFactoryName, Class<T> expectedClientClass, boolean rethrow)
     {
         if ((clientFactoryName == null) || clientFactoryName.isEmpty())
             return null;
@@ -302,12 +319,46 @@ implements LogWriter
                 throw new RuntimeException("invalid AWS client factory specified: " + clientFactoryName);
             Class<?> factoryKlass = Class.forName(clientFactoryName.substring(0, methodIdx));
             Method factoryMethod = factoryKlass.getDeclaredMethod(clientFactoryName.substring(methodIdx + 1));
-            return expectedClientClass.cast(factoryMethod.invoke(null));
+            T client = expectedClientClass.cast(factoryMethod.invoke(null));
+            factoryMethodUsed = clientFactoryName;
+            LogLog.debug(getClass().getSimpleName() + ": created client from factory: " + clientFactoryName);
+            return client;
         }
         catch (Exception ex)
         {
-            throw new RuntimeException("unable to invoke AWS client factory", ex);
+            if (rethrow)
+                throw new RuntimeException("unable to invoke AWS client factory", ex);
+            else
+                return null;
         }
+    }
+
+
+    /**
+     *  Common support code: attempts to configure client endpoint and/or region.
+     *
+     *  @param  client      A constructed writer-specific service client.
+     *  @param  endpoint    A possibly-null endpoint specification.
+     */
+    protected <T extends AmazonWebServiceClient> T tryConfigureEndpointOrRegion(T client, String endpoint)
+    {
+        // explicit endpoint takes precedence over region retrieved from environment
+        if (endpoint != null)
+        {
+            LogLog.debug(getClass().getSimpleName() + ": configuring endpoint: " + endpoint);
+            client.setEndpoint(endpoint);
+            return client;
+        }
+
+        String region = System.getenv("AWS_REGION");
+        if (region != null)
+        {
+            LogLog.debug(getClass().getSimpleName() + ": configuring region: " + region);
+            client.configureRegion(Regions.fromName(region));
+            return client;
+        }
+
+        return client;
     }
 
 

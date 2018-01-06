@@ -14,6 +14,7 @@
 
 package com.kdgregory.log4j.aws;
 
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,6 +39,8 @@ import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.kinesis.model.*;
 import com.amazonaws.util.BinaryUtils;
 
+import com.kdgregory.log4j.aws.internal.kinesis.KinesisLogWriter;
+import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
 import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
 
 
@@ -45,16 +48,6 @@ public class KinesisAppenderIntegrationTest
 {
     private Logger localLogger;
     private AmazonKinesis localClient;
-
-    // these are used for smoketest
-
-    private static volatile boolean wasFactoryCalled;
-
-    public static AmazonKinesis createClient()
-    {
-        wasFactoryCalled = true;
-        return AmazonKinesisClientBuilder.defaultClient();
-    }
 
 //----------------------------------------------------------------------------
 //  Tests
@@ -70,6 +63,8 @@ public class KinesisAppenderIntegrationTest
         localLogger.info("smoketest: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
+        KinesisAppender appender = (KinesisAppender)testLogger.getAppender("test");
+
         (new MessageWriter(testLogger, numMessages)).run();
 
         localLogger.info("smoketest: reading messages");
@@ -80,7 +75,7 @@ public class KinesisAppenderIntegrationTest
         assertShardCount(streamName, 1);
         assertRetentionPeriod(streamName, 48);
 
-        assertTrue("client factory called", wasFactoryCalled);
+        assertEquals("client factory called", "com.kdgregory.log4j.aws.KinesisAppenderIntegrationTest.createClient", getWriter(appender).getClientFactoryUsed());
 
         localLogger.info("smoketest: finished");
     }
@@ -96,6 +91,7 @@ public class KinesisAppenderIntegrationTest
         localLogger.info("multi-thread/single-appender: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
+        KinesisAppender appender = (KinesisAppender)testLogger.getAppender("test");
 
         MessageWriter[] writers = new MessageWriter[]
         {
@@ -120,7 +116,7 @@ public class KinesisAppenderIntegrationTest
         assertShardCount(streamName, 2);
         assertRetentionPeriod(streamName, 24);
 
-        assertFalse("client factory called", wasFactoryCalled);
+        assertEquals("client factory called", "com.amazonaws.services.kinesis.AmazonKinesisClientBuilder.defaultClient", getWriter(appender).getClientFactoryUsed());
 
         localLogger.info("multi-thread/single-appender: finished");
     }
@@ -138,6 +134,8 @@ public class KinesisAppenderIntegrationTest
         Logger testLogger1 = Logger.getLogger("TestLogger1");
         Logger testLogger2 = Logger.getLogger("TestLogger2");
         Logger testLogger3 = Logger.getLogger("TestLogger3");
+
+        KinesisAppender appender1 = (KinesisAppender)testLogger1.getAppender("test1");
 
         MessageWriter[] writers = new MessageWriter[]
         {
@@ -163,7 +161,7 @@ public class KinesisAppenderIntegrationTest
         assertShardCount(streamName, 2);
         assertRetentionPeriod(streamName, 24);
 
-        assertFalse("client factory called", wasFactoryCalled);
+        assertEquals("client factory called", "com.amazonaws.services.kinesis.AmazonKinesisClientBuilder.defaultClient", getWriter(appender1).getClientFactoryUsed());
 
         localLogger.info("multi-thread/multi-appender: finished");
     }
@@ -174,14 +172,21 @@ public class KinesisAppenderIntegrationTest
 //----------------------------------------------------------------------------
 
     /**
+     *  Factory method called by smoketest
+     */
+    public static AmazonKinesis createClient()
+    {
+        return AmazonKinesisClientBuilder.defaultClient();
+    }
+
+
+    /**
      *  Loads the test-specific Log4J configuration and resets the environment.
      */
     public void setUp(String propertiesName, String streamName) throws Exception
     {
         URL config = ClassLoader.getSystemResource(propertiesName);
         assertNotNull("missing configuration: " + propertiesName, config);
-
-        wasFactoryCalled = false;
 
         LogManager.resetConfiguration();
         PropertyConfigurator.configure(config);
@@ -428,5 +433,13 @@ public class KinesisAppenderIntegrationTest
             this.partitionKey = record.getPartitionKey();
             this.message = new String(BinaryUtils.copyAllBytesFrom(record.getData()), "UTF-8").trim();
         }
+    }
+
+
+    private KinesisLogWriter getWriter(KinesisAppender appender) throws Exception
+    {
+        Field writerField = AbstractAppender.class.getDeclaredField("writer");
+        writerField.setAccessible(true);
+        return (KinesisLogWriter)writerField.get(appender);
     }
 }

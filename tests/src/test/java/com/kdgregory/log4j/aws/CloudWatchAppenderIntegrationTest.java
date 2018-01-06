@@ -47,16 +47,6 @@ public class CloudWatchAppenderIntegrationTest
     private Logger localLogger;
     private AWSLogs localClient;
 
-    // these are used for smoketest
-
-    private static volatile boolean wasFactoryCalled;
-
-    public static AWSLogs createClient()
-    {
-        wasFactoryCalled = true;
-        return AWSLogsClientBuilder.defaultClient();
-    }
-
 //----------------------------------------------------------------------------
 //  Tests
 //----------------------------------------------------------------------------
@@ -87,7 +77,7 @@ public class CloudWatchAppenderIntegrationTest
         CloudWatchLogWriter lastWriter = getWriter(appender);
         assertEquals("number of batches for last writer", 1, lastWriter.getBatchCount());
 
-        assertTrue("client factory called", wasFactoryCalled);
+        assertEquals("client factory", "com.kdgregory.log4j.aws.CloudWatchAppenderIntegrationTest.createClient", lastWriter.getClientFactoryUsed());
 
         // while we're here, verify that batch delay is propagated
         appender.setBatchDelay(1234L);
@@ -108,6 +98,7 @@ public class CloudWatchAppenderIntegrationTest
         localLogger.info("multi-thread/single-appender: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
+        CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test");
 
         MessageWriter[] writers = new MessageWriter[]
         {
@@ -127,7 +118,7 @@ public class CloudWatchAppenderIntegrationTest
         assertMessages(logGroupName, LOGSTREAM_BASE + "3", rotationCount);
         assertMessages(logGroupName, LOGSTREAM_BASE + "4", (messagesPerThread * writers.length) % rotationCount);
 
-        assertFalse("client factory called", wasFactoryCalled);
+        assertEquals("client factory", "com.amazonaws.services.logs.AWSLogsClientBuilder.defaultClient", getWriter(appender).getClientFactoryUsed());
 
         localLogger.info("multi-thread/single-appender: finished");
     }
@@ -142,6 +133,9 @@ public class CloudWatchAppenderIntegrationTest
         setUp("CloudWatchAppenderIntegrationTest-testMultipleThreadsMultipleAppenders.properties", logGroupName);
         localLogger.info("multi-thread/multi-appender: starting");
 
+        Logger testLogger = Logger.getLogger("TestLogger1");
+        CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test1");
+
         MessageWriter.runOnThreads(
             new MessageWriter(Logger.getLogger("TestLogger1"), messagesPerThread),
             new MessageWriter(Logger.getLogger("TestLogger2"), messagesPerThread),
@@ -154,7 +148,7 @@ public class CloudWatchAppenderIntegrationTest
         assertMessages(logGroupName, LOGSTREAM_BASE + "2", messagesPerThread);
         assertMessages(logGroupName, LOGSTREAM_BASE + "3", messagesPerThread);
 
-        assertFalse("client factory called", wasFactoryCalled);
+        assertEquals("client factory", "com.amazonaws.services.logs.AWSLogsClientBuilder.defaultClient", getWriter(appender).getClientFactoryUsed());
 
         localLogger.info("multi-thread/multi-appender: finished");
     }
@@ -165,14 +159,21 @@ public class CloudWatchAppenderIntegrationTest
 //----------------------------------------------------------------------------
 
     /**
+     *  This function is used as a client factory by the smoketest.
+     */
+    public static AWSLogs createClient()
+    {
+        return AWSLogsClientBuilder.defaultClient();
+    }
+    
+    
+    /**
      *  Loads the test-specific Log4J configuration and resets the environment.
      */
     public void setUp(String propertiesName, String logGroupName) throws Exception
     {
         URL config = ClassLoader.getSystemResource(propertiesName);
         assertNotNull("missing configuration: " + propertiesName, config);
-
-        wasFactoryCalled = false;
 
         LogManager.resetConfiguration();
         PropertyConfigurator.configure(config);

@@ -3,9 +3,22 @@
 
 ## 1.2.1 (TBD)
 
+* Use reflection to create AWS service clients from default factory methods. This will
+  be the default behavior for most SDK versions (unless explicit `clientFactory` or
+  `endpoint` configured).
+  ([#30](https://github.com/kdgregory/log4j-aws-appenders/issues/30)
 * Added the `clientFactory` property, which instructs appenders to call a static factory
   method to create their AWS service client.
   ([#28](https://github.com/kdgregory/log4j-aws-appenders/issues/28)
+* Allow explicit endpoint configuration. This is intended to support clients using older
+  AWS SDKs that don't want to direct output to the `us-east-1` region.
+  ([#30](https://github.com/kdgregory/log4j-aws-appenders/issues/30)
+* When creating a service client via constructor, attempt to set the region from the
+  `AWS_REGION` environment variable. This is an alternative to specifying `endpoint`
+  in your logger config, but in my opinion isn't very useful because the list of
+  available regions is dependent on your SDK version. For example, SDK 1.11.0 doesn't
+  know about the `us-east-2` region.
+  ([#30](https://github.com/kdgregory/log4j-aws-appenders/issues/30)
 
 
 ## 1.2.0 (2017-12-30)

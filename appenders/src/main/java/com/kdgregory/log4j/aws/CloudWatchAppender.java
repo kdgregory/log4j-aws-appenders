@@ -131,7 +131,7 @@ public class CloudWatchAppender extends AbstractAppender<CloudWatchWriterConfig>
         actualLogGroup     = subs.perform(logGroup);
         actualLogStream    = subs.perform(logStream);
 
-        return new CloudWatchWriterConfig(actualLogGroup, actualLogStream, batchDelay, discardThreshold, discardAction, clientFactory);
+        return new CloudWatchWriterConfig(actualLogGroup, actualLogStream, batchDelay, discardThreshold, discardAction, clientFactory, clientEndpoint);
     }
 
 

@@ -36,6 +36,7 @@ extends AbstractLogWriter
     private String groupName;
     private String streamName;
     private String clientFactoryMethod;
+    private String clientEndpoint;
 
     protected AWSLogs client;
 
@@ -46,6 +47,7 @@ extends AbstractLogWriter
         this.groupName = config.logGroup;
         this.streamName = config.logStream;
         this.clientFactoryMethod = config.clientFactoryMethod;
+        this.clientEndpoint = config.clientEndpoint;
     }
 
 //----------------------------------------------------------------------------
@@ -55,10 +57,15 @@ extends AbstractLogWriter
     @Override
     protected void createAWSClient()
     {
-        client = tryClientFactory(clientFactoryMethod, AWSLogs.class);
+        client = tryClientFactory(clientFactoryMethod, AWSLogs.class, true);
+        if ((client == null) && (clientEndpoint == null))
+        {
+            client = tryClientFactory("com.amazonaws.services.logs.AWSLogsClientBuilder.defaultClient", AWSLogs.class, false);
+        }
         if (client == null)
         {
-            client = new AWSLogsClient();
+            LogLog.debug(getClass().getSimpleName() + ": creating service client via constructor");
+            client = tryConfigureEndpointOrRegion(new AWSLogsClient(), clientEndpoint);
         }
     }
 
@@ -81,7 +88,7 @@ extends AbstractLogWriter
             LogGroup logGroup = findLogGroup();
             if (logGroup == null)
             {
-                LogLog.debug("creating log group: " + groupName);
+                LogLog.debug("creating CloudWatch log group: " + groupName);
                 createLogGroup();
             }
 
@@ -89,6 +96,7 @@ extends AbstractLogWriter
             LogStream logStream = findLogStream();
             if (logStream == null)
             {
+                LogLog.debug("creating CloudWatch log stream: " + streamName);
                 createLogStream();
             }
 

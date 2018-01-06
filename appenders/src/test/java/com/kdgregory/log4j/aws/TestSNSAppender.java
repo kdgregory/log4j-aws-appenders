@@ -140,20 +140,33 @@ public class TestSNSAppender
     {
         initialize("TestSNSAppender/testConfigurationByName.properties");
 
-        assertEquals("topicName",     "example",    appender.getTopicName());
-        assertEquals("topicArn",      null,         appender.getTopicArn());
-        assertEquals("batch delay",   1L,           appender.getBatchDelay());
+        assertEquals("topicName",           "example",                      appender.getTopicName());
+        assertEquals("topicArn",            null,                           appender.getTopicArn());
+
+        assertEquals("subject",             "This is a test",               appender.getSubject());
+        assertEquals("batch delay",         1L,                             appender.getBatchDelay());
+        assertEquals("discard threshold",   123,                           appender.getDiscardThreshold());
+        assertEquals("discard action",      "newest",                       appender.getDiscardAction());
+        assertEquals("client factory",      "com.example.Foo.bar",          appender.getClientFactory());
+        assertEquals("client endpoint",     "sns.us-east-2.amazonaws.com",  appender.getClientEndpoint());
     }
 
 
     @Test
     public void testConfigurationByArn() throws Exception
     {
+        // note: this also tests default configuration
         initialize("TestSNSAppender/testConfigurationByArn.properties");
 
-        assertEquals("topicName",     null,         appender.getTopicName());
-        assertEquals("topicArn",      "example",    appender.getTopicArn());
-        assertEquals("batch delay",   1L,           appender.getBatchDelay());
+        assertEquals("topicName",           null,                           appender.getTopicName());
+        assertEquals("topicArn",            "arn-example",                  appender.getTopicArn());
+
+        assertEquals("subject",             "",                             appender.getSubject());
+        assertEquals("batch delay",         1L,                             appender.getBatchDelay());
+        assertEquals("discard threshold",   1000,                           appender.getDiscardThreshold());
+        assertEquals("discard action",      "oldest",                       appender.getDiscardAction());
+        assertEquals("client factory",      null,                           appender.getClientFactory());
+        assertEquals("client endpoint",     null,                           appender.getClientEndpoint());
     }
 
 
@@ -631,8 +644,13 @@ public class TestSNSAppender
         logger.info("message one");
         waitForInitialization();
 
+        AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+
         assertNotNull("factory was called to create client", staticFactoryMock);
-        assertEquals("no initialization errors",             "",    ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
+        assertEquals("no initialization errors",             "",
+                                                             writer.getInitializationMessage());
+        assertEquals("called explicit client factory",       "com.kdgregory.log4j.aws.TestSNSAppender.createMockClient",
+                                                             writer.getClientFactoryUsed());
 
         // this should be a sufficient assertion, but we'll go on and let the message get written
 

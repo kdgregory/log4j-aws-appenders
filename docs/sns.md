@@ -40,6 +40,7 @@ Name                | Description
 `discardThreshold`  | The threshold count for discarding unsent messages; default is 1,000. See [design doc](design.md#message-discard) for more information.
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
 `clientFactory`     | Specifies the fully-qualified name of a static method that will be used to create the AWS service client via reflection. See [design doc](design.md#service-client) for more information.
+`clientEndpoint`    | Specifies a non-default endpoint for the client (eg, "sns.us-east-2.amazonaws.com")
 
 The `topicName`, `topicArn`, and `subject` properties may use [substitutions](substitutions.md).
 

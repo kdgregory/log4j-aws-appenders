@@ -14,6 +14,7 @@
 
 package com.kdgregory.log4j.aws;
 
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,6 +43,8 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.services.sqs.model.*;
 
+import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
+import com.kdgregory.log4j.aws.internal.sns.SNSLogWriter;
 import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
 
 
@@ -58,17 +61,6 @@ public class SNSAppenderIntegrationTest
     private String queueArn;        // set after the queue has been created
     private String queueUrl;        // ditto
 
-    // these are used for smoketest
-
-    private static volatile boolean wasFactoryCalled;
-
-    public static AmazonSNS createClient()
-    {
-        wasFactoryCalled = true;
-        return AmazonSNSClientBuilder.defaultClient();
-    }
-
-
 //----------------------------------------------------------------------------
 //  Testcases
 //----------------------------------------------------------------------------
@@ -84,6 +76,8 @@ public class SNSAppenderIntegrationTest
         final int numMessages = 11;
 
         Logger testLogger = Logger.getLogger("TestLogger");
+        SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
+
         (new MessageWriter(testLogger, numMessages)).run();
 
         localLogger.info("smoketest: reading messages");
@@ -92,7 +86,8 @@ public class SNSAppenderIntegrationTest
         assertEquals("number of messages", numMessages, messages.size());
         assertMessageContent(messages, "");
 
-        assertFalse("client factory called", wasFactoryCalled);
+        assertEquals("client factory called", "com.kdgregory.log4j.aws.SNSAppenderIntegrationTest.createClient",
+                                              getWriter(appender).getClientFactoryUsed());
     }
 
 
@@ -107,6 +102,8 @@ public class SNSAppenderIntegrationTest
         final int numMessages = 11;
 
         Logger testLogger = Logger.getLogger("TestLogger");
+        SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
+
         (new MessageWriter(testLogger, numMessages)).run();
 
         localLogger.info("smoketest: reading messages");
@@ -115,7 +112,9 @@ public class SNSAppenderIntegrationTest
         assertEquals("number of messages", numMessages, messages.size());
         assertMessageContent(messages, "Example");
 
-        assertTrue("client factory called", wasFactoryCalled);
+
+        assertEquals("client factory called", "com.amazonaws.services.sns.AmazonSNSClientBuilder.defaultClient",
+                                              getWriter(appender).getClientFactoryUsed());
     }
 
 
@@ -126,6 +125,15 @@ public class SNSAppenderIntegrationTest
 //----------------------------------------------------------------------------
 
     /**
+     *  The static client factory used by smoketestByArn()
+     */
+    public static AmazonSNS createClient()
+    {
+        return AmazonSNSClientBuilder.defaultClient();
+    }
+
+
+    /**
      *  Loads the test-specific Log4J configuration and resets the environment.
      */
     public void setUp(String propertiesName)
@@ -133,8 +141,6 @@ public class SNSAppenderIntegrationTest
     {
         URL config = ClassLoader.getSystemResource(propertiesName);
         assertNotNull("missing configuration: " + propertiesName, config);
-
-        wasFactoryCalled = false;
 
         LogManager.resetConfiguration();
         PropertyConfigurator.configure(config);
@@ -337,4 +343,13 @@ public class SNSAppenderIntegrationTest
             assertRegex("message text",     MessageWriter.REGEX,    messageXPath.evaluateAsString(root));
         }
     }
+
+
+    private SNSLogWriter getWriter(SNSAppender appender) throws Exception
+    {
+        Field writerField = AbstractAppender.class.getDeclaredField("writer");
+        writerField.setAccessible(true);
+        return (SNSLogWriter)writerField.get(appender);
+    }
+
 }

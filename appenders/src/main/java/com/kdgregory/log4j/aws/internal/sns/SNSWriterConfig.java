@@ -29,6 +29,7 @@ public class SNSWriterConfig
     public int discardThreshold;
     public DiscardAction discardAction;
     public String clientFactoryMethod;
+    public String clientEndpoint;
 
 
     /**
@@ -38,11 +39,12 @@ public class SNSWriterConfig
      *  @param  discardThreshold    The maximum number of messages that will be retained in the queue.
      *  @param  discardAction       Controls how messages are discarded from the queue to remain within threshold.
      *  @param  clientFactoryMethod FQN of static factory method to create SNS client.
+     *  @param  clientEndpoint      Possibly-null endpoint for client.
      */
     public SNSWriterConfig(
         String topicName, String topicArn, String subject,
         int discardThreshold, DiscardAction discardAction,
-        String clientFactoryMethod)
+        String clientFactoryMethod, String clientEndpoint)
     {
         this.topicName = topicName;
         this.topicArn = topicArn;
@@ -50,5 +52,6 @@ public class SNSWriterConfig
         this.discardThreshold = discardThreshold;
         this.discardAction = discardAction;
         this.clientFactoryMethod = clientFactoryMethod;
+        this.clientEndpoint = clientEndpoint;
     }
 }

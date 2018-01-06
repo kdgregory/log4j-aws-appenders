@@ -36,6 +36,7 @@ extends AbstractLogWriter
     private String groupName;
     private String streamName;
     private String clientFactoryMethod;
+    private String clientEndpoint;
 
     protected AWSLogs client;
 
@@ -46,6 +47,7 @@ extends AbstractLogWriter
         this.groupName = config.logGroup;
         this.streamName = config.logStream;
         this.clientFactoryMethod = config.clientFactoryMethod;
+        this.clientEndpoint = config.clientEndpoint;
     }
 
 //----------------------------------------------------------------------------
@@ -56,10 +58,18 @@ extends AbstractLogWriter
     protected void createAWSClient()
     {
         client = tryClientFactory(clientFactoryMethod, AWSLogs.class, true);
-        if (client == null)
+        if ((client == null) && (clientEndpoint == null))
+        {
             client = tryClientFactory("com.amazonaws.services.logs.AWSLogsClientBuilder.defaultClient", AWSLogs.class, false);
+        }
         if (client == null)
+        {
             client = new AWSLogsClient();
+            if (clientEndpoint != null)
+            {
+                client.setEndpoint(clientEndpoint);
+            }
+        }
     }
 
 

@@ -75,10 +75,18 @@ extends AbstractLogWriter
     protected void createAWSClient()
     {
         client = tryClientFactory(config.clientFactoryMethod, AmazonKinesis.class, true);
-        if (client == null)
+        if ((client == null) && (config.clientEndpoint == null))
+        {
             client = tryClientFactory("com.amazonaws.services.kinesis.AmazonKinesisClientBuilder.defaultClient", AmazonKinesis.class, false);
+        }
         if (client == null)
+        {
             client = new AmazonKinesisClient();
+            if (config.clientEndpoint != null)
+            {
+                client.setEndpoint(config.clientEndpoint);
+            }
+        }
     }
 
 

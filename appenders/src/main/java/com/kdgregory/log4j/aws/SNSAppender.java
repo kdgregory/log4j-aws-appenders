@@ -146,7 +146,7 @@ extends AbstractAppender<SNSWriterConfig>
         String actualTopicArn   = subs.perform(topicArn);
         String actualSubject    = subs.perform(subject);
 
-        return new SNSWriterConfig(actualTopicName, actualTopicArn, actualSubject, discardThreshold, discardAction, clientFactory);
+        return new SNSWriterConfig(actualTopicName, actualTopicArn, actualSubject, discardThreshold, discardAction, clientFactory, clientEndpoint);
     }
 
     @Override

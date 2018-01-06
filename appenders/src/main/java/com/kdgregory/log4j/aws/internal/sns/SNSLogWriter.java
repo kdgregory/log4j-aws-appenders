@@ -55,10 +55,18 @@ extends AbstractLogWriter
     protected void createAWSClient()
     {
         client = tryClientFactory(config.clientFactoryMethod, AmazonSNS.class, true);
-        if (client == null)
+        if ((client == null) && (config.clientEndpoint == null))
+        {
             client = tryClientFactory("com.amazonaws.services.sns.AmazonSNSClientBuilder.defaultClient", AmazonSNS.class, false);
+        }
         if (client == null)
+        {
             client = new AmazonSNSClient();
+            if (config.clientEndpoint != null)
+            {
+                client.setEndpoint(config.clientEndpoint);
+            }
+        }
     }
 
 

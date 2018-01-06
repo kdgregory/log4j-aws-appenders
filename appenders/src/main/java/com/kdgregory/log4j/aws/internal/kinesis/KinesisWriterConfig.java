@@ -32,6 +32,7 @@ public class KinesisWriterConfig
     public int              discardThreshold;
     public DiscardAction    discardAction;
     public String           clientFactoryMethod;
+    public String           clientEndpoint;
 
 
     /**
@@ -49,12 +50,13 @@ public class KinesisWriterConfig
      *  @param discardThreshold     Maximum number of messages to retain if unable to send.
      *  @param discardAction        What to do with unsent messages over the threshold.
      *  @parma clientFactoryMethod  Possibly-null FQN of a static method to create client.
+     *  @param clientEndpoint       Possibly-null endpoint for client.
      */
     public KinesisWriterConfig(
         String streamName, int shardCount, Integer retentionPeriod,
         String partitionKey, int partitionKeyLength, long batchDelay,
         int discardThreshold, DiscardAction discardAction,
-        String clientFactoryMethod)
+        String clientFactoryMethod, String clientEndpoint)
     {
         this.streamName = streamName;
         this.shardCount = shardCount;
@@ -65,5 +67,6 @@ public class KinesisWriterConfig
         this.discardThreshold = discardThreshold;
         this.discardAction = discardAction;
         this.clientFactoryMethod = clientFactoryMethod;
+        this.clientEndpoint = clientEndpoint;
     }
 }

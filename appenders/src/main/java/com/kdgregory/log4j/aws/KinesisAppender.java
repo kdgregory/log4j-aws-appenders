@@ -201,7 +201,7 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
         return new KinesisWriterConfig(actualStreamName, shardCount, retentionPeriod,
                                        actualPartitionKey, partitionKeyLength, batchDelay,
                                        discardThreshold, discardAction,
-                                       clientFactory);
+                                       clientFactory, clientEndpoint);
     }
 
 

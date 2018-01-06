@@ -99,10 +99,13 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
      *  assign messages to shards: all messages with the same partition key will
      *  be sent to the same shard.
      *  <p>
+     *  Default value is "{startupTimestamp}".
+     *  <p>
+     *  Setting this value to blank will result in generating a pseudo-random 
+     *  8-digit partition key for each message.
+     *  <p>
      *  This property is intended for initial configuration only. Once messages
      *  have been sent to the appender, it cannot be changed.
-     *  <p>
-     *  Default value is "{startupTimestamp}".
      */
     public void setPartitionKey(String value)
     {

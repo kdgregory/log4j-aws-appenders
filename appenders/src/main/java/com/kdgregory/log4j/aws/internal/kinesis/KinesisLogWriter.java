@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.regex.Pattern;
 
 import org.apache.log4j.helpers.LogLog;
@@ -59,6 +60,9 @@ extends AbstractLogWriter
     private KinesisWriterConfig config;
     protected AmazonKinesis client;
 
+    // only used for random partition keys; cheap enough we'll eagerly create
+    private Random rnd = new Random();
+
 
     public KinesisLogWriter(KinesisWriterConfig config)
     {
@@ -95,7 +99,7 @@ extends AbstractLogWriter
             return initializationFailure("invalid stream name: " + config.streamName, null);
         }
 
-        if ((config.partitionKey == null) || config.partitionKey.isEmpty() || (config.partitionKey.length() > 256))
+        if ((config.partitionKey == null) || (config.partitionKey.length() > 256))
         {
             return initializationFailure("invalid partition key: length must be 1-256", null);
         }
@@ -268,7 +272,7 @@ extends AbstractLogWriter
         for (LogMessage message : batch)
         {
             requestRecords.add(new PutRecordsRequestEntry()
-                       .withPartitionKey(config.partitionKey)
+                       .withPartitionKey(partitionKey())
                        .withData(ByteBuffer.wrap(message.getBytes())));
         }
 
@@ -337,6 +341,28 @@ extends AbstractLogWriter
         else
         {
             return Collections.emptyList();
+        }
+    }
+
+
+    /**
+     *  Returns the partition key. This either comes from the configuration
+     *  or is randomly generated.
+     */
+    private String partitionKey()
+    {
+        if ("".equals(config.partitionKey))
+        {
+            StringBuilder sb = new StringBuilder(16);
+            for (int ii = 0 ; ii < config.partitionKeyLength ; ii++)
+            {
+                sb.append((char)'0' + rnd.nextInt(10));
+            }
+            return sb.toString();
+        }
+        else
+        {
+            return config.partitionKey;
         }
     }
 }

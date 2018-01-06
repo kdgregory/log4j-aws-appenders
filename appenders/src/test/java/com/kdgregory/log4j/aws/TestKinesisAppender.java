@@ -19,7 +19,9 @@ import static net.sf.kdgcommons.test.StringAsserts.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
@@ -709,4 +711,38 @@ public class TestKinesisAppender
                                                                     BinaryUtils.copyAllBytesFrom(staticFactoryMock.putRecordsSourceRecords.get(0).getData()),
                                                                     "UTF-8"));
     }
+
+
+    @Test
+    public void testRandomPartitionKey() throws Exception
+    {
+        initialize("TestKinesisAppender/testRandomPartitionKey.properties");
+
+        final Set<String> partitionKeys = new HashSet<String>();
+        MockKinesisClient mockClient = new MockKinesisClient()
+        {
+            @Override
+            protected PutRecordsResult putRecords(PutRecordsRequest request)
+            {
+                for (PutRecordsRequestEntry entry : request.getRecords())
+                {
+                    partitionKeys.add(entry.getPartitionKey());
+                }
+                return super.putRecords(request);
+            }
+        };
+
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        for (int ii = 0 ; ii < 10 ; ii++)
+        {
+            logger.debug("example message");
+        }
+        mockClient.allowWriterThread();
+
+        // it's possibly but unlikely for this to fail -- we could randomly get same value
+        assertEquals("number of partition keys", 10, partitionKeys.size());
+    }
+
 }

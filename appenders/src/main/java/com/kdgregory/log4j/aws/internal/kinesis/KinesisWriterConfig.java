@@ -42,7 +42,8 @@ public class KinesisWriterConfig
      *  @param retentionPeriod      Retention period to use when creating the stream
      *                              (ignored if stream already exists); null indicates
      *                              use the default retention period.
-     *  @param partitionKey         Partition key for messages written to stream.
+     *  @param partitionKey         Partition key for messages written to stream. If blank
+     *                              we'll generate a random partition key for each message.
      *  @param partitionKeyLength   Length of the partition key in bytes, after conversion
      *                              to UTF-8. Used to calculate message packing.
      *  @param batchDelay           Number of milliseconds to wait for messages to be
@@ -62,7 +63,7 @@ public class KinesisWriterConfig
         this.shardCount = shardCount;
         this.retentionPeriod = retentionPeriod;
         this.partitionKey = partitionKey;
-        this.partitionKeyLength = partitionKeyLength;
+        this.partitionKeyLength = (partitionKeyLength > 0) ? partitionKeyLength : 8;
         this.batchDelay = batchDelay;
         this.discardThreshold = discardThreshold;
         this.discardAction = discardAction;

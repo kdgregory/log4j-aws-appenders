@@ -35,7 +35,7 @@ extends AbstractAppender<SNSWriterConfig>
 
     private String topicName;
     private String topicArn;
-    private String subject = "";
+    private String subject;
 
 
     public SNSAppender()

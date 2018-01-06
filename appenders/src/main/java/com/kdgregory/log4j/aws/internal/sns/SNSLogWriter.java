@@ -95,7 +95,7 @@ extends AbstractLogWriter
                 PublishRequest request = new PublishRequest()
                                          .withTopicArn(topicArn)
                                          .withMessage(message.getMessage());
-                if (! "".equals(config.subject))
+                if (config.subject != null)
                 {
                     request.setSubject(config.subject);
                 }

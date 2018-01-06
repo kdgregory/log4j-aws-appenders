@@ -161,7 +161,7 @@ public class TestSNSAppender
         assertEquals("topicName",           null,                           appender.getTopicName());
         assertEquals("topicArn",            "arn-example",                  appender.getTopicArn());
 
-        assertEquals("subject",             "",                             appender.getSubject());
+        assertEquals("subject",             null,                           appender.getSubject());
         assertEquals("batch delay",         1L,                             appender.getBatchDelay());
         assertEquals("discard threshold",   1000,                           appender.getDiscardThreshold());
         assertEquals("discard action",      "oldest",                       appender.getDiscardAction());

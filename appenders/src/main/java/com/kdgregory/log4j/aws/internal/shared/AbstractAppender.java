@@ -96,6 +96,7 @@ extends AppenderSkeleton
     protected long            rotationInterval;
     protected AtomicInteger   sequence;
     protected String          clientFactory;
+    protected String          clientEndpoint;
 
 
 //----------------------------------------------------------------------------
@@ -299,11 +300,35 @@ extends AppenderSkeleton
 
 
     /**
-     *  Returns the current AWS client factory class/method name.
+     *  Returns the current AWS client factory class/method name. Will be null
+     *  if the factory hasn't been set.
      */
     public String getClientFactory()
     {
         return clientFactory;
+    }
+    
+    
+    /**
+     *  Sets the service endpoint. This is intended for use with older AWS SDK
+     *  versions that do not provide client factories and default to us-east-1,
+     *  although it can be used for newer releases when you want to override the
+     *  default region provider. The endpoint setting is ignored if you specify
+     *  a client factory.
+     */
+    public void setClientEndpoint(String value)
+    {
+        this.clientEndpoint = value;
+    }
+    
+    
+    /** 
+     *  Returns the current service endpoint. Will be null if the endpoint has
+     *  not been explicitly set.
+     */
+    public String getClientEndpoint()
+    {
+        return clientEndpoint;
     }
 
 

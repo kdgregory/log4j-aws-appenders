@@ -95,8 +95,7 @@ of the service client. These are applied in the order listed:
   log4j.appender.cloudwatch.clientFactory=com.amazonaws.services.logs.AWSLogsClientBuilder.defaultClient
   ```
 
-* (to be implemented)
-  You can specify the client endpoint using the `clientEndpoint` configuration parameter;
+* You can specify the client endpoint using the `clientEndpoint` configuration parameter;
   see the [AWS docs](https://docs.aws.amazon.com/general/latest/gr/rande.html) for a list
   of endpoint names. This parameter is primarily intended for applications that must use
   an older AWS SDK version (including 1.10.x) but want to log outside the `us-east-1` region.

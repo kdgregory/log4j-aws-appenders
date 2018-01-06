@@ -130,14 +130,16 @@ public class TestCloudWatchAppender
     {
         initialize("TestCloudWatchAppender/testConfiguration.properties");
 
-        assertEquals("log group name",      "argle",              appender.getLogGroup());
-        assertEquals("log stream name",     "bargle",             appender.getLogStream());
-        assertEquals("max delay",           1234L,                appender.getBatchDelay());
-        assertEquals("sequence",            2,                    appender.getSequence());
-        assertEquals("rotation mode",       "interval",           appender.getRotationMode());
-        assertEquals("rotation interval",   86400000L,            appender.getRotationInterval());
-        assertEquals("discard threshold",   12345,                appender.getDiscardThreshold());
-        assertEquals("discard action",      "newest",             appender.getDiscardAction());
+        assertEquals("log group name",      "argle",                appender.getLogGroup());
+        assertEquals("log stream name",     "bargle",               appender.getLogStream());
+        assertEquals("max delay",           1234L,                  appender.getBatchDelay());
+        assertEquals("sequence",            2,                              appender.getSequence());
+        assertEquals("rotation mode",       "interval",                     appender.getRotationMode());
+        assertEquals("rotation interval",   86400000L,                      appender.getRotationInterval());
+        assertEquals("discard threshold",   12345,                          appender.getDiscardThreshold());
+        assertEquals("discard action",      "newest",                       appender.getDiscardAction());
+        assertEquals("client factory",      "com.example.Foo.bar",          appender.getClientFactory());
+        assertEquals("client endpoint",     "logs.us-west-2.amazonaws.com", appender.getClientEndpoint());
     }
 
 
@@ -149,13 +151,15 @@ public class TestCloudWatchAppender
         // note: this is allowed at time of configuration, would disable logger if we try to append
         assertNull("log group name",    appender.getLogGroup());
 
-        assertEquals("log stream name",     "{startupTimestamp}", appender.getLogStream());
-        assertEquals("max delay",           2000L,                appender.getBatchDelay());
-        assertEquals("sequence",            0,                    appender.getSequence());
-        assertEquals("rotation mode",       "none",               appender.getRotationMode());
-        assertEquals("rotation interval",   -1,                   appender.getRotationInterval());
-        assertEquals("discard threshold",   10000,                appender.getDiscardThreshold());
-        assertEquals("discard action",      "oldest",               appender.getDiscardAction());
+        assertEquals("log stream name",     "{startupTimestamp}",           appender.getLogStream());
+        assertEquals("max delay",           2000L,                          appender.getBatchDelay());
+        assertEquals("sequence",            0,                              appender.getSequence());
+        assertEquals("rotation mode",       "none",                         appender.getRotationMode());
+        assertEquals("rotation interval",   -1,                             appender.getRotationInterval());
+        assertEquals("discard threshold",   10000,                          appender.getDiscardThreshold());
+        assertEquals("discard action",      "oldest",                       appender.getDiscardAction());
+        assertEquals("client factory",      null,                           appender.getClientFactory());
+        assertEquals("client endpoint",     null,                           appender.getClientEndpoint());
     }
 
 

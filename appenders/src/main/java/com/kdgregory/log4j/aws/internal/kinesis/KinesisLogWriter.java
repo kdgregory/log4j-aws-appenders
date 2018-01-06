@@ -356,7 +356,7 @@ extends AbstractLogWriter
             StringBuilder sb = new StringBuilder(16);
             for (int ii = 0 ; ii < config.partitionKeyLength ; ii++)
             {
-                sb.append((char)'0' + rnd.nextInt(10));
+                sb.append((char)('0' + rnd.nextInt(10)));
             }
             return sb.toString();
         }

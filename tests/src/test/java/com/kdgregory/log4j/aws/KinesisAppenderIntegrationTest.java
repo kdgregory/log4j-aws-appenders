@@ -33,6 +33,7 @@ import org.apache.log4j.PropertyConfigurator;
 
 import net.sf.kdgcommons.collections.DefaultMap;
 import net.sf.kdgcommons.lang.ThreadUtil;
+import net.sf.kdgcommons.test.StringAsserts;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
@@ -166,6 +167,43 @@ public class KinesisAppenderIntegrationTest
         localLogger.info("multi-thread/multi-appender: finished");
     }
 
+    @Test
+    public void testRandomPartitionKeys() throws Exception
+    {
+        final String streamName = "AppenderIntegrationTest-randomPartitionKeys";
+        final int numMessages = 250;
+
+        setUp("KinesisAppenderIntegrationTest-randomPartitionKeys.properties", streamName);
+        localLogger.info("testRandomPartitionKeys: starting");
+
+        Logger testLogger = Logger.getLogger("TestLogger");
+
+        (new MessageWriter(testLogger, numMessages)).run();
+
+        localLogger.info("testRandomPartitionKeys: reading messages");
+        List<RetrievedRecord> messages = retrieveAllMessages(streamName, numMessages);
+
+        // at this point I'm going to assume that the message content is correct,
+        // because three other tests have asserted that, so will just verify overall
+        // count and how the records were partitioned
+
+        assertEquals("overall message count", numMessages, messages.size());
+
+        Set<String> partitionKeys = new HashSet<String>();
+        for (RetrievedRecord message : messages)
+        {
+            partitionKeys.add(message.partitionKey);
+            StringAsserts.assertRegex("8-character numeric partition key (was: " + message.partitionKey + ")",
+                                      "\\d{8}", message.partitionKey);
+        }
+        assertTrue("expected roughly " + numMessages + " partition keys (was: " + partitionKeys.size() + ")",
+                   (partitionKeys.size() > numMessages - 20) && (partitionKeys.size() < numMessages + 20));
+
+        assertShardCount(streamName, 2);
+        assertRetentionPeriod(streamName, 48);
+
+        localLogger.info("testRandomPartitionKeys: finished");
+    }
 
 //----------------------------------------------------------------------------
 //  Helpers

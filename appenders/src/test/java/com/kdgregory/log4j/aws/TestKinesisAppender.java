@@ -35,6 +35,7 @@ import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
 
 import net.sf.kdgcommons.lang.StringUtil;
+import net.sf.kdgcommons.test.StringAsserts;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
@@ -743,6 +744,11 @@ public class TestKinesisAppender
 
         // it's possibly but unlikely for this to fail -- we could randomly get same value
         assertEquals("number of partition keys", 10, partitionKeys.size());
+
+        for (String key : partitionKeys)
+        {
+            StringAsserts.assertRegex("partition key is 8 digits (was: " + key + ")", "\\d{8}", key);
+        }
     }
 
 }

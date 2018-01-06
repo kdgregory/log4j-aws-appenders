@@ -64,11 +64,8 @@ extends AbstractLogWriter
         }
         if (client == null)
         {
-            client = new AWSLogsClient();
-            if (clientEndpoint != null)
-            {
-                client.setEndpoint(clientEndpoint);
-            }
+            LogLog.debug(getClass().getSimpleName() + ": creating service client via constructor");
+            client = tryConfigureEndpointOrRegion(new AWSLogsClient(), clientEndpoint);
         }
     }
 
@@ -91,7 +88,7 @@ extends AbstractLogWriter
             LogGroup logGroup = findLogGroup();
             if (logGroup == null)
             {
-                LogLog.debug("creating log group: " + groupName);
+                LogLog.debug("creating CloudWatch log group: " + groupName);
                 createLogGroup();
             }
 
@@ -99,6 +96,7 @@ extends AbstractLogWriter
             LogStream logStream = findLogStream();
             if (logStream == null)
             {
+                LogLog.debug("creating CloudWatch log stream: " + streamName);
                 createLogStream();
             }
 

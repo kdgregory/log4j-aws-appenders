@@ -61,11 +61,8 @@ extends AbstractLogWriter
         }
         if (client == null)
         {
-            client = new AmazonSNSClient();
-            if (config.clientEndpoint != null)
-            {
-                client.setEndpoint(config.clientEndpoint);
-            }
+            LogLog.debug(getClass().getSimpleName() + ": creating service client via constructor");
+            client = tryConfigureEndpointOrRegion(new AmazonSNSClient(), config.clientEndpoint);
         }
     }
 
@@ -174,6 +171,7 @@ extends AbstractLogWriter
         }
         else
         {
+            LogLog.debug("creating SNS topic: " + config.topicName);
             CreateTopicResult response = client.createTopic(config.topicName);
             topicArn = response.getTopicArn();
             return true;

@@ -81,11 +81,8 @@ extends AbstractLogWriter
         }
         if (client == null)
         {
-            client = new AmazonKinesisClient();
-            if (config.clientEndpoint != null)
-            {
-                client.setEndpoint(config.clientEndpoint);
-            }
+            LogLog.debug(getClass().getSimpleName() + ": creating service client via constructor");
+            client = tryConfigureEndpointOrRegion(new AmazonKinesisClient(), config.clientEndpoint);
         }
     }
 

@@ -21,6 +21,9 @@ import java.util.List;
 
 import org.apache.log4j.helpers.LogLog;
 
+import com.amazonaws.AmazonWebServiceClient;
+import com.amazonaws.regions.Regions;
+
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 
 
@@ -318,6 +321,7 @@ implements LogWriter
             Method factoryMethod = factoryKlass.getDeclaredMethod(clientFactoryName.substring(methodIdx + 1));
             T client = expectedClientClass.cast(factoryMethod.invoke(null));
             factoryMethodUsed = clientFactoryName;
+            LogLog.debug(getClass().getSimpleName() + ": created client from factory: " + clientFactoryName);
             return client;
         }
         catch (Exception ex)
@@ -328,6 +332,35 @@ implements LogWriter
                 return null;
         }
     }
+
+
+    /**
+     *  Common support code: attempts to configure client endpoint and/or region.
+     *
+     *  @param  client      A constructed writer-specific service client.
+     *  @param  endpoint    A possibly-null endpoint specification.
+     */
+    protected <T extends AmazonWebServiceClient> T tryConfigureEndpointOrRegion(T client, String endpoint)
+    {
+        // explicit endpoint takes precedence over region retrieved from environment
+        if (endpoint != null)
+        {
+            LogLog.debug(getClass().getSimpleName() + ": configuring endpoint: " + endpoint);
+            client.setEndpoint(endpoint);
+            return client;
+        }
+
+        String region = System.getenv("AWS_REGION");
+        if (region != null)
+        {
+            LogLog.debug(getClass().getSimpleName() + ": configuring region: " + region);
+            client.configureRegion(Regions.fromName(region));
+            return client;
+        }
+
+        return client;
+    }
+
 
 //----------------------------------------------------------------------------
 //  Internals

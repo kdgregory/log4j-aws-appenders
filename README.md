@@ -54,11 +54,10 @@ The minimum supported depedency versions are as follows:
   is needed to order messages when sending to AWS. It's been around since 2010,
   so if you haven't upgraded already you should.
 * AWS SDK: 1.11.0  
-  Amazon changed the return type of several functions between 1.10.x and 1.11.x.
-  If your project is still using 1.10.x, you can recompile the appenders locally
-  with that version; I have built and tested with 1.10.1. Note, however, that the
-  integration tests use client-builder classes that weren't introduced until midway
-  through the 1.11.x release sequence.
+  The appenders make use of client constructors in order to support all versions
+  in the 1.11.x release sequence. The client builders were introduced at 1.11.16,
+  and will be invoked via reflection if available. Earlier appender releases
+  could be built using 1.10.x, but this is no longer the case.
 
 I have made an intentional effort to limit dependencies to the bare minimum. This
 has in some cases meant that I write internal implementations for functions that

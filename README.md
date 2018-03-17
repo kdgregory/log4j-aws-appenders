@@ -160,3 +160,20 @@ What are all these messages from `com.amazonaws` and `org.apache.http`?
 
 > Note that seeing unwanted messages is a problem with whatever appender you might use.
   It's more apparent here because the logger invokes code that itself writes log messages.
+
+Can I contribute?
+
+> At this point I haven't thought through the issues with having other contributors (and,
+  to be honest, I'm concerned about adding code that has any legal encumbrances). Please
+  add issues for any bugs or enhancement requests, and I'll try to get them resolved as
+  soon as possible.
+
+How can I get help with any problems?
+
+> Feel free to raise an issue here. I check in at least once a week, and will try to give
+  whatever help and andvice I can. Issues that aren't bugs will be closed within a few
+  weeks; those that are bugs or feature requests will get prioritized for work.
+  
+> Alternatively you can post on [Stack Overflow](https://stackoverflow.com/). If you do
+  this, flag the post with `@kdgregory` otherwise I'm unlikely to see it (this project
+  isn't big enough to rate its own tag ... yet).

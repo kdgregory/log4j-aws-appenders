@@ -32,6 +32,7 @@ public class DefaultThreadFactory implements ThreadFactory
         Thread writerThread = new Thread(writer);
         writerThread.setName("log4j-aws-writer-" + threadNumber.getAndIncrement());
         writerThread.setPriority(Thread.NORM_PRIORITY);
+        writerThread.setDaemon(true);
         writerThread.setUncaughtExceptionHandler(exceptionHandler);
         writerThread.start();
     }

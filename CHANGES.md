@@ -1,6 +1,12 @@
 # Change History
 
 
+## 1.2.2 (2018-05-16)
+
+* Bugfix: writer thread was not a daemon, would keep application from shutting down
+  unless explicitly terminated.
+  ([#38](https://github.com/kdgregory/log4j-aws-appenders/issues/38))
+
 ## 1.2.1 (2018-01-06)
 
 * Use reflection to create AWS service clients from default factory methods. This will

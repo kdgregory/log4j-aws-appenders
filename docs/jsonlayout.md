@@ -2,50 +2,32 @@
 
 While the standard Log4J [PatternLayout](http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/PatternLayout.html)
 works well for humans grepping logs, large-scale log management revolves around tools such as 
-[ElasticSearch](https://www.elastic.co/products/elasticsearch), which can filter and visualize
-log data. AWS provides a hosted ElasticSearch solution, and can direct Kinesis traffic to an ES
-cluster using the [Kinesis Firehose](http://docs.aws.amazon.com/firehose/latest/dev/create-destination.html#create-destination-elasticsearch).
-However, ElasticSearch wants JSON as input; and while you can [use Lambda to transform
-records](http://docs.aws.amazon.com/firehose/latest/dev/data-transformation.html#lambda-blueprints),
-that will increase your logging costs.
+[Elasticsearch](https://www.elastic.co/products/elasticsearch) to filter and visualize log data.
+However, Elasticsearch wants JSON as input, and while you can use a Lambda to parse text logs,
+it's faster and less error-prone to simply send JSON.
 
-You can find several solutions for writing JSON via Log4J. I decided to write my own so that I
-could tailor its features and also include AWS-only data (such as the EC2 instance ID).
+This layout transforms the Log4J [LogEvent](http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/pattern/LogEvent.html)
+into JSON, adding optional information such as the server's hostname, EC2 instance tags, and
+user-defined metadata.
 
 
-## Usage
+## Configuration
 
-You can use the JSON layout with any appender, including the standard Log4J appenders (but beware
-that you will need the AWS SDK in your classpath). However, it's most useful with the Kinesis
-appender, feeding a [Kinesis Firehose](http://docs.aws.amazon.com/firehose/latest/dev/what-is-this-service.html)
-delivery stream that sends data to an ElasticSearch cluster. Setting up such a cluster is beyond
-the scope of this document, but see the [example CloudFormation template](../example/cloudformation/kinesis.json)
-for a starting point.
+The complete list of properties is as follows (also available in the JavaDoc). Boolean properties are disabled if
+not specified, explicitly disabled with the case-insensitive value "false", and explicitly enabled with the
+case-insensitive value "true".
 
-Your appender configuration will look something like this:
-
-```
-log4j.appender.kinesis.layout=com.kdgregory.log4j.aws.JsonLayout
-log4j.appender.kinesis.layout.tags=applicationName=Example
-log4j.appender.kinesis.layout.enableHostname=true
-log4j.appender.kinesis.layout.enableLocation=true
-log4j.appender.kinesis.layout.enableInstanceId=true
-```
-
-The various "enable" properties are used to enable content that is potentially expensive to
-generate.  In particular, `enableInstanceId` enables the inclusion of the EC2 instance ID;
-if you aren't running on EC2, this will introduce a delay of possibly several minutes while
-the SDK tries (and fails) to retrieve the value.
-
-The `tags` property allows you to specify application-specific tags, including the use of
-[substitutions](substitutions.md). These are specified as a comma-separated list of
-`NAME=VALUE` pairs. Needless to say, you can't embed either `=` or `,` in the value.
+ Name               | Type      | Description
+--------------------|-----------|----------------------------------------------------------------------------------------------------------------
+`enableLocation`    | Boolean   | If "true", the JSON will include a sub-object that holds the location (class, source file, and line number) where the log message was written. This adds to the cost of every logging message so should not be enabled in production.
+`enableInstanceId`  | Boolean   | If "true", the JSON will include the EC2 instance ID where the application is running. This is retrieved from EC2 metadata, and will delay application startup if it's not running on EC2.
+`enableHostname`    | Boolean   | If "true", the JSON will include the name of the machine where the application is running, retrieved from the Java runtime. This is often a better choice than instance ID.
+`tags`              | String    | If present, the JSON will include a sub-object with specified user metadata. See below for more information.
 
 
 ## Data
 
-The JSON layout transforms the Log4J `LoggingEvent` into JSON, with the addition of data
-from the layout configuration. The resulting JSON will have the following items:
+The generated JSON object will have the following properties, some of which are optional:
 
  Key            | Value
 ----------------|------------------------------------------------------------------------------------------------------------------------
@@ -53,46 +35,40 @@ from the layout configuration. The resulting JSON will have the following items:
  `thread`       | The name of the thread where the message was logged.
  `logger`       | The name of the logger (normally the class that's writing the message, but you can use custom loggers).
  `level`        | The level of the log message: DEBUG, INFO, WARNING, ERROR.
- `message`      | The message itself.
+ `message`      | The logged message.
  `processId`    | The PID of the invoking process, if available (this is retrieved from `RuntimeMxBean` and may not be available on all platforms).
  `exception`    | The stack trace of an associated exception, if one exists. This is exposed as an array of strings, with the first element being the location where the exception was caught.
  `mdc`          | The mapped diagnostic context, if it exists. This is a child map containing whatever entries are in the MDC.
  `ndc`          | The nested diagnostic context, if it exists. This is a single string that contains each of the pushed entries separated by spaces (yes, that's how Log4J provides it).
  `locationInfo` | The location where the logger was called. This is a child object with the following components: `className`, `methodName`, `fileName`, `lineNumber`.
- `instanceId`   | The EC2 instance ID of the machine where the logger is running. WARNING: do not enable this elsewhere, as the operation to retrieve this value may take a long time.
+ `instanceId`   | The EC2 instance ID of the machine where the logger is running. *WARNING*: this will delay appender initialization if not running on EC2.
  `hostname`     | The name of the machine where the logger is running, if available (this is currently retrieved from `RuntimeMxBean` and may not be available on all platforms).
- `tags`         | Arbitrary strings defined as part of the logger configuration. This is a child object, and is omitted if not configured.
+ `tags`         | Optional sub-object containing user-specified metadata; see below.
 
 
-## Example
+## Metadata
 
-The raw output looks like this:
+The `tags` property is intended to provide metadata for search-based log analysis. It is specified using
+a comma-separated list of `NAME=VALUE` pairs, and results in the creation of a sub-object in the log
+message that contains those pairs. Values may include [substitutions](substitutions.md), which are
+evaluated when the layout is instantiated.
+
+Example: given a specification like this:
 
 ```
-{"hostname":"ip-172-30-1-182","instanceId":"i-0a287ad2dc13d9d2e","level":"DEBUG","locationInfo":{"className":"com.kdgregory.log4j.aws.example.Main$1","fileName":"Main.java","lineNumber":"50","methodName":"run"},"logger":"com.kdgregory.log4j.aws.example.Main","message":"value is 60","processId":"3012","tags":{"applicationName":"Example","runDate":"20171016"},"thread":"example-0","timestamp":"2017-10-16T00:24:56.998Z"}
+log4j.appender.kinesis.layout.tags=applicationName=Example,deployedTo={env:ENVIRONMENT},runDate={date}
 ```
 
-Running it through a pretty-printer, you get this:
+and assuming that there's an environment variable named `ENVIRONMENT` that is set to `prod`, the logging
+message will contain the following element:
 
 ```
 {
-	"hostname": "ip-172-30-1-182",
-	"instanceId": "i-0a287ad2dc13d9d2e",
-	"level": "DEBUG",
-	"locationInfo": {
-		"className": "com.kdgregory.log4j.aws.example.Main$1",
-		"fileName": "Main.java",
-		"lineNumber": "50",
-		"methodName": "run"
-	},
-	"logger": "com.kdgregory.log4j.aws.example.Main",
-	"message": "value is 60",
-	"processId": "3012",
-	"tags": {
-		"applicationName": "Example",
-		"runDate": "20171016"
-	},
-	"thread": "example-0",
-	"timestamp": "2017-10-16T00:24:56.998Z"
+    ...
+    "tags": {
+        "applicationName": "Example",
+        "deployedTo": "prod",
+        "runDate": "20180609"
+    }
 }
 ```

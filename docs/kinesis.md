@@ -37,13 +37,14 @@ Name                | Description
 --------------------|----------------------------------------------------------------
 `streamName`        | The name of the Kinesis stream that will receive messages. This stream will be created if it doesn't already exist.
 `partitionKey`      | A string used to assign messages to shards; see below for more information.
-`shardCount`        | When creating a stream, specifies the number of shards to use. Defaults to 1.
-`retentionPeriod`   | When creating a stream, specifies the retention period for messages in hours. Per AWS, the minimum is 24 (the default) and the maximum is 168 (7 days). Note that increase retention time increases the per-hour shard cost.
 `batchDelay`        | The time, in milliseconds, that the writer will wait to accumulate messages for a batch. See [design doc](design.md#message-batches) for more information.
 `discardThreshold`  | The threshold count for discarding messages; default is 10,000. See [design doc](design.md#message-discard) for more information.
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
 `clientFactory`     | Specifies the fully-qualified name of a static method that will be used to create the AWS service client via reflection. See [design doc](design.md#service-client) for more information.
 `clientEndpoint`    | Specifies a non-default endpoint for the client (eg, "kinesis.us-west-1.amazonaws.com")
+`autoCreate`        | If present and "true", the stream will be created if it does not already exist.
+`shardCount`        | When creating a stream, specifies the number of shards to use. Defaults to 1.
+`retentionPeriod`   | When creating a stream, specifies the retention period for messages in hours. Per AWS, the minimum is 24 (the default) and the maximum is 168 (7 days). Note that increasing retention time increases the per-hour shard cost.
 
 The `streamName` and `partitionKey` properties may use [substitutions](substitutions.md).
 

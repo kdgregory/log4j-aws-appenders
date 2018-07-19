@@ -300,9 +300,9 @@ public class TestKinesisAppender
 
 
     @Test
-    public void testWriterWithNewStream() throws Exception
+    public void testWriterCreatesStream() throws Exception
     {
-        initialize("TestKinesisAppender/testWriterWithNewStream.properties");
+        initialize("TestKinesisAppender/testWriterCreatesStream.properties");
 
         MockKinesisClient mockClient = new MockKinesisClient();
 
@@ -326,6 +326,29 @@ public class TestKinesisAppender
                                                                 new String(
                                                                     BinaryUtils.copyAllBytesFrom(mockClient.putRecordsSourceRecords.get(0).getData()),
                                                                     "UTF-8"));
+    }
+
+
+    @Test
+    public void testMissingStreamNoAutoCreate() throws Exception
+    {
+        initialize("TestKinesisAppender/testMissingStreamNoAutoCreate.properties");
+
+        MockKinesisClient mockClient = new MockKinesisClient();
+
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("this triggers writer creation");
+
+        String initializationMessage = waitForInitialization();
+
+        assertEquals("describeStream: invocation count", 1, mockClient.describeStreamInvocationCount);
+
+        assertTrue("initialization message indicates invalid stream name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("does not exist"));
+        assertTrue("initialization message contains stream name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("foo"));
     }
 
 

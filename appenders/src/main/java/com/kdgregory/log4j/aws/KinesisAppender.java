@@ -35,6 +35,7 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
 
     private String          streamName;
     private String          partitionKey;
+    private boolean         autoCreate;
     private int             shardCount;
     private Integer         retentionPeriod;    // we only set if not null
 
@@ -101,7 +102,7 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
      *  <p>
      *  Default value is "{startupTimestamp}".
      *  <p>
-     *  Setting this value to blank will result in generating a pseudo-random 
+     *  Setting this value to blank will result in generating a pseudo-random
      *  8-digit partition key for each message.
      *  <p>
      *  This property is intended for initial configuration only. Once messages
@@ -125,6 +126,25 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
     public String getPartitionKey()
     {
         return partitionKey;
+    }
+
+
+    /**
+     *  Sets the auto-creation policy: if <code>true</code>, the stream will be created
+     *  if it does not already exist.
+     */
+    public void setAutoCreate(boolean autoCreate)
+    {
+        this.autoCreate = autoCreate;
+    }
+
+
+    /**
+     *  Returns the auto-creation policy.
+     */
+    public boolean isAutoCreate()
+    {
+        return autoCreate;
     }
 
 
@@ -201,10 +221,10 @@ public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
             throw new RuntimeException("JVM doesn't support UTF-8 (should never happen)");
         }
 
-        return new KinesisWriterConfig(actualStreamName, shardCount, retentionPeriod,
-                                       actualPartitionKey, partitionKeyLength, batchDelay,
-                                       discardThreshold, discardAction,
-                                       clientFactory, clientEndpoint);
+        return new KinesisWriterConfig(actualStreamName, actualPartitionKey, partitionKeyLength,
+                                       batchDelay, discardThreshold, discardAction,
+                                       clientFactory, clientEndpoint,
+                                       autoCreate, shardCount, retentionPeriod);
     }
 
 

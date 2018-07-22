@@ -24,8 +24,6 @@ import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 public class KinesisWriterConfig
 {
     public String           streamName;
-    public int              shardCount;
-    public Integer          retentionPeriod;
     public String           partitionKey;
     public int              partitionKeyLength;
     public long             batchDelay;
@@ -33,15 +31,13 @@ public class KinesisWriterConfig
     public DiscardAction    discardAction;
     public String           clientFactoryMethod;
     public String           clientEndpoint;
+    public boolean          autoCreate;
+    public int              shardCount;
+    public Integer          retentionPeriod;
 
 
     /**
      *  @param streamName           Name of the stream where messages will be written.
-     *  @param shardCount           Number of shards to use when creating the stream
-     *                              (ignored if stream already exists).
-     *  @param retentionPeriod      Retention period to use when creating the stream
-     *                              (ignored if stream already exists); null indicates
-     *                              use the default retention period.
      *  @param partitionKey         Partition key for messages written to stream. If blank
      *                              we'll generate a random partition key for each message.
      *  @param partitionKeyLength   Length of the partition key in bytes, after conversion
@@ -52,16 +48,21 @@ public class KinesisWriterConfig
      *  @param discardAction        What to do with unsent messages over the threshold.
      *  @parma clientFactoryMethod  Possibly-null FQN of a static method to create client.
      *  @param clientEndpoint       Possibly-null endpoint for client.
+     *  @param autoCreate           If true, stream will be created if it doesn't already
+     *                              exist. If false, writer will fail to start.
+     *  @param shardCount           Number of shards to use when creating the stream
+     *                              (ignored if stream already exists).
+     *  @param retentionPeriod      Retention period to use when creating the stream
+     *                              (ignored if stream already exists); null indicates
+     *                              use the default retention period.
      */
     public KinesisWriterConfig(
-        String streamName, int shardCount, Integer retentionPeriod,
-        String partitionKey, int partitionKeyLength, long batchDelay,
-        int discardThreshold, DiscardAction discardAction,
-        String clientFactoryMethod, String clientEndpoint)
+        String streamName, String partitionKey, int partitionKeyLength, 
+        long batchDelay, int discardThreshold, DiscardAction discardAction,
+        String clientFactoryMethod, String clientEndpoint,
+        boolean autoCreate, int shardCount, Integer retentionPeriod)
     {
         this.streamName = streamName;
-        this.shardCount = shardCount;
-        this.retentionPeriod = retentionPeriod;
         this.partitionKey = partitionKey;
         this.partitionKeyLength = (partitionKeyLength > 0) ? partitionKeyLength : 8;
         this.batchDelay = batchDelay;
@@ -69,5 +70,8 @@ public class KinesisWriterConfig
         this.discardAction = discardAction;
         this.clientFactoryMethod = clientFactoryMethod;
         this.clientEndpoint = clientEndpoint;
+        this.autoCreate = autoCreate;
+        this.shardCount = shardCount;
+        this.retentionPeriod = retentionPeriod;
     }
 }

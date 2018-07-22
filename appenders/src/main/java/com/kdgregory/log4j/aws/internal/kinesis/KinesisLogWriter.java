@@ -109,9 +109,14 @@ extends AbstractLogWriter
             String streamStatus = getStreamStatus();
             if (streamStatus == null)
             {
-                createStream();
-                waitForStreamToBeActive();
-                setRetentionPeriodIfNeeded();
+                if (config.autoCreate)
+                {
+                    createStream();
+                    waitForStreamToBeActive();
+                    setRetentionPeriodIfNeeded();
+                }
+                else
+                    return initializationFailure("stream \"" + config.streamName + "\" does not exist and auto-create not enabled", null);
             }
             else if (! StreamStatus.ACTIVE.toString().equals(streamStatus))
             {

@@ -142,13 +142,14 @@ public class TestKinesisAppender
 
         assertEquals("stream name",         "argle-{bargle}",                   appender.getStreamName());
         assertEquals("partition key",       "foo-{date}",                       appender.getPartitionKey());
-        assertEquals("shard count",         7,                                  appender.getShardCount());
-        assertEquals("retention period",    48,                                 appender.getRetentionPeriod());
         assertEquals("max delay",           1234L,                              appender.getBatchDelay());
         assertEquals("discard threshold",   54321,                              appender.getDiscardThreshold());
         assertEquals("discard action",      "newest",                           appender.getDiscardAction());
         assertEquals("client factory",      "com.example.Foo.bar",              appender.getClientFactory());
         assertEquals("client endpoint",     "kinesis.us-west-1.amazonaws.com",  appender.getClientEndpoint());
+        assertTrue("autoCreate",                                                appender.isAutoCreate());
+        assertEquals("shard count",         7,                                  appender.getShardCount());
+        assertEquals("retention period",    48,                                 appender.getRetentionPeriod());
     }
 
 
@@ -159,13 +160,14 @@ public class TestKinesisAppender
 
         // don't test stream name because there's no default
         assertEquals("partition key",       "{startupTimestamp}",               appender.getPartitionKey());
-        assertEquals("shard count",         1,                                  appender.getShardCount());
-        assertEquals("retention period",    24,                                 appender.getRetentionPeriod());
         assertEquals("max delay",           2000L,                              appender.getBatchDelay());
         assertEquals("discard threshold",   10000,                              appender.getDiscardThreshold());
         assertEquals("discard action",      "oldest",                           appender.getDiscardAction());
         assertEquals("client factory",      null,                               appender.getClientFactory());
         assertEquals("client endpoint",     null,                               appender.getClientEndpoint());
+        assertFalse("autoCreate",                                                appender.isAutoCreate());
+        assertEquals("shard count",         1,                                  appender.getShardCount());
+        assertEquals("retention period",    24,                                 appender.getRetentionPeriod());
     }
 
 
@@ -298,9 +300,9 @@ public class TestKinesisAppender
 
 
     @Test
-    public void testWriterWithNewStream() throws Exception
+    public void testWriterCreatesStream() throws Exception
     {
-        initialize("TestKinesisAppender/testWriterWithNewStream.properties");
+        initialize("TestKinesisAppender/testWriterCreatesStream.properties");
 
         MockKinesisClient mockClient = new MockKinesisClient();
 
@@ -324,6 +326,29 @@ public class TestKinesisAppender
                                                                 new String(
                                                                     BinaryUtils.copyAllBytesFrom(mockClient.putRecordsSourceRecords.get(0).getData()),
                                                                     "UTF-8"));
+    }
+
+
+    @Test
+    public void testMissingStreamNoAutoCreate() throws Exception
+    {
+        initialize("TestKinesisAppender/testMissingStreamNoAutoCreate.properties");
+
+        MockKinesisClient mockClient = new MockKinesisClient();
+
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("this triggers writer creation");
+
+        String initializationMessage = waitForInitialization();
+
+        assertEquals("describeStream: invocation count", 1, mockClient.describeStreamInvocationCount);
+
+        assertTrue("initialization message indicates invalid stream name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("does not exist"));
+        assertTrue("initialization message contains stream name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("foo"));
     }
 
 

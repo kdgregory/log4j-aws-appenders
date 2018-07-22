@@ -32,6 +32,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 import net.sf.kdgcommons.collections.DefaultMap;
+import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.ThreadUtil;
 import net.sf.kdgcommons.test.StringAsserts;
 
@@ -73,7 +74,7 @@ public class KinesisAppenderIntegrationTest
 
         assertMessages(messages, 1, numMessages, "test");
 
-        assertShardCount(streamName, 1);
+        assertShardCount(streamName, 3);
         assertRetentionPeriod(streamName, 48);
 
         assertEquals("client factory called", "com.kdgregory.log4j.aws.KinesisAppenderIntegrationTest.createClient", getWriter(appender).getClientFactoryUsed());
@@ -183,6 +184,8 @@ public class KinesisAppenderIntegrationTest
         localLogger.info("testRandomPartitionKeys: reading messages");
         List<RetrievedRecord> messages = retrieveAllMessages(streamName, numMessages);
 
+        assertShardCount(streamName, 2);
+
         // at this point I'm going to assume that the message content is correct,
         // because three other tests have asserted that, so will just verify overall
         // count and how the records were partitioned
@@ -199,10 +202,33 @@ public class KinesisAppenderIntegrationTest
         assertTrue("expected roughly " + numMessages + " partition keys (was: " + partitionKeys.size() + ")",
                    (partitionKeys.size() > numMessages - 20) && (partitionKeys.size() < numMessages + 20));
 
-        assertShardCount(streamName, 2);
-        assertRetentionPeriod(streamName, 48);
-
         localLogger.info("testRandomPartitionKeys: finished");
+    }
+
+
+    @Test
+    public void testFailsIfNoStreamPresent() throws Exception
+    {
+        final String streamName = "AppenderIntegrationTest-testFailsIfNoStreamPresent";
+        final int numMessages = 1001;
+
+        setUp("KinesisAppenderIntegrationTest-testFailsIfNoStreamPresent.properties", streamName);
+        localLogger.info("testFailsIfNoStreamPresent: starting");
+
+        Logger testLogger = Logger.getLogger("TestLogger");
+        KinesisAppender appender = (KinesisAppender)testLogger.getAppender("test");
+
+        (new MessageWriter(testLogger, numMessages)).run();
+
+        localLogger.info("testFailsIfNoStreamPresent: waiting for writer initialization to finish");
+
+        String initializationMessage = waitForWriterInitialization(appender, 10);
+        StringAsserts.assertRegex(
+            "initialization message did not indicate missing stream (was \"" + initializationMessage + "\")",
+            ".*stream.*" + streamName + ".* not exist .*",
+            initializationMessage);
+
+        localLogger.info("testFailsIfNoStreamPresent: finished");
     }
 
 //----------------------------------------------------------------------------
@@ -234,6 +260,34 @@ public class KinesisAppenderIntegrationTest
         localClient = AmazonKinesisClientBuilder.defaultClient();
 
         deleteStreamIfExists(streamName);
+    }
+
+
+    /**
+     *  Waits until the passed appender (1) creates a writer, and (2) that writer
+     *  signals that initialization is complete. If this doesn't happen within the
+     *  specified timeout, will fail the test.
+     *
+     *  @return The writer's initialization message (null means successful init).
+     */
+    private String waitForWriterInitialization(KinesisAppender appender, int timeoutInSeconds)
+    throws Exception
+    {
+        long timeoutAt = System.currentTimeMillis() + 1000 * timeoutInSeconds;
+        while (System.currentTimeMillis() < timeoutAt)
+        {
+            KinesisLogWriter writer = ClassUtil.getFieldValue(appender, "writer", KinesisLogWriter.class);
+            if (writer != null)
+            {
+                if (writer.isInitializationComplete())
+                    return writer.getInitializationMessage();
+            }
+
+            Thread.sleep(1000);
+        }
+
+        fail("writer not initialized within timeout");
+        return "fail() throws; this will never happen, but compiler doesn't know that";
     }
 
 

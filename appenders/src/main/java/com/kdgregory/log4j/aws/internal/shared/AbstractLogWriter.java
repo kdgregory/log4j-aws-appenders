@@ -41,6 +41,7 @@ implements LogWriter
     private volatile Long shutdownTime;                     // this is an actual timestamp, not an elapsed time
 
     private volatile int batchCount;                        // these can be read via accessor methods; they're intended for testing
+    private volatile boolean initializationComplete;
     private volatile String initializationMessage;
     private volatile Throwable initializationException;
     private volatile String factoryMethodUsed;
@@ -72,6 +73,16 @@ implements LogWriter
     public int getBatchCount()
     {
         return batchCount;
+    }
+
+
+    /**
+     *  Returns a flag indicating that initialization has completed (whether or not
+     *  successful).
+     */
+    public boolean isInitializationComplete()
+    {
+        return initializationComplete;
     }
 
 
@@ -381,6 +392,10 @@ implements LogWriter
         catch (Exception ex)
         {
             return initializationFailure("uncaught exception", ex);
+        }
+        finally
+        {
+            initializationComplete = true;
         }
     }
 

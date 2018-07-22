@@ -14,6 +14,8 @@
 
 package com.kdgregory.log4j.testhelpers.aws.sns;
 
+import net.sf.kdgcommons.lang.ClassUtil;
+
 import com.kdgregory.log4j.aws.SNSAppender;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
@@ -21,7 +23,6 @@ import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
 import com.kdgregory.log4j.aws.internal.shared.ThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
-import com.kdgregory.log4j.testhelpers.TestUtils;
 
 
 /**
@@ -63,8 +64,9 @@ extends SNSAppender
 
 
     public MessageQueue getMessageQueue()
+    throws NoSuchFieldException
     {
-        return TestUtils.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        return ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
     }
 
 

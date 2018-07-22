@@ -42,7 +42,7 @@
 
         <aws-sdk.version>1.11.0</aws-sdk.version>
         <junit.version>4.10</junit.version>
-        <kdgcommons.version>1.0.16-SNAPSHOT</kdgcommons.version>
+        <kdgcommons.version>1.0.16</kdgcommons.version>
         <log4j.version>1.2.16</log4j.version>
         <practicalxml.version>1.1.18</practicalxml.version>
 

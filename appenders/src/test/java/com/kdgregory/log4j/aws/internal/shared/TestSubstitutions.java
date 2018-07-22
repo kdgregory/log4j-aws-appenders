@@ -125,8 +125,8 @@ public class TestSubstitutions
         Substitutions subs = new Substitutions(TEST_DATE, 0);
 
         // rather than duplicate implementation, I'll just assert that we got something
-        // more-or-less correct that wasn't "unknown" and didn't have punctuation
-        StringAsserts.assertRegex("[A-Za-z][A-Za-z0-9_-]*", subs.perform("{hostname}"));
+        // more-or-less correct that wasn't "unknown" and consists of acceptable chars
+        StringAsserts.assertRegex("[A-Za-z][A-Za-z0-9._\\-]*", subs.perform("{hostname}"));
         assertFalse("wasn't unknown", subs.perform("{hostname}").equals("unknown"));
     }
 

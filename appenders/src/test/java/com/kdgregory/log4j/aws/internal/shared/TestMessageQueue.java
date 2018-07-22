@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -78,7 +78,7 @@ public class TestMessageQueue
         assertNotNull("expected dequeue to return message", queue.dequeue(1000L));
         long t1finish = System.currentTimeMillis();
         long t1elapsed = t1finish - t1start;
-        assertTrue("dequeue happened immediately", t1elapsed < 10);
+        assertTrue("dequeue happened immediately (was: " + t1elapsed + ")", t1elapsed < 25);
 
         long t2start = System.currentTimeMillis();
         assertNull("expected dequeue to return null", queue.dequeue(200L));
@@ -90,7 +90,7 @@ public class TestMessageQueue
         assertNull("expected dequeue to return null", queue.dequeue(-10));
         long t3finish = System.currentTimeMillis();
         long t3elapsed = t3finish - t3start;
-        assertTrue("dequeue happened immediately", t3elapsed < 10);
+        assertTrue("dequeue happened immediately (was: " + t3elapsed + ")", t3elapsed < 10);
     }
 
 

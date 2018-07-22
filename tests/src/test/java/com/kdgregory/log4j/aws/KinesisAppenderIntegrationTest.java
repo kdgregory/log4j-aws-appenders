@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -57,7 +56,6 @@ public class KinesisAppenderIntegrationTest
 //----------------------------------------------------------------------------
 
     @Test
-    @Ignore
     public void smoketest() throws Exception
     {
         final String streamName = "AppenderIntegrationTest-smoketest";
@@ -76,7 +74,7 @@ public class KinesisAppenderIntegrationTest
 
         assertMessages(messages, 1, numMessages, "test");
 
-        assertShardCount(streamName, 1);
+        assertShardCount(streamName, 3);
         assertRetentionPeriod(streamName, 48);
 
         assertEquals("client factory called", "com.kdgregory.log4j.aws.KinesisAppenderIntegrationTest.createClient", getWriter(appender).getClientFactoryUsed());
@@ -86,7 +84,6 @@ public class KinesisAppenderIntegrationTest
 
 
     @Test
-    @Ignore
     public void testMultipleThreadsSingleAppender() throws Exception
     {
         final String streamName = "AppenderIntegrationTest-testMultipleThreadsSingleAppender";
@@ -128,7 +125,6 @@ public class KinesisAppenderIntegrationTest
 
 
     @Test
-    @Ignore
     public void testMultipleThreadsMultipleAppendersDistinctPartitions() throws Exception
     {
         final String streamName = "AppenderIntegrationTest-testMultipleThreadsMultipleAppenders";
@@ -173,7 +169,6 @@ public class KinesisAppenderIntegrationTest
     }
 
     @Test
-    @Ignore
     public void testRandomPartitionKeys() throws Exception
     {
         final String streamName = "AppenderIntegrationTest-randomPartitionKeys";
@@ -188,6 +183,8 @@ public class KinesisAppenderIntegrationTest
 
         localLogger.info("testRandomPartitionKeys: reading messages");
         List<RetrievedRecord> messages = retrieveAllMessages(streamName, numMessages);
+
+        assertShardCount(streamName, 2);
 
         // at this point I'm going to assume that the message content is correct,
         // because three other tests have asserted that, so will just verify overall
@@ -204,9 +201,6 @@ public class KinesisAppenderIntegrationTest
         }
         assertTrue("expected roughly " + numMessages + " partition keys (was: " + partitionKeys.size() + ")",
                    (partitionKeys.size() > numMessages - 20) && (partitionKeys.size() < numMessages + 20));
-
-        assertShardCount(streamName, 2);
-        assertRetentionPeriod(streamName, 48);
 
         localLogger.info("testRandomPartitionKeys: finished");
     }

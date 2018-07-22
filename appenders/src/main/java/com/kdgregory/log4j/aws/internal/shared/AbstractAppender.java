@@ -307,8 +307,8 @@ extends AppenderSkeleton
     {
         return clientFactory;
     }
-    
-    
+
+
     /**
      *  Sets the service endpoint. This is intended for use with older AWS SDK
      *  versions that do not provide client factories and default to us-east-1,
@@ -320,9 +320,9 @@ extends AppenderSkeleton
     {
         this.clientEndpoint = value;
     }
-    
-    
-    /** 
+
+
+    /**
      *  Returns the current service endpoint. Will be null if the endpoint has
      *  not been explicitly set.
      */

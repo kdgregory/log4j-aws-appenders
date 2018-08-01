@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -78,6 +78,12 @@ public class TestJsonLayout
     {
         appender.close();
         rawJson = writer.toString();
+    }
+
+
+    private void captureLoggingOutputAndParse()
+    {
+        captureLoggingOutput();
         dom = JsonConverter.convertToXml(rawJson, "");
     }
 
@@ -138,7 +144,7 @@ public class TestJsonLayout
 
         logger.debug(TEST_MESSAGE);
 
-        captureLoggingOutput();
+        captureLoggingOutputAndParse();
         assertCommonElements(TEST_MESSAGE);
 
         DomAsserts.assertCount("no exception",  0,  dom, "/data/exception");
@@ -160,7 +166,7 @@ public class TestJsonLayout
         Exception ex = new RuntimeException(exceptionMessage);
         logger.debug(TEST_MESSAGE, ex);
 
-        captureLoggingOutput();
+        captureLoggingOutputAndParse();
         assertCommonElements(TEST_MESSAGE);
 
         List<String> exceptionInfo = new XPathWrapper("/data/exception/data").evaluateAsStringList(dom);
@@ -181,7 +187,7 @@ public class TestJsonLayout
 
         NDC.clear();
 
-        captureLoggingOutput();
+        captureLoggingOutputAndParse();
         assertCommonElements(TEST_MESSAGE);
         DomAsserts.assertEquals("ndc", "frist second", dom, "/data/ndc");
     }
@@ -199,7 +205,7 @@ public class TestJsonLayout
 
         MDC.clear();
 
-        captureLoggingOutput();
+        captureLoggingOutputAndParse();
         assertCommonElements(TEST_MESSAGE);
 
         DomAsserts.assertCount("children of mdc",   2,          dom, "/data/mdc/*");
@@ -215,7 +221,7 @@ public class TestJsonLayout
 
         logger.debug(TEST_MESSAGE);
 
-        captureLoggingOutput();
+        captureLoggingOutputAndParse();
         assertCommonElements(TEST_MESSAGE);
 
         DomAsserts.assertCount("location present",  1,                                          dom, "/data/locationInfo");
@@ -235,7 +241,7 @@ public class TestJsonLayout
 
         logger.debug(TEST_MESSAGE);
 
-        captureLoggingOutput();
+        captureLoggingOutputAndParse();
         assertCommonElements(TEST_MESSAGE);
 
         String hostname = new XPathWrapper("/data/hostname").evaluateAsString(dom);
@@ -252,7 +258,7 @@ public class TestJsonLayout
 
         logger.debug(TEST_MESSAGE);
 
-        captureLoggingOutput();
+        captureLoggingOutputAndParse();
         assertCommonElements(TEST_MESSAGE);
 
         String instanceId = new XPathWrapper("/data/instanceId").evaluateAsString(dom);
@@ -268,7 +274,7 @@ public class TestJsonLayout
 
         logger.debug(TEST_MESSAGE);
 
-        captureLoggingOutput();
+        captureLoggingOutputAndParse();
         assertCommonElements(TEST_MESSAGE);
 
         DomAsserts.assertCount("tags present",  2,          dom, "/data/tags/*");
@@ -286,9 +292,38 @@ public class TestJsonLayout
 
         logger.debug(TEST_MESSAGE);
 
-        captureLoggingOutput();
+        captureLoggingOutputAndParse();
         assertCommonElements(TEST_MESSAGE);
 
         DomAsserts.assertCount("tags not present",  0, dom, "/data/tags/*");
+    }
+
+
+    @Test
+    public void testNoAppendNewlines() throws Exception
+    {
+        initialize("TestJsonLayout/default.properties");
+
+        logger.debug(TEST_MESSAGE);
+        logger.debug(TEST_MESSAGE);
+
+        captureLoggingOutput();
+
+        assertFalse("output does not contain a newline", rawJson.contains("\n"));
+    }
+
+
+    @Test
+    public void testAppendNewlines() throws Exception
+    {
+        initialize("TestJsonLayout/testAppendNewlines.properties");
+
+        logger.debug(TEST_MESSAGE);
+        logger.debug(TEST_MESSAGE);
+
+        captureLoggingOutput();
+
+        assertTrue("output contains a newline between records", rawJson.contains("}\n{"));
+        assertTrue("output ands with a newline", rawJson.endsWith("}\n"));
     }
 }

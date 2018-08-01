@@ -19,6 +19,7 @@ case-insensitive value "true".
 
  Name               | Type      | Description
 --------------------|-----------|----------------------------------------------------------------------------------------------------------------
+`appendNewlines`    | Boolean   | If "true", a newline will be appended to each record (default is false). This is useful when sending logging output to a file, particularly one read by an agent.
 `enableLocation`    | Boolean   | If "true", the JSON will include a sub-object that holds the location (class, source file, and line number) where the log message was written. This adds to the cost of every logging message so should not be enabled in production.
 `enableInstanceId`  | Boolean   | If "true", the JSON will include the EC2 instance ID where the application is running. This is retrieved from EC2 metadata, and will delay application startup if it's not running on EC2.
 `enableHostname`    | Boolean   | If "true", the JSON will include the name of the machine where the application is running, retrieved from the Java runtime. This is often a better choice than instance ID.

@@ -22,6 +22,7 @@ import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
 import com.kdgregory.log4j.aws.internal.shared.ThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
+import com.kdgregory.log4j.aws.internal.sns.SNSAppenderStatistics;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
 
 
@@ -39,13 +40,13 @@ extends SNSAppender
     }
 
 
-    public void setWriterFactory(WriterFactory<SNSWriterConfig> writerFactory)
+    public void setWriterFactory(WriterFactory<SNSWriterConfig,SNSAppenderStatistics> writerFactory)
     {
         this.writerFactory = writerFactory;
     }
 
 
-    public WriterFactory<SNSWriterConfig> getWriterFactory()
+    public WriterFactory<SNSWriterConfig,SNSAppenderStatistics> getWriterFactory()
     {
         return writerFactory;
     }

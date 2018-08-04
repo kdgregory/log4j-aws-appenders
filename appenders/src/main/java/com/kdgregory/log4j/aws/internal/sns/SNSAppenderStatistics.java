@@ -12,21 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws.internal.kinesis;
+package com.kdgregory.log4j.aws.internal.sns;
 
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
-import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
+import com.kdgregory.log4j.aws.internal.shared.AbstractAppenderStatistics;
 
 
-/**
- *  A factory for {@link KinesisLogWriter} instances. This is exposed for
- *  testing.
- */
-public class KinesisWriterFactory implements WriterFactory<KinesisWriterConfig, KinesisAppenderStatistics>
+public class SNSAppenderStatistics extends AbstractAppenderStatistics
 {
-    @Override
-    public LogWriter newLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats)
-    {
-        return new KinesisLogWriter(config);
-    }
+
 }

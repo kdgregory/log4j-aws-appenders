@@ -17,6 +17,7 @@ package com.kdgregory.log4j.aws;
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 
+import com.kdgregory.log4j.aws.internal.kinesis.KinesisAppenderStatistics;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisConstants;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterFactory;
@@ -29,7 +30,8 @@ import com.kdgregory.log4j.aws.internal.shared.Substitutions;
 /**
  *  Appender that writes to a Kinesis stream.
  */
-public class KinesisAppender extends AbstractAppender<KinesisWriterConfig>
+public class KinesisAppender
+extends AbstractAppender<KinesisWriterConfig,KinesisAppenderStatistics>
 {
     // these are the only configuration vars specific to this appender
 

@@ -43,6 +43,7 @@ import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
+import com.kdgregory.log4j.aws.internal.sns.SNSAppenderStatistics;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterFactory;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
@@ -487,7 +488,7 @@ public class TestSNSAppender
         // note that we will be running the writer on a separate thread
 
         appender.setThreadFactory(new DefaultThreadFactory());
-        appender.setWriterFactory(new ThrowingWriterFactory<SNSWriterConfig>());
+        appender.setWriterFactory(new ThrowingWriterFactory<SNSWriterConfig,SNSAppenderStatistics>());
 
         logger.debug("this should trigger writer creation");
 

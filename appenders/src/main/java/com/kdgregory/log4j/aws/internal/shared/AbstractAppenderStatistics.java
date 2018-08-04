@@ -1,4 +1,3 @@
-// Copyright (c) Keith D Gregory
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,21 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws.internal.kinesis;
-
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
-import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
+package com.kdgregory.log4j.aws.internal.shared;
 
 
 /**
- *  A factory for {@link KinesisLogWriter} instances. This is exposed for
- *  testing.
+ *  Base class for writer statistics, providing fields that are used by all
+ *  writer implementations. Concrete appender implementations hold/expose a
+ *  subclass.
  */
-public class KinesisWriterFactory implements WriterFactory<KinesisWriterConfig, KinesisAppenderStatistics>
+public abstract class AbstractAppenderStatistics
 {
-    @Override
-    public LogWriter newLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats)
-    {
-        return new KinesisLogWriter(config);
-    }
+
 }

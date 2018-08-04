@@ -27,6 +27,7 @@ import net.sf.kdgcommons.lang.StringUtil;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.*;
 
+import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchAppenderStatistics;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
@@ -123,12 +124,12 @@ implements InvocationHandler
     /**
      *  Creates a new WriterFactory, with the stock CloudWatch writer.
      */
-    public WriterFactory<CloudWatchWriterConfig> newWriterFactory()
+    public WriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics> newWriterFactory()
     {
-        return new WriterFactory<CloudWatchWriterConfig>()
+        return new WriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics>()
         {
             @Override
-            public LogWriter newLogWriter(CloudWatchWriterConfig config)
+            public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats)
             {
                 return new CloudWatchLogWriter(config)
                 {

@@ -43,7 +43,7 @@ import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
  *  so any application code that touches these variables should not be surprised if
  *  they cease to exist.
  */
-public abstract class AbstractAppender<WriterConfigType>
+public abstract class AbstractAppender<WriterConfigType,AppenderStatsType>
 extends AppenderSkeleton
 {
     // flag to indicate whether we need to run setup
@@ -60,7 +60,7 @@ extends AppenderSkeleton
     //       instance, and you can't create those in a super() call
 
     protected ThreadFactory threadFactory;
-    protected WriterFactory<WriterConfigType> writerFactory;
+    protected WriterFactory<WriterConfigType,AppenderStatsType> writerFactory;
 
     // the current writer; initialized on first append, changed after rotation or error
 
@@ -103,7 +103,7 @@ extends AppenderSkeleton
 //  Constructor
 //----------------------------------------------------------------------------
 
-    public AbstractAppender(ThreadFactory threadFactory, WriterFactory<WriterConfigType> writerFactory)
+    public AbstractAppender(ThreadFactory threadFactory, WriterFactory<WriterConfigType,AppenderStatsType> writerFactory)
     {
         this.threadFactory = threadFactory;
         this.writerFactory = writerFactory;
@@ -454,7 +454,7 @@ extends AppenderSkeleton
         {
             try
             {
-                writer = writerFactory.newLogWriter(generateWriterConfig());
+                writer = writerFactory.newLogWriter(generateWriterConfig(), null);
                 threadFactory.startLoggingThread(writer, new UncaughtExceptionHandler()
                 {
                     @Override

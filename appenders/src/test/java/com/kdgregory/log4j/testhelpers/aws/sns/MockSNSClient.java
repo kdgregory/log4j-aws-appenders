@@ -28,6 +28,7 @@ import com.amazonaws.services.sns.model.*;
 
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
+import com.kdgregory.log4j.aws.internal.sns.SNSAppenderStatistics;
 import com.kdgregory.log4j.aws.internal.sns.SNSLogWriter;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
 
@@ -107,12 +108,12 @@ public class MockSNSClient implements InvocationHandler
     /**
      *  Returns a WriterFactory that includes our mock client.
      */
-    public WriterFactory<SNSWriterConfig> newWriterFactory()
+    public WriterFactory<SNSWriterConfig,SNSAppenderStatistics> newWriterFactory()
     {
-        return new WriterFactory<SNSWriterConfig>()
+        return new WriterFactory<SNSWriterConfig,SNSAppenderStatistics>()
         {
             @Override
-            public LogWriter newLogWriter(SNSWriterConfig config)
+            public LogWriter newLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats)
             {
                 return new SNSLogWriter(config)
                 {

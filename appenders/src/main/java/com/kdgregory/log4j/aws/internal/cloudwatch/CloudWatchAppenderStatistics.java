@@ -1,4 +1,3 @@
-// Copyright (c) Keith D Gregory
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,21 +11,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws.internal.kinesis;
+package com.kdgregory.log4j.aws.internal.cloudwatch;
 
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
-import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
+import com.kdgregory.log4j.aws.internal.shared.AbstractAppenderStatistics;
 
 
 /**
- *  A factory for {@link KinesisLogWriter} instances. This is exposed for
- *  testing.
+ *  Statistics specific to the CloudWatch log writer.
  */
-public class KinesisWriterFactory implements WriterFactory<KinesisWriterConfig, KinesisAppenderStatistics>
+public class CloudWatchAppenderStatistics extends AbstractAppenderStatistics
 {
-    @Override
-    public LogWriter newLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats)
-    {
-        return new KinesisLogWriter(config);
-    }
+    private String  actualLogGroupName;
+    private String  actualLogStreamName;
 }

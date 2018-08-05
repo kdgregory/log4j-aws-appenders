@@ -57,7 +57,8 @@ extends AbstractAppender<KinesisWriterConfig,KinesisAppenderStatistics>
     public KinesisAppender()
     {
         super(new DefaultThreadFactory(),
-              new KinesisWriterFactory());
+              new KinesisWriterFactory(),
+              new KinesisAppenderStatistics());
 
         partitionKey = "{startupTimestamp}";
         shardCount = 1;

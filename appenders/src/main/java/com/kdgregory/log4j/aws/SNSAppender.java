@@ -42,7 +42,8 @@ extends AbstractAppender<SNSWriterConfig,SNSAppenderStatistics>
     public SNSAppender()
     {
         super(new DefaultThreadFactory(),
-              new SNSWriterFactory());
+              new SNSWriterFactory(),
+              new SNSAppenderStatistics());
 
         super.setDiscardThreshold(1000);
         super.setBatchDelay(1);

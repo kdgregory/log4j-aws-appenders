@@ -61,6 +61,9 @@ extends AppenderSkeleton
 
     protected ThreadFactory threadFactory;
     protected WriterFactory<WriterConfigType,AppenderStatsType> writerFactory;
+    
+    // the appender stats object; we keep the reference because we call writer factory
+    protected AppenderStatsType appenderStats;
 
     // the current writer; initialized on first append, changed after rotation or error
 
@@ -103,10 +106,14 @@ extends AppenderSkeleton
 //  Constructor
 //----------------------------------------------------------------------------
 
-    public AbstractAppender(ThreadFactory threadFactory, WriterFactory<WriterConfigType,AppenderStatsType> writerFactory)
+    public AbstractAppender(
+        ThreadFactory threadFactory, 
+        WriterFactory<WriterConfigType,AppenderStatsType> writerFactory,
+        AppenderStatsType appenderStats)
     {
         this.threadFactory = threadFactory;
         this.writerFactory = writerFactory;
+        this.appenderStats = appenderStats;
 
         batchDelay = 2000;
         discardThreshold = 10000;
@@ -333,6 +340,19 @@ extends AppenderSkeleton
 
 
 //----------------------------------------------------------------------------
+//  Other accessors
+//----------------------------------------------------------------------------
+    
+    /**
+     *  Returns the appender statistics object.
+     */
+    public AppenderStatsType getAppenderStatistics()
+    {
+        return appenderStats;
+    }
+
+
+//----------------------------------------------------------------------------
 //  Appender overrides
 //----------------------------------------------------------------------------
 
@@ -454,7 +474,7 @@ extends AppenderSkeleton
         {
             try
             {
-                writer = writerFactory.newLogWriter(generateWriterConfig(), null);
+                writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats);
                 threadFactory.startLoggingThread(writer, new UncaughtExceptionHandler()
                 {
                     @Override

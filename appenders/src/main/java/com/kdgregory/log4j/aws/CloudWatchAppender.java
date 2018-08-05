@@ -50,7 +50,8 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchAppenderStatistics>
     public CloudWatchAppender()
     {
         super(new DefaultThreadFactory(),
-              new CloudWatchWriterFactory());
+              new CloudWatchWriterFactory(),
+              new CloudWatchAppenderStatistics());
 
         logStream = "{startupTimestamp}";
     }

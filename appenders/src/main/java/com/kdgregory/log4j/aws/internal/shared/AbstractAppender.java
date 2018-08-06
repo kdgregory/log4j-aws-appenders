@@ -43,7 +43,7 @@ import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
  *  so any application code that touches these variables should not be surprised if
  *  they cease to exist.
  */
-public abstract class AbstractAppender<WriterConfigType,AppenderStatsType>
+public abstract class AbstractAppender<WriterConfigType,AppenderStatsType,AppenderStatsMXBeanType>
 extends AppenderSkeleton
 {
     // flag to indicate whether we need to run setup
@@ -63,7 +63,12 @@ extends AppenderSkeleton
     protected WriterFactory<WriterConfigType,AppenderStatsType> writerFactory;
     
     // the appender stats object; we keep the reference because we call writer factory
+    
     protected AppenderStatsType appenderStats;
+    
+    // the MX bean type for the appender stats object
+    
+    Class<AppenderStatsMXBeanType> appenderStatsMXBeanClass;
 
     // the current writer; initialized on first append, changed after rotation or error
 
@@ -109,11 +114,13 @@ extends AppenderSkeleton
     public AbstractAppender(
         ThreadFactory threadFactory, 
         WriterFactory<WriterConfigType,AppenderStatsType> writerFactory,
-        AppenderStatsType appenderStats)
+        AppenderStatsType appenderStats,
+        Class<AppenderStatsMXBeanType> appenderStatsMXBeanClass)
     {
         this.threadFactory = threadFactory;
         this.writerFactory = writerFactory;
         this.appenderStats = appenderStats;
+        this.appenderStatsMXBeanClass = appenderStatsMXBeanClass;
 
         batchDelay = 2000;
         discardThreshold = 10000;

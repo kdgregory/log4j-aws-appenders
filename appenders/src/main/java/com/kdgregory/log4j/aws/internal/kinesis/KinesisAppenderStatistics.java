@@ -17,7 +17,9 @@ package com.kdgregory.log4j.aws.internal.kinesis;
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppenderStatistics;
 
 
-public class KinesisAppenderStatistics extends AbstractAppenderStatistics
+public class KinesisAppenderStatistics
+extends AbstractAppenderStatistics
+implements KinesisAppenderStatisticsMXBean
 {
 
 }

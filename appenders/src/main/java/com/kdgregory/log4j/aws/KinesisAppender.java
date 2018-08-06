@@ -18,6 +18,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Date;
 
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisAppenderStatistics;
+import com.kdgregory.log4j.aws.internal.kinesis.KinesisAppenderStatisticsMXBean;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisConstants;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterFactory;
@@ -31,7 +32,7 @@ import com.kdgregory.log4j.aws.internal.shared.Substitutions;
  *  Appender that writes to a Kinesis stream.
  */
 public class KinesisAppender
-extends AbstractAppender<KinesisWriterConfig,KinesisAppenderStatistics>
+extends AbstractAppender<KinesisWriterConfig,KinesisAppenderStatistics,KinesisAppenderStatisticsMXBean>
 {
     // these are the only configuration vars specific to this appender
 
@@ -58,7 +59,8 @@ extends AbstractAppender<KinesisWriterConfig,KinesisAppenderStatistics>
     {
         super(new DefaultThreadFactory(),
               new KinesisWriterFactory(),
-              new KinesisAppenderStatistics());
+              new KinesisAppenderStatistics(),
+              KinesisAppenderStatisticsMXBean.class);
 
         partitionKey = "{startupTimestamp}";
         shardCount = 1;

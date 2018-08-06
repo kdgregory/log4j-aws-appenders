@@ -19,8 +19,34 @@ import com.kdgregory.log4j.aws.internal.shared.AbstractAppenderStatistics;
 /**
  *  Statistics specific to the CloudWatch log writer.
  */
-public class CloudWatchAppenderStatistics extends AbstractAppenderStatistics
-{
+public class CloudWatchAppenderStatistics 
+extends AbstractAppenderStatistics
+implements CloudWatchAppenderStatisticsMXBean
+{    
     private String  actualLogGroupName;
     private String  actualLogStreamName;
+    
+    
+    @Override
+    public String getActualLogGroupName()
+    {
+        return actualLogGroupName;
+    }
+    
+    public void setActualLogGroupName(String actualLogGroupName)
+    {
+        this.actualLogGroupName = actualLogGroupName;
+    }
+    
+    
+    @Override
+    public String getActualLogStreamName()
+    {
+        return actualLogStreamName;
+    }
+    
+    public void setActualLogStreamName(String actualLogStreamName)
+    {
+        this.actualLogStreamName = actualLogStreamName;
+    }
 }

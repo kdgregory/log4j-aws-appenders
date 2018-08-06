@@ -14,12 +14,14 @@
 
 package com.kdgregory.log4j.aws.internal.sns;
 
-import com.kdgregory.log4j.aws.internal.shared.AbstractAppenderStatistics;
+import javax.management.MXBean;
 
 
-public class SNSAppenderStatistics
-extends AbstractAppenderStatistics
-implements SNSAppenderStatisticsMXBean
+/**
+ *  Defines the JMX Bean interface for {@link SNSAppenderStatistics}.
+ */
+@MXBean
+public interface SNSAppenderStatisticsMXBean
 {
 
 }

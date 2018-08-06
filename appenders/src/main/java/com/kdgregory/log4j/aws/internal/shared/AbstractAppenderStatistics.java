@@ -18,8 +18,15 @@ package com.kdgregory.log4j.aws.internal.shared;
  *  Base class for writer statistics, providing fields that are used by all
  *  writer implementations. Concrete appender implementations hold/expose a
  *  subclass.
+ *  <p>
+ *  Statistics are limited to primitives and strings so that they can be read
+ *  by JMX. They will be read from multiple threads, but are expected to only
+ *  be written by a single thread (writer or appender, not both). As a result
+ *  it is sufficient to mark them as volatile; there is no need for syncronized
+ *  methods (except for statistics that might be written by two writers).
  */
 public abstract class AbstractAppenderStatistics
+implements AbstractAppenderStatisticsMXBean
 {
 
 }

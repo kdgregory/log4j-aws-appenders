@@ -1,4 +1,3 @@
-// Copyright (c) Keith D Gregory
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,14 +11,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws.internal.sns;
-
-import com.kdgregory.log4j.aws.internal.shared.AbstractAppenderStatistics;
+package com.kdgregory.log4j.aws.internal.cloudwatch;
 
 
-public class SNSAppenderStatistics
-extends AbstractAppenderStatistics
-implements SNSAppenderStatisticsMXBean
+/**
+ *  Defines the JMX Bean interface for {@link CloudWatchAppenderStatistics}.
+ */
+public interface CloudWatchAppenderStatisticsMXBean
 {
-
+    /**
+     *  Returns the actual log group name for the appender, after substitutions.
+     */
+    String getActualLogGroupName();
+    
+    
+    /**
+     *  Returns the actual log stream name for the appender, after substitutions.
+     */
+    String getActualLogStreamName();
 }

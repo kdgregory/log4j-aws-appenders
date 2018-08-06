@@ -1,4 +1,3 @@
-// Copyright (c) Keith D Gregory
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,14 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws.internal.sns;
-
-import com.kdgregory.log4j.aws.internal.shared.AbstractAppenderStatistics;
+package com.kdgregory.log4j.aws.internal.shared;
 
 
-public class SNSAppenderStatistics
-extends AbstractAppenderStatistics
-implements SNSAppenderStatisticsMXBean
+/**
+ *  The JMX bean interface for {@link AbstractAppenderStatistics}.
+ */
+public interface AbstractAppenderStatisticsMXBean
 {
 
 }

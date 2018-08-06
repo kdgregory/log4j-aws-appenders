@@ -12,14 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws.internal.sns;
+package com.kdgregory.log4j.aws.internal.kinesis;
 
-import com.kdgregory.log4j.aws.internal.shared.AbstractAppenderStatistics;
+import javax.management.MXBean;
+
+import com.kdgregory.log4j.aws.internal.shared.AbstractAppenderStatisticsMXBean;
 
 
-public class SNSAppenderStatistics
-extends AbstractAppenderStatistics
-implements SNSAppenderStatisticsMXBean
+/**
+ *  Defines the JMX Bean interface for {@link KinesisAppenderStatistics}.
+ */
+@MXBean
+public interface KinesisAppenderStatisticsMXBean
+extends AbstractAppenderStatisticsMXBean
 {
 
 }

@@ -17,34 +17,39 @@ import com.kdgregory.log4j.aws.internal.shared.AbstractAppenderStatistics;
 
 
 /**
- *  Statistics specific to the CloudWatch log writer.
+ *  Statistics specific to the CloudWatch appender.
+ *  <p>
+ *  Since it's possible that there may be multiple logwriters alive at once, we
+ *  need to synchronize any methods that update a statistic. Simple writes are
+ *  fine just being volatile (in general, those fields will only be set when the
+ *  writer is created).
  */
-public class CloudWatchAppenderStatistics 
+public class CloudWatchAppenderStatistics
 extends AbstractAppenderStatistics
 implements CloudWatchAppenderStatisticsMXBean
-{    
-    private String  actualLogGroupName;
-    private String  actualLogStreamName;
-    
-    
+{
+    private volatile String  actualLogGroupName;
+    private volatile String  actualLogStreamName;
+
+
     @Override
     public String getActualLogGroupName()
     {
         return actualLogGroupName;
     }
-    
+
     public void setActualLogGroupName(String actualLogGroupName)
     {
         this.actualLogGroupName = actualLogGroupName;
     }
-    
-    
+
+
     @Override
     public String getActualLogStreamName()
     {
         return actualLogStreamName;
     }
-    
+
     public void setActualLogStreamName(String actualLogStreamName)
     {
         this.actualLogStreamName = actualLogStreamName;

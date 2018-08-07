@@ -131,7 +131,7 @@ implements InvocationHandler
             @Override
             public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats)
             {
-                return new CloudWatchLogWriter(config)
+                return new CloudWatchLogWriter(config, stats)
                 {
                     @Override
                     protected void createAWSClient()

@@ -20,10 +20,11 @@ package com.kdgregory.log4j.aws.internal.shared;
  *  subclass.
  *  <p>
  *  Statistics are limited to primitives and strings so that they can be read
- *  by JMX. They will be read from multiple threads, but are expected to only
- *  be written by a single thread (writer or appender, not both). As a result
- *  it is sufficient to mark them as volatile; there is no need for syncronized
- *  methods (except for statistics that might be written by two writers).
+ *  by JMX. Statistics will be read and written by different threads, so must
+ *  be marked as volatile. A given statistic will only be written by appender
+ *  or writer, not both, so there's no need for synchronization unless there's
+ *  the possibility of multiple writers. In that case, implement an override
+ *  in the subclass and synchronize there.
  */
 public abstract class AbstractAppenderStatistics
 implements AbstractAppenderStatisticsMXBean

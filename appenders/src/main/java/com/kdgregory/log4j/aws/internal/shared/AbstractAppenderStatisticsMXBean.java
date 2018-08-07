@@ -15,7 +15,9 @@ package com.kdgregory.log4j.aws.internal.shared;
 
 
 /**
- *  The JMX bean interface for {@link AbstractAppenderStatistics}.
+ *  Defines the exposed functions for {@link AbstractAppenderStatistics}. This
+ *  interface is to be extended by an interface that is implemented by the concrete
+ *  statistics object.
  */
 public interface AbstractAppenderStatisticsMXBean
 {

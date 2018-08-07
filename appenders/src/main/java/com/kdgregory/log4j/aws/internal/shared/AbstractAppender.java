@@ -15,7 +15,12 @@
 package com.kdgregory.log4j.aws.internal.shared;
 
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.lang.management.ManagementFactory;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import javax.management.StandardMBean;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
@@ -61,13 +66,13 @@ extends AppenderSkeleton
 
     protected ThreadFactory threadFactory;
     protected WriterFactory<WriterConfigType,AppenderStatsType> writerFactory;
-    
+
     // the appender stats object; we keep the reference because we call writer factory
-    
+
     protected AppenderStatsType appenderStats;
-    
+
     // the MX bean type for the appender stats object
-    
+
     Class<AppenderStatsMXBeanType> appenderStatsMXBeanClass;
 
     // the current writer; initialized on first append, changed after rotation or error
@@ -112,7 +117,7 @@ extends AppenderSkeleton
 //----------------------------------------------------------------------------
 
     public AbstractAppender(
-        ThreadFactory threadFactory, 
+        ThreadFactory threadFactory,
         WriterFactory<WriterConfigType,AppenderStatsType> writerFactory,
         AppenderStatsType appenderStats,
         Class<AppenderStatsMXBeanType> appenderStatsMXBeanClass)
@@ -349,7 +354,7 @@ extends AppenderSkeleton
 //----------------------------------------------------------------------------
 //  Other accessors
 //----------------------------------------------------------------------------
-    
+
     /**
      *  Returns the appender statistics object.
      */
@@ -466,7 +471,32 @@ extends AppenderSkeleton
             }
 
             startWriter();
+            registerStatisticsBean();
             ready = true;
+        }
+    }
+
+
+    /**
+     *  Registers the appender statistics with JMX. Logs but otherwise ignores failure.
+     *  <p>
+     *  The name for the bean is consistent with the Log4J <code>LayoutDynamicMBean</code>,
+     *  so that it will appear in the hierarchy under the appender.
+     */
+    private void registerStatisticsBean()
+    {
+        // TODO - there may be multiple JMX registries; find the one(s) that have the
+        //        HierarchyDynamicMBean registered, and only register with those
+        try
+        {
+            MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+            ObjectName objectName = new ObjectName("log4j:appender=" + getName() + ",statistics=statistics");
+            StandardMBean mbean = new StandardMBean(appenderStatsMXBeanClass.cast(appenderStats), appenderStatsMXBeanClass, false);
+            mbeanServer.registerMBean(mbean, objectName);
+        }
+        catch (Exception ex)
+        {
+            LogLog.warn("failed to register appender statistics with JMX", ex);
         }
     }
 

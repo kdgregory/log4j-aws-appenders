@@ -34,6 +34,7 @@ import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.*;
 
+import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchAppenderStatistics;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
 import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
@@ -79,7 +80,12 @@ public class CloudWatchAppenderIntegrationTest
 
         assertEquals("client factory", "com.kdgregory.log4j.aws.CloudWatchAppenderIntegrationTest.createClient", lastWriter.getClientFactoryUsed());
 
-        // while we're here, verify that batch delay is propagated
+        // while we're here, verify some more of the plumbing
+
+        CloudWatchAppenderStatistics appenderStats = appender.getAppenderStatistics();
+        assertEquals("actual log group name, from statistics",  "AppenderIntegrationTest-smoketest",    appenderStats.getActualLogGroupName());
+        assertEquals("actual log stream name, from statistics", LOGSTREAM_BASE + "4",                   appenderStats.getActualLogStreamName());
+
         appender.setBatchDelay(1234L);
         assertEquals("batch delay", 1234L, lastWriter.getBatchDelay());
 
@@ -165,8 +171,8 @@ public class CloudWatchAppenderIntegrationTest
     {
         return AWSLogsClientBuilder.defaultClient();
     }
-    
-    
+
+
     /**
      *  Loads the test-specific Log4J configuration and resets the environment.
      */

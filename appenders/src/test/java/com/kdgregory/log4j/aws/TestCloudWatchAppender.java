@@ -432,6 +432,9 @@ public class TestCloudWatchAppender
         logger.debug("message one");
         mockClient.allowWriterThread();
 
+        assertEquals("actual log group name, from statistics",  "argle",        appender.getAppenderStatistics().getActualLogGroupName());
+        assertEquals("actual log stream name, from statistics", "bargle",       appender.getAppenderStatistics().getActualLogStreamName());
+
         // will call describeLogGroups when checking group existence
         // will call describeLogStreams when checking stream existence, as well as for each putLogEvents
 
@@ -470,6 +473,9 @@ public class TestCloudWatchAppender
         logger.debug("message one");
         mockClient.allowWriterThread();
 
+        assertEquals("actual log group name, from statistics",  "argle",        appender.getAppenderStatistics().getActualLogGroupName());
+        assertEquals("actual log stream name, from statistics", "zippy-0",      appender.getAppenderStatistics().getActualLogStreamName());
+
         // will call describeLogGroups when checking group existence
         // will call describeLogStreams before and after creating stream, as well as for each putLogEvents
 
@@ -478,7 +484,7 @@ public class TestCloudWatchAppender
         assertEquals("createLogGroup: invocation count",      0,                mockClient.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",     1,                mockClient.createLogStreamInvocationCount);
         assertEquals("createLogStream: group name",           "argle",          mockClient.createLogStreamGroupName);
-        assertEquals("createLogStream: stream name",          "zippy",          mockClient.createLogStreamStreamName);
+        assertEquals("createLogStream: stream name",          "zippy-0",        mockClient.createLogStreamStreamName);
         assertEquals("putLogEvents: invocation count",        1,                mockClient.putLogEventsInvocationCount);
         assertEquals("putLogEvents: last call #/messages",    1,                mockClient.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",            "message one\n",  mockClient.mostRecentEvents.get(0).getMessage());
@@ -491,7 +497,7 @@ public class TestCloudWatchAppender
         assertEquals("createLogGroup: invocation count",      0,                mockClient.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",     1,                mockClient.createLogStreamInvocationCount);
         assertEquals("createLogStream: group name",           "argle",          mockClient.createLogStreamGroupName);
-        assertEquals("createLogStream: stream name",          "zippy",          mockClient.createLogStreamStreamName);
+        assertEquals("createLogStream: stream name",          "zippy-0",        mockClient.createLogStreamStreamName);
         assertEquals("putLogEvents: invocation count",        2,                mockClient.putLogEventsInvocationCount);
         assertEquals("putLogEvents: last call #/messages",    1,                mockClient.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",            "message two\n",  mockClient.mostRecentEvents.get(0).getMessage());
@@ -511,6 +517,9 @@ public class TestCloudWatchAppender
 
         logger.debug("message one");
         mockClient.allowWriterThread();
+
+        assertEquals("actual log group name, from statistics",  "griffy",       appender.getAppenderStatistics().getActualLogGroupName());
+        assertEquals("actual log stream name, from statistics", "zippy",        appender.getAppenderStatistics().getActualLogStreamName());
 
         // will call describeLogGroups both before and after creating group
         // will call describeLogStreams before and after creating stream, as well as for each putLogEvents

@@ -73,7 +73,11 @@ extends AppenderSkeleton
 
     // the MX bean type for the appender stats object
 
-    Class<AppenderStatsMXBeanType> appenderStatsMXBeanClass;
+    private Class<AppenderStatsMXBeanType> appenderStatsMXBeanClass;
+
+    // the name under which we registered the appender stats
+
+    private ObjectName statisticsMbeanName;
 
     // the current writer; initialized on first append, changed after rotation or error
 
@@ -404,6 +408,7 @@ extends AppenderSkeleton
             }
 
             stopWriter();
+            unregisterStatisticsBean();
             closed = true;
         }
     }
@@ -478,30 +483,6 @@ extends AppenderSkeleton
 
 
     /**
-     *  Registers the appender statistics with JMX. Logs but otherwise ignores failure.
-     *  <p>
-     *  The name for the bean is consistent with the Log4J <code>LayoutDynamicMBean</code>,
-     *  so that it will appear in the hierarchy under the appender.
-     */
-    private void registerStatisticsBean()
-    {
-        // TODO - there may be multiple JMX registries; find the one(s) that have the
-        //        HierarchyDynamicMBean registered, and only register with those
-        try
-        {
-            MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
-            ObjectName objectName = new ObjectName("log4j:appender=" + getName() + ",statistics=statistics");
-            StandardMBean mbean = new StandardMBean(appenderStatsMXBeanClass.cast(appenderStats), appenderStatsMXBeanClass, false);
-            mbeanServer.registerMBean(mbean, objectName);
-        }
-        catch (Exception ex)
-        {
-            LogLog.warn("failed to register appender statistics with JMX", ex);
-        }
-    }
-
-
-    /**
      *  Called by {@link #initialize} and also {@link #rotate}, to switch to a new
      *  writer. Does not close the old writer, if any.
      */
@@ -563,6 +544,49 @@ extends AppenderSkeleton
                 LogLog.error("exception while shutting down writer", ex);
             }
             writer = null;
+        }
+    }
+
+
+    /**
+     *  Registers the appender statistics with JMX. Logs but otherwise ignores failure.
+     *  <p>
+     *  The name for the bean is consistent with the Log4J <code>LayoutDynamicMBean</code>,
+     *  so that it will appear in the hierarchy under the appender.
+     */
+    private void registerStatisticsBean()
+    {
+        // TODO - there may be multiple JMX registries; find the one(s) that have the
+        //        HierarchyDynamicMBean registered, and only register with those
+        try
+        {
+            MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+            statisticsMbeanName = new ObjectName("log4j:appender=" + getName() + ",statistics=statistics");
+            StandardMBean mbean = new StandardMBean(appenderStatsMXBeanClass.cast(appenderStats), appenderStatsMXBeanClass, false);
+            mbeanServer.registerMBean(mbean, statisticsMbeanName);
+        }
+        catch (Exception ex)
+        {
+            LogLog.warn("failed to register appender statistics with JMX", ex);
+        }
+    }
+
+
+    /**
+     *  Unregisters the appender statistics from JMX. This is called when the appender
+     *  is closed. Logs but otherwise ignores failure.
+     */
+    private void unregisterStatisticsBean()
+    {
+        // TODO - if we register with multiple/non-platform servers, need to deregister as well
+        try
+        {
+            MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+            mbeanServer.unregisterMBean(statisticsMbeanName);
+        }
+        catch (Exception ex)
+        {
+            LogLog.warn("failed to unregister appender statistics with JMX", ex);
         }
     }
 

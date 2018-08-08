@@ -93,4 +93,18 @@ public class TestableCloudWatchAppender extends CloudWatchAppender
     {
         return super.isMessageTooLarge(message);
     }
+
+
+    @Override
+    protected void registerStatisticsBean()
+    {
+        // nothing happens here
+    }
+
+
+    @Override
+    protected void unregisterStatisticsBean()
+    {
+        // nothing happens here
+    }
 }

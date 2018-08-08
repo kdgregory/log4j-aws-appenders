@@ -73,4 +73,18 @@ public class TestableKinesisAppender extends KinesisAppender
     {
         return lastWriterException;
     }
+
+
+    @Override
+    protected void registerStatisticsBean()
+    {
+        // nothing happens here
+    }
+
+
+    @Override
+    protected void unregisterStatisticsBean()
+    {
+        // nothing happens here
+    }
 }

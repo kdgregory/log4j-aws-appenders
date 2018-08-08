@@ -553,8 +553,10 @@ extends AppenderSkeleton
      *  <p>
      *  The name for the bean is consistent with the Log4J <code>LayoutDynamicMBean</code>,
      *  so that it will appear in the hierarchy under the appender.
+     *  <p>
+     *  Note: this method is protected so that it can be avoided during unit tests.
      */
-    private void registerStatisticsBean()
+    protected void registerStatisticsBean()
     {
         // TODO - there may be multiple JMX registries; find the one(s) that have the
         //        HierarchyDynamicMBean registered, and only register with those
@@ -575,8 +577,10 @@ extends AppenderSkeleton
     /**
      *  Unregisters the appender statistics from JMX. This is called when the appender
      *  is closed. Logs but otherwise ignores failure.
+     *  <p>
+     *  Note: this method is protected so that it can be avoided during unit tests.
      */
-    private void unregisterStatisticsBean()
+    protected void unregisterStatisticsBean()
     {
         // TODO - if we register with multiple/non-platform servers, need to deregister as well
         try

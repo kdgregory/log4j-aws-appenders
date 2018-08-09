@@ -64,10 +64,12 @@ extends AbstractLogWriter
     private Random rnd = new Random();
 
 
-    public KinesisLogWriter(KinesisWriterConfig config)
+    public KinesisLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats)
     {
         super(config.batchDelay, config.discardThreshold, config.discardAction);
         this.config = config;
+
+        stats.setActualStreamName(config.streamName);
     }
 
 

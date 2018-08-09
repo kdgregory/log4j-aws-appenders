@@ -77,6 +77,7 @@ public class KinesisAppenderIntegrationTest
         assertShardCount(streamName, 3);
         assertRetentionPeriod(streamName, 48);
 
+        assertEquals("stream name stored in stats", streamName, appender.getAppenderStatistics().getActualStreamName());
         assertEquals("client factory called", "com.kdgregory.log4j.aws.KinesisAppenderIntegrationTest.createClient", getWriter(appender).getClientFactoryUsed());
 
         localLogger.info("smoketest: finished");

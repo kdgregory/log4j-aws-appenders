@@ -112,7 +112,7 @@ implements InvocationHandler
             @Override
             public LogWriter newLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats)
             {
-                return new KinesisLogWriter(config)
+                return new KinesisLogWriter(config, stats)
                 {
                     @Override
                     protected void createAWSClient()
@@ -190,7 +190,7 @@ implements InvocationHandler
         {
             streamDesc.setStreamStatus(StreamStatus.ACTIVE);
         }
-        else if (request.getStreamName().equals("foo"))
+        else if (request.getStreamName().equals(createStreamStreamName))
         {
             if (createStreamInvocationCount == 0)
                 throw new ResourceNotFoundException("");

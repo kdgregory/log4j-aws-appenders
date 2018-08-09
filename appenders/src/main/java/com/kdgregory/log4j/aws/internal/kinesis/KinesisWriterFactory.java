@@ -27,6 +27,6 @@ public class KinesisWriterFactory implements WriterFactory<KinesisWriterConfig, 
     @Override
     public LogWriter newLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats)
     {
-        return new KinesisLogWriter(config);
+        return new KinesisLogWriter(config, stats);
     }
 }

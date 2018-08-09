@@ -128,6 +128,7 @@ public class TestKinesisAppender
     @After
     public void tearDown()
     {
+        appender.close();
         LogLog.setQuietMode(false);
     }
 
@@ -287,6 +288,8 @@ public class TestKinesisAppender
         logger.debug("example message");
         mockClient.allowWriterThread();
 
+        assertEquals("actual stream name, from statistics",     "argle",    appender.getAppenderStatistics().getActualStreamName());
+
         assertEquals("describeStream: invocation count",        1,          mockClient.describeStreamInvocationCount);
         assertEquals("describeStream: stream name",             "argle",    mockClient.describeStreamStreamName);
         assertEquals("createStream: invocation count",          0,          mockClient.createStreamInvocationCount);
@@ -313,13 +316,15 @@ public class TestKinesisAppender
         logger.debug("example message");
         mockClient.allowWriterThread();
 
+        assertEquals("actual stream name, from statistics",     "foo-0",   appender.getAppenderStatistics().getActualStreamName());
+
         // writer calls describeStream once to see if stream exists, a second time
         // to verify that it's active -- could perhaps combine those calls?
 
         assertEquals("describeStream: invocation count",        3,          mockClient.describeStreamInvocationCount);
-        assertEquals("describeStream: stream name",             "foo",      mockClient.describeStreamStreamName);
+        assertEquals("describeStream: stream name",             "foo-0",    mockClient.describeStreamStreamName);
         assertEquals("createStream: invocation count",          1,          mockClient.createStreamInvocationCount);
-        assertEquals("createStream: stream name",               "foo",      mockClient.createStreamStreamName);
+        assertEquals("createStream: stream name",               "foo-0",    mockClient.createStreamStreamName);
         assertEquals("putRecords: invocation count",            1,          mockClient.putRecordsInvocationCount);
         assertEquals("putRecords: source record count",         1,          mockClient.putRecordsSourceRecords.size());
         assertEquals("putRecords: source record partition key", "bar",      mockClient.putRecordsSourceRecords.get(0).getPartitionKey());

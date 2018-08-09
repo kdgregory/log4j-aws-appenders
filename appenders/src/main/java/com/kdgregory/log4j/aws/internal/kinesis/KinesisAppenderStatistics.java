@@ -21,5 +21,18 @@ public class KinesisAppenderStatistics
 extends AbstractAppenderStatistics
 implements KinesisAppenderStatisticsMXBean
 {
+    private volatile String actualStreamName;
+
+
+    public void setActualStreamName(String value)
+    {
+        actualStreamName = value;
+    }
+
+    @Override
+    public String getActualStreamName()
+    {
+        return actualStreamName;
+    }
 
 }

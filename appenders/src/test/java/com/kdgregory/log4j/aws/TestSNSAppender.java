@@ -59,8 +59,10 @@ import com.kdgregory.log4j.testhelpers.aws.sns.TestableSNSAppender;
 
 public class TestSNSAppender
 {
-    // this ARN is used for all configuration files
+    // the same topic is used for all tests other than substitutions
+    private final static String EXPECTED_NAME = "example";
     private final static String EXPECTED_ARN = "arn:aws:sns:us-east-1:123456789012:example";
+
 
     private Logger logger;
     private TestableSNSAppender appender;
@@ -276,6 +278,9 @@ public class TestSNSAppender
         assertEquals("last message published, arn",     EXPECTED_ARN,   mockClient.lastPublishArn);
         assertEquals("last message published, subject", null,           mockClient.lastPublishSubject);
         assertEquals("last message published, body",    "message two",  mockClient.lastPublishMessage);
+
+        assertEquals("topic name, from statistics",     EXPECTED_NAME,  appender.getAppenderStatistics().getActualTopicName());
+        assertEquals("topic ARN, from statistics",      EXPECTED_ARN,   appender.getAppenderStatistics().getActualTopicArn());
     }
 
 
@@ -299,6 +304,9 @@ public class TestSNSAppender
         assertEquals("last message published, arn",     EXPECTED_ARN,   mockClient.lastPublishArn);
         assertEquals("last message published, subject", null,           mockClient.lastPublishSubject);
         assertEquals("last message published, body",    "message one",  mockClient.lastPublishMessage);
+
+        assertEquals("topic name, from statistics",     EXPECTED_NAME,  appender.getAppenderStatistics().getActualTopicName());
+        assertEquals("topic ARN, from statistics",      EXPECTED_ARN,   appender.getAppenderStatistics().getActualTopicArn());
     }
 
 

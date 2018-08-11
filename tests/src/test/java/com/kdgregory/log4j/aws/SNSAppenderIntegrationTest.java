@@ -86,6 +86,9 @@ public class SNSAppenderIntegrationTest
         assertEquals("number of messages", numMessages, messages.size());
         assertMessageContent(messages, "");
 
+        assertEquals("topic name, from statistics", resourceName, appender.getAppenderStatistics().getActualTopicName());
+        assertEquals("topic ARN, from statistics",  topicArn, appender.getAppenderStatistics().getActualTopicArn());
+
         assertEquals("client factory called", "com.kdgregory.log4j.aws.SNSAppenderIntegrationTest.createClient",
                                               getWriter(appender).getClientFactoryUsed());
     }
@@ -112,6 +115,8 @@ public class SNSAppenderIntegrationTest
         assertEquals("number of messages", numMessages, messages.size());
         assertMessageContent(messages, "Example");
 
+        assertEquals("topic name, from statistics", resourceName, appender.getAppenderStatistics().getActualTopicName());
+        assertEquals("topic ARN, from statistics",  topicArn, appender.getAppenderStatistics().getActualTopicArn());
 
         assertEquals("client factory called", "com.amazonaws.services.sns.AmazonSNSClientBuilder.defaultClient",
                                               getWriter(appender).getClientFactoryUsed());

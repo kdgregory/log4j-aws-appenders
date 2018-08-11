@@ -21,5 +21,30 @@ public class SNSAppenderStatistics
 extends AbstractAppenderStatistics
 implements SNSAppenderStatisticsMXBean
 {
+    private String actualTopicName;
+    private String actualTopicArn;
 
+
+    public void setActualTopicName(String value)
+    {
+        actualTopicName = value;
+    }
+
+    @Override
+    public String getActualTopicName()
+    {
+        return actualTopicName;
+    }
+
+
+    public void setActualTopicArn(String value)
+    {
+        actualTopicArn = value;
+    }
+
+    @Override
+    public String getActualTopicArn()
+    {
+        return actualTopicArn;
+    }
 }

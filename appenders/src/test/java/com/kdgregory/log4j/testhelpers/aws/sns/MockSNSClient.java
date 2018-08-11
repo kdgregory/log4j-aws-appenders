@@ -115,7 +115,7 @@ public class MockSNSClient implements InvocationHandler
             @Override
             public LogWriter newLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats)
             {
-                return new SNSLogWriter(config)
+                return new SNSLogWriter(config, stats)
                 {
                     @Override
                     protected void createAWSClient()

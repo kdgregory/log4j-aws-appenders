@@ -36,15 +36,21 @@ public class SNSLogWriter
 extends AbstractLogWriter
 {
     protected SNSWriterConfig config;
+    private SNSAppenderStatistics stats;
 
     protected AmazonSNS client;
     protected String topicArn;
 
 
-    public SNSLogWriter(SNSWriterConfig config)
+    public SNSLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats)
     {
         super(1, config.discardThreshold, config.discardAction);
         this.config = config;
+        this.stats = stats;
+
+        // note: one of these is going to be null and must be populated at runtime
+        this.stats.setActualTopicName(config.topicName);
+        this.stats.setActualTopicArn(config.topicArn);
     }
 
 //----------------------------------------------------------------------------
@@ -72,9 +78,18 @@ extends AbstractLogWriter
     {
         try
         {
-            return (config.topicArn != null)
-                 ? configureByArn()
-                 : configureByName();
+            boolean topicAvailable = (config.topicArn != null)
+                                   ? configureByArn()
+                                   : configureByName();
+
+            if (topicAvailable)
+            {
+                stats.setActualTopicArn(topicArn);
+                stats.setActualTopicName(topicArn.replaceAll(".*:", ""));
+            }
+
+            return topicAvailable;
+
         }
         catch (Exception ex)
         {
@@ -167,6 +182,7 @@ extends AbstractLogWriter
         topicArn = retrieveAllTopicsByName().get(config.topicName);
         if (topicArn != null)
         {
+            LogLog.debug("using existing SNS topic: " + config.topicName);
             return true;
         }
         else

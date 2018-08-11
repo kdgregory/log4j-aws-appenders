@@ -24,6 +24,6 @@ implements WriterFactory<SNSWriterConfig,SNSAppenderStatistics>
     @Override
     public LogWriter newLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats)
     {
-        return new SNSLogWriter(config);
+        return new SNSLogWriter(config, stats);
     }
 }

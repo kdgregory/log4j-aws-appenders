@@ -23,5 +23,15 @@ import javax.management.MXBean;
 @MXBean
 public interface SNSAppenderStatisticsMXBean
 {
+    /**
+     *  Returns the actual topic name used by the writer (after substitutions).
+     */
+    String getActualTopicName();
 
+
+    /**
+     *  Returns the actual topic ARN used by the writer (after substitutions on
+     *  the topic name).
+     */
+    String getActualTopicArn();
 }

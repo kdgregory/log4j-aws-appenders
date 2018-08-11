@@ -1,3 +1,4 @@
+// Copyright (c) Keith D Gregory
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +14,7 @@
 
 package com.kdgregory.log4j.aws.internal.shared;
 
+import java.util.Date;
 
 /**
  *  Base class for writer statistics, providing fields that are used by all
@@ -32,13 +34,44 @@ package com.kdgregory.log4j.aws.internal.shared;
  */
 public abstract class AbstractAppenderStatistics
 {
+    private volatile Throwable lastError;
+    private volatile String lastErrorMessage;
+    private volatile Date lastErrorTimestamp;
+
     private volatile int messagesSent;
+
+
+    public Throwable getLastError()
+    {
+        return lastError;
+    }
+
+
+    public String getLastErrorMessage()
+    {
+        return lastErrorMessage;
+    }
+
+
+    public Date getLastErrorTimestamp()
+    {
+        return lastErrorTimestamp;
+    }
+
+
+    public void setLastError(String message, Throwable error)
+    {
+        lastError = error;
+        lastErrorMessage = (message != null) ? message : error.getMessage();
+        lastErrorTimestamp = new Date();
+    }
 
 
     public int getMessagesSent()
     {
         return messagesSent;
     }
+
 
     public synchronized void updateMessagesSent(int count)
     {

@@ -227,7 +227,9 @@ public class KinesisAppenderIntegrationTest
 
         localLogger.info("testFailsIfNoStreamPresent: waiting for writer initialization to finish");
 
-        String initializationMessage = waitForWriterInitialization(appender, 10);
+        waitForWriterInitialization(appender, 10);
+        String initializationMessage = appender.getAppenderStatistics().getLastErrorMessage();
+
         StringAsserts.assertRegex(
             "initialization message did not indicate missing stream (was \"" + initializationMessage + "\")",
             ".*stream.*" + streamName + ".* not exist .*",
@@ -270,29 +272,26 @@ public class KinesisAppenderIntegrationTest
 
     /**
      *  Waits until the passed appender (1) creates a writer, and (2) that writer
-     *  signals that initialization is complete. If this doesn't happen within the
-     *  specified timeout, will fail the test.
+     *  signals that initialization is complete or that an error occurred.
      *
      *  @return The writer's initialization message (null means successful init).
      */
-    private String waitForWriterInitialization(KinesisAppender appender, int timeoutInSeconds)
+    private void waitForWriterInitialization(KinesisAppender appender, int timeoutInSeconds)
     throws Exception
     {
         long timeoutAt = System.currentTimeMillis() + 1000 * timeoutInSeconds;
         while (System.currentTimeMillis() < timeoutAt)
         {
             KinesisLogWriter writer = ClassUtil.getFieldValue(appender, "writer", KinesisLogWriter.class);
-            if (writer != null)
-            {
-                if (writer.isInitializationComplete())
-                    return writer.getInitializationMessage();
-            }
+            if ((writer != null) && writer.isInitializationComplete())
+                return;
+            else if (appender.getAppenderStatistics().getLastErrorMessage() != null)
+                return;
 
             Thread.sleep(1000);
         }
 
         fail("writer not initialized within timeout");
-        return "fail() throws; this will never happen, but compiler doesn't know that";
     }
 
 

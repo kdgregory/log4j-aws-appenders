@@ -40,15 +40,16 @@ implements LogWriter
 
     private volatile Long shutdownTime;                     // this is an actual timestamp, not an elapsed time
 
+    private AbstractAppenderStatistics appenderStats;       // used for reporting errors
+
     private volatile int batchCount;                        // these can be read via accessor methods; they're intended for testing
     private volatile boolean initializationComplete;
-    private volatile String initializationMessage;
-    private volatile Throwable initializationException;
     private volatile String factoryMethodUsed;
 
 
-    public AbstractLogWriter(long batchDelay, int discardThreshold, DiscardAction discardAction)
+    public AbstractLogWriter(AbstractAppenderStatistics appenderStats, long batchDelay, int discardThreshold, DiscardAction discardAction)
     {
+        this.appenderStats = appenderStats;
         this.batchDelay = batchDelay;
         messageQueue = new MessageQueue(discardThreshold, discardAction);
     }
@@ -83,29 +84,6 @@ implements LogWriter
     public boolean isInitializationComplete()
     {
         return initializationComplete;
-    }
-
-
-    /**
-     *  Returns any initialization error. This will be null until initialization
-     *  completes, and an empty string if initialization was successful. A non-empty
-     *  string indicates that an error took place, and you can call {@link
-     *  #getInitializationException} to get more information.
-     */
-    public String getInitializationMessage()
-    {
-        return initializationMessage;
-    }
-
-
-    /**
-     *  Returns the exception associated with an initialization error. This might
-     *  be null; initialization can dail due to invalid conditions rather than a thrown
-     *  exception.
-     */
-    public Throwable getInitializationException()
-    {
-        return initializationException;
     }
 
 
@@ -168,10 +146,10 @@ implements LogWriter
     {
         if (! initialize())
         {
-            if (initializationException != null)
-                LogLog.error("initialization failed: " + initializationMessage, initializationException);
+            if (appenderStats.getLastError() != null)
+                LogLog.error("initialization failed: " + appenderStats.getLastErrorMessage(), appenderStats.getLastError());
             else
-                LogLog.error("initialization failed: " + initializationMessage);
+                LogLog.error("initialization failed: " + appenderStats.getLastErrorMessage());
 
             messageQueue.setDiscardThreshold(0);
             messageQueue.setDiscardAction(DiscardAction.oldest);
@@ -184,9 +162,7 @@ implements LogWriter
 
         dispatchThread = Thread.currentThread();
 
-        // this reports that initialization succeeded
-
-        initializationMessage = "";
+        initializationComplete = true;
 
         // the do-while loop ensures that we attempt to process at least one batch, even if
         // the writer is started and immediately stopped; that's not likely to happen in the
@@ -252,14 +228,12 @@ implements LogWriter
 //----------------------------------------------------------------------------
 
     /**
-     *  Records an initialization failure in the "post-mortem" variables. This
-     *  method returns false so that the failure handler can return its result
-     *  to the caller.
+     *  Records an initialization failure in the appender stats. This method returns
+     *  false so that the failure handler can return its result to the caller.
      */
     protected boolean initializationFailure(String message, Exception exception)
     {
-        initializationMessage = message;
-        initializationException = exception;
+        appenderStats.setLastError(message, exception);
         return false;
     }
 
@@ -392,10 +366,6 @@ implements LogWriter
         catch (Exception ex)
         {
             return initializationFailure("uncaught exception", ex);
-        }
-        finally
-        {
-            initializationComplete = true;
         }
     }
 

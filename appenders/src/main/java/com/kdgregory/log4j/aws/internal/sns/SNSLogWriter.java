@@ -44,7 +44,7 @@ extends AbstractLogWriter
 
     public SNSLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats)
     {
-        super(1, config.discardThreshold, config.discardAction);
+        super(stats, 1, config.discardThreshold, config.discardAction);
         this.config = config;
         this.stats = stats;
     }

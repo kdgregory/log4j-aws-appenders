@@ -76,21 +76,21 @@ public class TestCloudWatchAppender
 
     /**
      *  A spin loop that waits for an writer running in another thread to
-     *  finish initialization. Times out after 5 seconds, otherwise returns
-     *  the initialization message.
+     *  finish initialization, either successfully or with error.
      */
-    private String waitForInitialization() throws Exception
+    private void waitForInitialization() throws Exception
     {
         for (int ii = 0 ; ii < 50 ; ii++)
         {
             AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
-            if ((writer != null) && (writer.getInitializationMessage() != null))
-                return writer.getInitializationMessage();
+            if ((writer != null) && writer.isInitializationComplete())
+                return;
+            else if (appender.getAppenderStatistics().getLastErrorMessage() != null)
+                return;
             else
                 Thread.sleep(100);
         }
         fail("timed out waiting for initialization");
-        return null; // never reached
     }
 
 
@@ -567,7 +567,8 @@ public class TestCloudWatchAppender
 
         logger.debug("message one");
 
-        String initializationMessage = waitForInitialization();
+        waitForInitialization();
+        String initializationMessage = appender.getAppenderStatistics().getLastErrorMessage();
 
         assertTrue("initialization message indicates invalid group name (was: " + initializationMessage + ")",
                    initializationMessage.contains("invalid log group name"));
@@ -592,7 +593,8 @@ public class TestCloudWatchAppender
 
         logger.debug("message one");
 
-        String initializationMessage = waitForInitialization();
+        waitForInitialization();
+        String initializationMessage = appender.getAppenderStatistics().getLastErrorMessage();
 
         assertTrue("initialization message indicates invalid stream name (was: " + initializationMessage + ")",
                    initializationMessage.contains("invalid log stream name"));
@@ -626,17 +628,21 @@ public class TestCloudWatchAppender
         // first message triggers writer creation
 
         logger.debug("message one");
+
         waitForInitialization();
+        String initializationMessage = appender.getAppenderStatistics().getLastErrorMessage();
+        Throwable initializationError = appender.getAppenderStatistics().getLastError();
 
         AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
         MessageQueue messageQueue = appender.getMessageQueue();
 
-        assertEquals("describeLogGroups: invocation count",     1,                mockClient.describeLogGroupsInvocationCount);
-        assertEquals("describeLogStreams: invocation count",    0,                mockClient.describeLogStreamsInvocationCount);
+        assertEquals("describeLogGroups: invocation count",     1,                          mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",    0,                          mockClient.describeLogStreamsInvocationCount);
 
-        assertTrue("initialization message was non-blank",      ! writer.getInitializationMessage().equals(""));
-        assertEquals("initialization exception retained",       TestingException.class,     writer.getInitializationException().getClass());
-        assertEquals("initialization error message",            "not now, not ever",        writer.getInitializationException().getMessage());
+        assertNotNull("writer still exists",                                                writer);
+        assertTrue("initialization message was non-blank",                                  ! initializationMessage.equals(""));
+        assertEquals("initialization exception retained",       TestingException.class,     initializationError.getClass());
+        assertEquals("initialization error message",            "not now, not ever",        initializationError.getMessage());
 
 
         assertEquals("message queue set to discard all",        0,                          messageQueue.getDiscardThreshold());
@@ -877,15 +883,16 @@ public class TestCloudWatchAppender
         // first message triggers writer creation
 
         logger.debug("message one");
+
         waitForInitialization();
 
         AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
 
-        assertNotNull("factory was called to create client", staticFactoryMock);
-        assertEquals("no initialization errors",        "",
-                                                        writer.getInitializationMessage());
-        assertEquals("writer called factory method",    "com.kdgregory.log4j.aws.TestCloudWatchAppender.createMockClient",
-                                                        writer.getClientFactoryUsed());
+        assertNotNull("factory was called to create client",    staticFactoryMock);
+        assertNull("no initialization message",                 appender.getAppenderStatistics().getLastErrorMessage());
+        assertNull("no initialization error",                   appender.getAppenderStatistics().getLastError());
+        assertEquals("writer called factory method",            "com.kdgregory.log4j.aws.TestCloudWatchAppender.createMockClient",
+                                                                writer.getClientFactoryUsed());
 
         // at this point we know that the factory was called, but we'll let the client write
         // the message and use the same asserts as in testWriterWithExistingGroupAndStream()

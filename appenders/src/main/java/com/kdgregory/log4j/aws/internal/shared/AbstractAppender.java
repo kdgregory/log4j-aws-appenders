@@ -498,6 +498,7 @@ extends AppenderSkeleton
                     @Override
                     public void uncaughtException(Thread t, Throwable ex)
                     {
+                        // TODO -- save in stats, get ride of lastWriterException
                         LogLog.error("LogWriter failure", ex);
                         writer = null;
                         lastWriterException = ex;

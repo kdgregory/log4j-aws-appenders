@@ -13,6 +13,7 @@
 
 package com.kdgregory.log4j.aws.internal.cloudwatch;
 
+import java.util.Date;
 
 /**
  *  Defines the JMX Bean interface for {@link CloudWatchAppenderStatistics}.
@@ -29,6 +30,20 @@ public interface CloudWatchAppenderStatisticsMXBean
      *  Returns the actual log stream name for the appender, after substitutions.
      */
     String getActualLogStreamName();
+
+
+    /**
+     *  Returns the most recent error from the writer. This will be null if there
+     *  have been no errors.
+     */
+    String getLastErrorMessage();
+
+
+    /**
+     *  Returns the timestamp of the most recent error from the writer. This will be
+     *  null if there have been no errors.
+     */
+    Date getLastErrorTimestamp();
 
 
     /**

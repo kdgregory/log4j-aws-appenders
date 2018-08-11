@@ -14,6 +14,8 @@
 
 package com.kdgregory.log4j.aws.internal.kinesis;
 
+import java.util.Date;
+
 import javax.management.MXBean;
 
 
@@ -27,6 +29,20 @@ public interface KinesisAppenderStatisticsMXBean
      *  Returns the actual log stream name used by the writer.
      */
     String getActualStreamName();
+
+
+    /**
+     *  Returns the most recent error from the writer. This will be null if there
+     *  have been no errors.
+     */
+    String getLastErrorMessage();
+
+
+    /**
+     *  Returns the timestamp of the most recent error from the writer. This will be
+     *  null if there have been no errors.
+     */
+    Date getLastErrorTimestamp();
 
 
     /**

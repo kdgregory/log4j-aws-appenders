@@ -45,7 +45,7 @@ extends AbstractLogWriter
 
     public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats)
     {
-        super(config.batchDelay, config.discardThreshold, config.discardAction);
+        super(stats, config.batchDelay, config.discardThreshold, config.discardAction);
         this.groupName = config.logGroup;
         this.streamName = config.logStream;
         this.clientFactoryMethod = config.clientFactoryMethod;

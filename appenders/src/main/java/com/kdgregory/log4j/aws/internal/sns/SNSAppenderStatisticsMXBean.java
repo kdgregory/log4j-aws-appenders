@@ -14,6 +14,8 @@
 
 package com.kdgregory.log4j.aws.internal.sns;
 
+import java.util.Date;
+
 import javax.management.MXBean;
 
 
@@ -34,6 +36,20 @@ public interface SNSAppenderStatisticsMXBean
      *  the topic name).
      */
     String getActualTopicArn();
+
+
+    /**
+     *  Returns the most recent error from the writer. This will be null if there
+     *  have been no errors.
+     */
+    String getLastErrorMessage();
+
+
+    /**
+     *  Returns the timestamp of the most recent error from the writer. This will be
+     *  null if there have been no errors.
+     */
+    Date getLastErrorTimestamp();
 
 
     /**

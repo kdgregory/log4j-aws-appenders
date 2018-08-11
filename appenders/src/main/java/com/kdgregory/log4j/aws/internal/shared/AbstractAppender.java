@@ -48,7 +48,7 @@ import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
  *  so any application code that touches these variables should not be surprised if
  *  they cease to exist.
  */
-public abstract class AbstractAppender<WriterConfigType,AppenderStatsType,AppenderStatsMXBeanType>
+public abstract class AbstractAppender<WriterConfigType,AppenderStatsType extends AbstractAppenderStatistics,AppenderStatsMXBeanType>
 extends AppenderSkeleton
 {
     // flag to indicate whether we need to run setup
@@ -90,10 +90,6 @@ extends AppenderSkeleton
     // number of messages since we last rotated the writer
 
     protected volatile int lastRotationCount;
-
-    // this is strictly for testing
-
-    protected volatile Throwable lastWriterException;
 
     // this object is used for synchronization of initialization and writer change
 
@@ -498,10 +494,9 @@ extends AppenderSkeleton
                     @Override
                     public void uncaughtException(Thread t, Throwable ex)
                     {
-                        // TODO -- save in stats, get ride of lastWriterException
-                        LogLog.error("LogWriter failure", ex);
+                        LogLog.error("unhandled exception in writer", ex);
+                        appenderStats.setLastError(null, ex);
                         writer = null;
-                        lastWriterException = ex;
                     }
                 });
 

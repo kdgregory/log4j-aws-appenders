@@ -69,12 +69,6 @@ public class TestableKinesisAppender extends KinesisAppender
     }
 
 
-    public Throwable getLastWriterException()
-    {
-        return lastWriterException;
-    }
-
-
     @Override
     protected void registerStatisticsBean()
     {

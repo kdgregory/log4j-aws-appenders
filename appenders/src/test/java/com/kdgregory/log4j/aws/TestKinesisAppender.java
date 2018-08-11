@@ -572,21 +572,23 @@ public class TestKinesisAppender
 
         appender.setThreadFactory(new DefaultThreadFactory());
         appender.setWriterFactory(new ThrowingWriterFactory<KinesisWriterConfig,KinesisAppenderStatistics>());
+        
+        KinesisAppenderStatistics appenderStats = appender.getAppenderStatistics();
 
         logger.debug("this should trigger writer creation");
 
-        assertNull("writer has not yet thrown",         appender.getLastWriterException());
+        assertNull("writer has not yet thrown", appenderStats.getLastError());
 
         logger.debug("this should trigger writer throwage");
 
         // without getting really clever, the best way to wait for the throw to be reported is to sit and spin
-        for (int ii = 0 ; (ii < 10) && (appender.getLastWriterException() == null) ; ii++)
+        for (int ii = 0 ; (ii < 10) && (appenderStats.getLastError() == null) ; ii++)
         {
             Thread.sleep(10);
         }
 
         assertNull("writer has been reset",         appender.getWriter());
-        assertEquals("last writer exception class", TestingException.class, appender.getLastWriterException().getClass());
+        assertEquals("last writer exception class", TestingException.class, appenderStats.getLastError().getClass());
     }
 
 

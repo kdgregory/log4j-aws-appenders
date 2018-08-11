@@ -71,11 +71,6 @@ public class TestableCloudWatchAppender extends CloudWatchAppender
     }
 
 
-    public Throwable getLastWriterException()
-    {
-        return lastWriterException;
-    }
-
     public void updateLastRotationTimestamp(long offset)
     {
         lastRotationTimestamp += offset;

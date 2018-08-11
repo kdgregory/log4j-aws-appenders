@@ -71,11 +71,6 @@ extends SNSAppender
     }
 
 
-    public Throwable getLastWriterException()
-    {
-        return lastWriterException;
-    }
-
     public void updateLastRotationTimestamp(long offset)
     {
         lastRotationTimestamp += offset;

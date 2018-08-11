@@ -16,18 +16,21 @@ package com.kdgregory.log4j.aws.internal.kinesis;
 
 import javax.management.MXBean;
 
-import com.kdgregory.log4j.aws.internal.shared.AbstractAppenderStatisticsMXBean;
-
 
 /**
  *  Defines the JMX Bean interface for {@link KinesisAppenderStatistics}.
  */
 @MXBean
 public interface KinesisAppenderStatisticsMXBean
-extends AbstractAppenderStatisticsMXBean
 {
     /**
      *  Returns the actual log stream name used by the writer.
      */
     String getActualStreamName();
+
+
+    /**
+     *  Returns the number of messages successfully sent to the stream.
+     */
+    int getMessagesSent();
 }

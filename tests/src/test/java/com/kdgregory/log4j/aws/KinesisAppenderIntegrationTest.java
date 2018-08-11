@@ -41,6 +41,7 @@ import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.kinesis.model.*;
 import com.amazonaws.util.BinaryUtils;
 
+import com.kdgregory.log4j.aws.internal.kinesis.KinesisAppenderStatistics;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
 import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
@@ -77,8 +78,11 @@ public class KinesisAppenderIntegrationTest
         assertShardCount(streamName, 3);
         assertRetentionPeriod(streamName, 48);
 
-        assertEquals("stream name stored in stats", streamName, appender.getAppenderStatistics().getActualStreamName());
         assertEquals("client factory called", "com.kdgregory.log4j.aws.KinesisAppenderIntegrationTest.createClient", getWriter(appender).getClientFactoryUsed());
+
+        KinesisAppenderStatistics appenderStats = appender.getAppenderStatistics();
+        assertEquals("log stream name, from stats",     streamName,     appenderStats.getActualStreamName());
+        assertEquals("messages written, from stats",    numMessages,    appenderStats.getMessagesSent());
 
         localLogger.info("smoketest: finished");
     }

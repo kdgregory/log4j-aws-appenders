@@ -279,8 +279,9 @@ public class TestSNSAppender
         assertEquals("last message published, subject", null,           mockClient.lastPublishSubject);
         assertEquals("last message published, body",    "message two",  mockClient.lastPublishMessage);
 
-        assertEquals("topic name, from statistics",     EXPECTED_NAME,  appender.getAppenderStatistics().getActualTopicName());
-        assertEquals("topic ARN, from statistics",      EXPECTED_ARN,   appender.getAppenderStatistics().getActualTopicArn());
+        assertEquals("topic name, from statistics",         EXPECTED_NAME,  appender.getAppenderStatistics().getActualTopicName());
+        assertEquals("topic ARN, from statistics",          EXPECTED_ARN,   appender.getAppenderStatistics().getActualTopicArn());
+        assertEquals("sent message count, from statistics", 2,              appender.getAppenderStatistics().getMessagesSent());
     }
 
 
@@ -305,8 +306,9 @@ public class TestSNSAppender
         assertEquals("last message published, subject", null,           mockClient.lastPublishSubject);
         assertEquals("last message published, body",    "message one",  mockClient.lastPublishMessage);
 
-        assertEquals("topic name, from statistics",     EXPECTED_NAME,  appender.getAppenderStatistics().getActualTopicName());
-        assertEquals("topic ARN, from statistics",      EXPECTED_ARN,   appender.getAppenderStatistics().getActualTopicArn());
+        assertEquals("topic name, from statistics",         EXPECTED_NAME,  appender.getAppenderStatistics().getActualTopicName());
+        assertEquals("topic ARN, from statistics",          EXPECTED_ARN,   appender.getAppenderStatistics().getActualTopicArn());
+        assertEquals("sent message count, from statistics", 1,              appender.getAppenderStatistics().getMessagesSent());
     }
 
 
@@ -330,6 +332,10 @@ public class TestSNSAppender
         assertEquals("last message published, arn",     EXPECTED_ARN,   mockClient.lastPublishArn);
         assertEquals("last message published, subject", null,           mockClient.lastPublishSubject);
         assertEquals("last message published, body",    "message one",  mockClient.lastPublishMessage);
+
+        assertEquals("topic name, from statistics",         EXPECTED_NAME,  appender.getAppenderStatistics().getActualTopicName());
+        assertEquals("topic ARN, from statistics",          EXPECTED_ARN,   appender.getAppenderStatistics().getActualTopicArn());
+        assertEquals("sent message count, from statistics", 1,              appender.getAppenderStatistics().getMessagesSent());
     }
 
 
@@ -356,6 +362,10 @@ public class TestSNSAppender
         assertEquals("last message published, arn",     EXPECTED_ARN,   mockClient.lastPublishArn);
         assertEquals("last message published, subject", null,           mockClient.lastPublishSubject);
         assertEquals("last message published, body",    "message two",  mockClient.lastPublishMessage);
+
+        assertEquals("topic name, from statistics",         EXPECTED_NAME,  appender.getAppenderStatistics().getActualTopicName());
+        assertEquals("topic ARN, from statistics",          EXPECTED_ARN,   appender.getAppenderStatistics().getActualTopicArn());
+        assertEquals("sent message count, from statistics", 2,              appender.getAppenderStatistics().getMessagesSent());
     }
 
 
@@ -379,6 +389,10 @@ public class TestSNSAppender
         assertEquals("last message published, arn",     EXPECTED_ARN,   mockClient.lastPublishArn);
         assertEquals("last message published, subject", null,           mockClient.lastPublishSubject);
         assertEquals("last message published, body",    "message one",  mockClient.lastPublishMessage);
+
+        assertEquals("topic name, from statistics",         EXPECTED_NAME,  appender.getAppenderStatistics().getActualTopicName());
+        assertEquals("topic ARN, from statistics",          EXPECTED_ARN,   appender.getAppenderStatistics().getActualTopicArn());
+        assertEquals("sent message count, from statistics", 1,              appender.getAppenderStatistics().getMessagesSent());
     }
 
 
@@ -400,6 +414,10 @@ public class TestSNSAppender
         assertEquals("invocations of listTopics",           1,          mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",          0,          mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",              0,          mockClient.publishInvocationCount);
+
+        assertEquals("topic name, from statistics",         null,       appender.getAppenderStatistics().getActualTopicName());
+        assertEquals("topic ARN, from statistics",          null,       appender.getAppenderStatistics().getActualTopicArn());
+        assertEquals("sent message count, from statistics", 0,          appender.getAppenderStatistics().getMessagesSent());
     }
 
 

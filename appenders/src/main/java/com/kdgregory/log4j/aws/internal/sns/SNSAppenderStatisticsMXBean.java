@@ -34,4 +34,10 @@ public interface SNSAppenderStatisticsMXBean
      *  the topic name).
      */
     String getActualTopicArn();
+
+
+    /**
+     *  Returns the number of messages successfully sent to the topic.
+     */
+    int getMessagesSent();
 }

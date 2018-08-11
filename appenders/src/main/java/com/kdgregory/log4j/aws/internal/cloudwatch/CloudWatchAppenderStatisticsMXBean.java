@@ -23,10 +23,17 @@ public interface CloudWatchAppenderStatisticsMXBean
      *  Returns the actual log group name for the appender, after substitutions.
      */
     String getActualLogGroupName();
-    
-    
+
+
     /**
      *  Returns the actual log stream name for the appender, after substitutions.
      */
     String getActualLogStreamName();
+
+
+    /**
+     *  Returns the number of messages successfully sent to the logstream, by all
+     *  writers.
+     */
+    int getMessagesSent();
 }

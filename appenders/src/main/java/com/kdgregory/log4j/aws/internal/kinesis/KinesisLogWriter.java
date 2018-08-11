@@ -58,6 +58,7 @@ extends AbstractLogWriter
 
 
     private KinesisWriterConfig config;
+    private KinesisAppenderStatistics stats;
     protected AmazonKinesis client;
 
     // only used for random partition keys; cheap enough we'll eagerly create
@@ -67,7 +68,9 @@ extends AbstractLogWriter
     public KinesisLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats)
     {
         super(config.batchDelay, config.discardThreshold, config.discardAction);
+
         this.config = config;
+        this.stats = stats;
 
         stats.setActualStreamName(config.streamName);
     }
@@ -312,6 +315,7 @@ extends AbstractLogWriter
                     }
                     ii++;
                 }
+                stats.updateMessagesSent(request.getRecords().size() - failures.size());
                 return failures;
             }
             catch (Exception ex)

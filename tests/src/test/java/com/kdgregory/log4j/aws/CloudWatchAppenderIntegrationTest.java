@@ -85,6 +85,7 @@ public class CloudWatchAppenderIntegrationTest
         CloudWatchAppenderStatistics appenderStats = appender.getAppenderStatistics();
         assertEquals("actual log group name, from statistics",  "AppenderIntegrationTest-smoketest",    appenderStats.getActualLogGroupName());
         assertEquals("actual log stream name, from statistics", LOGSTREAM_BASE + "4",                   appenderStats.getActualLogStreamName());
+        assertEquals("messages written, from statistics",       numMessages,                            appenderStats.getMessagesSent());
 
         appender.setBatchDelay(1234L);
         assertEquals("batch delay", 1234L, lastWriter.getBatchDelay());

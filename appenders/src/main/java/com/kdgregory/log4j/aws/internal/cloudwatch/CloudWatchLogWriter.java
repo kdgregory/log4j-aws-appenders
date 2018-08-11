@@ -159,6 +159,7 @@ extends AbstractLogWriter
             LogStream stream = findLogStream();
             request.setSequenceToken(stream.getUploadSequenceToken());
             client.putLogEvents(request);
+            stats.updateMessagesSent(batch.size());
             return Collections.emptyList();
         }
         catch (Exception ex)

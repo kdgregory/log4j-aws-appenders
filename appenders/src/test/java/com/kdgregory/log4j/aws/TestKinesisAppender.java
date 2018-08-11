@@ -288,8 +288,6 @@ public class TestKinesisAppender
         logger.debug("example message");
         mockClient.allowWriterThread();
 
-        assertEquals("actual stream name, from statistics",     "argle",    appender.getAppenderStatistics().getActualStreamName());
-
         assertEquals("describeStream: invocation count",        1,          mockClient.describeStreamInvocationCount);
         assertEquals("describeStream: stream name",             "argle",    mockClient.describeStreamStreamName);
         assertEquals("createStream: invocation count",          0,          mockClient.createStreamInvocationCount);
@@ -300,6 +298,9 @@ public class TestKinesisAppender
                                                                 new String(
                                                                     BinaryUtils.copyAllBytesFrom(mockClient.putRecordsSourceRecords.get(0).getData()),
                                                                     "UTF-8"));
+
+        assertEquals("actual stream name, from statistics",     "argle",    appender.getAppenderStatistics().getActualStreamName());
+        assertEquals("sent message count, from statistics",     1,          appender.getAppenderStatistics().getMessagesSent());
     }
 
 
@@ -316,8 +317,6 @@ public class TestKinesisAppender
         logger.debug("example message");
         mockClient.allowWriterThread();
 
-        assertEquals("actual stream name, from statistics",     "foo-0",   appender.getAppenderStatistics().getActualStreamName());
-
         // writer calls describeStream once to see if stream exists, a second time
         // to verify that it's active -- could perhaps combine those calls?
 
@@ -332,6 +331,9 @@ public class TestKinesisAppender
                                                                 new String(
                                                                     BinaryUtils.copyAllBytesFrom(mockClient.putRecordsSourceRecords.get(0).getData()),
                                                                     "UTF-8"));
+
+        assertEquals("actual stream name, from statistics",     "foo-0",    appender.getAppenderStatistics().getActualStreamName());
+        assertEquals("sent message count, from statistics",     1,          appender.getAppenderStatistics().getMessagesSent());
     }
 
 
@@ -781,5 +783,4 @@ public class TestKinesisAppender
             StringAsserts.assertRegex("partition key is 8 digits (was: " + key + ")", "\\d{8}", key);
         }
     }
-
 }

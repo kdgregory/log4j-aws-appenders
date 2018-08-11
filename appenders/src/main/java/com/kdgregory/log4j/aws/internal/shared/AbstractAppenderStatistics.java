@@ -25,9 +25,23 @@ package com.kdgregory.log4j.aws.internal.shared;
  *  or writer, not both, so there's no need for synchronization unless there's
  *  the possibility of multiple writers. In that case, implement an override
  *  in the subclass and synchronize there.
+ *  <p>
+ *  Note: the MXBean interface implemented by subclasses must explicitly expose
+ *  any desired getters (we can't use a superinterface because JMX introspection
+ *  only looks at declared methods).
  */
 public abstract class AbstractAppenderStatistics
-implements AbstractAppenderStatisticsMXBean
 {
+    private volatile int messagesSent;
 
+
+    public int getMessagesSent()
+    {
+        return messagesSent;
+    }
+
+    public synchronized void updateMessagesSent(int count)
+    {
+        messagesSent += count;
+    }
 }

@@ -47,10 +47,6 @@ extends AbstractLogWriter
         super(1, config.discardThreshold, config.discardAction);
         this.config = config;
         this.stats = stats;
-
-        // note: one of these is going to be null and must be populated at runtime
-        this.stats.setActualTopicName(config.topicName);
-        this.stats.setActualTopicArn(config.topicArn);
     }
 
 //----------------------------------------------------------------------------
@@ -122,6 +118,7 @@ extends AbstractLogWriter
                 failures.add(message);
             }
         }
+        stats.updateMessagesSent(currentBatch.size() - failures.size());
         return failures;
     }
 

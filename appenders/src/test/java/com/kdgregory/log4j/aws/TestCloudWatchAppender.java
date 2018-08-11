@@ -432,9 +432,6 @@ public class TestCloudWatchAppender
         logger.debug("message one");
         mockClient.allowWriterThread();
 
-        assertEquals("actual log group name, from statistics",  "argle",        appender.getAppenderStatistics().getActualLogGroupName());
-        assertEquals("actual log stream name, from statistics", "bargle",       appender.getAppenderStatistics().getActualLogStreamName());
-
         // will call describeLogGroups when checking group existence
         // will call describeLogStreams when checking stream existence, as well as for each putLogEvents
 
@@ -456,6 +453,10 @@ public class TestCloudWatchAppender
         assertEquals("putLogEvents: invocation count",        2,                mockClient.putLogEventsInvocationCount);
         assertEquals("putLogEvents: last call #/messages",    1,                mockClient.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",            "message two\n",  mockClient.mostRecentEvents.get(0).getMessage());
+
+        assertEquals("messages sent, from statistics",          2,              appender.getAppenderStatistics().getMessagesSent());
+        assertEquals("actual log group name, from statistics",  "argle",        appender.getAppenderStatistics().getActualLogGroupName());
+        assertEquals("actual log stream name, from statistics", "bargle",       appender.getAppenderStatistics().getActualLogStreamName());
     }
 
 
@@ -472,9 +473,6 @@ public class TestCloudWatchAppender
 
         logger.debug("message one");
         mockClient.allowWriterThread();
-
-        assertEquals("actual log group name, from statistics",  "argle",        appender.getAppenderStatistics().getActualLogGroupName());
-        assertEquals("actual log stream name, from statistics", "zippy-0",      appender.getAppenderStatistics().getActualLogStreamName());
 
         // will call describeLogGroups when checking group existence
         // will call describeLogStreams before and after creating stream, as well as for each putLogEvents
@@ -501,6 +499,10 @@ public class TestCloudWatchAppender
         assertEquals("putLogEvents: invocation count",        2,                mockClient.putLogEventsInvocationCount);
         assertEquals("putLogEvents: last call #/messages",    1,                mockClient.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",            "message two\n",  mockClient.mostRecentEvents.get(0).getMessage());
+
+        assertEquals("messages sent, from statistics",          2,              appender.getAppenderStatistics().getMessagesSent());
+        assertEquals("actual log group name, from statistics",  "argle",        appender.getAppenderStatistics().getActualLogGroupName());
+        assertEquals("actual log stream name, from statistics", "zippy-0",      appender.getAppenderStatistics().getActualLogStreamName());
     }
 
 
@@ -517,9 +519,6 @@ public class TestCloudWatchAppender
 
         logger.debug("message one");
         mockClient.allowWriterThread();
-
-        assertEquals("actual log group name, from statistics",  "griffy",       appender.getAppenderStatistics().getActualLogGroupName());
-        assertEquals("actual log stream name, from statistics", "zippy",        appender.getAppenderStatistics().getActualLogStreamName());
 
         // will call describeLogGroups both before and after creating group
         // will call describeLogStreams before and after creating stream, as well as for each putLogEvents
@@ -548,6 +547,10 @@ public class TestCloudWatchAppender
         assertEquals("putLogEvents: invocation count",        2,                mockClient.putLogEventsInvocationCount);
         assertEquals("putLogEvents: last call #/messages",    1,                mockClient.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",            "message two\n",  mockClient.mostRecentEvents.get(0).getMessage());
+
+        assertEquals("messages sent, from statistics",          2,              appender.getAppenderStatistics().getMessagesSent());
+        assertEquals("actual log group name, from statistics",  "griffy",       appender.getAppenderStatistics().getActualLogGroupName());
+        assertEquals("actual log stream name, from statistics", "zippy",        appender.getAppenderStatistics().getActualLogStreamName());
     }
 
 

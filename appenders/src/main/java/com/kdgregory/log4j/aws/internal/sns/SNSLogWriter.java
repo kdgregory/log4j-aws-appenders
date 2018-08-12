@@ -114,6 +114,7 @@ extends AbstractLogWriter
             }
             catch (Exception ex)
             {
+                stats.setLastError(null, ex);
                 LogLog.error("failed to send message", ex);
                 failures.add(message);
             }

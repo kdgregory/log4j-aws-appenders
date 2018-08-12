@@ -165,6 +165,7 @@ extends AbstractLogWriter
         catch (Exception ex)
         {
             LogLog.error("failed to send batch", ex);
+            stats.setLastError(null, ex);
             return batch;
         }
     }

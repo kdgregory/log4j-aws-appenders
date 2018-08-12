@@ -159,12 +159,25 @@ public class MockSNSClient implements InvocationHandler
         }
         else if (methodName.equals("publish"))
         {
-            publishInvocationCount++;
-            PublishRequest request = (PublishRequest)args[0];
-            lastPublishArn     = request.getTopicArn();
-            lastPublishSubject = request.getSubject();
-            lastPublishMessage = request.getMessage();
-            return publish(request);
+            try
+            {
+                allowWriterThread.acquire();
+                publishInvocationCount++;
+                PublishRequest request = (PublishRequest)args[0];
+                lastPublishArn     = request.getTopicArn();
+                lastPublishSubject = request.getSubject();
+                lastPublishMessage = request.getMessage();
+                return publish(request);
+            }
+            catch (InterruptedException ex)
+            {
+                // this should never happen
+                throw new RuntimeException("publish lock interrupted");
+            }
+            finally
+            {
+                allowMainThread.release();
+            }
         }
 
         throw new IllegalStateException("unexpected method called: " + methodName);
@@ -211,25 +224,6 @@ public class MockSNSClient implements InvocationHandler
      *  publish0() if you want to change the result.
      */
     protected PublishResult publish(PublishRequest request)
-    {
-        try
-        {
-            allowWriterThread.acquire();
-            return publish0(request);
-        }
-        catch (InterruptedException ex)
-        {
-            // this should never happen
-            throw new RuntimeException("publish lock interrupted");
-        }
-        finally
-        {
-            allowMainThread.release();
-        }
-    }
-
-
-    protected PublishResult publish0(PublishRequest request)
     {
         return new PublishResult().withMessageId(UUID.randomUUID().toString());
     }

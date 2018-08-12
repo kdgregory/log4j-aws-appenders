@@ -300,7 +300,6 @@ extends AbstractLogWriter
     {
         List<Integer> failures = new ArrayList<Integer>(request.getRecords().size());
 
-        Exception lastException = null;
         for (int attempt = 0 ; attempt < SEND_RETRY_LIMIT ; attempt++)
         {
             try
@@ -320,12 +319,12 @@ extends AbstractLogWriter
             }
             catch (Exception ex)
             {
-                lastException = ex;
+                stats.setLastError(null, ex);
                 Utils.sleepQuietly(250 * (attempt + 1));
             }
         }
 
-        LogLog.error("failed to send batch after " + SEND_RETRY_LIMIT + " retries", lastException);
+        LogLog.error("failed to send batch after " + SEND_RETRY_LIMIT + " retries", stats.getLastError());
         for (int ii = 0 ; ii < request.getRecords().size() ; ii++)
         {
             failures.add(Integer.valueOf(ii));

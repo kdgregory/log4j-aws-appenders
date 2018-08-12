@@ -14,14 +14,11 @@
 
 package com.kdgregory.log4j.testhelpers.aws.cloudwatch;
 
-import net.sf.kdgcommons.lang.ClassUtil;
-
 import com.kdgregory.log4j.aws.CloudWatchAppender;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchAppenderStatistics;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
-import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
 import com.kdgregory.log4j.aws.internal.shared.ThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 
@@ -61,13 +58,6 @@ public class TestableCloudWatchAppender extends CloudWatchAppender
     public MockCloudWatchWriter getMockWriter()
     {
         return (MockCloudWatchWriter)writer;
-    }
-
-
-    public MessageQueue getMessageQueue()
-    throws NoSuchFieldException
-    {
-        return ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
     }
 
 

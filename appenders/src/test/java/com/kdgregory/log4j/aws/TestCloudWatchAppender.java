@@ -30,6 +30,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
 
+import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
 
 import com.amazonaws.services.logs.AWSLogs;
@@ -614,8 +615,7 @@ public class TestCloudWatchAppender
         MockCloudWatchClient mockClient = new MockCloudWatchClient()
         {
             @Override
-            protected DescribeLogGroupsResult describeLogGroups(
-                DescribeLogGroupsRequest request)
+            protected DescribeLogGroupsResult describeLogGroups(DescribeLogGroupsRequest request)
             {
                 throw new TestingException("not now, not ever");
             }
@@ -634,7 +634,7 @@ public class TestCloudWatchAppender
         Throwable initializationError = appender.getAppenderStatistics().getLastError();
 
         AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
-        MessageQueue messageQueue = appender.getMessageQueue();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         assertEquals("describeLogGroups: invocation count",     1,                          mockClient.describeLogGroupsInvocationCount);
         assertEquals("describeLogStreams: invocation count",    0,                          mockClient.describeLogStreamsInvocationCount);
@@ -657,6 +657,53 @@ public class TestCloudWatchAppender
 
 
     @Test
+    public void testBatchExceptionHandling() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testBatchExceptionHandling.properties");
+
+        MockCloudWatchClient mockClient = new MockCloudWatchClient()
+        {
+            @Override
+            protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
+            {
+                throw new TestingException("can't send it");
+            }
+        };
+
+        // note that we will be running the writer on a separate thread
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        CloudWatchAppenderStatistics appenderStats = appender.getAppenderStatistics();
+
+        // first message triggers writer creation
+
+        logger.debug("message one");
+
+        mockClient.allowWriterThread();
+
+        AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        Throwable lastError = appenderStats.getLastError();
+
+        assertEquals("putLogEvents called",                     1,                          mockClient.putLogEventsInvocationCount);
+        assertNotNull("writer still exists",                                                writer);
+        assertEquals("stats reports no messages sent",          0,                          appenderStats.getMessagesSent());
+        assertTrue("error message was non-blank",                                           ! appenderStats.getLastErrorMessage().equals(""));
+        assertEquals("exception retained",                      TestingException.class,     lastError.getClass());
+        assertEquals("exception message",                       "can't send it",            lastError.getMessage());
+        assertTrue("message queue still accepts messages",                                  messageQueue.getDiscardThreshold() > 0);
+
+        // the background thread will try to assemble another batch right away, so we can't examine
+        // the message queue; instead we'll wait for the writer to call PutLogEvents again
+
+        mockClient.allowWriterThread();
+
+        assertEquals("putLogEvents called again",               2,                          mockClient.putLogEventsInvocationCount);
+    }
+
+
+    @Test
     public void testUncaughtExceptionHandling() throws Exception
     {
         initialize("TestCloudWatchAppender/testUncaughtExceptionHandling.properties");
@@ -674,7 +721,7 @@ public class TestCloudWatchAppender
 
         logger.debug("this should trigger writer throwage");
 
-        // without getting really clever, the best way to wait for the throw to be reported is to sit and spin
+        // spin-wait for error to appear
         for (int ii = 0 ; (ii < 10) && (appenderStats.getLastError() == null) ; ii++)
         {
             Thread.sleep(10);
@@ -771,7 +818,8 @@ public class TestCloudWatchAppender
             logger.debug("message " + ii);
         }
 
-        List<LogMessage> messages = appender.getMessageQueue().toList();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(appender.getWriter(), "messageQueue", MessageQueue.class);
+        List<LogMessage> messages = messageQueue.toList();
 
         assertEquals("number of messages in queue", 10, messages.size());
         assertEquals("oldest message", "message 10\n", messages.get(0).getMessage());
@@ -803,7 +851,8 @@ public class TestCloudWatchAppender
             logger.debug("message " + ii);
         }
 
-        List<LogMessage> messages = appender.getMessageQueue().toList();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(appender.getWriter(), "messageQueue", MessageQueue.class);
+        List<LogMessage> messages = messageQueue.toList();
 
         assertEquals("number of messages in queue", 10, messages.size());
         assertEquals("oldest message", "message 0\n", messages.get(0).getMessage());
@@ -835,7 +884,8 @@ public class TestCloudWatchAppender
             logger.debug("message " + ii);
         }
 
-        List<LogMessage> messages = appender.getMessageQueue().toList();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(appender.getWriter(), "messageQueue", MessageQueue.class);
+        List<LogMessage> messages = messageQueue.toList();
 
         assertEquals("number of messages in queue", 20, messages.size());
         assertEquals("oldest message", "message 0\n", messages.get(0).getMessage());
@@ -855,7 +905,7 @@ public class TestCloudWatchAppender
 
         logger.debug("trigger writer creation");
 
-        MessageQueue messageQueue = appender.getMessageQueue();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(appender.getWriter(), "messageQueue", MessageQueue.class);
 
         assertEquals("initial discard threshold, from appender",    12345,                              appender.getDiscardThreshold());
         assertEquals("initial discard action, from appender",       DiscardAction.newest.toString(),    appender.getDiscardAction());

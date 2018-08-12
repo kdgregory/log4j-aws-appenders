@@ -34,6 +34,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
 
+import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
 import net.sf.kdgcommons.test.StringAsserts;
 
@@ -42,6 +43,7 @@ import com.amazonaws.services.kinesis.model.*;
 import com.amazonaws.util.BinaryUtils;
 
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisAppenderStatistics;
+import com.kdgregory.log4j.aws.internal.kinesis.KinesisLogWriter;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterFactory;
 import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
@@ -466,8 +468,8 @@ public class TestKinesisAppender
         String initializationMessage = appender.getAppenderStatistics().getLastErrorMessage();
         Throwable initializationError = appender.getAppenderStatistics().getLastError();
 
-        AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
-        MessageQueue messageQueue = appender.getMessageQueue();
+        KinesisLogWriter writer = (KinesisLogWriter)appender.getWriter();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         assertEquals("describeStream: invocation count",    1,          mockClient.describeStreamInvocationCount);
         assertEquals("describeStream: stream name",         "foo",      mockClient.describeStreamStreamName);
@@ -564,6 +566,50 @@ public class TestKinesisAppender
 
 
     @Test
+    public void testBatchErrorHandling() throws Exception
+    {
+        initialize("TestKinesisAppender/testBatchErrorHandling.properties");
+
+        MockKinesisClient mockClient = new MockKinesisClient()
+        {
+            @Override
+            public PutRecordsResult putRecords(PutRecordsRequest request)
+            {
+                throw new TestingException("add more shards!");
+            }
+        };
+
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("a message");
+
+        mockClient.allowWriterThread();
+
+        AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        KinesisAppenderStatistics appenderStats = appender.getAppenderStatistics();
+        Throwable lastError = appenderStats.getLastError();
+
+        assertEquals("number of calls to PutRecords",           1,                          mockClient.putRecordsInvocationCount);
+        assertNotNull("writer still exists",                                                writer);
+        assertEquals("stats reports no messages sent",          0,                          appenderStats.getMessagesSent());
+        assertTrue("error message was non-blank",                                           ! appenderStats.getLastErrorMessage().equals(""));
+        assertEquals("exception retained",                      TestingException.class,     lastError.getClass());
+        assertEquals("exception message",                       "add more shards!",         lastError.getMessage());
+        assertTrue("message queue still accepts messages",                                  messageQueue.getDiscardThreshold() > 0);
+
+        // the background thread will try to assemble another batch right away, so we can't examine
+        // the message queue; instead we'll wait for the writer to call PutRecords again
+
+        mockClient.allowWriterThread();
+
+        assertEquals("PutRecords called again",                 2,                          mockClient.putRecordsInvocationCount);
+
+    }
+
+
+    @Test
     public void testUncaughtExceptionHandling() throws Exception
     {
         initialize("TestKinesisAppender/testUncaughtExceptionHandling.properties");
@@ -572,7 +618,7 @@ public class TestKinesisAppender
 
         appender.setThreadFactory(new DefaultThreadFactory());
         appender.setWriterFactory(new ThrowingWriterFactory<KinesisWriterConfig,KinesisAppenderStatistics>());
-        
+
         KinesisAppenderStatistics appenderStats = appender.getAppenderStatistics();
 
         logger.debug("this should trigger writer creation");
@@ -616,7 +662,9 @@ public class TestKinesisAppender
             logger.debug("message " + ii);
         }
 
-        List<LogMessage> messages = appender.getMessageQueue().toList();
+        KinesisLogWriter writer = (KinesisLogWriter)appender.getWriter();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        List<LogMessage> messages = messageQueue.toList();
 
         assertEquals("number of messages in queue", 10, messages.size());
         assertEquals("oldest message", "message 10\n", messages.get(0).getMessage());
@@ -648,7 +696,9 @@ public class TestKinesisAppender
             logger.debug("message " + ii);
         }
 
-        List<LogMessage> messages = appender.getMessageQueue().toList();
+        KinesisLogWriter writer = (KinesisLogWriter)appender.getWriter();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        List<LogMessage> messages = messageQueue.toList();
 
         assertEquals("number of messages in queue", 10, messages.size());
         assertEquals("oldest message", "message 0\n", messages.get(0).getMessage());
@@ -680,7 +730,9 @@ public class TestKinesisAppender
             logger.debug("message " + ii);
         }
 
-        List<LogMessage> messages = appender.getMessageQueue().toList();
+        KinesisLogWriter writer = (KinesisLogWriter)appender.getWriter();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        List<LogMessage> messages = messageQueue.toList();
 
         assertEquals("number of messages in queue", 20, messages.size());
         assertEquals("oldest message", "message 0\n", messages.get(0).getMessage());
@@ -700,7 +752,8 @@ public class TestKinesisAppender
 
         logger.debug("trigger writer creation");
 
-        MessageQueue messageQueue = appender.getMessageQueue();
+        KinesisLogWriter writer = (KinesisLogWriter)appender.getWriter();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         assertEquals("initial discard threshold, from appender",    12345,                              appender.getDiscardThreshold());
         assertEquals("initial discard action, from appender",       DiscardAction.newest.toString(),    appender.getDiscardAction());

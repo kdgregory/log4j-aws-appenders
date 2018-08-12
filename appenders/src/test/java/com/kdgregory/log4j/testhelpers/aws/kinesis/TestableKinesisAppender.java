@@ -14,13 +14,10 @@
 
 package com.kdgregory.log4j.testhelpers.aws.kinesis;
 
-import net.sf.kdgcommons.lang.ClassUtil;
-
 import com.kdgregory.log4j.aws.KinesisAppender;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisAppenderStatistics;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
-import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
 import com.kdgregory.log4j.aws.internal.shared.ThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 
@@ -59,13 +56,6 @@ public class TestableKinesisAppender extends KinesisAppender
     public MockKinesisWriter getMockWriter()
     {
         return (MockKinesisWriter)writer;
-    }
-
-
-    public MessageQueue getMessageQueue()
-    throws NoSuchFieldException
-    {
-        return ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
     }
 
 

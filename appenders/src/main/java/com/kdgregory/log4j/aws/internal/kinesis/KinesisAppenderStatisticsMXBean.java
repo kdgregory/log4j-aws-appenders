@@ -15,6 +15,7 @@
 package com.kdgregory.log4j.aws.internal.kinesis;
 
 import java.util.Date;
+import java.util.List;
 
 import javax.management.MXBean;
 
@@ -43,6 +44,14 @@ public interface KinesisAppenderStatisticsMXBean
      *  null if there have been no errors.
      */
     Date getLastErrorTimestamp();
+
+
+    /**
+     *  Returns the stack trace of the most recent error from the writer. This will be
+     *  null if there have been no errors or if the error did not have an associated
+     *  exception.
+     */
+    List<String> getLastErrorStacktrace();
 
 
     /**

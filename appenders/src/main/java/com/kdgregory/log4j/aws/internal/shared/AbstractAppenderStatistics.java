@@ -14,7 +14,10 @@
 
 package com.kdgregory.log4j.aws.internal.shared;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+
 
 /**
  *  Base class for writer statistics, providing fields that are used by all
@@ -37,8 +40,32 @@ public abstract class AbstractAppenderStatistics
     private volatile Throwable lastError;
     private volatile String lastErrorMessage;
     private volatile Date lastErrorTimestamp;
+    private volatile List<String> lastErrorStacktrace;
 
     private volatile int messagesSent;
+
+
+    /**
+     *  Sets the last error. Either the message or the throwable may be null (but
+     *  not both).
+     */
+    public void setLastError(String message, Throwable error)
+    {
+        lastErrorTimestamp = new Date();
+        lastError = error;
+        lastErrorMessage = (message != null) ? message : error.toString();
+
+        lastErrorStacktrace = null;
+        if (error != null)
+        {
+            List<String> stacktrace = new ArrayList<String>();
+            for (StackTraceElement ste : error.getStackTrace())
+            {
+                stacktrace.add(ste.toString());
+            }
+            lastErrorStacktrace = stacktrace;
+        }
+    }
 
 
     public Throwable getLastError()
@@ -59,11 +86,20 @@ public abstract class AbstractAppenderStatistics
     }
 
 
-    public void setLastError(String message, Throwable error)
+    public List<String> getLastErrorStacktrace()
     {
-        lastError = error;
-        lastErrorMessage = (message != null) ? message : error.getMessage();
-        lastErrorTimestamp = new Date();
+        return lastErrorStacktrace;
+    }
+
+
+
+    /**
+     *  Updates the number of messages sent with the given count. This should only
+     *  be called after all failures have been identified.
+     */
+    public synchronized void updateMessagesSent(int count)
+    {
+        messagesSent += count;
     }
 
 
@@ -72,9 +108,4 @@ public abstract class AbstractAppenderStatistics
         return messagesSent;
     }
 
-
-    public synchronized void updateMessagesSent(int count)
-    {
-        messagesSent += count;
-    }
 }

@@ -12,20 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 package com.kdgregory.log4j.aws;
 
-import java.lang.management.ManagementFactory;
-
-import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
-import javax.management.StandardMBean;
-
-import org.apache.log4j.helpers.LogLog;
 
 /**
- *  This class provides a bridge between the appenders and an MBeanServer. When
+ *  This class provides a bridge between an appenders and an MBeanServer. When
  *  an instance of this class has been registered, it will in turn register all
  *  appenders loaded by the same classloader hierarchy.
  *  <p>
@@ -51,52 +42,4 @@ import org.apache.log4j.helpers.LogLog;
 public class StatisticsMBean
 {
 
-//----------------------------------------------------------------------------
-//  These methods are called by appenders
-//----------------------------------------------------------------------------
-
-    public static <BeanType,BeanMXType> void registerAppender(String appenderName, BeanType statsBean, Class<BeanMXType> statsBeanClass)
-    {
-        try
-        {
-            MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
-            StandardMBean mbean = new StandardMBean(statsBeanClass.cast(statsBean), statsBeanClass, false);
-            mbeanServer.registerMBean(mbean, toObjectName(appenderName));
-        }
-        catch (Exception ex)
-        {
-            LogLog.warn("failed to register appender statistics with JMX", ex);
-        }
-    }
-
-
-    public static void unregisterAppender(String appenderName)
-    {
-        try
-        {
-            MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
-            mbeanServer.unregisterMBean(toObjectName(appenderName));
-        }
-        catch (Exception ex)
-        {
-            LogLog.warn("failed to unregister appender statistics with JMX", ex);
-        }
-    }
-
-
-//----------------------------------------------------------------------------
-//  Helpers
-//----------------------------------------------------------------------------
-
-    /**
-     *  Returns a standard JMX ObjectName based on an appender name. This name
-     *  follows the format used by the Log4J <code>AppenderDynamicMBean</code>
-     *  so that the statistics will appear underneath the appender in the bean
-     *  hierarchy.
-     */
-    private static ObjectName toObjectName(String appenderName)
-    throws MalformedObjectNameException
-    {
-        return new ObjectName("log4j:appender=" + appenderName + ",statistics=statistics");
-    }
 }

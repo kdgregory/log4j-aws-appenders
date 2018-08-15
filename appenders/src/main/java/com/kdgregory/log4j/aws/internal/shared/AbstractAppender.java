@@ -21,7 +21,6 @@ import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
 
-import com.kdgregory.log4j.aws.StatisticsMBean;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 
 
@@ -546,7 +545,7 @@ extends AppenderSkeleton
      */
     protected void registerStatisticsBean()
     {
-        StatisticsMBean.registerAppender(getName(), appenderStats, appenderStatsMXBeanClass);
+        JMXManager.registerAppender(getName(), appenderStats, appenderStatsMXBeanClass);
     }
 
 
@@ -558,7 +557,7 @@ extends AppenderSkeleton
      */
     protected void unregisterStatisticsBean()
     {
-        StatisticsMBean.unregisterAppender(getName());
+        JMXManager.unregisterAppender(getName());
     }
 
 

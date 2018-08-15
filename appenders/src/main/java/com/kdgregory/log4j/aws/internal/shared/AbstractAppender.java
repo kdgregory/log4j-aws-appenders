@@ -15,17 +15,13 @@
 package com.kdgregory.log4j.aws.internal.shared;
 
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.lang.management.ManagementFactory;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import javax.management.StandardMBean;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
 
+import com.kdgregory.log4j.aws.StatisticsMBean;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
 
 
@@ -74,10 +70,6 @@ extends AppenderSkeleton
     // the MX bean type for the appender stats object
 
     private Class<AppenderStatsMXBeanType> appenderStatsMXBeanClass;
-
-    // the name under which we registered the appender stats
-
-    private ObjectName statisticsMbeanName;
 
     // the current writer; initialized on first append, changed after rotation or error
 
@@ -554,19 +546,7 @@ extends AppenderSkeleton
      */
     protected void registerStatisticsBean()
     {
-        // TODO - there may be multiple JMX registries; find the one(s) that have the
-        //        HierarchyDynamicMBean registered, and only register with those
-        try
-        {
-            MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
-            statisticsMbeanName = new ObjectName("log4j:appender=" + getName() + ",statistics=statistics");
-            StandardMBean mbean = new StandardMBean(appenderStatsMXBeanClass.cast(appenderStats), appenderStatsMXBeanClass, false);
-            mbeanServer.registerMBean(mbean, statisticsMbeanName);
-        }
-        catch (Exception ex)
-        {
-            LogLog.warn("failed to register appender statistics with JMX", ex);
-        }
+        StatisticsMBean.registerAppender(getName(), appenderStats, appenderStatsMXBeanClass);
     }
 
 
@@ -578,16 +558,7 @@ extends AppenderSkeleton
      */
     protected void unregisterStatisticsBean()
     {
-        // TODO - if we register with multiple/non-platform servers, need to deregister as well
-        try
-        {
-            MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
-            mbeanServer.unregisterMBean(statisticsMbeanName);
-        }
-        catch (Exception ex)
-        {
-            LogLog.warn("failed to unregister appender statistics with JMX", ex);
-        }
+        StatisticsMBean.unregisterAppender(getName());
     }
 
 

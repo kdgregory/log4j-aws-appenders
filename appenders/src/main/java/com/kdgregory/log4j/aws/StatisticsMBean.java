@@ -14,6 +14,23 @@
 
 package com.kdgregory.log4j.aws;
 
+import javax.management.Attribute;
+import javax.management.AttributeList;
+import javax.management.AttributeNotFoundException;
+import javax.management.DynamicMBean;
+import javax.management.InvalidAttributeValueException;
+import javax.management.MBeanAttributeInfo;
+import javax.management.MBeanConstructorInfo;
+import javax.management.MBeanException;
+import javax.management.MBeanInfo;
+import javax.management.MBeanNotificationInfo;
+import javax.management.MBeanOperationInfo;
+import javax.management.MBeanRegistration;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import javax.management.ReflectionException;
+
+import com.kdgregory.log4j.aws.internal.shared.JMXManager;
 
 /**
  *  This class provides a bridge between an appenders and an MBeanServer. When
@@ -21,6 +38,20 @@ package com.kdgregory.log4j.aws;
  *  appenders loaded by the same classloader hierarchy.
  *  <p>
  *  <h1>Example</strong>
+ *  <pre>
+ *      ManagementFactory.getPlatformMBeanServer().createMBean(
+ *              HierarchyDynamicMBean.class.getName(),
+ *              new ObjectName("log4j:name=Config"));
+ *
+ *      ManagementFactory.getPlatformMBeanServer().createMBean(
+ *              StatisticsMBean.class.getName(),
+ *              new ObjectName("log4j:name=StatisticsEnabled"));
+ *  </pre>
+ *  Note that the object names for both beans can be whatever you want. The
+ *  names that I show here are consistent with the hardcoded names produced
+ *  by both the Log4J appender/layout beans and the appender statistics beans
+ *  from this package, so if you use them you'll see everything Log4J in one
+ *  place.
  *  <p>
  *  <strong>Support for multiple Log4J hierarchies</strong>
  *  <p>
@@ -40,6 +71,105 @@ package com.kdgregory.log4j.aws;
  *  disabled.
  */
 public class StatisticsMBean
+implements DynamicMBean, MBeanRegistration
 {
+    private MBeanServer myServer;
+    private ObjectName myName;
+
+//----------------------------------------------------------------------------
+//  Supported Attributes/Operations (at this time there are none)
+//----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
+//  Implementation of DynamicMBean
+//----------------------------------------------------------------------------
+
+    @Override
+    public Object getAttribute(String attribute)
+    throws AttributeNotFoundException, MBeanException, ReflectionException
+    {
+        throw new UnsupportedOperationException("FIXME - implement");
+    }
+
+    @Override
+    public void setAttribute(Attribute attribute)
+    throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException,
+    ReflectionException
+    {
+        throw new UnsupportedOperationException("FIXME - implement");
+    }
+
+    @Override
+    public AttributeList getAttributes(String[] attributes)
+    {
+        return new AttributeList();
+    }
+
+    @Override
+    public AttributeList setAttributes(AttributeList attributes)
+    {
+        throw new UnsupportedOperationException("FIXME - implement");
+    }
+
+    @Override
+    public Object invoke(String actionName, Object[] params, String[] signature)
+    throws MBeanException, ReflectionException
+    {
+        throw new UnsupportedOperationException("FIXME - implement");
+    }
+
+    @Override
+    public MBeanInfo getMBeanInfo()
+    {
+        return new MBeanInfo(
+            getClass().getName(),
+            "Enables reporting of appender statistics via JMX",
+            new MBeanAttributeInfo[0],
+            new MBeanConstructorInfo[0],
+            new MBeanOperationInfo[0],
+            new MBeanNotificationInfo[0]);
+    }
+
+//----------------------------------------------------------------------------
+//  Implementation of MBeanRegistration
+//----------------------------------------------------------------------------
+
+    @Override
+    public ObjectName preRegister(MBeanServer server, ObjectName name) throws Exception
+    {
+        if (name == null)
+        {
+            name = new ObjectName("log4j:name=AWSAppendersStats");
+        }
+
+        myServer = server;
+        myName = name;
+
+        return myName;
+    }
+
+
+    @Override
+    public void postRegister(Boolean registrationDone)
+    {
+        if (registrationDone == Boolean.TRUE)
+        {
+            JMXManager.registerStatisticsMBean(this, myServer, myName);
+        }
+    }
+
+
+    @Override
+    public void preDeregister() throws Exception
+    {
+        // we don't need to do anything
+    }
+
+
+    @Override
+    public void postDeregister()
+    {
+        JMXManager.deregisterStatisticsMBean(this);
+    }
 
 }

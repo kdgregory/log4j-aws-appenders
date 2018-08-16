@@ -14,7 +14,9 @@
 
 package com.kdgregory.log4j.aws.internal.shared;
 
-import java.lang.management.ManagementFactory;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
@@ -23,28 +25,115 @@ import javax.management.StandardMBean;
 
 import org.apache.log4j.helpers.LogLog;
 
+import com.kdgregory.log4j.aws.StatisticsMBean;
+
+
 /**
  *  This class maintains the relationships between appenders and MBeanServers.
  *  All methods/data are static
  */
 public class JMXManager
 {
+    private static Map<StatisticsMBean,MBeanServer> knownServers
+        = Collections.synchronizedMap(new HashMap<StatisticsMBean,MBeanServer>());
 
+    private static Map<String,AbstractAppenderStatistics> knownAppenders
+        = Collections.synchronizedMap(new HashMap<String,AbstractAppenderStatistics>());
+
+    private static Map<String,Class<?>> statsBeanTypes
+        = Collections.synchronizedMap(new HashMap<String,Class<?>>());
 
 
 //----------------------------------------------------------------------------
 //  Methods called by StatisticsMBean
 //----------------------------------------------------------------------------
 
+    public static void registerStatisticsMBean(StatisticsMBean bean, MBeanServer server, ObjectName name)
+    {
+        // TODO - check for bean already being registered
+
+        knownServers.put(bean, server);
+
+        for (String appenderName :  knownAppenders.keySet())
+        {
+            registerBean(appenderName, server);
+        }
+    }
+
+
+    public static void deregisterStatisticsMBean(StatisticsMBean bean)
+    {
+        MBeanServer server = knownServers.remove(bean);
+
+        for (String appenderName :  knownAppenders.keySet())
+        {
+            unregisterBean(appenderName, server);
+        }
+    }
+
 //----------------------------------------------------------------------------
 //  Methods called by AbstractAppender
 //----------------------------------------------------------------------------
 
-    public static <BeanType,BeanMXType> void registerAppender(String appenderName, BeanType statsBean, Class<BeanMXType> statsBeanClass)
+    public static void registerAppender(String appenderName, AbstractAppenderStatistics statsBean, Class<?> statsBeanClass)
     {
+        // TODO - check for appender already being registered
+        knownAppenders.put(appenderName, statsBean);
+        statsBeanTypes.put(appenderName, statsBeanClass);
+
+        for (MBeanServer server : knownServers.values())
+        {
+            registerBean(appenderName, server);
+        }
+    }
+
+
+    public static void unregisterAppender(String appenderName)
+    {
+        knownAppenders.remove(appenderName);
+        statsBeanTypes.remove(appenderName);
+
+        for (MBeanServer server : knownServers.values())
+        {
+            unregisterBean(appenderName, server);
+        }
+    }
+
+
+//----------------------------------------------------------------------------
+//  Internals
+//----------------------------------------------------------------------------
+
+    /**
+     *  Registers an appender's stats bean with a server.
+     */
+    @SuppressWarnings("rawtypes")
+    private static void registerBean(String appenderName, MBeanServer mbeanServer)
+    {
+        // TODO - verify that we're not already registered
+
+        if (appenderName == null)
+        {
+            LogLog.error("log4j-aws-appenders: attempted to register null appender");
+            return;
+        }
+
+        if (mbeanServer == null)
+        {
+            LogLog.error("log4j-aws-appenders: attempted to register with null server");
+            return;
+        }
+
+        Object statsBean = knownAppenders.get(appenderName);
+        Class statsBeanClass = statsBeanTypes.get(appenderName);
+        if ((statsBean == null) || (statsBeanClass == null))
+        {
+            LogLog.error("log4j-aws-appenders: don't know bean or class for appender: " + appenderName);
+            return;
+        }
+
         try
         {
-            MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
             StandardMBean mbean = new StandardMBean(statsBeanClass.cast(statsBean), statsBeanClass, false);
             mbeanServer.registerMBean(mbean, toObjectName(appenderName));
         }
@@ -55,11 +144,13 @@ public class JMXManager
     }
 
 
-    public static void unregisterAppender(String appenderName)
+    /**
+     *  Deregisters an appender's stats bean from a server.
+     */
+    private static void unregisterBean(String appenderName, MBeanServer mbeanServer)
     {
         try
         {
-            MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
             mbeanServer.unregisterMBean(toObjectName(appenderName));
         }
         catch (Exception ex)
@@ -68,10 +159,6 @@ public class JMXManager
         }
     }
 
-
-//----------------------------------------------------------------------------
-//  Internals
-//----------------------------------------------------------------------------
 
     /**
      *  Returns a standard JMX ObjectName based on an appender name. This name

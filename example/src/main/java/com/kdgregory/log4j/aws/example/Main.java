@@ -22,6 +22,8 @@ import javax.management.ObjectName;
 import org.apache.log4j.Logger;
 import org.apache.log4j.jmx.HierarchyDynamicMBean;
 
+import com.kdgregory.log4j.aws.StatisticsMBean;
+
 
 /**
  *  Example program to generate log events of varying levels.
@@ -54,6 +56,10 @@ public class Main
         ManagementFactory.getPlatformMBeanServer().createMBean(
                 HierarchyDynamicMBean.class.getName(),
                 new ObjectName("log4j:name=Config"));
+
+        ManagementFactory.getPlatformMBeanServer().createMBean(
+                StatisticsMBean.class.getName(),
+                new ObjectName("log4j:name=Statistics"));
 
         for (int ii = 0 ; ii < numThreads ; ii++)
         {

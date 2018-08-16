@@ -88,7 +88,7 @@ implements DynamicMBean, MBeanRegistration
     public Object getAttribute(String attribute)
     throws AttributeNotFoundException, MBeanException, ReflectionException
     {
-        throw new UnsupportedOperationException("FIXME - implement");
+        throw new UnsupportedOperationException("this bean has no attributes");
     }
 
     @Override
@@ -96,7 +96,7 @@ implements DynamicMBean, MBeanRegistration
     throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException,
     ReflectionException
     {
-        throw new UnsupportedOperationException("FIXME - implement");
+        throw new UnsupportedOperationException("this bean has no attributes");
     }
 
     @Override
@@ -108,14 +108,14 @@ implements DynamicMBean, MBeanRegistration
     @Override
     public AttributeList setAttributes(AttributeList attributes)
     {
-        throw new UnsupportedOperationException("FIXME - implement");
+        throw new UnsupportedOperationException("this bean has no attributes");
     }
 
     @Override
     public Object invoke(String actionName, Object[] params, String[] signature)
     throws MBeanException, ReflectionException
     {
-        throw new UnsupportedOperationException("FIXME - implement");
+        throw new UnsupportedOperationException("this bean has no operations");
     }
 
     @Override

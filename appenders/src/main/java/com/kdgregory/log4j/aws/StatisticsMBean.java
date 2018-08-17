@@ -102,7 +102,7 @@ implements DynamicMBean, MBeanRegistration
     @Override
     public AttributeList getAttributes(String[] attributes)
     {
-        return new AttributeList();
+        throw new UnsupportedOperationException("this bean has no attributes");
     }
 
     @Override

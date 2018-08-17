@@ -14,7 +14,6 @@
 
 package com.kdgregory.log4j.aws.internal.shared;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,25 +29,30 @@ import com.kdgregory.log4j.aws.StatisticsMBean;
 
 /**
  *  This class maintains the relationships between appenders and MBeanServers.
- *  All methods/data are static
+ *  All methods/data are static, and all public methods are synchronized to
+ *  avoid race conditions (since they're only called at application startup,
+ *  this should not be an issue).
  */
 public class JMXManager
 {
-    private static Map<StatisticsMBean,MBeanServer> knownServers
-        = Collections.synchronizedMap(new HashMap<StatisticsMBean,MBeanServer>());
+    // the maps that identify who we know; all are marked protected so that
+    // they can be examined during testing
 
-    private static Map<String,AbstractAppenderStatistics> knownAppenders
-        = Collections.synchronizedMap(new HashMap<String,AbstractAppenderStatistics>());
+    protected static Map<StatisticsMBean,MBeanServer> knownServers
+        = new HashMap<StatisticsMBean,MBeanServer>();
 
-    private static Map<String,Class<?>> statsBeanTypes
-        = Collections.synchronizedMap(new HashMap<String,Class<?>>());
+    protected static Map<String,AbstractAppenderStatistics> knownAppenders
+        = new HashMap<String,AbstractAppenderStatistics>();
+
+    protected static Map<String,Class<?>> statsBeanTypes
+        = new HashMap<String,Class<?>>();
 
 
 //----------------------------------------------------------------------------
 //  Methods called by StatisticsMBean
 //----------------------------------------------------------------------------
 
-    public static void registerStatisticsMBean(StatisticsMBean bean, MBeanServer server, ObjectName name)
+    public static synchronized void registerStatisticsMBean(StatisticsMBean bean, MBeanServer server, ObjectName name)
     {
         // TODO - check for bean already being registered
 
@@ -61,7 +65,7 @@ public class JMXManager
     }
 
 
-    public static void deregisterStatisticsMBean(StatisticsMBean bean)
+    public static synchronized void deregisterStatisticsMBean(StatisticsMBean bean)
     {
         MBeanServer server = knownServers.remove(bean);
 
@@ -75,7 +79,7 @@ public class JMXManager
 //  Methods called by AbstractAppender
 //----------------------------------------------------------------------------
 
-    public static void registerAppender(String appenderName, AbstractAppenderStatistics statsBean, Class<?> statsBeanClass)
+    public static synchronized void registerAppender(String appenderName, AbstractAppenderStatistics statsBean, Class<?> statsBeanClass)
     {
         // TODO - check for appender already being registered
         knownAppenders.put(appenderName, statsBean);
@@ -88,7 +92,7 @@ public class JMXManager
     }
 
 
-    public static void unregisterAppender(String appenderName)
+    public static synchronized void unregisterAppender(String appenderName)
     {
         knownAppenders.remove(appenderName);
         statsBeanTypes.remove(appenderName);

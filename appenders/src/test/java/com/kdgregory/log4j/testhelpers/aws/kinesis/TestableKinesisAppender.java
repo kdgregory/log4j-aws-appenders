@@ -57,18 +57,4 @@ public class TestableKinesisAppender extends KinesisAppender
     {
         return (MockKinesisWriter)writer;
     }
-
-
-    @Override
-    protected void registerStatisticsBean()
-    {
-        // nothing happens here
-    }
-
-
-    @Override
-    protected void unregisterStatisticsBean()
-    {
-        // nothing happens here
-    }
 }

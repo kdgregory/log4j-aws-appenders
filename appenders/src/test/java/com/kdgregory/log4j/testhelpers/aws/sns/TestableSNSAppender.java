@@ -78,18 +78,4 @@ extends SNSAppender
     {
         return super.isMessageTooLarge(message);
     }
-
-
-    @Override
-    protected void registerStatisticsBean()
-    {
-        // nothing happens here
-    }
-
-
-    @Override
-    protected void unregisterStatisticsBean()
-    {
-        // nothing happens here
-    }
 }

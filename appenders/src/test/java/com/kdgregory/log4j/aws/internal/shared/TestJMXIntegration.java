@@ -14,6 +14,7 @@
 
 package com.kdgregory.log4j.aws.internal.shared;
 
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,24 +26,40 @@ import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
+import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import net.sf.kdgcommons.collections.CollectionUtil;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
+import org.apache.log4j.helpers.LogLog;
+
 import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.test.SelfMock;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.kdgregory.log4j.aws.StatisticsMBean;
+import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchAppenderStatisticsMXBean;
+import com.kdgregory.log4j.aws.internal.kinesis.KinesisAppenderStatisticsMXBean;
+import com.kdgregory.log4j.aws.internal.sns.SNSAppenderStatisticsMXBean;
+import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
+import com.kdgregory.log4j.testhelpers.aws.cloudwatch.MockCloudWatchWriterFactory;
+import com.kdgregory.log4j.testhelpers.aws.cloudwatch.TestableCloudWatchAppender;
+import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisWriterFactory;
+import com.kdgregory.log4j.testhelpers.aws.kinesis.TestableKinesisAppender;
+import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSWriterFactory;
+import com.kdgregory.log4j.testhelpers.aws.sns.TestableSNSAppender;
 
 
 /**
- *  This test is used to verify the behavior of both StatisticsMBean and
- *  JMXManager.
+ *  This test is used to verify the behavior of both StatisticsMBean and JMXManager.
  */
 public class TestJMXIntegration
 {
+
 //----------------------------------------------------------------------------
 //  Support Code
 //----------------------------------------------------------------------------
@@ -58,7 +75,7 @@ public class TestJMXIntegration
         }
     }
 
-    
+
     private static class MockMBeanServer
     extends SelfMock<MBeanServer>
     {
@@ -109,19 +126,38 @@ public class TestJMXIntegration
     }
 
 
+    private static void loadLoggingConfig()
+    {
+        URL config = ClassLoader.getSystemResource("internal/TestJMXIntegration.properties");
+        assertNotNull("was able to retrieve config", config);
+        PropertyConfigurator.configure(config);
+    }
+
 //----------------------------------------------------------------------------
-//  Tests
+//  Setup/Teardown
 //----------------------------------------------------------------------------
 
     @Before
     public void setUp()
     {
+        LogManager.resetConfiguration();
+        LogLog.setQuietMode(true);
         TestableJMXManager.reset();
     }
 
 
+    @After
+    public void tearDown()
+    {
+        LogLog.setQuietMode(false);
+    }
+
+//----------------------------------------------------------------------------
+//  Tests
+//----------------------------------------------------------------------------
+
     @Test
-    public void testStatisticsMBeanInterface() throws Exception
+    public void testStatisticsMBeanRegistration() throws Exception
     {
         ObjectName beanName = new ObjectName("Testing:name=example");
 
@@ -144,22 +180,51 @@ public class TestJMXIntegration
         assertEquals("bean info does not indicate operations",      0,  beanInfo.getOperations().length);
         assertEquals("bean info does not indicate notifications",   0,  beanInfo.getNotifications().length);
         assertEquals("bean info does not indicate constructors",    0,  beanInfo.getConstructors().length);
+
+        assertSame("JMXManager associates server with bean",        server, TestableJMXManager.knownServers.get(bean));
+    }
+
+
+    @Test
+    public void testAppenderRegistration() throws Exception
+    {
+        loadLoggingConfig();
+        Logger logger = Logger.getLogger("allDestinations");
+
+        TestableCloudWatchAppender cloudwatchAppender = (TestableCloudWatchAppender)logger.getAppender("cloudwatch");
+        cloudwatchAppender.setThreadFactory(new InlineThreadFactory());
+        cloudwatchAppender.setWriterFactory(new MockCloudWatchWriterFactory(cloudwatchAppender));
+
+        TestableKinesisAppender kinesisAppender = (TestableKinesisAppender)logger.getAppender("kinesis");
+        kinesisAppender.setThreadFactory(new InlineThreadFactory());
+        kinesisAppender.setWriterFactory(new MockKinesisWriterFactory(kinesisAppender));
+
+        TestableSNSAppender snsAppender = (TestableSNSAppender)logger.getAppender("sns");
+        snsAppender.setThreadFactory(new InlineThreadFactory());
+        snsAppender.setWriterFactory(new MockSNSWriterFactory());
+
+        logger.info("test message");
+
+        assertSame("JMXManager knows about CloudWatch stats bean",  cloudwatchAppender.getAppenderStatistics(), TestableJMXManager.knownAppenders.get("cloudwatch"));
+        assertSame("JMXManager knows about CloudWatch stats class", CloudWatchAppenderStatisticsMXBean.class,   TestableJMXManager.statsBeanTypes.get("cloudwatch"));
+
+        assertSame("JMXManager knows about Kinesis stats bean",     kinesisAppender.getAppenderStatistics(),    TestableJMXManager.knownAppenders.get("kinesis"));
+        assertSame("JMXManager knows about Kinesis stats class",    KinesisAppenderStatisticsMXBean.class,      TestableJMXManager.statsBeanTypes.get("kinesis"));
+
+        assertSame("JMXManager knows about SNS stats bean",         snsAppender.getAppenderStatistics(),        TestableJMXManager.knownAppenders.get("sns"));
+        assertSame("JMXManager knows about SNS stats class",        SNSAppenderStatisticsMXBean.class,          TestableJMXManager.statsBeanTypes.get("sns"));
     }
 
 
     @Test
     public void testBeanEnabledBeforeAppender() throws Exception
-    {        
-        ObjectName beanName = new ObjectName("Testing:name=example");
-
-        MockMBeanServer mock = new MockMBeanServer();
-        MBeanServer server = mock.getInstance();
-
-        server.createMBean(StatisticsMBean.class.getName(), beanName);
-        
-        StatisticsMBean bean = (StatisticsMBean)mock.registeredBeans.get(beanName);
-        
-        assertEquals("JMX manager knows of bean", CollectionUtil.asMap(bean, server), TestableJMXManager.knownServers);
+    {
+//        ObjectName beanName = new ObjectName("Testing:name=example");
+//
+//        MockMBeanServer mock = new MockMBeanServer();
+//        MBeanServer server = mock.getInstance();
+//
+//        server.createMBean(StatisticsMBean.class.getName(), beanName);
     }
 
 

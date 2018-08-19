@@ -15,6 +15,7 @@
 package com.kdgregory.log4j.aws.internal.shared;
 
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 import javax.management.MBeanServer;
@@ -28,23 +29,48 @@ import com.kdgregory.log4j.aws.StatisticsMBean;
 
 
 /**
- *  This class maintains the relationships between appenders and MBeanServers.
- *  All methods/data are static, and all public methods are synchronized to
- *  avoid race conditions (since they're only called at application startup,
- *  this should not be an issue).
+ *  This class ensures that appenders will be registered with any MBean servers
+ *  where a StatisticsMBean instance has also been registered, regardless of
+ *  the order that those objects are initialized/registered.
+ *  <p>
+ *  This object is implemented as an eagerly-instantiated singleton; for testing
+ *  the implementation can be replaced. All methods are synchronized, to avoid
+ *  race conditions between appender and StatisticsMBean registration.
  */
 public class JMXManager
 {
-    // the maps that identify who we know; all are marked protected so that
-    // they can be examined during testing
+//----------------------------------------------------------------------------
+//  Singleton
+//----------------------------------------------------------------------------
 
-    protected static Map<StatisticsMBean,MBeanServer> knownServers
-        = new HashMap<StatisticsMBean,MBeanServer>();
+    private volatile static JMXManager singleton = new JMXManager();
 
-    protected static Map<String,AbstractAppenderStatistics> knownAppenders
+    public static JMXManager getInstance()
+    {
+        return singleton;
+    }
+
+
+    /**
+     *  Replaces the singleton instance with a new instance. This method is
+     *  exposed for testing; it should never be called by application code.
+     */
+    public static void reset(JMXManager newManager)
+    {
+        singleton = newManager;
+    }
+
+//----------------------------------------------------------------------------
+//  Data members -- all are marked protected so they can be examined by tests
+//----------------------------------------------------------------------------
+
+    protected Map<StatisticsMBean,MBeanServer> knownServers
+        = new IdentityHashMap<StatisticsMBean,MBeanServer>();
+
+    protected Map<String,AbstractAppenderStatistics> knownAppenders
         = new HashMap<String,AbstractAppenderStatistics>();
 
-    protected static Map<String,Class<?>> statsBeanTypes
+    protected Map<String,Class<?>> statsBeanTypes
         = new HashMap<String,Class<?>>();
 
 
@@ -52,7 +78,16 @@ public class JMXManager
 //  Methods called by StatisticsMBean
 //----------------------------------------------------------------------------
 
-    public static synchronized void registerStatisticsMBean(StatisticsMBean bean, MBeanServer server, ObjectName name)
+    /**
+     *  Adds relationship between a StatisticsMBean and an MBeanServer to the
+     *  internal tables. If any appender beans are known, will register those
+     *  beans with the same server.
+     *  <p>
+     *  The StatisticsMBean table is based on object identity. Attempting to
+     *  add the same bean/server more than once is silently ignored (should
+     *  never happen in the real world).
+     */
+    public synchronized void registerStatisticsMBean(StatisticsMBean bean, MBeanServer server, ObjectName name)
     {
         knownServers.put(bean, server);
 
@@ -63,7 +98,12 @@ public class JMXManager
     }
 
 
-    public static synchronized void deregisterStatisticsMBean(StatisticsMBean bean)
+    /**
+     *  Will deregister a StatisticsMBean instance from all known servers.
+     *
+     *  TODO: also deregister associated appender beans.
+     */
+    public synchronized void deregisterStatisticsMBean(StatisticsMBean bean)
     {
         knownServers.remove(bean);
     }
@@ -72,9 +112,18 @@ public class JMXManager
 //  Methods called by AbstractAppender
 //----------------------------------------------------------------------------
 
-    public static synchronized void registerAppender(String appenderName, AbstractAppenderStatistics statsBean, Class<?> statsBeanClass)
+    /**
+     *  Adds an appender's statsbean and its class to the internal tracking tables.
+     *  If there are known StatisticsMBean/MBeanServer associations, the appender's
+     *  statistics bean will also be registered with those servers.
+     *  <p>
+     *  These tables are managed by appender name. Calling with the same name and
+     *  same appender bean is silently ignored. Calling with the same name but a
+     *  different appender bean is an error. In the real world, neither of these
+     *  cases should happen, because the appender is registered during initialization.
+     */
+    public synchronized void registerAppender(String appenderName, AbstractAppenderStatistics statsBean, Class<?> statsBeanClass)
     {
-        // TODO - check for appender already being registered
         knownAppenders.put(appenderName, statsBean);
         statsBeanTypes.put(appenderName, statsBeanClass);
 
@@ -85,7 +134,11 @@ public class JMXManager
     }
 
 
-    public static synchronized void unregisterAppender(String appenderName)
+    /**
+     *  Removes information about an appender from the internal tables and deregisters
+     *  it from any MBeanServers. This is normally called when the appender is closed.
+     */
+    public synchronized void unregisterAppender(String appenderName)
     {
         knownAppenders.remove(appenderName);
         statsBeanTypes.remove(appenderName);
@@ -98,14 +151,14 @@ public class JMXManager
 
 
 //----------------------------------------------------------------------------
-//  Internals
+//  Internals -- protected so they can be overridden
 //----------------------------------------------------------------------------
 
     /**
      *  Registers an appender's stats bean with a server.
      */
     @SuppressWarnings("rawtypes")
-    private static void registerBean(String appenderName, MBeanServer mbeanServer)
+    protected void registerBean(String appenderName, MBeanServer mbeanServer)
     {
         // TODO - verify that we're not already registered
 
@@ -144,7 +197,7 @@ public class JMXManager
     /**
      *  Deregisters an appender's stats bean from a server.
      */
-    private static void unregisterBean(String appenderName, MBeanServer mbeanServer)
+    private void unregisterBean(String appenderName, MBeanServer mbeanServer)
     {
         try
         {

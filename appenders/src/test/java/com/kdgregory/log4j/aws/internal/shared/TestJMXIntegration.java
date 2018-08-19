@@ -55,7 +55,8 @@ import com.kdgregory.log4j.testhelpers.aws.sns.TestableSNSAppender;
 
 
 /**
- *  This test is used to verify the behavior of both StatisticsMBean and JMXManager.
+ *  This test is used to verify the interaction of JMXManager with a MBeanServer,
+ *  using actual appenders.
  */
 public class TestJMXIntegration
 {
@@ -67,12 +68,7 @@ public class TestJMXIntegration
     private static class TestableJMXManager
     extends JMXManager
     {
-        public static void reset()
-        {
-            knownServers.clear();
-            knownAppenders.clear();
-            statsBeanTypes.clear();
-        }
+        // nothing here; just used to expose protected fields
     }
 
 
@@ -163,14 +159,17 @@ public class TestJMXIntegration
     }
 
 //----------------------------------------------------------------------------
-//  Setup/Teardown
+//  Setup/Teardown/state
 //----------------------------------------------------------------------------
+
+    private TestableJMXManager jmxManager;
 
     @Before
     public void setUp()
     {
         LogManager.resetConfiguration();
-        TestableJMXManager.reset();
+        jmxManager = new TestableJMXManager();
+        TestableJMXManager.reset(jmxManager);
     }
 
 
@@ -209,11 +208,11 @@ public class TestJMXIntegration
         assertEquals("bean info does not indicate notifications",   0,  beanInfo.getNotifications().length);
         assertEquals("bean info does not indicate constructors",    0,  beanInfo.getConstructors().length);
 
-        assertSame("JMXManager associates server with bean",        server, TestableJMXManager.knownServers.get(bean));
+        assertSame("JMXManager associates server with bean",        server, jmxManager.knownServers.get(bean));
 
         server.unregisterMBean(beanName);
 
-        assertTrue("unregistering bean removes it from JMXManager", TestableJMXManager.knownServers.isEmpty());
+        assertTrue("unregistering bean removes it from JMXManager", jmxManager.knownServers.isEmpty());
     }
 
 
@@ -235,26 +234,26 @@ public class TestJMXIntegration
         snsAppender.setThreadFactory(new InlineThreadFactory());
         snsAppender.setWriterFactory(new MockSNSWriterFactory());
 
-        assertNull("before first message, JMXManager doesn't know about CloudWatch stats bean",  TestableJMXManager.knownAppenders.get("cloudwatch"));
-        assertNull("before first message, JMXManager doesn't know about CloudWatch stats class", TestableJMXManager.statsBeanTypes.get("cloudwatch"));
-        assertNull("before first message, JMXManager doesn't know about Kinesis stats bean",     TestableJMXManager.knownAppenders.get("kinesis"));
-        assertNull("before first message, JMXManager doesn't know about Kinesis stats class",    TestableJMXManager.statsBeanTypes.get("kinesis"));
-        assertNull("before first message, JMXManager doesn't know about SNS stats bean",         TestableJMXManager.knownAppenders.get("sns"));
-        assertNull("before first message, JMXManager doesn't know about stats class",            TestableJMXManager.statsBeanTypes.get("sns"));
+        assertNull("before first message, JMXManager doesn't know about CloudWatch stats bean",  jmxManager.knownAppenders.get("cloudwatch"));
+        assertNull("before first message, JMXManager doesn't know about CloudWatch stats class", jmxManager.statsBeanTypes.get("cloudwatch"));
+        assertNull("before first message, JMXManager doesn't know about Kinesis stats bean",     jmxManager.knownAppenders.get("kinesis"));
+        assertNull("before first message, JMXManager doesn't know about Kinesis stats class",    jmxManager.statsBeanTypes.get("kinesis"));
+        assertNull("before first message, JMXManager doesn't know about SNS stats bean",         jmxManager.knownAppenders.get("sns"));
+        assertNull("before first message, JMXManager doesn't know about stats class",            jmxManager.statsBeanTypes.get("sns"));
 
         logger.info("test message");
 
-        assertSame("after message, JMXManager knows about CloudWatch stats bean",   cloudwatchAppender.getAppenderStatistics(), TestableJMXManager.knownAppenders.get("cloudwatch"));
-        assertSame("after message, JMXManager knows about CloudWatch stats class",  CloudWatchAppenderStatisticsMXBean.class,   TestableJMXManager.statsBeanTypes.get("cloudwatch"));
-        assertSame("after message, JMXManager knows about Kinesis stats bean",      kinesisAppender.getAppenderStatistics(),    TestableJMXManager.knownAppenders.get("kinesis"));
-        assertSame("after message, JMXManager knows about Kinesis stats class",     KinesisAppenderStatisticsMXBean.class,      TestableJMXManager.statsBeanTypes.get("kinesis"));
-        assertSame("after message, JMXManager knows about SNS stats bean",          snsAppender.getAppenderStatistics(),        TestableJMXManager.knownAppenders.get("sns"));
-        assertSame("after message, JMXManager knows about SNS stats class",         SNSAppenderStatisticsMXBean.class,          TestableJMXManager.statsBeanTypes.get("sns"));
+        assertSame("after message, JMXManager knows about CloudWatch stats bean",   cloudwatchAppender.getAppenderStatistics(), jmxManager.knownAppenders.get("cloudwatch"));
+        assertSame("after message, JMXManager knows about CloudWatch stats class",  CloudWatchAppenderStatisticsMXBean.class,   jmxManager.statsBeanTypes.get("cloudwatch"));
+        assertSame("after message, JMXManager knows about Kinesis stats bean",      kinesisAppender.getAppenderStatistics(),    jmxManager.knownAppenders.get("kinesis"));
+        assertSame("after message, JMXManager knows about Kinesis stats class",     KinesisAppenderStatisticsMXBean.class,      jmxManager.statsBeanTypes.get("kinesis"));
+        assertSame("after message, JMXManager knows about SNS stats bean",          snsAppender.getAppenderStatistics(),        jmxManager.knownAppenders.get("sns"));
+        assertSame("after message, JMXManager knows about SNS stats class",         SNSAppenderStatisticsMXBean.class,          jmxManager.statsBeanTypes.get("sns"));
 
         snsAppender.close();
 
-        assertNull("closing appender removes bean from JMXManager",                 TestableJMXManager.knownAppenders.get("sns"));
-        assertNull("closing appender removes stats class from JMXManager",          TestableJMXManager.statsBeanTypes.get("sns"));
+        assertNull("closing appender removes bean from JMXManager",                 jmxManager.knownAppenders.get("sns"));
+        assertNull("closing appender removes stats class from JMXManager",          jmxManager.statsBeanTypes.get("sns"));
     }
 
 

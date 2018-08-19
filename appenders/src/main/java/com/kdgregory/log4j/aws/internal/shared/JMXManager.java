@@ -54,8 +54,6 @@ public class JMXManager
 
     public static synchronized void registerStatisticsMBean(StatisticsMBean bean, MBeanServer server, ObjectName name)
     {
-        // TODO - check for bean already being registered
-
         knownServers.put(bean, server);
 
         for (String appenderName :  knownAppenders.keySet())
@@ -67,12 +65,7 @@ public class JMXManager
 
     public static synchronized void deregisterStatisticsMBean(StatisticsMBean bean)
     {
-        MBeanServer server = knownServers.remove(bean);
-
-        for (String appenderName :  knownAppenders.keySet())
-        {
-            unregisterBean(appenderName, server);
-        }
+        knownServers.remove(bean);
     }
 
 //----------------------------------------------------------------------------

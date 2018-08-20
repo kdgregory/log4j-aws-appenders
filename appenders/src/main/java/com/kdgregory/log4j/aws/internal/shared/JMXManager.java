@@ -87,13 +87,13 @@ public class JMXManager
      *  add the same bean/server more than once is silently ignored (should
      *  never happen in the real world).
      */
-    public synchronized void registerStatisticsMBean(StatisticsMBean bean, MBeanServer server, ObjectName name)
+    public synchronized void addStatisticsMBean(StatisticsMBean bean, MBeanServer server, ObjectName name)
     {
         knownServers.put(bean, server);
 
         for (String appenderName :  knownAppenders.keySet())
         {
-            registerBean(appenderName, server);
+            registerAppenderBean(appenderName, server);
         }
     }
 
@@ -103,7 +103,7 @@ public class JMXManager
      *
      *  TODO: also deregister associated appender beans.
      */
-    public synchronized void deregisterStatisticsMBean(StatisticsMBean bean)
+    public synchronized void removeStatisticsMBean(StatisticsMBean bean)
     {
         knownServers.remove(bean);
     }
@@ -122,14 +122,14 @@ public class JMXManager
      *  different appender bean is an error. In the real world, neither of these
      *  cases should happen, because the appender is registered during initialization.
      */
-    public synchronized void registerAppender(String appenderName, AbstractAppenderStatistics statsBean, Class<?> statsBeanClass)
+    public synchronized void addAppender(String appenderName, AbstractAppenderStatistics statsBean, Class<?> statsBeanClass)
     {
         knownAppenders.put(appenderName, statsBean);
         statsBeanTypes.put(appenderName, statsBeanClass);
 
         for (MBeanServer server : knownServers.values())
         {
-            registerBean(appenderName, server);
+            registerAppenderBean(appenderName, server);
         }
     }
 
@@ -138,14 +138,14 @@ public class JMXManager
      *  Removes information about an appender from the internal tables and deregisters
      *  it from any MBeanServers. This is normally called when the appender is closed.
      */
-    public synchronized void unregisterAppender(String appenderName)
+    public synchronized void removeAppender(String appenderName)
     {
         knownAppenders.remove(appenderName);
         statsBeanTypes.remove(appenderName);
 
         for (MBeanServer server : knownServers.values())
         {
-            unregisterBean(appenderName, server);
+            unregisterAppenderBean(appenderName, server);
         }
     }
 
@@ -158,7 +158,7 @@ public class JMXManager
      *  Registers an appender's stats bean with a server.
      */
     @SuppressWarnings("rawtypes")
-    protected void registerBean(String appenderName, MBeanServer mbeanServer)
+    protected void registerAppenderBean(String appenderName, MBeanServer mbeanServer)
     {
         // TODO - verify that we're not already registered
 
@@ -197,7 +197,7 @@ public class JMXManager
     /**
      *  Deregisters an appender's stats bean from a server.
      */
-    private void unregisterBean(String appenderName, MBeanServer mbeanServer)
+    protected void unregisterAppenderBean(String appenderName, MBeanServer mbeanServer)
     {
         try
         {

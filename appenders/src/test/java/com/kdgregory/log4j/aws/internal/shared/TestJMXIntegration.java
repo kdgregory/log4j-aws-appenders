@@ -55,8 +55,8 @@ import com.kdgregory.log4j.testhelpers.aws.sns.TestableSNSAppender;
 
 
 /**
- *  This test is used to verify the interaction of JMXManager with a MBeanServer,
- *  using actual appenders.
+ *  This set of tests uses real appenders and a semi-functional mock MBean
+ *  Server to exercise the full behavior of JMX registration.
  */
 public class TestJMXIntegration
 {

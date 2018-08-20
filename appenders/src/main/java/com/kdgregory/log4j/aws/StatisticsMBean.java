@@ -154,7 +154,7 @@ implements DynamicMBean, MBeanRegistration
     {
         if (registrationDone == Boolean.TRUE)
         {
-            JMXManager.getInstance().registerStatisticsMBean(this, myServer, myName);
+            JMXManager.getInstance().addStatisticsMBean(this, myServer, myName);
         }
     }
 
@@ -169,7 +169,7 @@ implements DynamicMBean, MBeanRegistration
     @Override
     public void postDeregister()
     {
-        JMXManager.getInstance().deregisterStatisticsMBean(this);
+        JMXManager.getInstance().removeStatisticsMBean(this);
     }
 
 }

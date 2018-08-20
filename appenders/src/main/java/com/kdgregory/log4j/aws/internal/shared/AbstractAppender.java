@@ -545,7 +545,7 @@ extends AppenderSkeleton
      */
     protected void registerStatisticsBean()
     {
-        JMXManager.getInstance().registerAppender(getName(), appenderStats, appenderStatsMXBeanClass);
+        JMXManager.getInstance().addAppender(getName(), appenderStats, appenderStatsMXBeanClass);
     }
 
 
@@ -557,7 +557,7 @@ extends AppenderSkeleton
      */
     protected void unregisterStatisticsBean()
     {
-        JMXManager.getInstance().unregisterAppender(getName());
+        JMXManager.getInstance().removeAppender(getName());
     }
 
 

@@ -14,8 +14,10 @@
 
 package com.kdgregory.log4j.aws.internal.shared;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.management.MBeanServer;
@@ -64,13 +66,13 @@ public class JMXManager
 //  Data members -- all are marked protected so they can be examined by tests
 //----------------------------------------------------------------------------
 
-    protected Map<StatisticsMBean,MBeanServer> knownServers
-        = new IdentityHashMap<StatisticsMBean,MBeanServer>();
+    protected Map<StatisticsMBean,List<MBeanServer>> knownServers
+        = new IdentityHashMap<StatisticsMBean,List<MBeanServer>>();
 
-    protected Map<String,AbstractAppenderStatistics> knownAppenders
+    protected Map<String,AbstractAppenderStatistics> appenderStatsBeans
         = new HashMap<String,AbstractAppenderStatistics>();
 
-    protected Map<String,Class<?>> statsBeanTypes
+    protected Map<String,Class<?>> appenderStatsBeanTypes
         = new HashMap<String,Class<?>>();
 
 
@@ -89,9 +91,16 @@ public class JMXManager
      */
     public synchronized void addStatisticsMBean(StatisticsMBean bean, MBeanServer server, ObjectName name)
     {
-        knownServers.put(bean, server);
+        List<MBeanServer> servers = knownServers.get(bean);
+        if (servers == null)
+        {
+            servers = new ArrayList<MBeanServer>();
+            knownServers.put(bean, servers);
+        }
 
-        for (String appenderName :  knownAppenders.keySet())
+        servers.add(server);
+
+        for (String appenderName :  appenderStatsBeans.keySet())
         {
             registerAppenderBean(appenderName, server);
         }
@@ -100,12 +109,23 @@ public class JMXManager
 
     /**
      *  Will deregister a StatisticsMBean instance from all known servers.
-     *
-     *  TODO: also deregister associated appender beans.
      */
     public synchronized void removeStatisticsMBean(StatisticsMBean bean)
     {
-        knownServers.remove(bean);
+        List<MBeanServer> servers = knownServers.remove(bean);
+        if (servers == null)
+        {
+            LogLog.warn("JMXManager: attempt to remove unregistered StatisticsMBean");
+            return;
+        }
+
+        for (MBeanServer server : servers)
+        {
+            for (String appenderName : appenderStatsBeans.keySet())
+            {
+                unregisterAppenderBean(appenderName, server);
+            }
+        }
     }
 
 //----------------------------------------------------------------------------
@@ -124,12 +144,15 @@ public class JMXManager
      */
     public synchronized void addAppender(String appenderName, AbstractAppenderStatistics statsBean, Class<?> statsBeanClass)
     {
-        knownAppenders.put(appenderName, statsBean);
-        statsBeanTypes.put(appenderName, statsBeanClass);
+        appenderStatsBeans.put(appenderName, statsBean);
+        appenderStatsBeanTypes.put(appenderName, statsBeanClass);
 
-        for (MBeanServer server : knownServers.values())
+        for (List<MBeanServer> servers : knownServers.values())
         {
-            registerAppenderBean(appenderName, server);
+            for (MBeanServer server : servers)
+            {
+                registerAppenderBean(appenderName, server);
+            }
         }
     }
 
@@ -140,12 +163,15 @@ public class JMXManager
      */
     public synchronized void removeAppender(String appenderName)
     {
-        knownAppenders.remove(appenderName);
-        statsBeanTypes.remove(appenderName);
+        appenderStatsBeans.remove(appenderName);
+        appenderStatsBeanTypes.remove(appenderName);
 
-        for (MBeanServer server : knownServers.values())
+        for (List<MBeanServer> servers : knownServers.values())
         {
-            unregisterAppenderBean(appenderName, server);
+            for (MBeanServer server : servers)
+            {
+                unregisterAppenderBean(appenderName, server);
+            }
         }
     }
 
@@ -160,8 +186,6 @@ public class JMXManager
     @SuppressWarnings("rawtypes")
     protected void registerAppenderBean(String appenderName, MBeanServer mbeanServer)
     {
-        // TODO - verify that we're not already registered
-
         if (appenderName == null)
         {
             LogLog.error("log4j-aws-appenders: attempted to register null appender");
@@ -174,8 +198,8 @@ public class JMXManager
             return;
         }
 
-        Object statsBean = knownAppenders.get(appenderName);
-        Class statsBeanClass = statsBeanTypes.get(appenderName);
+        Object statsBean = appenderStatsBeans.get(appenderName);
+        Class statsBeanClass = appenderStatsBeanTypes.get(appenderName);
         if ((statsBean == null) || (statsBeanClass == null))
         {
             LogLog.error("log4j-aws-appenders: don't know bean or class for appender: " + appenderName);

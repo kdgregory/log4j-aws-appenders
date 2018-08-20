@@ -110,20 +110,20 @@ public class TestJMXManager
 //----------------------------------------------------------------------------
 
     @Test
-    public void testStatisticsMBeanRegistrationAndUnregistration() throws Exception
+    public void testStatisticsMBeanAdditionAndRemoval() throws Exception
     {
         assertTrue("test start, JMXManager knows no beans",             jmxManager.knownServers.isEmpty());
-        assertTrue("test start, JMXManager knows no appenders",         jmxManager.knownAppenders.isEmpty());
-        assertTrue("test start, JMXManager knows no stat bean types",   jmxManager.statsBeanTypes.isEmpty());
+        assertTrue("test start, JMXManager knows no appenders",         jmxManager.appenderStatsBeans.isEmpty());
+        assertTrue("test start, JMXManager knows no stat bean types",   jmxManager.appenderStatsBeanTypes.isEmpty());
 
         StatisticsMBean statisticsMBean = new StatisticsMBean();
         ObjectName statisticsMBeanName = new ObjectName("Testing:name=example");
 
         JMXManager.getInstance().addStatisticsMBean(statisticsMBean, server, statisticsMBeanName);
 
-        assertSame("added bean/server relationship",        server, jmxManager.knownServers.get(statisticsMBean));
-        assertTrue("JMXManager knows no appender beans",    jmxManager.knownAppenders.isEmpty());
-        assertTrue("JMXManager knows no stat bean types",   jmxManager.statsBeanTypes.isEmpty());
+        assertSame("added bean/server relationship",        server, jmxManager.knownServers.get(statisticsMBean).get(0));
+        assertTrue("JMXManager knows no appender beans",    jmxManager.appenderStatsBeans.isEmpty());
+        assertTrue("JMXManager knows no stat bean types",   jmxManager.appenderStatsBeanTypes.isEmpty());
         assertTrue("JMXManager did not register appender",  jmxManager.registrations.isEmpty());
 
         JMXManager.getInstance().removeStatisticsMBean(statisticsMBean);
@@ -133,11 +133,11 @@ public class TestJMXManager
 
 
     @Test
-    public void testAppenderRegistrationAndUnregistration() throws Exception
+    public void testAppenderAdditionAndRemoval() throws Exception
     {
         assertTrue("test start, JMXManager knows no beans",             jmxManager.knownServers.isEmpty());
-        assertTrue("test start, JMXManager knows no appenders",         jmxManager.knownAppenders.isEmpty());
-        assertTrue("test start, JMXManager knows no stat bean types",   jmxManager.statsBeanTypes.isEmpty());
+        assertTrue("test start, JMXManager knows no appenders",         jmxManager.appenderStatsBeans.isEmpty());
+        assertTrue("test start, JMXManager knows no stat bean types",   jmxManager.appenderStatsBeanTypes.isEmpty());
 
         String appenderName = "example";
         AbstractAppenderStatistics appenderStats = new CloudWatchAppenderStatistics();
@@ -145,15 +145,15 @@ public class TestJMXManager
 
         JMXManager.getInstance().addAppender(appenderName, appenderStats, appenderStatsType);
 
-        assertSame("added appender/bean relationship",      appenderStats,     jmxManager.knownAppenders.get(appenderName));
-        assertSame("added appender/type relationship",      appenderStatsType, jmxManager.statsBeanTypes.get(appenderName));
+        assertSame("added appender/bean relationship",      appenderStats,     jmxManager.appenderStatsBeans.get(appenderName));
+        assertSame("added appender/type relationship",      appenderStatsType, jmxManager.appenderStatsBeanTypes.get(appenderName));
         assertTrue("JMXManager knows no servers",           jmxManager.knownServers.isEmpty());
         assertTrue("JMXManager did not register appender",  jmxManager.registrations.isEmpty());
 
         JMXManager.getInstance().removeAppender(appenderName);
 
-        assertNull("removed stats bean",                    jmxManager.knownAppenders.get(appenderName));
-        assertNull("removed stats bean type",               jmxManager.statsBeanTypes.get(appenderName));
+        assertNull("removed stats bean",                    jmxManager.appenderStatsBeans.get(appenderName));
+        assertNull("removed stats bean type",               jmxManager.appenderStatsBeanTypes.get(appenderName));
     }
 
 
@@ -161,8 +161,8 @@ public class TestJMXManager
     public void testStatisticsMBeanAddedBeforeAppender() throws Exception
     {
         assertTrue("test start, JMXManager knows no beans",             jmxManager.knownServers.isEmpty());
-        assertTrue("test start, JMXManager knows no appenders",         jmxManager.knownAppenders.isEmpty());
-        assertTrue("test start, JMXManager knows no stat bean types",   jmxManager.statsBeanTypes.isEmpty());
+        assertTrue("test start, JMXManager knows no appenders",         jmxManager.appenderStatsBeans.isEmpty());
+        assertTrue("test start, JMXManager knows no stat bean types",   jmxManager.appenderStatsBeanTypes.isEmpty());
 
         StatisticsMBean statisticsMBean = new StatisticsMBean();
         ObjectName statisticsMBeanName = new ObjectName("Testing:name=example");
@@ -180,6 +180,12 @@ public class TestJMXManager
         assertEquals("after adding appender, number of registrations",  1,              jmxManager.registrations.size());
         assertEquals("registered appender name",                        appenderName,   jmxManager.registrations.get(0).appenderName);
         assertSame("registered server",                                 server,         jmxManager.registrations.get(0).server);
+
+        JMXManager.getInstance().removeStatisticsMBean(statisticsMBean);
+
+        assertEquals("after removing StatisticsMBean, number of unregistrations",   1,              jmxManager.unregistrations.size());
+        assertEquals("unregistered appender name",                                  appenderName,   jmxManager.registrations.get(0).appenderName);
+        assertSame("unregistered server",                                           server,         jmxManager.registrations.get(0).server);
     }
 
 
@@ -187,8 +193,8 @@ public class TestJMXManager
     public void testStatisticsMBeanAddedAfterAppender() throws Exception
     {
         assertTrue("test start, JMXManager knows no beans",             jmxManager.knownServers.isEmpty());
-        assertTrue("test start, JMXManager knows no appenders",         jmxManager.knownAppenders.isEmpty());
-        assertTrue("test start, JMXManager knows no stat bean types",   jmxManager.statsBeanTypes.isEmpty());
+        assertTrue("test start, JMXManager knows no appenders",         jmxManager.appenderStatsBeans.isEmpty());
+        assertTrue("test start, JMXManager knows no stat bean types",   jmxManager.appenderStatsBeanTypes.isEmpty());
 
         String appenderName = "example";
         AbstractAppenderStatistics appenderStats = new CloudWatchAppenderStatistics();
@@ -203,8 +209,45 @@ public class TestJMXManager
 
         JMXManager.getInstance().addStatisticsMBean(statisticsMBean, server, statisticsMBeanName);
 
-        assertEquals("after adding statistics MBean, number of registrations",  1,              jmxManager.registrations.size());
-        assertEquals("registered appender name",                                appenderName,   jmxManager.registrations.get(0).appenderName);
-        assertSame("registered server",                                         server,         jmxManager.registrations.get(0).server);
+        assertEquals("after adding statistics MBean, number of registrations",  1,                  jmxManager.registrations.size());
+        assertEquals("registered appender name",                                appenderName,       jmxManager.registrations.get(0).appenderName);
+        assertSame("registered server",                                         server,             jmxManager.registrations.get(0).server);
+
+        JMXManager.getInstance().removeAppender(appenderName);
+
+        assertEquals("after removing appender, number of deregistrations",      1,                  jmxManager.unregistrations.size());
+        assertSame("after removing appender, stats bean remains",               statisticsMBean,    jmxManager.knownServers.keySet().iterator().next());
+    }
+
+
+    @Test
+    public void testStatisticsMBeanAddedToMultipleServers() throws Exception
+    {
+        assertTrue("test start, JMXManager knows no beans",             jmxManager.knownServers.isEmpty());
+        assertTrue("test start, JMXManager knows no appenders",         jmxManager.appenderStatsBeans.isEmpty());
+        assertTrue("test start, JMXManager knows no stat bean types",   jmxManager.appenderStatsBeanTypes.isEmpty());
+
+        MBeanServer server2 = new MockMBeanServer().getInstance();
+
+        StatisticsMBean statisticsMBean = new StatisticsMBean();
+        ObjectName statisticsMBeanName = new ObjectName("Testing:name=example");
+
+        JMXManager.getInstance().addStatisticsMBean(statisticsMBean, server, statisticsMBeanName);
+        JMXManager.getInstance().addStatisticsMBean(statisticsMBean, server2, statisticsMBeanName);
+
+        assertEquals("JMXManager knows both servers (checking size)",   2,      jmxManager.knownServers.get(statisticsMBean).size());
+        assertSame("JMXManager knows both servers (checking server1)",  server, jmxManager.knownServers.get(statisticsMBean).get(0));
+        assertSame("JMXManager knows both servers (checking server2)",  server2, jmxManager.knownServers.get(statisticsMBean).get(1));
+
+        String appenderName = "example";
+        AbstractAppenderStatistics appenderStats = new CloudWatchAppenderStatistics();
+        Class<?> appenderStatsType = CloudWatchAppenderStatisticsMXBean.class;
+
+        assertEquals("before adding appender, number of registrations", 0, jmxManager.registrations.size());
+
+        JMXManager.getInstance().addAppender(appenderName, appenderStats, appenderStatsType);
+
+        assertEquals("after adding appender, number of registrations",  2, jmxManager.registrations.size());
+
     }
 }

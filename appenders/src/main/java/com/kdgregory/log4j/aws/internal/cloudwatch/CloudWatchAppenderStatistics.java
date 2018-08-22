@@ -54,4 +54,11 @@ implements CloudWatchAppenderStatisticsMXBean
     {
         this.actualLogStreamName = actualLogStreamName;
     }
+
+
+    @Override
+    public int getMessagesDiscardedByCurrentWriter()
+    {
+        return super.getMessagesDiscarded();
+    }
 }

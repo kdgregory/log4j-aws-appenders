@@ -58,4 +58,10 @@ public interface KinesisAppenderStatisticsMXBean
      *  Returns the number of messages successfully sent to the stream.
      */
     int getMessagesSent();
+
+
+    /**
+     *  Returns the number of messages discarded by the message queue.
+     */
+    int getMessagesDiscarded();
 }

@@ -37,12 +37,24 @@ import java.util.List;
  */
 public abstract class AbstractAppenderStatistics
 {
+    private volatile MessageQueue messageQueue;
+
     private volatile Throwable lastError;
     private volatile String lastErrorMessage;
     private volatile Date lastErrorTimestamp;
     private volatile List<String> lastErrorStacktrace;
 
     private volatile int messagesSent;
+
+
+    /**
+     *  Stores the current writer's message queue. This should be called during
+     *  writer initialization.
+     */
+    public void setMessageQueue(MessageQueue messageQueue)
+    {
+        this.messageQueue = messageQueue;
+    }
 
 
     /**
@@ -106,6 +118,15 @@ public abstract class AbstractAppenderStatistics
     public int getMessagesSent()
     {
         return messagesSent;
+    }
+
+
+    /**
+     *  Returns the number of messages discarded by the current writer's message queue.
+     */
+    public int getMessagesDiscarded()
+    {
+        return messageQueue.getDroppedMessageCount();
     }
 
 }

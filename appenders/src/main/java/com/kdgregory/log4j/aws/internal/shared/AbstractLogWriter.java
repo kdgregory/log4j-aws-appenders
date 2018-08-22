@@ -52,6 +52,8 @@ implements LogWriter
         this.appenderStats = appenderStats;
         this.batchDelay = batchDelay;
         messageQueue = new MessageQueue(discardThreshold, discardAction);
+
+        this.appenderStats.setMessageQueue(messageQueue);
     }
 
 

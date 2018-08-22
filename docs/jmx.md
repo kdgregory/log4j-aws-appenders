@@ -5,6 +5,7 @@ These beans provide the following information:
 
 * The post-substitution name of the destination (stream/topic).
 * The number of messages that have been successfully sent to the destination.
+* The number of messages that have been discarded due to inability to send.
 * The most recent error (initialization or runtime), with timestamp and stacktrace.
 
 

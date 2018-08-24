@@ -15,11 +15,11 @@ been more than a dozen weekends since I started the project; I keep getting new 
 Here are the supported destinations:
 
 * [CloudWatch Logs](docs/cloudwatch.md): basic logging that allows keyword search and time ranges
-* [Kinesis Streams](docs/kinesis.md): can be used as a source for Kinesis Firehose, and thence ElasticSearch or S3 storage
+* [Kinesis Streams](docs/kinesis.md): can be used as a source for Kinesis Firehose, and thence Elasticsearch or S3 storage
 * [SNS](docs/sns.md): useful for real-time error notifications
 
 In addition to the appenders, I've added a [JSON layout](docs/jsonlayout.md) to make
-it easier to send data to an ElasticSearch/Kibana cluster.
+it easier to send data to an Elasticsearch/Kibana cluster.
 
 
 ## Usage
@@ -36,24 +36,25 @@ CloudFormation templates to set up those destinations).
 To avoid dependency hell, all dependencies are marked as "provided": you will need
 to ensure that your project includes necessary dependencies, as follows:
 
+* `log4j`
 * `aws-java-sdk-logs` to use `CloudWatchAppender`
 * `aws-java-sdk-kinesis` to use `KinesisAppender`
 * `aws-java-sdk-sns` to use `SNSAppender`
 * `aws-java-sdk-sts` to use the `aws:accountId` substitution variable (typically used with `SNSAppender`)
 
-The minimum supported depedency versions are as follows:
+The minimum supported dependency versions are as follows:
 
-* JDK: 1.6  
-  The build script generates 1.6 compatible classfiles, and the appender code
-  does not rely on standard libary classes/methods introduced after 1.6. Before
-  each release, I have compiled and run the integration tests using OpenJDK 1.6.
-  However, Amazon releases the SDK on a daily basis, and a newer version may not
-  support 1.6.
-* Log4J: 1.2.16  
+* JDK: 1.6
+  The build script generates 1.6-compatible classfiles, and the appender code
+  does not rely on standard libary classes/methods introduced after 1.6. As-of
+  this release, I have verified that I can build and run the integration tests
+  using OpenJDK 1.6. However, Amazon releases the SDK on a daily basis, and a
+  newer version may not support 1.6.
+* Log4J: 1.2.16
   This is the first version that implements `LoggingEvent.getTimeStamp()`, which
   is needed to order messages when sending to AWS. It's been around since 2010,
   so if you haven't upgraded already you should.
-* AWS SDK: 1.11.0  
+* AWS SDK: 1.11.0
   The appenders make use of client constructors in order to support all versions
   in the 1.11.x release sequence. The client builders were introduced at 1.11.16,
   and will be invoked via reflection if available. Earlier appender releases
@@ -61,19 +62,19 @@ The minimum supported depedency versions are as follows:
 
 I have made an intentional effort to limit dependencies to the bare minimum. This
 has in some cases meant that I write internal implementations for functions that
-are found in common libraries (including my own).
+are found in common libraries.
 
 
 ## Building
 
 There are three projects in this repository:
 
-* `appender` is the actual appender code.
+* `appenders` contains the actual appender code.
 * `tests` is a set of integration tests. These are in a separate module so that they
-  can be run as desired, rather than as part of every build. *Beware: these tests
-  create resources that incur AWS charges, and does not delete them automatically.*
+  can be run as desired, rather than as part of every build. *Beware: the test suite
+  creates resources that incur AWS charges, and does not delete them.*
 * `example` is a simple example that writes log message to all supported destinations.
-  It includes CloudFormation templates to create those destinations. *Note: you will
+  It includes CloudFormation templates to create those destinations. *Beware: you will
   incur AWS charges to run this example.*
 
 Classes in the top-level `com.kdgregory.log4j.aws` package are expected to remain backwards
@@ -86,18 +87,12 @@ to all test classes and packages.
 
 I follow the standard `MAJOR.MINOR.PATCH` versioning scheme:
 
-* `MAJOR` is currently 1, and was intended to track the Log4J version number. In an upcoming
-  release it will switch to 11, tracking the AWS SDK minor version number.
-* `MINOR` is incremented for each destination (CloudWatch is 0, Kinesis is 1, SNS is 2).
+* `MAJOR` is currently 1. In an upcoming release it will switch to 11, tracking the AWS
+  SDK minor version number.
+* `MINOR` is incremented for each change that adds signficant functionality or changes the
+  behavior of existing functionality in possibly non-backwards-compatible ways.
 * `PATCH` is incremented for reflect bugfixes or additional features that don't change the
-  supported destinations.
-  
-Not all versions will be released to Maven Central. I may choose to make release (non-snapshot)
-versions for development testing, or as interim steps of a bigger piece of functionality. However,
-all release versions are tagged in source control, whether or not available on Maven Central.
-
-The source tree also contains commits with major version of 0. These are "pre-release" versions,
-and may not reflect the ultimate API. Please do not use them.
+  existing behavior.
 
 
 ### Source Control
@@ -107,15 +102,18 @@ are functional, but may not be "complete" (for some definition of that word). Th
 snapshot or release builds. Master will never be rebased; once a commit is made there it's
 part of history for better or worse.
 
-Development takes place on a `dev-MAJOR.MINOR.PATCH` branch; these branches are deleted
-once their content has been merged into `master`. *BEWARE*: these branches are rebased
-as I see fit.
+All development takes place on a branch. Branches may be either feature branches, in which
+case they're named after an issue (eg: `dev-21`), or release-prep branches, in which case
+they're named `dev-MAJOR.MINOR.PATCH`. Development branches may be rebased as I see fit:
+I often make "checkpoint" commits to save my work. Once a development branch is merged it
+is deleted.
+
+Features are merged into either a release-prep branch or master, using a pull request and
+squash merge. If you want to see the individual commits that went into a branch, you can
+look at the closed PR.
 
 Each "release" version is tagged with `release-MAJOR.MINOR.PATCH`, whether or not it was
 uploaded to Maven Central.
-
-Merges into `master` are handled via pull requests, with a squash merge. If you want to see
-the individual commits that went into a branch, you can look at the closed PR.
 
 
 ## FAQ
@@ -177,9 +175,9 @@ Can I contribute?
 How can I get help with any problems?
 
 > Feel free to raise an issue here. I check in at least once a week, and will try to give
-  whatever help and andvice I can. Issues that aren't bugs will be closed within a few
-  weeks; those that are bugs or feature requests will get prioritized for work.
-  
+  whatever help and advice I can. Issues that aren't bugs or feature requests will be
+  closed within a few weeks.
+
 > Alternatively you can post on [Stack Overflow](https://stackoverflow.com/). If you do
   this, flag the post with `@kdgregory` otherwise I'm unlikely to see it (this project
   isn't big enough to rate its own tag ... yet).

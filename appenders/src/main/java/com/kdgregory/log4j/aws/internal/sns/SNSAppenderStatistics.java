@@ -14,16 +14,37 @@
 
 package com.kdgregory.log4j.aws.internal.sns;
 
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
-import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
+import com.kdgregory.log4j.aws.internal.shared.AbstractAppenderStatistics;
 
 
-public class SNSWriterFactory
-implements WriterFactory<SNSWriterConfig,SNSAppenderStatistics>
+public class SNSAppenderStatistics
+extends AbstractAppenderStatistics
+implements SNSAppenderStatisticsMXBean
 {
-    @Override
-    public LogWriter newLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats)
+    private String actualTopicName;
+    private String actualTopicArn;
+
+
+    public void setActualTopicName(String value)
     {
-        return new SNSLogWriter(config, stats);
+        actualTopicName = value;
+    }
+
+    @Override
+    public String getActualTopicName()
+    {
+        return actualTopicName;
+    }
+
+
+    public void setActualTopicArn(String value)
+    {
+        actualTopicArn = value;
+    }
+
+    @Override
+    public String getActualTopicArn()
+    {
+        return actualTopicArn;
     }
 }

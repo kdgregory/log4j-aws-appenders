@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,6 +16,8 @@ package com.kdgregory.log4j.aws;
 
 import java.util.Date;
 
+import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchAppenderStatistics;
+import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchAppenderStatisticsMXBean;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchConstants;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterFactory;
@@ -28,7 +30,8 @@ import com.kdgregory.log4j.aws.internal.shared.Substitutions;
 /**
  *  Appender that writes to a CloudWatch log stream.
  */
-public class CloudWatchAppender extends AbstractAppender<CloudWatchWriterConfig>
+public class CloudWatchAppender
+extends AbstractAppender<CloudWatchWriterConfig,CloudWatchAppenderStatistics,CloudWatchAppenderStatisticsMXBean>
 {
     // these are the only configuration vars specific to this appender
 
@@ -48,7 +51,9 @@ public class CloudWatchAppender extends AbstractAppender<CloudWatchWriterConfig>
     public CloudWatchAppender()
     {
         super(new DefaultThreadFactory(),
-              new CloudWatchWriterFactory());
+              new CloudWatchWriterFactory(),
+              new CloudWatchAppenderStatistics(),
+              CloudWatchAppenderStatisticsMXBean.class);
 
         logStream = "{startupTimestamp}";
     }

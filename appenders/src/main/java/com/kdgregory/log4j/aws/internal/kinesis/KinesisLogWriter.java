@@ -58,16 +58,21 @@ extends AbstractLogWriter
 
 
     private KinesisWriterConfig config;
+    private KinesisAppenderStatistics stats;
     protected AmazonKinesis client;
 
     // only used for random partition keys; cheap enough we'll eagerly create
     private Random rnd = new Random();
 
 
-    public KinesisLogWriter(KinesisWriterConfig config)
+    public KinesisLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats)
     {
-        super(config.batchDelay, config.discardThreshold, config.discardAction);
+        super(stats, config.batchDelay, config.discardThreshold, config.discardAction);
+
         this.config = config;
+        this.stats = stats;
+
+        stats.setActualStreamName(config.streamName);
     }
 
 
@@ -295,7 +300,6 @@ extends AbstractLogWriter
     {
         List<Integer> failures = new ArrayList<Integer>(request.getRecords().size());
 
-        Exception lastException = null;
         for (int attempt = 0 ; attempt < SEND_RETRY_LIMIT ; attempt++)
         {
             try
@@ -310,16 +314,17 @@ extends AbstractLogWriter
                     }
                     ii++;
                 }
+                stats.updateMessagesSent(request.getRecords().size() - failures.size());
                 return failures;
             }
             catch (Exception ex)
             {
-                lastException = ex;
+                stats.setLastError(null, ex);
                 Utils.sleepQuietly(250 * (attempt + 1));
             }
         }
 
-        LogLog.error("failed to send batch after " + SEND_RETRY_LIMIT + " retries", lastException);
+        LogLog.error("failed to send batch after " + SEND_RETRY_LIMIT + " retries", stats.getLastError());
         for (int ii = 0 ; ii < request.getRecords().size() ; ii++)
         {
             failures.add(Integer.valueOf(ii));

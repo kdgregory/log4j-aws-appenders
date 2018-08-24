@@ -179,6 +179,7 @@ public class TestMessageQueue
     {
         final int discardThreshold = 10;
         final int messagesToEnqueue = 20;
+        final int expectedDiscards = messagesToEnqueue - discardThreshold;
 
         MessageQueue queue = new MessageQueue(discardThreshold, DiscardAction.oldest);
 
@@ -187,7 +188,8 @@ public class TestMessageQueue
             queue.enqueue(new LogMessage(System.currentTimeMillis(), String.valueOf(ii)));
         }
 
-        assertEquals("queue size at threshold", discardThreshold, queue.size());
+        assertEquals("queue size",                  discardThreshold, queue.size());
+        assertEquals("number of dropped messages",  expectedDiscards, queue.getDroppedMessageCount());
 
         List<LogMessage> messages = queue.toList();
         assertEquals("first message in queue",  "10", messages.get(0).getMessage());
@@ -200,6 +202,7 @@ public class TestMessageQueue
     {
         final int discardThreshold = 10;
         final int messagesToEnqueue = 20;
+        final int expectedDiscards = messagesToEnqueue - discardThreshold;
 
         MessageQueue queue = new MessageQueue(discardThreshold, DiscardAction.newest);
 
@@ -208,7 +211,8 @@ public class TestMessageQueue
             queue.enqueue(new LogMessage(System.currentTimeMillis(), String.valueOf(ii)));
         }
 
-        assertEquals("queue size at threshold", discardThreshold, queue.size());
+        assertEquals("queue size",                  discardThreshold, queue.size());
+        assertEquals("number of dropped messages",  expectedDiscards, queue.getDroppedMessageCount());
 
         List<LogMessage> messages = queue.toList();
         assertEquals("first message in queue",  "0", messages.get(0).getMessage());

@@ -28,6 +28,7 @@ import com.amazonaws.services.sns.model.*;
 
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
 import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
+import com.kdgregory.log4j.aws.internal.sns.SNSAppenderStatistics;
 import com.kdgregory.log4j.aws.internal.sns.SNSLogWriter;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
 
@@ -107,14 +108,14 @@ public class MockSNSClient implements InvocationHandler
     /**
      *  Returns a WriterFactory that includes our mock client.
      */
-    public WriterFactory<SNSWriterConfig> newWriterFactory()
+    public WriterFactory<SNSWriterConfig,SNSAppenderStatistics> newWriterFactory()
     {
-        return new WriterFactory<SNSWriterConfig>()
+        return new WriterFactory<SNSWriterConfig,SNSAppenderStatistics>()
         {
             @Override
-            public LogWriter newLogWriter(SNSWriterConfig config)
+            public LogWriter newLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats)
             {
-                return new SNSLogWriter(config)
+                return new SNSLogWriter(config, stats)
                 {
                     @Override
                     protected void createAWSClient()
@@ -158,12 +159,25 @@ public class MockSNSClient implements InvocationHandler
         }
         else if (methodName.equals("publish"))
         {
-            publishInvocationCount++;
-            PublishRequest request = (PublishRequest)args[0];
-            lastPublishArn     = request.getTopicArn();
-            lastPublishSubject = request.getSubject();
-            lastPublishMessage = request.getMessage();
-            return publish(request);
+            try
+            {
+                allowWriterThread.acquire();
+                publishInvocationCount++;
+                PublishRequest request = (PublishRequest)args[0];
+                lastPublishArn     = request.getTopicArn();
+                lastPublishSubject = request.getSubject();
+                lastPublishMessage = request.getMessage();
+                return publish(request);
+            }
+            catch (InterruptedException ex)
+            {
+                // this should never happen
+                throw new RuntimeException("publish lock interrupted");
+            }
+            finally
+            {
+                allowMainThread.release();
+            }
         }
 
         throw new IllegalStateException("unexpected method called: " + methodName);
@@ -210,25 +224,6 @@ public class MockSNSClient implements InvocationHandler
      *  publish0() if you want to change the result.
      */
     protected PublishResult publish(PublishRequest request)
-    {
-        try
-        {
-            allowWriterThread.acquire();
-            return publish0(request);
-        }
-        catch (InterruptedException ex)
-        {
-            // this should never happen
-            throw new RuntimeException("publish lock interrupted");
-        }
-        finally
-        {
-            allowMainThread.release();
-        }
-    }
-
-
-    protected PublishResult publish0(PublishRequest request)
     {
         return new PublishResult().withMessageId(UUID.randomUUID().toString());
     }

@@ -43,7 +43,7 @@ import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
  *  so any application code that touches these variables should not be surprised if
  *  they cease to exist.
  */
-public abstract class AbstractAppender<WriterConfigType>
+public abstract class AbstractAppender<WriterConfigType,AppenderStatsType extends AbstractAppenderStatistics,AppenderStatsMXBeanType>
 extends AppenderSkeleton
 {
     // flag to indicate whether we need to run setup
@@ -60,7 +60,15 @@ extends AppenderSkeleton
     //       instance, and you can't create those in a super() call
 
     protected ThreadFactory threadFactory;
-    protected WriterFactory<WriterConfigType> writerFactory;
+    protected WriterFactory<WriterConfigType,AppenderStatsType> writerFactory;
+
+    // the appender stats object; we keep the reference because we call writer factory
+
+    protected AppenderStatsType appenderStats;
+
+    // the MX bean type for the appender stats object
+
+    private Class<AppenderStatsMXBeanType> appenderStatsMXBeanClass;
 
     // the current writer; initialized on first append, changed after rotation or error
 
@@ -73,10 +81,6 @@ extends AppenderSkeleton
     // number of messages since we last rotated the writer
 
     protected volatile int lastRotationCount;
-
-    // this is strictly for testing
-
-    protected volatile Throwable lastWriterException;
 
     // this object is used for synchronization of initialization and writer change
 
@@ -103,10 +107,16 @@ extends AppenderSkeleton
 //  Constructor
 //----------------------------------------------------------------------------
 
-    public AbstractAppender(ThreadFactory threadFactory, WriterFactory<WriterConfigType> writerFactory)
+    public AbstractAppender(
+        ThreadFactory threadFactory,
+        WriterFactory<WriterConfigType,AppenderStatsType> writerFactory,
+        AppenderStatsType appenderStats,
+        Class<AppenderStatsMXBeanType> appenderStatsMXBeanClass)
     {
         this.threadFactory = threadFactory;
         this.writerFactory = writerFactory;
+        this.appenderStats = appenderStats;
+        this.appenderStatsMXBeanClass = appenderStatsMXBeanClass;
 
         batchDelay = 2000;
         discardThreshold = 10000;
@@ -333,6 +343,19 @@ extends AppenderSkeleton
 
 
 //----------------------------------------------------------------------------
+//  Other accessors
+//----------------------------------------------------------------------------
+
+    /**
+     *  Returns the appender statistics object.
+     */
+    public AppenderStatsType getAppenderStatistics()
+    {
+        return appenderStats;
+    }
+
+
+//----------------------------------------------------------------------------
 //  Appender overrides
 //----------------------------------------------------------------------------
 
@@ -372,6 +395,7 @@ extends AppenderSkeleton
             }
 
             stopWriter();
+            unregisterStatisticsBean();
             closed = true;
         }
     }
@@ -439,6 +463,7 @@ extends AppenderSkeleton
             }
 
             startWriter();
+            registerStatisticsBean();
             ready = true;
         }
     }
@@ -454,15 +479,15 @@ extends AppenderSkeleton
         {
             try
             {
-                writer = writerFactory.newLogWriter(generateWriterConfig());
+                writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats);
                 threadFactory.startLoggingThread(writer, new UncaughtExceptionHandler()
                 {
                     @Override
                     public void uncaughtException(Thread t, Throwable ex)
                     {
-                        LogLog.error("LogWriter failure", ex);
+                        LogLog.error("unhandled exception in writer", ex);
+                        appenderStats.setLastError(null, ex);
                         writer = null;
-                        lastWriterException = ex;
                     }
                 });
 
@@ -507,6 +532,32 @@ extends AppenderSkeleton
             }
             writer = null;
         }
+    }
+
+
+    /**
+     *  Registers the appender statistics with JMX. Logs but otherwise ignores failure.
+     *  <p>
+     *  The name for the bean is consistent with the Log4J <code>LayoutDynamicMBean</code>,
+     *  so that it will appear in the hierarchy under the appender.
+     *  <p>
+     *  Note: this method is protected so that it can be avoided during unit tests.
+     */
+    protected void registerStatisticsBean()
+    {
+        JMXManager.getInstance().addAppender(getName(), appenderStats, appenderStatsMXBeanClass);
+    }
+
+
+    /**
+     *  Unregisters the appender statistics from JMX. This is called when the appender
+     *  is closed. Logs but otherwise ignores failure.
+     *  <p>
+     *  Note: this method is protected so that it can be avoided during unit tests.
+     */
+    protected void unregisterStatisticsBean()
+    {
+        JMXManager.getInstance().removeAppender(getName());
     }
 
 

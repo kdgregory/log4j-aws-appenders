@@ -24,6 +24,7 @@ import java.util.concurrent.Semaphore;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
 
+import com.kdgregory.log4j.aws.internal.kinesis.KinesisAppenderStatistics;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisLogWriter;
 import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;
 import com.kdgregory.log4j.aws.internal.shared.LogWriter;
@@ -104,14 +105,14 @@ implements InvocationHandler
     /**
      *  Returns a Kinesis WriterFactory that includes our mock client.
      */
-    public WriterFactory<KinesisWriterConfig> newWriterFactory()
+    public WriterFactory<KinesisWriterConfig,KinesisAppenderStatistics> newWriterFactory()
     {
-        return new WriterFactory<KinesisWriterConfig>()
+        return new WriterFactory<KinesisWriterConfig,KinesisAppenderStatistics>()
         {
             @Override
-            public LogWriter newLogWriter(KinesisWriterConfig config)
+            public LogWriter newLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats)
             {
-                return new KinesisLogWriter(config)
+                return new KinesisLogWriter(config, stats)
                 {
                     @Override
                     protected void createAWSClient()
@@ -189,7 +190,7 @@ implements InvocationHandler
         {
             streamDesc.setStreamStatus(StreamStatus.ACTIVE);
         }
-        else if (request.getStreamName().equals("foo"))
+        else if (request.getStreamName().equals(createStreamStreamName))
         {
             if (createStreamInvocationCount == 0)
                 throw new ResourceNotFoundException("");

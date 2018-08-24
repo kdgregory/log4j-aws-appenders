@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -69,6 +69,7 @@ public class MessageQueue
 
     private LinkedBlockingDeque<LogMessage> messageQueue = new LinkedBlockingDeque<LogMessage>();
     private AtomicInteger messageCount = new AtomicInteger();
+    private AtomicInteger droppedMessageCount = new AtomicInteger();
 
     private volatile int discardThreshold;
     private volatile DiscardAction discardAction;
@@ -79,21 +80,21 @@ public class MessageQueue
         this.discardThreshold = discardThreshold;
         this.discardAction = discardAction;
     }
-    
-    
+
+
 //----------------------------------------------------------------------------
-//  Accessors
+//  Properties
 //----------------------------------------------------------------------------
-    
+
     /**
      *  Changes the discard threshold.
      */
     public void setDiscardThreshold(int value)
     {
         discardThreshold = value;
-    }    
-    
-    
+    }
+
+
     /**
      *  Returns the current discard threshold; this is intended for testing.
      */
@@ -109,15 +110,24 @@ public class MessageQueue
     public void setDiscardAction(DiscardAction value)
     {
         discardAction = value;
-    } 
-    
-    
+    }
+
+
     /**
      *  Returns the current discard action; this is intended for testing.
      */
     public DiscardAction getDiscardAction()
     {
         return discardAction;
+    }
+
+
+    /**
+     *  Returns the number of messages that have been dropped.
+     */
+    public int getDroppedMessageCount()
+    {
+        return droppedMessageCount.get();
     }
 
 
@@ -246,9 +256,11 @@ public class MessageQueue
         if (discardAction == DiscardAction.none) return;
         if (size() <= discardThreshold) return;
 
-        // note: with concurrent enqueues/dequeues, size may not represent the
-        //       actual queue size; in practice, however, it should be very close
-        //       (but we still only decrement if we remove a message!)
+        // note: with concurrent enqueues/dequeues, there is a race condition
+        // between size() and actual queue size -- however, it's close enough
+        // if we're at the point of discarding to not be concerned (and the
+        // actual queue size, which is an O(N) operation, would have its own
+        // race condition)
 
         while (size() > discardThreshold)
         {
@@ -258,6 +270,7 @@ public class MessageQueue
             if (discarded != null)
             {
                 messageCount.decrementAndGet();
+                droppedMessageCount.incrementAndGet();
             }
         }
     }

@@ -20,6 +20,8 @@ import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
 import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.Substitutions;
+import com.kdgregory.log4j.aws.internal.sns.SNSAppenderStatistics;
+import com.kdgregory.log4j.aws.internal.sns.SNSAppenderStatisticsMXBean;
 import com.kdgregory.log4j.aws.internal.sns.SNSConstants;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterFactory;
@@ -29,7 +31,7 @@ import com.kdgregory.log4j.aws.internal.sns.SNSWriterFactory;
  *  Writes messages to Amazon's Simple Notification Service.
  */
 public class SNSAppender
-extends AbstractAppender<SNSWriterConfig>
+extends AbstractAppender<SNSWriterConfig,SNSAppenderStatistics,SNSAppenderStatisticsMXBean>
 {
     // configuration
 
@@ -41,7 +43,9 @@ extends AbstractAppender<SNSWriterConfig>
     public SNSAppender()
     {
         super(new DefaultThreadFactory(),
-              new SNSWriterFactory());
+              new SNSWriterFactory(),
+              new SNSAppenderStatistics(),
+              SNSAppenderStatisticsMXBean.class);
 
         super.setDiscardThreshold(1000);
         super.setBatchDelay(1);

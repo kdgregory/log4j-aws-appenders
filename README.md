@@ -139,6 +139,12 @@ What happens when the appender drops messages?
   this logger, set the system property `log4j.configDebug` to `true` (note that the
   internal logger always writes messages to StdErr).
 
+Is there any way to see how the appenders are configured in a running program?
+
+> You can enable [JMX reporting](docs/jmx.md) to see which appenders are in use, how
+  they are configured (including any substitutions), how many messages they've sent,
+  and the last error (if any) they encountered.
+
 What are all these messages from `com.amazonaws` and `org.apache.http`?
 
 > You attached the AWS appender to your root logger. There are two solutions: the first

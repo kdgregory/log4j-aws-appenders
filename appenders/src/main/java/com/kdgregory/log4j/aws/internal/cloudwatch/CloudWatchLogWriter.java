@@ -40,14 +40,20 @@ extends AbstractLogWriter
 
     protected AWSLogs client;
 
+    private CloudWatchAppenderStatistics stats;
 
-    public CloudWatchLogWriter(CloudWatchWriterConfig config)
+
+    public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats)
     {
-        super(config.batchDelay, config.discardThreshold, config.discardAction);
+        super(stats, config.batchDelay, config.discardThreshold, config.discardAction);
         this.groupName = config.logGroup;
         this.streamName = config.logStream;
         this.clientFactoryMethod = config.clientFactoryMethod;
         this.clientEndpoint = config.clientEndpoint;
+
+        this.stats = stats;
+        this.stats.setActualLogGroupName(this.groupName);
+        this.stats.setActualLogStreamName(this.streamName);
     }
 
 //----------------------------------------------------------------------------
@@ -153,11 +159,13 @@ extends AbstractLogWriter
             LogStream stream = findLogStream();
             request.setSequenceToken(stream.getUploadSequenceToken());
             client.putLogEvents(request);
+            stats.updateMessagesSent(batch.size());
             return Collections.emptyList();
         }
         catch (Exception ex)
         {
             LogLog.error("failed to send batch", ex);
+            stats.setLastError(null, ex);
             return batch;
         }
     }

@@ -12,21 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws.internal.cloudwatch;
+package com.kdgregory.log4j.aws.internal.kinesis;
 
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
-import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
+import com.kdgregory.log4j.aws.internal.shared.AbstractAppenderStatistics;
 
 
-/**
- *  Factory to create CloudWatchLogWriter instances.
- */
-public class CloudWatchWriterFactory
-implements WriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics>
+public class KinesisAppenderStatistics
+extends AbstractAppenderStatistics
+implements KinesisAppenderStatisticsMXBean
 {
-    @Override
-    public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats)
+    private volatile String actualStreamName;
+
+
+    public void setActualStreamName(String value)
     {
-        return new CloudWatchLogWriter(config, stats);
+        actualStreamName = value;
     }
+
+    @Override
+    public String getActualStreamName()
+    {
+        return actualStreamName;
+    }
+
 }

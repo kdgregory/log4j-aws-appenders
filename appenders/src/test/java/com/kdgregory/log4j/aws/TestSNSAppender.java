@@ -31,6 +31,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
 
+import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
 
 import com.amazonaws.services.sns.AmazonSNS;
@@ -43,6 +44,7 @@ import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
 import com.kdgregory.log4j.aws.internal.shared.LogMessage;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
 import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
+import com.kdgregory.log4j.aws.internal.sns.SNSAppenderStatistics;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
 import com.kdgregory.log4j.aws.internal.sns.SNSWriterFactory;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
@@ -58,8 +60,10 @@ import com.kdgregory.log4j.testhelpers.aws.sns.TestableSNSAppender;
 
 public class TestSNSAppender
 {
-    // this ARN is used for all configuration files
+    // the same topic is used for all tests other than substitutions
+    private final static String EXPECTED_NAME = "example";
     private final static String EXPECTED_ARN = "arn:aws:sns:us-east-1:123456789012:example";
+
 
     private Logger logger;
     private TestableSNSAppender appender;
@@ -84,21 +88,21 @@ public class TestSNSAppender
 
     /**
      *  A spin loop that waits for an writer running in another thread to
-     *  finish initialization. Times out after 5 seconds, otherwise returns
-     *  the initialization message.
+     *  finish initialization, either successfully or with error.
      */
-    private String waitForInitialization() throws Exception
+    private void waitForInitialization() throws Exception
     {
         for (int ii = 0 ; ii < 50 ; ii++)
         {
             AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
-            if ((writer != null) && (writer.getInitializationMessage() != null))
-                return writer.getInitializationMessage();
+            if ((writer != null) && writer.isInitializationComplete())
+                return;
+            else if (appender.getAppenderStatistics().getLastErrorMessage() != null)
+                return;
             else
                 Thread.sleep(100);
         }
         fail("timed out waiting for initialization");
-        return null; // never reached
     }
 
 
@@ -267,7 +271,7 @@ public class TestSNSAppender
         logger.info("message two");
         mockClient.allowWriterThread();
 
-        assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
+        assertNull("no initialization error",                           appender.getAppenderStatistics().getLastError());
         assertEquals("invocations of listTopics",       1,              mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",          2,              mockClient.publishInvocationCount);
@@ -275,6 +279,10 @@ public class TestSNSAppender
         assertEquals("last message published, arn",     EXPECTED_ARN,   mockClient.lastPublishArn);
         assertEquals("last message published, subject", null,           mockClient.lastPublishSubject);
         assertEquals("last message published, body",    "message two",  mockClient.lastPublishMessage);
+
+        assertEquals("topic name, from statistics",         EXPECTED_NAME,  appender.getAppenderStatistics().getActualTopicName());
+        assertEquals("topic ARN, from statistics",          EXPECTED_ARN,   appender.getAppenderStatistics().getActualTopicArn());
+        assertEquals("sent message count, from statistics", 2,              appender.getAppenderStatistics().getMessagesSent());
     }
 
 
@@ -290,7 +298,7 @@ public class TestSNSAppender
         logger.info("message one");
         mockClient.allowWriterThread();
 
-        assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
+        assertNull("no initialization error",                           appender.getAppenderStatistics().getLastError());
         assertEquals("invocations of listTopics",       2,              mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",          1,              mockClient.publishInvocationCount);
@@ -298,6 +306,10 @@ public class TestSNSAppender
         assertEquals("last message published, arn",     EXPECTED_ARN,   mockClient.lastPublishArn);
         assertEquals("last message published, subject", null,           mockClient.lastPublishSubject);
         assertEquals("last message published, body",    "message one",  mockClient.lastPublishMessage);
+
+        assertEquals("topic name, from statistics",         EXPECTED_NAME,  appender.getAppenderStatistics().getActualTopicName());
+        assertEquals("topic ARN, from statistics",          EXPECTED_ARN,   appender.getAppenderStatistics().getActualTopicArn());
+        assertEquals("sent message count, from statistics", 1,              appender.getAppenderStatistics().getMessagesSent());
     }
 
 
@@ -313,7 +325,7 @@ public class TestSNSAppender
         logger.info("message one");
         mockClient.allowWriterThread();
 
-        assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
+        assertNull("no initialization error",                           appender.getAppenderStatistics().getLastError());
         assertEquals("invocations of listTopics",       1,              mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",      1,              mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",          1,              mockClient.publishInvocationCount);
@@ -321,6 +333,10 @@ public class TestSNSAppender
         assertEquals("last message published, arn",     EXPECTED_ARN,   mockClient.lastPublishArn);
         assertEquals("last message published, subject", null,           mockClient.lastPublishSubject);
         assertEquals("last message published, body",    "message one",  mockClient.lastPublishMessage);
+
+        assertEquals("topic name, from statistics",         EXPECTED_NAME,  appender.getAppenderStatistics().getActualTopicName());
+        assertEquals("topic ARN, from statistics",          EXPECTED_ARN,   appender.getAppenderStatistics().getActualTopicArn());
+        assertEquals("sent message count, from statistics", 1,              appender.getAppenderStatistics().getMessagesSent());
     }
 
 
@@ -339,7 +355,7 @@ public class TestSNSAppender
         logger.info("message two");
         mockClient.allowWriterThread();
 
-        assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
+        assertNull("no initialization error",                           appender.getAppenderStatistics().getLastError());
         assertEquals("invocations of listTopics",       1,              mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",          2,              mockClient.publishInvocationCount);
@@ -347,6 +363,10 @@ public class TestSNSAppender
         assertEquals("last message published, arn",     EXPECTED_ARN,   mockClient.lastPublishArn);
         assertEquals("last message published, subject", null,           mockClient.lastPublishSubject);
         assertEquals("last message published, body",    "message two",  mockClient.lastPublishMessage);
+
+        assertEquals("topic name, from statistics",         EXPECTED_NAME,  appender.getAppenderStatistics().getActualTopicName());
+        assertEquals("topic ARN, from statistics",          EXPECTED_ARN,   appender.getAppenderStatistics().getActualTopicArn());
+        assertEquals("sent message count, from statistics", 2,              appender.getAppenderStatistics().getMessagesSent());
     }
 
 
@@ -362,7 +382,7 @@ public class TestSNSAppender
         logger.info("message one");
         mockClient.allowWriterThread();
 
-        assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
+        assertNull("no initialization error",                           appender.getAppenderStatistics().getLastError());
         assertEquals("invocations of listTopics",       2,              mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",          1,              mockClient.publishInvocationCount);
@@ -370,6 +390,10 @@ public class TestSNSAppender
         assertEquals("last message published, arn",     EXPECTED_ARN,   mockClient.lastPublishArn);
         assertEquals("last message published, subject", null,           mockClient.lastPublishSubject);
         assertEquals("last message published, body",    "message one",  mockClient.lastPublishMessage);
+
+        assertEquals("topic name, from statistics",         EXPECTED_NAME,  appender.getAppenderStatistics().getActualTopicName());
+        assertEquals("topic ARN, from statistics",          EXPECTED_ARN,   appender.getAppenderStatistics().getActualTopicArn());
+        assertEquals("sent message count, from statistics", 1,              appender.getAppenderStatistics().getMessagesSent());
     }
 
 
@@ -384,13 +408,19 @@ public class TestSNSAppender
 
         logger.info("message");
 
-        String initializationError = waitForInitialization();
-        assertTrue("initialization error mentions topic name (was: " + initializationError + ")",
-                   initializationError.contains("example"));
+        waitForInitialization();
+        String initializationMessage = appender.getAppenderStatistics().getLastErrorMessage();
+
+        assertTrue("initialization error mentions topic name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("example"));
 
         assertEquals("invocations of listTopics",           1,          mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",          0,          mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",              0,          mockClient.publishInvocationCount);
+
+        assertEquals("topic name, from statistics",         null,       appender.getAppenderStatistics().getActualTopicName());
+        assertEquals("topic ARN, from statistics",          null,       appender.getAppenderStatistics().getActualTopicArn());
+        assertEquals("sent message count, from statistics", 0,          appender.getAppenderStatistics().getMessagesSent());
     }
 
 
@@ -406,7 +436,7 @@ public class TestSNSAppender
         logger.info("message one");
         mockClient.allowWriterThread();
 
-        assertEquals("no initialization error",         "",             ((AbstractLogWriter)appender.getWriter()).getInitializationMessage());
+        assertNull("no initialization error",                           appender.getAppenderStatistics().getLastError());
         assertEquals("invocations of listTopics",       1,              mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",          1,              mockClient.publishInvocationCount);
@@ -437,13 +467,17 @@ public class TestSNSAppender
         // first message triggers writer creation
 
         logger.info("message one");
+
         waitForInitialization();
+        String initializationMessage = appender.getAppenderStatistics().getLastErrorMessage();
+        Throwable initializationError = appender.getAppenderStatistics().getLastError();
 
         AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
-        MessageQueue messageQueue = appender.getMessageQueue();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
-        assertTrue("initialization message was non-blank",  ! writer.getInitializationMessage().equals(""));
-        assertEquals("initialization exception retained",   TestingException.class,     writer.getInitializationException().getClass());
+        assertNotNull("writer was retained",                                            writer);
+        assertTrue("initialization message was non-blank",                              ! initializationMessage.equals(""));
+        assertEquals("initialization exception retained",   TestingException.class,     initializationError.getClass());
         assertEquals("message queue set to discard all",    0,                          messageQueue.getDiscardThreshold());
         assertEquals("message queue set to discard all",    DiscardAction.oldest,       messageQueue.getDiscardAction());
         assertEquals("messages in queue (initial)",         1,                          messageQueue.toList().size());
@@ -467,15 +501,58 @@ public class TestSNSAppender
         // first message triggers writer creation
 
         logger.info("message one");
-        waitForInitialization();
 
-        String initializationMessage = ((AbstractLogWriter)appender.getWriter()).getInitializationMessage();
+        waitForInitialization();
+        String initializationMessage = appender.getAppenderStatistics().getLastErrorMessage();
+
         assertTrue("initialization message includes topic name (was: " + initializationMessage + ")",
                    initializationMessage.contains("x%$!"));
 
         assertEquals("invocations of listTopics",       0,              mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",      0,              mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",          0,              mockClient.publishInvocationCount);
+    }
+
+
+    @Test
+    public void testBatchErrorHandling() throws Exception
+    {
+        initialize("TestSNSAppender/testBatchErrorHandling.properties");
+
+        MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("argle", "example", "bargle"))
+        {
+            @Override
+            protected PublishResult publish(PublishRequest request)
+            {
+                throw new TestingException("no notifications for you!");
+            }
+        };
+
+        appender.setWriterFactory(mockClient.newWriterFactory());
+        appender.setThreadFactory(new DefaultThreadFactory());
+
+        logger.info("test message");
+        mockClient.allowWriterThread();
+
+        AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        SNSAppenderStatistics appenderStats = appender.getAppenderStatistics();
+        Throwable lastError = appenderStats.getLastError();
+
+        assertEquals("number of calls to Publish",              1,                          mockClient.publishInvocationCount);
+        assertNotNull("writer still exists",                                                writer);
+        assertEquals("stats reports no messages sent",          0,                          appenderStats.getMessagesSent());
+        assertTrue("error message was non-blank",                                           ! appenderStats.getLastErrorMessage().equals(""));
+        assertEquals("exception retained",                      TestingException.class,     lastError.getClass());
+        assertEquals("exception message",                       "no notifications for you!", lastError.getMessage());
+        assertTrue("message queue still accepts messages",                                  messageQueue.getDiscardThreshold() > 0);
+
+        // the background thread will try to assemble another batch right away, so we can't examine
+        // the message queue; instead we'll wait for the writer to call Publish again
+
+        mockClient.allowWriterThread();
+
+        assertEquals("Publish called again",                 2,                             mockClient.publishInvocationCount);
     }
 
 
@@ -487,22 +564,24 @@ public class TestSNSAppender
         // note that we will be running the writer on a separate thread
 
         appender.setThreadFactory(new DefaultThreadFactory());
-        appender.setWriterFactory(new ThrowingWriterFactory<SNSWriterConfig>());
+        appender.setWriterFactory(new ThrowingWriterFactory<SNSWriterConfig,SNSAppenderStatistics>());
+
+        SNSAppenderStatistics appenderStats = appender.getAppenderStatistics();
 
         logger.debug("this should trigger writer creation");
 
-        assertNull("writer has not yet thrown", appender.getLastWriterException());
+        assertNull("writer has not yet thrown", appenderStats.getLastError());
 
         logger.debug("this should trigger writer throwage");
 
         // without getting really clever, the best way to wait for the throw to be reported is to sit and spin
-        for (int ii = 0 ; (ii < 10) && (appender.getLastWriterException() == null) ; ii++)
+        for (int ii = 0 ; (ii < 10) && (appenderStats.getLastError() == null) ; ii++)
         {
             Thread.sleep(10);
         }
 
         assertNull("writer has been reset",         appender.getMockWriter());
-        assertEquals("last writer exception class", TestingException.class, appender.getLastWriterException().getClass());
+        assertEquals("last writer exception class", TestingException.class, appenderStats.getLastError().getClass());
     }
 
 
@@ -516,7 +595,7 @@ public class TestSNSAppender
         MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("example"))
         {
             @Override
-            protected PublishResult publish0(PublishRequest request)
+            protected PublishResult publish(PublishRequest request)
             {
                 throw new TestingException("this isn't going to work");
             }
@@ -530,7 +609,9 @@ public class TestSNSAppender
             logger.debug("message " + ii);
         }
 
-        List<LogMessage> messages = appender.getMessageQueue().toList();
+        AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        List<LogMessage> messages = messageQueue.toList();
 
         assertEquals("number of messages in queue", 10, messages.size());
         assertEquals("oldest message", "message 10\n", messages.get(0).getMessage());
@@ -548,7 +629,7 @@ public class TestSNSAppender
         MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("example"))
         {
             @Override
-            protected PublishResult publish0(PublishRequest request)
+            protected PublishResult publish(PublishRequest request)
             {
                 throw new TestingException("this isn't going to work");
             }
@@ -562,7 +643,9 @@ public class TestSNSAppender
             logger.debug("message " + ii);
         }
 
-        List<LogMessage> messages = appender.getMessageQueue().toList();
+        AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        List<LogMessage> messages = messageQueue.toList();
 
         assertEquals("number of messages in queue", 10, messages.size());
         assertEquals("oldest message", "message 0\n", messages.get(0).getMessage());
@@ -580,7 +663,7 @@ public class TestSNSAppender
         MockSNSClient mockClient = new MockSNSClient("example", Arrays.asList("example"))
         {
             @Override
-            protected PublishResult publish0(PublishRequest request)
+            protected PublishResult publish(PublishRequest request)
             {
                 throw new TestingException("this isn't going to work");
             }
@@ -594,7 +677,9 @@ public class TestSNSAppender
             logger.debug("message " + ii);
         }
 
-        List<LogMessage> messages = appender.getMessageQueue().toList();
+        AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        List<LogMessage> messages = messageQueue.toList();
 
         assertEquals("number of messages in queue", 20, messages.size());
         assertEquals("oldest message", "message 0\n", messages.get(0).getMessage());
@@ -614,7 +699,8 @@ public class TestSNSAppender
 
         logger.debug("trigger writer creation");
 
-        MessageQueue messageQueue = appender.getMessageQueue();
+        AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         assertEquals("initial discard threshold, from appender",    12345,                              appender.getDiscardThreshold());
         assertEquals("initial discard action, from appender",       DiscardAction.newest.toString(),    appender.getDiscardAction());
@@ -646,11 +732,11 @@ public class TestSNSAppender
 
         AbstractLogWriter writer = (AbstractLogWriter)appender.getWriter();
 
-        assertNotNull("factory was called to create client", staticFactoryMock);
-        assertEquals("no initialization errors",             "",
-                                                             writer.getInitializationMessage());
-        assertEquals("called explicit client factory",       "com.kdgregory.log4j.aws.TestSNSAppender.createMockClient",
-                                                             writer.getClientFactoryUsed());
+        assertNotNull("factory was called to create client",    staticFactoryMock);
+        assertNull("no initialization message",                 appender.getAppenderStatistics().getLastErrorMessage());
+        assertNull("no initialization error",                   appender.getAppenderStatistics().getLastError());
+        assertEquals("called explicit client factory",          "com.kdgregory.log4j.aws.TestSNSAppender.createMockClient",
+                                                                writer.getClientFactoryUsed());
 
         // this should be a sufficient assertion, but we'll go on and let the message get written
 

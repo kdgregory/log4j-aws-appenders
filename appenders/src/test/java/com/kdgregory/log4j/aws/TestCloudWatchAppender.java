@@ -14,6 +14,7 @@
 
 package com.kdgregory.log4j.aws;
 
+
 import java.net.URL;
 
 import org.junit.After;

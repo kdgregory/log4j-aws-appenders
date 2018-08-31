@@ -22,8 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
-import net.sf.kdgcommons.lang.StringUtil;
-
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.*;
 
@@ -40,14 +38,16 @@ import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
  *  level of  complexity, but they're the only way to experiement with error
  *  conditions.
  *  <p>
- *  The basic implementation knows a list of names that are used for both
- *  logstreams and loggroups; both of the "describe" operations return this
- *  list, split into two parts. It also supports creating groups and streams,
- *  and the new names will be added to the lists returned by describe. Lastly,
- *  it supports putLogEvents, always returning success unless it's passed an
- *  invalid sequence token. If you need additional functionality (such as
- *  throwing from within any call), override the appropriate protected client
- *  method(s).
+ *  Construct with a list of loggroups and logstreams; there's no pairing of
+ *  groups and streams. There's a default constructor that uses predefined lists,
+ *  and a more complex constructor that breaks the list into fixed-sized chunks
+ *  to verify multiple calls to the "describe" functions. Adding a group or stream
+ *  will update the instance lists, which are available to the test code.
+ *  <p>
+ *  Each method invocation is counted, whether or not it succeeds. Only those
+ *  methods that are used by the writer are implemented; everything else throws.
+ *  Tests can override the method to change default behavior (for example, to
+ *  throw or return an empty list).
  *  <p>
  *  The tests that use this writer will have a background thread running, so will
  *  to coordinate behaviors between the main thread and writer thread. There are
@@ -61,18 +61,21 @@ import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
 public class MockCloudWatchClient
 implements InvocationHandler
 {
-    // this token is used for describeLogGroups and describeLogStreams to
-    // indicate the presence of or request for a second batch
-    private final static String DESCRIBE_2ND_REQUEST_TOKEN = "qwertyuiop";
+    // the default list of names
+    public static List<String> NAMES = Arrays.asList("foo", "bar", "barglet", "arglet",
+                                                     "baz", "bargle", "argle", "fribble");
 
-    // default lists of groups for describeLogGroups and describeLogStreams
-    // note that the names that we use for testing are in the second batch;
-    // this lets us verify that we retrieve all names
-    protected List<String> describe1 = new ArrayList<String>(Arrays.asList("foo", "bar", "barglet", "arglet"));
-    protected List<String> describe2 = new ArrayList<String>(Arrays.asList("baz", "bargle", "argle", "fribble"));
+    // the actual list of names used by this instance
+    public List<String> logGroupNames;
+    public List<String> logStreamNames;
 
-    // the sequence token used for putLogEvents(); start with non-default value
-    protected int putLogEventsSequenceToken = 17;
+    // the maximum number of names that will be returned in a single describe call
+    private int maxLogGroupNamesInBatch;
+    private int maxLogStreamNamesInBatch;
+
+    // the sequence token used for putLogEvents(); start with arbitrary value to
+    // verify that we're actually retrieving it from describe
+    protected int putLogEventsSequenceToken = (int)(System.currentTimeMillis() % 143);
 
     // these semaphores coordinate the calls to PutLogEvents with the assertions
     // that we make in the main thread; note that both start unacquired
@@ -98,15 +101,38 @@ implements InvocationHandler
 
 
     /**
-     *  Pauses the main thread and allows the writer thread to proceed.
+     *  Constructs an instance using the default name list.
      */
-    public void allowWriterThread() throws Exception
+    public MockCloudWatchClient()
     {
-        allowWriterThread.release();
-        Thread.sleep(100);
-        allowMainThread.acquire();
+        this(NAMES, NAMES);
     }
 
+
+    /**
+     *  Constructs an instance using the specified lists of names, with no batch limit.
+     */
+    public MockCloudWatchClient(List<String> groupNames, List<String> streamNames)
+    {
+        this(groupNames, Integer.MAX_VALUE, streamNames, Integer.MAX_VALUE);
+    }
+
+
+    /**
+     *  Constructs an instance using the specified lists of names and limits to the number
+     *  of names that will be returned in a batch.
+     */
+    public MockCloudWatchClient(List<String> groupNames, int groupBatchSize, List<String> streamNames, int streamBatchSize)
+    {
+        logGroupNames = new ArrayList<String>(groupNames);
+        maxLogGroupNamesInBatch = groupBatchSize;
+        logStreamNames = new ArrayList<String>(streamNames);
+        maxLogStreamNamesInBatch = streamBatchSize;
+    }
+
+//----------------------------------------------------------------------------
+//  Public API
+//----------------------------------------------------------------------------
 
     /**
      *  Creates the client proxy. This is used internally, and also by the test
@@ -141,6 +167,17 @@ implements InvocationHandler
                 };
             }
         };
+    }
+
+
+    /**
+     *  Pauses the main thread and allows the writer thread to proceed.
+     */
+    public void allowWriterThread() throws Exception
+    {
+        allowWriterThread.release();
+        Thread.sleep(100);
+        allowMainThread.acquire();
     }
 
 
@@ -208,23 +245,23 @@ implements InvocationHandler
 //  Subclasses can override these
 //----------------------------------------------------------------------------
 
-     // Default implementation returns predefined groups in two batches.
     protected DescribeLogGroupsResult describeLogGroups(DescribeLogGroupsRequest request)
     {
-        List<String> names = (request.getNextToken() == null)
-                           ? filterNames(describe1, request.getLogGroupNamePrefix())
-                           : filterNames(describe2, request.getLogGroupNamePrefix());
+        int offset = 0;
+        if (request.getNextToken() != null)
+            offset = Integer.parseInt(request.getNextToken());
 
+        int max = Math.min(logGroupNames.size(), offset + maxLogGroupNamesInBatch);
+
+        String namePrefix = request.getLogGroupNamePrefix();
         List<LogGroup> logGroups = new ArrayList<LogGroup>();
-        for (String name : names)
+        for (String name : logGroupNames.subList(offset, max))
         {
-            logGroups.add(new LogGroup().withLogGroupName(name));
+            if ((namePrefix == null) || name.startsWith(namePrefix))
+                logGroups.add(new LogGroup().withLogGroupName(name));
         }
 
-        // for testing we always return two batches
-        String nextToken = (request.getNextToken() == null)
-                         ? DESCRIBE_2ND_REQUEST_TOKEN
-                         : null;
+        String nextToken = (max == logGroupNames.size()) ? null : String.valueOf(max);
 
         return new DescribeLogGroupsResult()
                .withLogGroups(logGroups)
@@ -232,26 +269,25 @@ implements InvocationHandler
     }
 
 
-    // Default implementation returns predefined streams in two batches.
     protected DescribeLogStreamsResult describeLogStreams(DescribeLogStreamsRequest request)
     {
-        List<String> names = (request.getNextToken() == null)
-                           ? filterNames(describe1, request.getLogStreamNamePrefix())
-                           : filterNames(describe2, request.getLogStreamNamePrefix());
+        int offset = 0;
+        if (request.getNextToken() != null)
+            offset = Integer.parseInt(request.getNextToken());
 
+        int max = Math.min(logStreamNames.size(), offset + maxLogStreamNamesInBatch);
+
+        String namePrefix = request.getLogStreamNamePrefix();
         List<LogStream> logStreams = new ArrayList<LogStream>();
-        for (String name : names)
+        for (String name : logStreamNames.subList(offset, max))
         {
-            LogStream stream = new LogStream()
+            if ((namePrefix == null) || name.startsWith(namePrefix))
+                logStreams.add(new LogStream()
                                .withLogStreamName(name)
-                               .withUploadSequenceToken(String.valueOf(putLogEventsSequenceToken));
-            logStreams.add(stream);
+                               .withUploadSequenceToken(String.valueOf(putLogEventsSequenceToken)));
         }
 
-        // for testing we always return two batches
-        String nextToken = (request.getNextToken() == null)
-                         ? DESCRIBE_2ND_REQUEST_TOKEN
-                         : null;
+        String nextToken = (max == logStreamNames.size()) ? null : String.valueOf(max);
 
         return new DescribeLogStreamsResult()
                    .withLogStreams(logStreams)
@@ -262,7 +298,7 @@ implements InvocationHandler
     // default implementation is successful, adds group name to those returned by describe
     protected CreateLogGroupResult createLogGroup(CreateLogGroupRequest request)
     {
-        describe2.add(request.getLogGroupName());
+        logGroupNames.add(request.getLogGroupName());
         return new CreateLogGroupResult();
     }
 
@@ -270,7 +306,7 @@ implements InvocationHandler
     // default implementation is successful, adds stream name to those returned by describe
     protected CreateLogStreamResult createLogStream(CreateLogStreamRequest request)
     {
-        describe2.add(request.getLogStreamName());
+        logStreamNames.add(request.getLogStreamName());
         return new CreateLogStreamResult();
     }
 
@@ -281,25 +317,4 @@ implements InvocationHandler
                .withNextSequenceToken(String.valueOf(++putLogEventsSequenceToken));
     }
 
-
-//----------------------------------------------------------------------------
-//  Internals
-//----------------------------------------------------------------------------
-
-    /**
-     *  Filters a list of names to find those that start with a given value.
-     */
-    private List<String> filterNames(List<String> source, String startsWith)
-    {
-        if (StringUtil.isEmpty(startsWith))
-            return source;
-
-        List<String> result = new ArrayList<String>();
-        for (String value : source)
-        {
-            if (value.startsWith(startsWith))
-                result.add(value);
-        }
-        return result;
-    }
 }

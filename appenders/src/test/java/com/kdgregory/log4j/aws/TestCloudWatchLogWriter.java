@@ -147,8 +147,8 @@ public class TestCloudWatchLogWriter
         // will call describeLogGroups when checking group existence
         // will call describeLogStreams when checking stream existence, as well as for each putLogEvents
 
-        assertEquals("describeLogGroups: invocation count",   2,                mockClient.describeLogGroupsInvocationCount);
-        assertEquals("describeLogStreams: invocation count",  4,                mockClient.describeLogStreamsInvocationCount);
+        assertEquals("describeLogGroups: invocation count",   1,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  2,                mockClient.describeLogStreamsInvocationCount);
         assertEquals("createLogGroup: invocation count",      0,                mockClient.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",     0,                mockClient.createLogStreamInvocationCount);
         assertEquals("putLogEvents: invocation count",        1,                mockClient.putLogEventsInvocationCount);
@@ -158,8 +158,8 @@ public class TestCloudWatchLogWriter
         logger.debug("message two");
         mockClient.allowWriterThread();
 
-        assertEquals("describeLogGroups: invocation count",   2,                mockClient.describeLogGroupsInvocationCount);
-        assertEquals("describeLogStreams: invocation count",  6,                mockClient.describeLogStreamsInvocationCount);
+        assertEquals("describeLogGroups: invocation count",   1,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  3,                mockClient.describeLogStreamsInvocationCount);
         assertEquals("createLogGroup: invocation count",      0,                mockClient.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",     0,                mockClient.createLogStreamInvocationCount);
         assertEquals("putLogEvents: invocation count",        2,                mockClient.putLogEventsInvocationCount);
@@ -189,8 +189,8 @@ public class TestCloudWatchLogWriter
         // will call describeLogGroups when checking group existence
         // will call describeLogStreams before and after creating stream, as well as for each putLogEvents
 
-        assertEquals("describeLogGroups: invocation count",   2,                mockClient.describeLogGroupsInvocationCount);
-        assertEquals("describeLogStreams: invocation count",  6,                mockClient.describeLogStreamsInvocationCount);
+        assertEquals("describeLogGroups: invocation count",   1,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  3,                mockClient.describeLogStreamsInvocationCount);
         assertEquals("createLogGroup: invocation count",      0,                mockClient.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",     1,                mockClient.createLogStreamInvocationCount);
         assertEquals("createLogStream: group name",           "argle",          mockClient.createLogStreamGroupName);
@@ -202,8 +202,8 @@ public class TestCloudWatchLogWriter
         logger.debug("message two");
         mockClient.allowWriterThread();
 
-        assertEquals("describeLogGroups: invocation count",   2,                mockClient.describeLogGroupsInvocationCount);
-        assertEquals("describeLogStreams: invocation count",  8,                mockClient.describeLogStreamsInvocationCount);
+        assertEquals("describeLogGroups: invocation count",   1,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  4,                mockClient.describeLogStreamsInvocationCount);
         assertEquals("createLogGroup: invocation count",      0,                mockClient.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",     1,                mockClient.createLogStreamInvocationCount);
         assertEquals("createLogStream: group name",           "argle",          mockClient.createLogStreamGroupName);
@@ -235,8 +235,8 @@ public class TestCloudWatchLogWriter
         // will call describeLogGroups both before and after creating group
         // will call describeLogStreams before and after creating stream, as well as for each putLogEvents
 
-        assertEquals("describeLogGroups: invocation count",   4,                mockClient.describeLogGroupsInvocationCount);
-        assertEquals("describeLogStreams: invocation count",  6,                mockClient.describeLogStreamsInvocationCount);
+        assertEquals("describeLogGroups: invocation count",   2,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  3,                mockClient.describeLogStreamsInvocationCount);
         assertEquals("createLogGroup: invocation count",      1,                mockClient.createLogGroupInvocationCount);
         assertEquals("createLogGroup: group name",            "griffy",         mockClient.createLogGroupGroupName);
         assertEquals("createLogStream: invocation count",     1,                mockClient.createLogStreamInvocationCount);
@@ -249,8 +249,8 @@ public class TestCloudWatchLogWriter
         logger.debug("message two");
         mockClient.allowWriterThread();
 
-        assertEquals("describeLogGroups: invocation count",   4,                mockClient.describeLogGroupsInvocationCount);
-        assertEquals("describeLogStreams: invocation count",  8,                mockClient.describeLogStreamsInvocationCount);
+        assertEquals("describeLogGroups: invocation count",   2,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  4,                mockClient.describeLogStreamsInvocationCount);
         assertEquals("createLogGroup: invocation count",      1,                mockClient.createLogGroupInvocationCount);
         assertEquals("createLogGroup: group name",            "griffy",         mockClient.createLogGroupGroupName);
         assertEquals("createLogStream: invocation count",     1,                mockClient.createLogStreamInvocationCount);
@@ -600,8 +600,8 @@ public class TestCloudWatchLogWriter
 
         staticFactoryMock.allowWriterThread();
 
-        assertEquals("describeLogGroups: invocation count",   2,                staticFactoryMock.describeLogGroupsInvocationCount);
-        assertEquals("describeLogStreams: invocation count",  4,                staticFactoryMock.describeLogStreamsInvocationCount);
+        assertEquals("describeLogGroups: invocation count",   1,                staticFactoryMock.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  2,                staticFactoryMock.describeLogStreamsInvocationCount);
         assertEquals("createLogGroup: invocation count",      0,                staticFactoryMock.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",     0,                staticFactoryMock.createLogStreamInvocationCount);
         assertEquals("putLogEvents: invocation count",        1,                staticFactoryMock.putLogEventsInvocationCount);

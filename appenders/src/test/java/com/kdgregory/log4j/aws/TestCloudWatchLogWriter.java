@@ -267,6 +267,48 @@ public class TestCloudWatchLogWriter
 
 
     @Test
+    public void testMultipleDescribeCalls() throws Exception
+    {
+        // this is the same as testWriterWithExistingGroupAndStream, but picks the last group/stream in the default list
+        initialize("TestCloudWatchAppender/testMultipleDescribeCalls.properties");
+
+        MockCloudWatchClient mockClient = new MockCloudWatchClient(MockCloudWatchClient.NAMES, 5, MockCloudWatchClient.NAMES, 5);
+
+        // TODO: need a new thread factory that creates non-daemon threads
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("message one");
+        mockClient.allowWriterThread();
+
+        // will call describeLogGroups when checking group existence
+        // will call describeLogStreams when checking stream existence, as well as for each putLogEvents
+
+        assertEquals("describeLogGroups: invocation count",   2,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  4,                mockClient.describeLogStreamsInvocationCount);
+        assertEquals("createLogGroup: invocation count",      0,                mockClient.createLogGroupInvocationCount);
+        assertEquals("createLogStream: invocation count",     0,                mockClient.createLogStreamInvocationCount);
+        assertEquals("putLogEvents: invocation count",        1,                mockClient.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",    1,                mockClient.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",            "message one\n",  mockClient.mostRecentEvents.get(0).getMessage());
+
+        logger.debug("message two");
+        mockClient.allowWriterThread();
+
+        assertEquals("describeLogGroups: invocation count",   2,                mockClient.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",  6,                mockClient.describeLogStreamsInvocationCount);
+        assertEquals("createLogGroup: invocation count",      0,                mockClient.createLogGroupInvocationCount);
+        assertEquals("createLogStream: invocation count",     0,                mockClient.createLogStreamInvocationCount);
+        assertEquals("putLogEvents: invocation count",        2,                mockClient.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",    1,                mockClient.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",            "message two\n",  mockClient.mostRecentEvents.get(0).getMessage());
+
+        assertEquals("messages sent, from statistics",          2,              appender.getAppenderStatistics().getMessagesSent());
+        assertEquals("actual log group name, from statistics",  "argle",        appender.getAppenderStatistics().getActualLogGroupName());
+        assertEquals("actual log stream name, from statistics", "fribble",      appender.getAppenderStatistics().getActualLogStreamName());
+    }
+
+    @Test
     public void testInvalidGroupName() throws Exception
     {
         initialize("TestCloudWatchAppender/testInvalidGroupName.properties");

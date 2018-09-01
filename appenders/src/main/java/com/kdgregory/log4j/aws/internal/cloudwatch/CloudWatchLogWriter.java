@@ -151,12 +151,20 @@ extends AbstractLogWriter
                                       .withLogStreamName(streamName)
                                       .withLogEvents(constructLogEvents(batch));
 
+        // if we can't find the stream we'll try to re-create it
+        LogStream stream = findLogStream();
+        if (stream == null)
+        {
+            stats.setLastError("log stream missing: " + streamName, null);
+            ensureDestinationAvailable();
+            return batch;
+        }
+
         // sending is all-or-nothing with CloudWatch; we'll return the entire batch
         // if there's an exception
 
         try
         {
-            LogStream stream = findLogStream();
             request.setSequenceToken(stream.getUploadSequenceToken());
             client.putLogEvents(request);
             stats.updateMessagesSent(batch.size());

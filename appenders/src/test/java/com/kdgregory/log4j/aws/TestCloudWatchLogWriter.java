@@ -30,10 +30,15 @@ import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
 
 import net.sf.kdgcommons.lang.ClassUtil;
+import net.sf.kdgcommons.test.StringAsserts;
 
 import com.amazonaws.services.logs.AWSLogs;
+import com.amazonaws.services.logs.model.CreateLogStreamRequest;
+import com.amazonaws.services.logs.model.CreateLogStreamResult;
 import com.amazonaws.services.logs.model.DescribeLogGroupsRequest;
 import com.amazonaws.services.logs.model.DescribeLogGroupsResult;
+import com.amazonaws.services.logs.model.DescribeLogStreamsRequest;
+import com.amazonaws.services.logs.model.DescribeLogStreamsResult;
 import com.amazonaws.services.logs.model.InputLogEvent;
 import com.amazonaws.services.logs.model.PutLogEventsRequest;
 import com.amazonaws.services.logs.model.PutLogEventsResult;
@@ -507,6 +512,83 @@ public class TestCloudWatchLogWriter
         mockClient.allowWriterThread();
 
         assertEquals("third batch, number of events in request", 2, mockClient.mostRecentEvents.size());
+    }
+
+
+    @Test
+    public void testLogstreamDeletedAfterInitialization() throws Exception
+    {
+        // WARNING: this test may break if the internal implementation changes
+
+        initialize("TestCloudWatchAppender/testLogstreamDeletedAfterInitialization.properties");
+
+        // after sending each batch, this client will pretend that none of its streams
+        // exist until they've been explicitly recreated.
+        MockCloudWatchClient mockClient = new MockCloudWatchClient()
+        {
+            private boolean streamWasDeleted;
+
+            @Override
+            protected DescribeLogStreamsResult describeLogStreams(DescribeLogStreamsRequest request)
+            {
+                if (streamWasDeleted)
+                {
+                    return new DescribeLogStreamsResult().withLogStreams();
+                }
+                else
+                {
+                    return super.describeLogStreams(request);
+                }
+            }
+
+            @Override
+            protected CreateLogStreamResult createLogStream(CreateLogStreamRequest request)
+            {
+                if (streamWasDeleted)
+                    streamWasDeleted = false;
+                return super.createLogStream(request);
+            }
+
+            @Override
+            protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
+            {
+                streamWasDeleted = true;
+                return super.putLogEvents(request);
+            }
+        };
+
+        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setWriterFactory(mockClient.newWriterFactory());
+
+        logger.debug("first message");
+
+        mockClient.allowWriterThread();
+
+        // initialize calls describeLogGroups and describeLogStreams once each
+        // sending first batch will call describeLogStreams before sending
+
+        assertEquals("first message, describeLogGroups invocation count",   1,  mockClient.describeLogGroupsInvocationCount);
+        assertEquals("first message, describeLogStreams invocation count",  2,  mockClient.describeLogStreamsInvocationCount);
+        assertEquals("first message, createLogGroup invocation count",      0,  mockClient.createLogGroupInvocationCount);
+        assertEquals("first message, createLogStream invocation count",     0,  mockClient.createLogStreamInvocationCount);
+        assertEquals("first message, putLogEvents invocation count",        1,  mockClient.putLogEventsInvocationCount);
+        assertNull("no errors reported in statistics",                          appender.getAppenderStatistics().getLastError());
+
+        logger.debug("second message");
+
+        mockClient.allowWriterThread();
+
+        // sending batch will call describeLogStreams, which will return nothing; it then
+        // checks both stream and group, creating the stream; next call will describe the
+        // stream before putLogEvents
+
+        assertEquals("second message, describeLogGroups invocation count",   2, mockClient.describeLogGroupsInvocationCount);
+        assertEquals("second message, describeLogStreams invocation count",  6, mockClient.describeLogStreamsInvocationCount);
+        assertEquals("second message, createLogGroupinvocation count",       0, mockClient.createLogGroupInvocationCount);
+        assertEquals("second message, createLogStream invocation count",     1, mockClient.createLogStreamInvocationCount);
+        assertEquals("second message, putLogEvents invocation count",        2, mockClient.putLogEventsInvocationCount);
+        StringAsserts.assertRegex("statistics retains error message",        "log stream missing.*bargle",
+                                                                             appender.getAppenderStatistics().getLastErrorMessage());
     }
 
 

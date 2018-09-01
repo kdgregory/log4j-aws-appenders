@@ -137,7 +137,6 @@ public class TestCloudWatchLogWriter
 
         MockCloudWatchClient mockClient = new MockCloudWatchClient();
 
-        // TODO: need a new thread factory that creates non-daemon threads
         appender.setThreadFactory(new DefaultThreadFactory());
         appender.setWriterFactory(mockClient.newWriterFactory());
 
@@ -179,7 +178,6 @@ public class TestCloudWatchLogWriter
 
         MockCloudWatchClient mockClient = new MockCloudWatchClient();
 
-        // TODO: need a new thread factory that creates non-daemon threads
         appender.setThreadFactory(new DefaultThreadFactory());
         appender.setWriterFactory(mockClient.newWriterFactory());
 
@@ -225,7 +223,6 @@ public class TestCloudWatchLogWriter
 
         MockCloudWatchClient mockClient = new MockCloudWatchClient();
 
-        // TODO: need a new thread factory that creates non-daemon threads
         appender.setThreadFactory(new DefaultThreadFactory());
         appender.setWriterFactory(mockClient.newWriterFactory());
 
@@ -274,7 +271,6 @@ public class TestCloudWatchLogWriter
 
         MockCloudWatchClient mockClient = new MockCloudWatchClient(MockCloudWatchClient.NAMES, 5, MockCloudWatchClient.NAMES, 5);
 
-        // TODO: need a new thread factory that creates non-daemon threads
         appender.setThreadFactory(new DefaultThreadFactory());
         appender.setWriterFactory(mockClient.newWriterFactory());
 
@@ -315,7 +311,6 @@ public class TestCloudWatchLogWriter
 
         MockCloudWatchClient mockClient = new MockCloudWatchClient();
 
-        // TODO: need a new thread factory that creates non-daemon threads
         appender.setThreadFactory(new DefaultThreadFactory());
         appender.setWriterFactory(mockClient.newWriterFactory());
 
@@ -341,7 +336,6 @@ public class TestCloudWatchLogWriter
 
         MockCloudWatchClient mockClient = new MockCloudWatchClient();
 
-        // TODO: need a new thread factory that creates non-daemon threads
         appender.setThreadFactory(new DefaultThreadFactory());
         appender.setWriterFactory(mockClient.newWriterFactory());
 
@@ -374,7 +368,6 @@ public class TestCloudWatchLogWriter
             }
         };
 
-        // TODO: need a new thread factory that creates non-daemon threads
         appender.setThreadFactory(new DefaultThreadFactory());
         appender.setWriterFactory(mockClient.newWriterFactory());
 
@@ -423,7 +416,6 @@ public class TestCloudWatchLogWriter
             }
         };
 
-        // TODO: need a new thread factory that creates non-daemon threads
         appender.setThreadFactory(new DefaultThreadFactory());
         appender.setWriterFactory(mockClient.newWriterFactory());
 
@@ -480,7 +472,6 @@ public class TestCloudWatchLogWriter
             }
         };
 
-        // TODO: need a new thread factory that creates non-daemon threads
         appender.setThreadFactory(new DefaultThreadFactory());
         appender.setWriterFactory(mockClient.newWriterFactory());
 
@@ -619,7 +610,6 @@ public class TestCloudWatchLogWriter
     {
         initialize("TestCloudWatchAppender/testStaticClientFactory.properties");
 
-        // TODO: need a new thread factory that creates non-daemon threads
         appender.setThreadFactory(new DefaultThreadFactory());
         appender.setWriterFactory(new CloudWatchWriterFactory());
 

@@ -30,6 +30,8 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
+import net.sf.kdgcommons.collections.CollectionUtil;
+
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.*;
@@ -160,6 +162,52 @@ public class CloudWatchAppenderIntegrationTest
         localLogger.info("multi-thread/multi-appender: finished");
     }
 
+
+    @Test
+    public void testLogstreamDeletionAndRecreation() throws Exception
+    {
+        final String logGroupName  = "AppenderIntegrationTest-testLogstreamDeletionAndRecreation";
+        final String logStreamName = LOGSTREAM_BASE + "1";
+        final int numMessages      = 100;
+
+        setUp("CloudWatchAppenderIntegrationTest-testLogstreamDeletionAndRecreation.properties", logGroupName);
+        localLogger.info("testLogstreamDeletionAndRecreation: starting");
+
+        Logger testLogger = Logger.getLogger("TestLogger");
+        CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test");
+
+        (new MessageWriter(testLogger, numMessages)).run();
+
+        localLogger.info("testLogstreamDeletionAndRecreation: first batch of messages written; sleeping to give writer chance to run");
+        Thread.sleep(1000);
+
+        assertMessages(logGroupName, logStreamName, numMessages);
+
+        localLogger.info("testLogstreamDeletionAndRecreation: deleting stream");
+        localClient.deleteLogStream(new DeleteLogStreamRequest().withLogGroupName(logGroupName).withLogStreamName(logStreamName));
+        boolean stillExists = true;
+        for (int ii = 0 ; ii < 60 && stillExists ; ii++)
+        {
+            DescribeLogStreamsResult describeResult = localClient.describeLogStreams(
+                                                            new DescribeLogStreamsRequest()
+                                                            .withLogGroupName(logGroupName)
+                                                            .withLogStreamNamePrefix(logStreamName));
+            stillExists = CollectionUtil.isNotEmpty(describeResult.getLogStreams());
+        }
+        assertFalse("stream was removed", stillExists);
+
+        (new MessageWriter(testLogger, numMessages)).run();
+
+        localLogger.info("testLogstreamDeletionAndRecreation: second batch of messages written; sleeping to give writer chance to run");
+        Thread.sleep(2000);
+
+        // the original batch of messages will be gone, so we can assert the new batch was written
+        assertMessages(logGroupName, logStreamName, numMessages);
+
+        assertTrue("statistics has error message", appender.getAppenderStatistics().getLastErrorMessage().contains("log stream missing"));
+
+        localLogger.info("testLogstreamDeletionAndRecreation: finished");
+    }
 
 //----------------------------------------------------------------------------
 //  Helpers

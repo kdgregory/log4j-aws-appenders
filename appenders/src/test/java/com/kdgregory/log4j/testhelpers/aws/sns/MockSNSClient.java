@@ -18,7 +18,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
@@ -36,21 +35,29 @@ import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
 /**
  *  A proxy-based mock instance that allows unit testing of appender and writer behavior.
  *  <p>
- *  You construct with two things: the name (not ARN) of the example topic, and zero or
- *  more lists of topic names that will be returned in response to a ListTopics call
- *  (multiple lists being used to verify the "next token" behavior).
+ *  Constructed with the "topic under test", which is used to verify publish operations,
+ *  and a list of all topics, which is used by ListTopics.
  *  <p>
  *  All invocation handlers are exposed so that they can be overridden to throw exceptions.
+ *  <p>
+ *  Invocation counts are incremented when the invocation handler is called, regardless of
+ *  the result. If you need to track whether the invocation handler succeeded, you should
+ *  decrement the count inside the failing handler.
  */
 public class MockSNSClient implements InvocationHandler
 {
     // this prefix transforms a topic name into an ARN
     public final static String ARN_PREFIX = "arn:aws:sns:us-east-1:123456789012:";
 
-    // configuration
+    // the name/arn of the topic under test
     private String topicName;
     private String topicArn;
-    private ArrayList<List<Topic>> allTopics = new ArrayList<List<Topic>>();
+
+    // the ARN of all known topics for ListTopics
+    private List<Topic> allTopics;
+
+    // the maximum number of topics that will be returned by a single describe
+    private int maxTopicsPerDescribe;
 
     // these semaphores coordinate the calls to Publish with the assertions
     // that we make in the main thread; note that both start unacquired
@@ -67,26 +74,30 @@ public class MockSNSClient implements InvocationHandler
     public volatile String lastPublishMessage;
 
 
-    public MockSNSClient(String topicName, List<String>... allTopicNames)
+    /**
+     *  Base constructor.
+     */
+    public MockSNSClient(String topicName, List<String> allTopicNames, int maxTopicsPerDescribe)
     {
         this.topicName = topicName;
         this.topicArn = ARN_PREFIX + topicName;
 
-        for (List<String> nameSegment : allTopicNames)
-        {
-            List<Topic> topicSegment = new ArrayList<Topic>();
-            for (String name : nameSegment)
-            {
-                topicSegment.add(new Topic().withTopicArn(ARN_PREFIX + name));
-            }
-            allTopics.add(topicSegment);
-        }
+        this.maxTopicsPerDescribe = maxTopicsPerDescribe;
 
-        // to simulate no existing topics
-        if (this.allTopics.isEmpty())
+        allTopics = new ArrayList<Topic>();
+        for (String name : allTopicNames)
         {
-            this.allTopics.add(Collections.<Topic>emptyList());
+            allTopics.add(new Topic().withTopicArn(ARN_PREFIX + name));
         }
+    }
+
+
+    /**
+     *  Convenience constructor, which returns all topics in a single list operation.
+     */
+    public MockSNSClient(String topicName, List<String> allTopicNames)
+    {
+        this(topicName, allTopicNames, Integer.MAX_VALUE);
     }
 
 //----------------------------------------------------------------------------
@@ -190,16 +201,17 @@ public class MockSNSClient implements InvocationHandler
      */
     protected ListTopicsResult listTopics(ListTopicsRequest request)
     {
-        int currentSublist = (request.getNextToken() == null)
+        int startOfSublist = (request.getNextToken() == null)
                            ? 0
                            : Integer.parseInt(request.getNextToken());
-        String nextSublist = (currentSublist == allTopics.size() - 1)
+        int endOfSublist   = Math.min(startOfSublist + maxTopicsPerDescribe, allTopics.size());
+        String nextToken   = endOfSublist == allTopics.size()
                            ? null
-                           : String.valueOf(currentSublist + 1);
+                           : String.valueOf(endOfSublist);
 
         ListTopicsResult response = new ListTopicsResult();
-        response.setTopics(allTopics.get(currentSublist));
-        response.setNextToken(nextSublist);
+        response.setTopics(allTopics.subList(startOfSublist, endOfSublist));
+        response.setNextToken(nextToken);
         return response;
     }
 

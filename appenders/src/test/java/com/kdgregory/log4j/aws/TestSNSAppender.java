@@ -93,14 +93,16 @@ public class TestSNSAppender
     @Test
     public void testConfigurationByName() throws Exception
     {
+        // note: this also tests non-default configuration
         initialize("TestSNSAppender/testConfigurationByName.properties");
 
         assertEquals("topicName",           "example",                      appender.getTopicName());
         assertEquals("topicArn",            null,                           appender.getTopicArn());
 
+        assertTrue("autoCreate",                                            appender.getAutoCreate());
         assertEquals("subject",             "This is a test",               appender.getSubject());
         assertEquals("batch delay",         1L,                             appender.getBatchDelay());
-        assertEquals("discard threshold",   123,                           appender.getDiscardThreshold());
+        assertEquals("discard threshold",   123,                            appender.getDiscardThreshold());
         assertEquals("discard action",      "newest",                       appender.getDiscardAction());
         assertEquals("client factory",      "com.example.Foo.bar",          appender.getClientFactory());
         assertEquals("client endpoint",     "sns.us-east-2.amazonaws.com",  appender.getClientEndpoint());
@@ -116,6 +118,7 @@ public class TestSNSAppender
         assertEquals("topicName",           null,                           appender.getTopicName());
         assertEquals("topicArn",            "arn-example",                  appender.getTopicArn());
 
+        assertFalse("autoCreate",                                           appender.getAutoCreate());
         assertEquals("subject",             null,                           appender.getSubject());
         assertEquals("batch delay",         1L,                             appender.getBatchDelay());
         assertEquals("discard threshold",   1000,                           appender.getDiscardThreshold());

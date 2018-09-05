@@ -204,13 +204,21 @@ public class TestSNSLogWriter
         appender.setThreadFactory(new DefaultThreadFactory());
 
         logger.info("message one");
-        waitForInitialization();
 
-        assertFalse("initialization error message",                         StringUtil.isEmpty(appender.getAppenderStatistics().getLastErrorMessage()));
+        waitForInitialization();
+        String initializationMessage = appender.getAppenderStatistics().getLastErrorMessage();
+
+        assertTrue("initialization error mentions topic name (was: " + initializationMessage + ")",
+                   initializationMessage.contains("example"));
+
         assertEquals("invocations of listTopics",           1,              mockClient.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",          0,              mockClient.createTopicInvocationCount);
         assertEquals("invocations of publish",              0,              mockClient.publishInvocationCount);
 
+
+        assertEquals("topic name, from statistics",         null,           appender.getAppenderStatistics().getActualTopicName());
+        assertEquals("topic ARN, from statistics",          null,           appender.getAppenderStatistics().getActualTopicArn());
+        assertEquals("sent message count, from statistics", 0,              appender.getAppenderStatistics().getMessagesSent());
         assertEquals("sent message count, from statistics", 0,              appender.getAppenderStatistics().getMessagesSent());
     }
 

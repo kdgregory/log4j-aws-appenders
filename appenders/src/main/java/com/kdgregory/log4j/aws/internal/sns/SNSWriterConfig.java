@@ -25,6 +25,7 @@ public class SNSWriterConfig
 {
     public String topicName;
     public String topicArn;
+    public boolean autoCreate;
     public String subject;
     public int discardThreshold;
     public DiscardAction discardAction;
@@ -33,8 +34,9 @@ public class SNSWriterConfig
 
 
     /**
-     *  @param  topicName           Identifies the destination topic by name.
-     *  @param  topicArn            Identifies the destination topic by ARN.
+     *  @param  topicName           Identifies the destination topic by name; may be null.
+     *  @param  topicArn            Identifies the destination topic by ARN; may be null.
+     *  @param  autoCreate          Flag to indicate topic should be created if it doesn't exist.
      *  @param  subject             The subject to be applied to outgoing messages; blank disables.
      *  @param  discardThreshold    The maximum number of messages that will be retained in the queue.
      *  @param  discardAction       Controls how messages are discarded from the queue to remain within threshold.
@@ -42,12 +44,13 @@ public class SNSWriterConfig
      *  @param  clientEndpoint      Possibly-null endpoint for client.
      */
     public SNSWriterConfig(
-        String topicName, String topicArn, String subject,
+        String topicName, String topicArn, boolean autoCreate, String subject,
         int discardThreshold, DiscardAction discardAction,
         String clientFactoryMethod, String clientEndpoint)
     {
         this.topicName = topicName;
         this.topicArn = topicArn;
+        this.autoCreate = autoCreate;
         this.subject = subject;
         this.discardThreshold = discardThreshold;
         this.discardAction = discardAction;

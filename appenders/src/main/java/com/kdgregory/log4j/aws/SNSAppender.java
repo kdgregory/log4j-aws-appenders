@@ -38,6 +38,7 @@ extends AbstractAppender<SNSWriterConfig,SNSAppenderStatistics,SNSAppenderStatis
     private String topicName;
     private String topicArn;
     private String subject;
+    private boolean autoCreate;
 
 
     public SNSAppender()
@@ -137,6 +138,24 @@ extends AbstractAppender<SNSWriterConfig,SNSAppenderStatistics,SNSAppenderStatis
     }
 
 
+    /**
+     *  Sets the auto-create flag: if the topic is specified by name and does
+     *  not already exist, the writer will attempt to create it.
+     */
+    public void setAutoCreate(boolean value)
+    {
+        autoCreate = value;
+    }
+
+
+    /**
+     *  Returns the auto-create flag.
+     */
+    public boolean getAutoCreate()
+    {
+        return autoCreate;
+    }
+
 //----------------------------------------------------------------------------
 //  AbstractAppender
 //----------------------------------------------------------------------------
@@ -150,7 +169,7 @@ extends AbstractAppender<SNSWriterConfig,SNSAppenderStatistics,SNSAppenderStatis
         String actualTopicArn   = subs.perform(topicArn);
         String actualSubject    = subs.perform(subject);
 
-        return new SNSWriterConfig(actualTopicName, actualTopicArn, actualSubject, discardThreshold, discardAction, clientFactory, clientEndpoint);
+        return new SNSWriterConfig(actualTopicName, actualTopicArn, autoCreate, actualSubject, discardThreshold, discardAction, clientFactory, clientEndpoint);
     }
 
     @Override
@@ -158,5 +177,4 @@ extends AbstractAppender<SNSWriterConfig,SNSAppenderStatistics,SNSAppenderStatis
     {
         return message.size() > SNSConstants.MAX_MESSAGE_BYTES;
     }
-
 }

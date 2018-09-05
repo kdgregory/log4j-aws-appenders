@@ -36,6 +36,7 @@ Name                | Description
 --------------------|----------------------------------------------------------------
 `topicName`         | The name of the SNS topic that will receive messages; no default value. See below for more information.
 `topicArn`          | The ARN of the SNS topic that will receive messages; no default value. See below for more information.
+`autoCreate`        | If present and "true", the topic will be created if it does not already exist. This may only be used when specifying topic by name, not ARN.
 `subject`           | If used, attaches a subject to each message sent; no default value. See below for more information.
 `discardThreshold`  | The threshold count for discarding unsent messages; default is 1,000. See [design doc](design.md#message-discard) for more information.
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
@@ -62,9 +63,10 @@ may use [substitutions](substitutions.md). This is useful to identify the source
 sending to an email address. Note that substitutions are applied when the appender starts, not on a
 per-message basis.
 
-You can specify the destination topic either by ARN or name. When specifying topic by ARN, the topic
-must already exist. If you specify the topic by name, the appender will attempt to find an existing
-topic with the specified name. If unable to find an existing topic it will create the topic.
+You can specify the destination topic either by ARN or name. You would normally use ARN to reference
+a topic in a different account or region, name to reference a topic in the current account/region. If
+you specify the topic by name, you may also enable `autoCreate`, which will create the topic if it
+does not already exist (this is only appropriate for development/test environments).
 
 > The appender assumes that, when listing topics, it will only receive topics for the current region.
   That constraint is _not_ explicitly stated in the [API docs](http://docs.aws.amazon.com/sns/latest/api/API_ListTopics.html)

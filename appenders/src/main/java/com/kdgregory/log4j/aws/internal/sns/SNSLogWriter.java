@@ -172,23 +172,31 @@ extends AbstractLogWriter
      */
     private boolean configureByName()
     {
+        String topicName = config.topicName;
+
         if (! Pattern.matches(SNSConstants.TOPIC_NAME_REGEX, config.topicName))
         {
-            return initializationFailure("invalid topic name: " + config.topicName, null);
+            return initializationFailure("invalid topic name: " + topicName, null);
         }
 
         topicArn = retrieveAllTopicsByName().get(config.topicName);
         if (topicArn != null)
         {
-            LogLog.debug("using existing SNS topic: " + config.topicName);
+            LogLog.debug("using existing SNS topic: " + topicName);
+            return true;
+        }
+        else if (config.autoCreate)
+        {
+            LogLog.debug("creating SNS topic: " + topicName);
+            CreateTopicResult response = client.createTopic(topicName);
+            topicArn = response.getTopicArn();
             return true;
         }
         else
         {
-            LogLog.debug("creating SNS topic: " + config.topicName);
-            CreateTopicResult response = client.createTopic(config.topicName);
-            topicArn = response.getTopicArn();
-            return true;
+            LogLog.error("topic does not exist and auto-create not enabled: " + topicName);
+            stats.setLastError("topic does not exist: " + topicName, null);
+            return false;
         }
     }
 

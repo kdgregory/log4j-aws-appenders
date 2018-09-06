@@ -37,7 +37,7 @@ public class CloudWatchWriterConfig
      *                              message in batch.
      *  @param discardThreshold     Maximum number of messages to retain if unable to send.
      *  @param discardAction        What to do with unsent messages over the threshold.
-     *  @parma clientFactoryMethod  Possibly-null FQN of a static method to create client.
+     *  @param clientFactoryMethod  Possibly-null FQN of a static method to create client.
      *  @param clientEndpoint       Possibly-null endpoint for client.
      */
     public CloudWatchWriterConfig(

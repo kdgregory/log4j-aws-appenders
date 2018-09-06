@@ -47,6 +47,7 @@
         <practicalxml.version>1.1.18</practicalxml.version>
 
         <plugin.compiler.version>3.1</plugin.compiler.version>
+        <plugin.javadoc.version>3.0.1</plugin.javadoc.version>
         <plugin.findbugs.version>3.0.5</plugin.findbugs.version>
     </properties>
 
@@ -114,6 +115,14 @@
                     <source>1.6</source>
                     <target>1.6</target>
                     <debug>true</debug>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${plugin.javadoc.version}</version>
+                <configuration>
+                    <doclint>none</doclint>
                 </configuration>
             </plugin>
         </plugins>

@@ -1,6 +1,24 @@
 # Change History
 
 
+## 1.3.0 (TBD)
+
+* Added [JMX integration](docs/jmx.md): appenders/writers now report
+  runtime statistics such as error messages and number of records sent.
+  ([#21](https://github.com/kdgregory/log4j-aws-appenders/issues/21)) 
+* Add `autoCreate` property to Kinesis and SNS appenders. Report an
+  error if stream/topic doesn't exist and this property isn't set. If
+  if is set, create the stream/topic.
+  ([#37](https://github.com/kdgregory/log4j-aws-appenders/issues/37),
+   [#45](https://github.com/kdgregory/log4j-aws-appenders/issues/45))
+* `JSONLayout` will optionally add newlines to the end of each record.
+  This is useful when processing logs that don't go to ElasticSearch.
+  ([#42](https://github.com/kdgregory/log4j-aws-appenders/issues/42)) 
+* `CloudWatchAppender` will now re-create logstream if it's deleted after
+  appender initializes.
+  ([#46](https://github.com/kdgregory/log4j-aws-appenders/issues/46)) 
+
+
 ## 1.2.2 (2018-05-16)
 
 * Bugfix: writer thread was not a daemon, would keep application from shutting down

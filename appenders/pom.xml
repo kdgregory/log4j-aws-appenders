@@ -48,7 +48,6 @@
 
         <plugin.compiler.version>3.1</plugin.compiler.version>
         <plugin.findbugs.version>3.0.5</plugin.findbugs.version>
-        <plugin.changes.version>2.3</plugin.changes.version>
     </properties>
 
 
@@ -123,21 +122,6 @@
 
     <reporting>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-changes-plugin</artifactId>
-                <version>${plugin.changes.version}</version>
-                <configuration>
-                    <xmlPath>${basedir}/src/site/changes.xml</xmlPath>
-                </configuration>
-                <reportSets>
-                    <reportSet>
-                        <reports>
-                            <report>changes-report</report>
-                        </reports>
-                    </reportSet>
-                </reportSets>
-            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>findbugs-maven-plugin</artifactId>

@@ -23,7 +23,7 @@
 
     <Match>
         <Class name='com.kdgregory.log4j.aws.internal.shared.LogMessage' />
-        <Bug pattern='EI_EXPOSE_REP' />
+        <Bug pattern='getLastErrorTimestamp' />
         <!-- this object is used internally; if someone wants to muck with it they just hurt themselves -->
     </Match>
 
@@ -31,6 +31,20 @@
         <Class name='com.kdgregory.log4j.aws.internal.shared.LogMessage' />
         <Bug pattern='EQ_COMPARETO_USE_OBJECT_EQUALS' />
         <!-- we need to sort the objects by timestamp, retaining original order for objects with same timestamp; we never check equality -->
+    </Match>
+
+    <Match>
+        <Class name='com.kdgregory.log4j.aws.internal.shared.LogMessage' />
+        <Method name='getBytes' />
+        <Bug pattern='EI_EXPOSE_REP' />
+        <!-- instances of this class are not exposed outside the library, so no reason to worry about exposing a byte array -->
+    </Match>
+
+    <Match>
+        <Class name='com.kdgregory.log4j.aws.internal.shared.AbstractAppenderStatistics' />
+        <Method name='getLastErrorTimestamp' />
+        <Bug pattern='EI_EXPOSE_REP' />
+        <!-- this field is used for reporting; changing its internal state merely gives an inaccurate report -->
     </Match>
 
 </FindBugsFilter>

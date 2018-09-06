@@ -152,7 +152,7 @@ implements DynamicMBean, MBeanRegistration
     @Override
     public void postRegister(Boolean registrationDone)
     {
-        if (registrationDone == Boolean.TRUE)
+        if (Boolean.TRUE.equals(registrationDone))
         {
             JMXManager.getInstance().addStatisticsMBean(this, myServer, myName);
         }

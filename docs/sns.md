@@ -6,10 +6,10 @@ the ERROR level, and then hook the destination SNS topic to feed a messaging app
 
 The SNS appender provides the following features:
 
-* Configurable destination topic, with substitution variables to specify topic name
+* Configurable destination topic, with substitution variables to specify topic name.
 * Optional message subjects, useful for email reporting.
-* Auto-creation of topics
-* Configurable discard in case of network connectivity issues
+* Auto-creation of topics.
+* Configurable discard in case of network connectivity issues.
 
 
 ## Configuration
@@ -34,25 +34,26 @@ The appender provides the following properties (also described in the JavaDoc):
 
 Name                | Description
 --------------------|----------------------------------------------------------------
-`topicName`         | The name of the SNS topic that will receive messages; no default value. See below for more information.
-`topicArn`          | The ARN of the SNS topic that will receive messages; no default value. See below for more information.
+`topicName`         | The name of the SNS topic that will receive messages; may use [substitutions](substitutions.md). No default value. See below for more information.
+`topicArn`          | The ARN of the SNS topic that will receive messages; may use [substitutions](substitutions.md). No default value. See below for more information.
 `autoCreate`        | If present and "true", the topic will be created if it does not already exist. This may only be used when specifying topic by name, not ARN.
 `subject`           | If used, attaches a subject to each message sent; no default value. See below for more information.
-`discardThreshold`  | The threshold count for discarding unsent messages; default is 1,000. See [design doc](design.md#message-discard) for more information.
+`discardThreshold`  | The threshold count for discarding messages; default is 10,000. See [design doc](design.md#message-discard) for more information.
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
 `clientFactory`     | Specifies the fully-qualified name of a static method that will be used to create the AWS service client via reflection. See [design doc](design.md#service-client) for more information.
-`clientEndpoint`    | Specifies a non-default endpoint for the client (eg, "sns.us-east-2.amazonaws.com")
-
-The `topicName`, `topicArn`, and `subject` properties may use [substitutions](substitutions.md).
+`clientEndpoint`    | Specifies a non-default endpoint for the client (eg, "logs.us-west-2.amazonaws.com")
 
 
 ## Permissions
 
 To use this appender you will need to grant the following IAM permissions:
 
-* `sns:CreateTopic` (may be omitted if topic already exists)
 * `sns:ListTopics`
 * `sns:Publish`
+
+In addition, to auto-create a topic you need to grant the following permissions:
+
+* `sns:CreateTopic`
 
 
 ## Operation

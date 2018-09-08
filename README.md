@@ -1,37 +1,51 @@
 # log4j-aws-appenders
 
-Appenders for Log4J 1.x that write to various AWS services.
+Appenders for Log4J 1.x that write to various AWS destinations:
 
-This project started because I couldn't find an appender that would write to CloudWatch.
-That's not strictly true: I found several for Log4J 2.x, and of course there's the
-appender that AWS provides for Lambda. And then, after I started this project, I found
-an appender for 1.x.
+* [CloudWatch Logs](docs/cloudwatch.md): basic logging that allows keyword search and time ranges.
+* [Kinesis Streams](docs/kinesis.md): the first step in a [logging pipeline](https://www.kdgregory.com/index.php?page=aws.loggingPipeline)
+  that ends in Elasticsearch.
+* [SNS](docs/sns.md): useful for real-time error notifications.
 
-But, this seemed to be an easy weekend project, and I'd be able to get exactly what I
-wanted if I was willing to reinvent a wheel. After some thought, I expanded the idea:
-why not reinvent several wheels, and be able to write to multiple destinations? It's
-been more than a dozen weekends since I started the project; I keep getting new ideas.
+In addition to the appenders, this library includes:
 
-Here are the supported destinations:
-
-* [CloudWatch Logs](docs/cloudwatch.md): basic logging that allows keyword search and time ranges
-* [Kinesis Streams](docs/kinesis.md): can be used as a source for Kinesis Firehose, and thence Elasticsearch or S3 storage
-* [SNS](docs/sns.md): useful for real-time error notifications
-
-In addition to the appenders, I've added a [JSON layout](docs/jsonlayout.md) to make
-it easier to send data to an Elasticsearch/Kibana cluster.
+* [JsonLayout](docs/jsonlayout.md), which lets you send data to an Elasticsearch/Kibana
+  cluster without the need for parsing.
+* [StatisticsMBean](docs/jmx.md), which allows the appenders to report operational data
+  via JMX.
 
 
 ## Usage
 
-To use these appenders, include the `aws-appenders` JAR in your project along with the
-relevant AWS JAR(s), and configure the desired appender in your Log4J properties. Each
-appender's documentation gives an example configuration, and I have created an [example
-project](example) that writes to all of the supported destinations (along with
-CloudFormation templates to set up those destinations).
+To use these appenders, include the `aws-appenders` JAR in your project along with Log4J
+and the relevant AWS JAR(s), then configure the desired appender in your Log4J properties.
+Each appender's documentation describes the complete set of configuration properties and
+shows a typical configuration.
+
+There is also an [example project](example) that exercises all of the appenders.
 
 
-### Dependency Versions
+### Getting the JAR
+
+Released versions of the appenders are uploaded to Maven Central. You can find them
+[here](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.kdgregory.log4j%22%20AND%20a%3A%22aws-appenders%22).
+
+
+### Versions
+
+I follow the standard `MAJOR.MINOR.PATCH` versioning scheme:
+
+* `MAJOR` is currently 1. I am considering support for additional logging frameworks, at
+  which point it will change to 2.
+* `MINOR` is incremented for each change that adds signficant functionality or changes the
+  _behavior_ of existing functionality in non-backwards-compatible ways. The API _does not_
+  break backwards compatibility for minor releases, so your configurations can remain the
+  same.
+* `PATCH` is incremented for reflect bugfixes or additional features that don't change the
+  existing behavior (although they may add behavior).
+
+
+### Dependencies
 
 To avoid dependency hell, all dependencies are marked as "provided": you will need
 to ensure that your project includes necessary dependencies, as follows:
@@ -42,142 +56,35 @@ to ensure that your project includes necessary dependencies, as follows:
 * `aws-java-sdk-sns` to use `SNSAppender`
 * `aws-java-sdk-sts` to use the `aws:accountId` substitution variable (typically used with `SNSAppender`)
 
-The minimum supported dependency versions are as follows:
+The minimum supported dependency versions are:
 
 * JDK: 1.6
-  The build script generates 1.6-compatible classfiles, and the appender code
-  does not rely on standard libary classes/methods introduced after 1.6. As-of
-  this release, I have verified that I can build and run the integration tests
-  using OpenJDK 1.6. However, Amazon releases the SDK on a daily basis, and a
-  newer version may not support 1.6.
+  The build script generates 1.6-compatible classfiles, and the appender code does
+  not rely on standard libary classes/methods introduced after 1.6. As-of this
+  release, I have verified that I can run the example program using OpenJDK 1.6.
+  However, Amazon releases the SDK on a daily basis, and a newer release may
+  require a later JVM.
 * Log4J: 1.2.16
   This is the first version that implements `LoggingEvent.getTimeStamp()`, which
   is needed to order messages when sending to AWS. It's been around since 2010,
   so if you haven't upgraded already you should.
 * AWS SDK: 1.11.0
-  The appenders make use of client constructors in order to support all versions
-  in the 1.11.x release sequence. The client builders were introduced at 1.11.16,
-  and will be invoked via reflection if available. Earlier appender releases
-  could be built using 1.10.x, but this is no longer the case.
+  The appenders will work with all releases in the 1.11.x sequence. If you're using
+  a version that has client builders, they will be used to create service clients;
+  if not, the default client constructors will be used. For more information, see the
+  [FAQ](docs/faq.md#whats-with-client-builders-vs-contructors).
 
 I have made an intentional effort to limit dependencies to the bare minimum. This
 has in some cases meant that I write internal implementations for functions that
 are found in common libraries.
 
 
-## Building
+## For more information
 
-There are three projects in this repository:
+[Release History](CHANGES.md)
 
-* `appenders` contains the actual appender code.
-* `tests` is a set of integration tests. These are in a separate module so that they
-  can be run as desired, rather than as part of every build. *Beware: the test suite
-  creates resources that incur AWS charges, and does not delete them.*
-* `example` is a simple example that writes log message to all supported destinations.
-  It includes CloudFormation templates to create those destinations. *Beware: you will
-  incur AWS charges to run this example.*
+[Frequently Asked Questions](docs/faq.md)
 
-Classes in the top-level `com.kdgregory.log4j.aws` package are expected to remain backwards
-compatible. Any other classes, particularly those under packages named `internal`, may
-change arbitrarily and should not be relied-upon by user code. This caveat also applies
-to all test classes and packages.
+[Design Documentation](docs/design.md)
 
-
-### Versions
-
-I follow the standard `MAJOR.MINOR.PATCH` versioning scheme:
-
-* `MAJOR` is currently 1. In an upcoming release it will switch to 11, tracking the AWS
-  SDK minor version number.
-* `MINOR` is incremented for each change that adds signficant functionality or changes the
-  behavior of existing functionality in possibly non-backwards-compatible ways.
-* `PATCH` is incremented for reflect bugfixes or additional features that don't change the
-  existing behavior.
-
-
-### Source Control
-
-The `master` branch is intended for "potentially releasable" versions. Commits on master
-are functional, but may not be "complete" (for some definition of that word). They may be
-snapshot or release builds. Master will never be rebased; once a commit is made there it's
-part of history for better or worse.
-
-All development takes place on a branch. Branches may be either feature branches, in which
-case they're named after an issue (eg: `dev-21`), or release-prep branches, in which case
-they're named `dev-MAJOR.MINOR.PATCH`. Development branches may be rebased as I see fit:
-I often make "checkpoint" commits to save my work. Once a development branch is merged it
-is deleted.
-
-Features are merged into either a release-prep branch or master, using a pull request and
-squash merge. If you want to see the individual commits that went into a branch, you can
-look at the closed PR.
-
-Each "release" version is tagged with `release-MAJOR.MINOR.PATCH`, whether or not it was
-uploaded to Maven Central.
-
-
-## FAQ
-
-Isn't Log4J 1.x at end of life?
-
-> Yes. Have you updated all of your applications yet? If you have, congratulations.
-  I haven't, nor have a lot of people that I know. Replacing a stable logging
-  framework is pretty low on the priority list, so I expect 1.x to be around for
-  many more years.
-
-If you found other appenders, why are you writing this?
-
-> Reinventing wheels can be a great spur to creativity. It also gives me a deeper
-  understanding of the services involved, which is a Good Thing. And of course I've
-  added features that I didn't find elsewhere.
-
-What happens when the appender drops messages?
-
-> All misbehaviors get logged using the Log4J internal logger. To see messages from
-  this logger, set the system property `log4j.configDebug` to `true` (note that the
-  internal logger always writes messages to StdErr).
-
-Is there any way to see how the appenders are configured in a running program?
-
-> You can enable [JMX reporting](docs/jmx.md) to see which appenders are in use, how
-  they are configured (including any substitutions), how many messages they've sent,
-  and the last error (if any) they encountered.
-
-What are all these messages from `com.amazonaws` and `org.apache.http`?
-
-> You attached the AWS appender to your root logger. There are two solutions: the first
-  is to attach the appender only to your program's classes (here I turn off additivity,
-  so the messages _won't_ go to the root logger; you might prefer sending messages to
-  both destinations):
-
-    log4j.logger.com.myprogram=DEBUG, cloudwatch
-    log4j.additivity.com.myprogram=false
-
-> Or alternatively, shut off logging for those packages that you don't care about.
-
-    log4j.logger.org.apache.http=ERROR
-    log4j.logger.com.amazonaws=ERROR
-
-> My preference is to attach the CloudWatch appender to my application classes, and use
-  the built-in `ConsoleAppender` as the root logger. This ensures that you have some
-  way to track "meta" issues with the logging configuration.
-
-> Note that seeing unwanted messages is a problem with whatever appender you might use.
-  It's more apparent here because the logger invokes code that itself writes log messages.
-
-Can I contribute?
-
-> At this point I haven't thought through the issues with having other contributors (and,
-  to be honest, I'm concerned about adding code that has any legal encumbrances). Please
-  add issues for any bugs or enhancement requests, and I'll try to get them resolved as
-  soon as possible.
-
-How can I get help with any problems?
-
-> Feel free to raise an issue here. I check in at least once a week, and will try to give
-  whatever help and advice I can. Issues that aren't bugs or feature requests will be
-  closed within a few weeks.
-
-> Alternatively you can post on [Stack Overflow](https://stackoverflow.com/). If you do
-  this, flag the post with `@kdgregory` otherwise I'm unlikely to see it (this project
-  isn't big enough to rate its own tag ... yet).
+[If you want to build it yourself](docs/build.md)

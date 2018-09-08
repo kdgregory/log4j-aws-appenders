@@ -69,7 +69,7 @@ public class SNSAppenderIntegrationTest
     @Test
     public void smoketestByArn() throws Exception
     {
-        setUp("SNSAppenderIntegrationTest-smoketestByArn.properties");
+        setUp("SNSAppenderIntegrationTest/smoketestByArn.properties");
         localLogger.info("smoketest: starting");
 
         createTopicAndQueue();
@@ -100,7 +100,7 @@ public class SNSAppenderIntegrationTest
     @Test
     public void smoketestByName() throws Exception
     {
-        setUp("SNSAppenderIntegrationTest-smoketestByName.properties");
+        setUp("SNSAppenderIntegrationTest/smoketestByName.properties");
         localLogger.info("smoketest: starting");
 
         createTopicAndQueue();

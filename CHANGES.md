@@ -1,7 +1,6 @@
 # Change History
 
-
-## 1.3.0 (TBD)
+## 1.3.0 (2018-09-09)
 
 * Added [JMX integration](docs/jmx.md): appenders/writers now report
   runtime statistics such as error messages and number of records sent.

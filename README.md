@@ -61,9 +61,9 @@ The minimum supported dependency versions are:
 * JDK: 1.6
   The build script generates 1.6-compatible classfiles, and the appender code does
   not rely on standard libary classes/methods introduced after 1.6. As-of this
-  release, I have verified that I can run the example program using OpenJDK 1.6.
-  However, Amazon releases the SDK on a daily basis, and a newer release may
-  require a later JVM.
+  release, I have verified that I can run (but not build) the example program using
+  OpenJDK 1.6. Beware, however: Amazon releases the SDK on a daily basis, and a newer
+  release may require a later JVM.
 * Log4J: 1.2.16
   This is the first version that implements `LoggingEvent.getTimeStamp()`, which
   is needed to order messages when sending to AWS. It's been around since 2010,

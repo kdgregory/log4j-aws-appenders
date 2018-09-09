@@ -17,9 +17,12 @@ package com.kdgregory.log4j.aws;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.w3c.dom.Element;
 
@@ -87,7 +90,7 @@ public class SNSAppenderIntegrationTest
         List<String> messages = retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
-        assertMessageContent(messages, "");
+        assertMessageContent(messages);
 
         assertEquals("actual topic name, from statistics",  resourceName,   appenderStats.getActualTopicName());
         assertEquals("actual topic ARN, from statistics",   topicArn,       appenderStats.getActualTopicArn());
@@ -227,6 +230,80 @@ public class SNSAppenderIntegrationTest
         localLogger.info("testTopicMissingNoAutoCreate: finished");
     }
 
+
+    @Test
+    public void testMultiThread() throws Exception
+    {
+        setUp("SNSAppenderIntegrationTest/testMultiThread.properties");
+        localLogger.info("testMultiThread: starting");
+
+        createTopicAndQueue();
+
+        final int numMessages = 11;
+        final int numThreads = 3;
+        final int totalMessages = numMessages * numThreads;
+
+        Logger testLogger = Logger.getLogger("TestLogger");
+        SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
+        SNSAppenderStatistics appenderStats = appender.getAppenderStatistics();
+
+        for (int ii = 0 ; ii < numThreads ; ii++)
+        {
+            new Thread(new MessageWriter(testLogger, numMessages)).start();
+        }
+
+        localLogger.info("testMultiThread: reading messages");
+        List<String> messages = retrieveMessages(totalMessages);
+
+        assertEquals("number of messages", totalMessages, messages.size());
+        assertMessageContent(messages, "Example");
+
+        assertEquals("actual topic name, from statistics",  resourceName,   appenderStats.getActualTopicName());
+        assertEquals("actual topic ARN, from statistics",   topicArn,       appenderStats.getActualTopicArn());
+        assertEquals("messages written, from stats",        totalMessages,  appenderStats.getMessagesSent());
+
+        localLogger.info("testMultiThread: finished");
+    }
+
+
+    @Test
+    public void testMultiAppender() throws Exception
+    {
+        setUp("SNSAppenderIntegrationTest/testMultiAppender.properties");
+        localLogger.info("testMultiAppender: starting");
+
+        createTopicAndQueue();
+
+        final int numMessages = 11;
+        final int numAppenders = 2;
+        final int totalMessages = numMessages * numAppenders;
+
+        Logger testLogger = Logger.getLogger("TestLogger");
+
+        SNSAppender appender1 = (SNSAppender)testLogger.getAppender("test1");
+        SNSAppenderStatistics stats1 = appender1.getAppenderStatistics();
+
+        SNSAppender appender2 = (SNSAppender)testLogger.getAppender("test2");
+        SNSAppenderStatistics stats2 = appender2.getAppenderStatistics();
+
+        (new MessageWriter(testLogger, numMessages)).run();
+
+        localLogger.info("testMultiAppender: reading messages");
+        List<String> messages = retrieveMessages(totalMessages);
+
+        assertEquals("number of messages", totalMessages, messages.size());
+        assertMessageContent(messages, "Example1", "Example2");
+
+        assertEquals("actual topic name, appender1, from statistics",   resourceName,   stats1.getActualTopicName());
+        assertEquals("actual topic ARN, appender1, from statistics",    topicArn,       stats1.getActualTopicArn());
+        assertEquals("messages written, appender1, from stats",         numMessages,    stats1.getMessagesSent());
+
+        assertEquals("actual topic name, appender2, from statistics",   resourceName,   stats2.getActualTopicName());
+        assertEquals("actual topic ARN, appender2, from statistics",    topicArn,       stats2.getActualTopicArn());
+        assertEquals("messages written, appender2, from stats",         numMessages,    stats2.getMessagesSent());
+
+        localLogger.info("testMultiAppender: finished");
+    }
 
 //----------------------------------------------------------------------------
 //  Helpers
@@ -461,19 +538,28 @@ public class SNSAppenderIntegrationTest
      *  The answer is that I have a library that makes XPath easy, and also transforms
      *  JSON into XML, so JSON looks like an angle-bracketed nail.
      */
-    private void assertMessageContent(List<String> messages, String expectedSubject)
+    private void assertMessageContent(List<String> messages, String... expectedSubjects0)
     {
         XPathWrapper arnXPath = new XPathWrapper("//TopicArn");
         XPathWrapper subjectXPath = new XPathWrapper("//Subject");
         XPathWrapper messageXPath = new XPathWrapper("//Message");
 
+        Set<String> expectedSubjects = new TreeSet<String>(Arrays.asList(expectedSubjects0));
+        Set<String> actualSubjects = new TreeSet<String>();
+
         for (String message : messages)
         {
             Element root = new Json2XmlConverter(message).convert();
+
             assertEquals("topic ARN",       topicArn,               arnXPath.evaluateAsString(root));
-            assertEquals("message subject", expectedSubject,        subjectXPath.evaluateAsString(root));
             assertRegex("message text",     MessageWriter.REGEX,    messageXPath.evaluateAsString(root));
+
+            String actualSubject = subjectXPath.evaluateAsString(root);
+            if (! StringUtil.isEmpty(actualSubject))
+                actualSubjects.add(actualSubject);
         }
+
+        assertEquals("message subject(s)", expectedSubjects, actualSubjects);
     }
 
 
@@ -483,5 +569,4 @@ public class SNSAppenderIntegrationTest
         writerField.setAccessible(true);
         return (SNSLogWriter)writerField.get(appender);
     }
-
 }

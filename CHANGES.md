@@ -1,5 +1,22 @@
 # Change History
 
+## 1.3.0 (2018-09-09)
+
+* Added [JMX integration](docs/jmx.md): appenders/writers now report
+  runtime statistics such as error messages and number of records sent.
+  ([#21](https://github.com/kdgregory/log4j-aws-appenders/issues/21))
+* Add `autoCreate` property to Kinesis and SNS appenders. Report an
+  error if stream/topic doesn't exist and this property isn't set. If
+  if is set, create the stream/topic.
+  ([#37](https://github.com/kdgregory/log4j-aws-appenders/issues/37),
+   [#45](https://github.com/kdgregory/log4j-aws-appenders/issues/45))
+* `JSONLayout` will optionally add newlines to the end of each record.
+  This is useful when processing logs that don't go to ElasticSearch.
+  ([#42](https://github.com/kdgregory/log4j-aws-appenders/issues/42))
+* `CloudWatchAppender` will now re-create logstream if it's deleted after
+  appender initializes.
+  ([#46](https://github.com/kdgregory/log4j-aws-appenders/issues/46))
+
 
 ## 1.2.2 (2018-05-16)
 
@@ -7,27 +24,27 @@
   unless explicitly terminated.
   ([#38](https://github.com/kdgregory/log4j-aws-appenders/issues/38))
 
+
 ## 1.2.1 (2018-01-06)
 
-* Use reflection to create AWS service clients from default factory methods. This will
-  be the default behavior for most SDK versions (unless explicit `clientFactory` or
-  `endpoint` configured).
-  ([#30](https://github.com/kdgregory/log4j-aws-appenders/issues/30)
+* Enable per-record random partition keys for `KinesisAppender`. This can make better
+  use of a multi-shard stream for applications with high logging output.
+  ([#24](https://github.com/kdgregory/log4j-aws-appenders/issues/24))
 * Added the `clientFactory` property, which instructs appenders to call a static factory
   method to create their AWS service client.
-  ([#28](https://github.com/kdgregory/log4j-aws-appenders/issues/28)
+  ([#28](https://github.com/kdgregory/log4j-aws-appenders/issues/28))
+* Use reflection to create AWS service clients from default factory methods. This will
+  be the default behavior for most SDK versions.
+  ([#30](https://github.com/kdgregory/log4j-aws-appenders/issues/30))
 * Allow explicit endpoint configuration. This is intended to support clients using older
   AWS SDKs that don't want to direct output to the `us-east-1` region.
-  ([#30](https://github.com/kdgregory/log4j-aws-appenders/issues/30)
+  ([#30](https://github.com/kdgregory/log4j-aws-appenders/issues/30))
 * When creating a service client via constructor, attempt to set the region from the
   `AWS_REGION` environment variable. This is an alternative to specifying `endpoint`
   in your logger config, but in my opinion isn't very useful because the list of
   available regions is dependent on your SDK version. For example, SDK 1.11.0 doesn't
   know about the `us-east-2` region.
-  ([#30](https://github.com/kdgregory/log4j-aws-appenders/issues/30)
-* Enable per-record random partition keys for `KinesisAppender`. This can make better
-  use of a multi-shard stream for applications with high logging output.
-  ([#24](https://github.com/kdgregory/log4j-aws-appenders/issues/24)
+  ([#30](https://github.com/kdgregory/log4j-aws-appenders/issues/30))
 
 
 ## 1.2.0 (2017-12-30)
@@ -57,7 +74,7 @@
 
 ## 1.1.2 (2017-10-16)
 
-* Added [JsonLayout](docs/jsonlayout.md).  
+* Added [JsonLayout](docs/jsonlayout.md).
 * Added an example application that sends output to all appenders.
 
 

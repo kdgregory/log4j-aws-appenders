@@ -61,7 +61,7 @@ public class CloudWatchAppenderIntegrationTest
         final int numMessages     = 1001;
         final int rotationCount   = 333;
 
-        setUp("CloudWatchAppenderIntegrationTest-smoketest.properties", logGroupName);
+        setUp("CloudWatchAppenderIntegrationTest/smoketest.properties", logGroupName);
         localLogger.info("smoketest: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
@@ -103,7 +103,7 @@ public class CloudWatchAppenderIntegrationTest
         final int messagesPerThread = 200;
         final int rotationCount     = 333;
 
-        setUp("CloudWatchAppenderIntegrationTest-testMultipleThreadsSingleAppender.properties", logGroupName);
+        setUp("CloudWatchAppenderIntegrationTest/testMultipleThreadsSingleAppender.properties", logGroupName);
         localLogger.info("multi-thread/single-appender: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
@@ -139,7 +139,7 @@ public class CloudWatchAppenderIntegrationTest
         final String logGroupName   = "AppenderIntegrationTest-testMultipleThreadsMultipleAppenders";
         final int messagesPerThread = 300;
 
-        setUp("CloudWatchAppenderIntegrationTest-testMultipleThreadsMultipleAppenders.properties", logGroupName);
+        setUp("CloudWatchAppenderIntegrationTest/testMultipleThreadsMultipleAppenders.properties", logGroupName);
         localLogger.info("multi-thread/multi-appender: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger1");
@@ -170,7 +170,7 @@ public class CloudWatchAppenderIntegrationTest
         final String logStreamName = LOGSTREAM_BASE + "1";
         final int numMessages      = 100;
 
-        setUp("CloudWatchAppenderIntegrationTest-testLogstreamDeletionAndRecreation.properties", logGroupName);
+        setUp("CloudWatchAppenderIntegrationTest/testLogstreamDeletionAndRecreation.properties", logGroupName);
         localLogger.info("testLogstreamDeletionAndRecreation: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");

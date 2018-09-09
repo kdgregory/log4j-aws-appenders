@@ -14,7 +14,7 @@ the templates linked below.
 
 ### CloudWatch
 
-The template is [here](cloudformation/cloudwatch.json); it will create the following resources:
+[This template](cloudformation/cloudwatch.json) creates the following resources:
 
 * A CloudWatch log group named "AppenderExample"
 * An IAM managed policy named "AppenderExampleCloudWatchWriter" that grants access to create
@@ -32,10 +32,10 @@ Things to know:
 
 ### Kinesis
 
-The template is [here](cloudformation/kinesis.json); it will create the following resources:
+[This template](cloudformation/kinesis.json) creates the following resources:
 
 * A Kinesis Stream named "AppenderExample", with one shard. For production use with multiple
-  applications you will probably need to create multiple shards; look for 
+  applications you will probably need to create multiple shards.
 * An ElasticSearch domain named "logging-example" that is the ultimate destination for log
   output. This is a `t2.small.elasticsearch` instance with 16 GB of storage, which is enough
   for many days worth of logging from the example application, but is undersized for any real
@@ -46,6 +46,7 @@ The template is [here](cloudformation/kinesis.json); it will create the followin
   the execution of the Firehose Delivery stream.
 * An IAM managed policy named "AppenderExampleKinesisWriter" that grants access to create
   and write to the named Kinesis stream. You would attach this policy to any application that
+  uses the Kinesis appender.
 * An IAM managed policy named "AppenderExampleKinesisReader" that grants access to describe
   the stream and read records from it. This is used by Kinesis Firehose, but may be applied
   to any application that processes log records.
@@ -68,11 +69,11 @@ Things to know:
 
 ### SNS
 
-The template is [here](cloudformation/sns.json); it will create the following resources:
+[This template](cloudformation/sns.json) creates the following resources:
 
 * An SNS topic named "AppenderExample" that is the destination for log output.
 * An IAM managed policy named "AppenderExampleSNSWriter" that grants access to create and
-  write to the SNS topic.
+  write to the SNS topic. Enable this policy for any application that uses the SNS appender.
 * An IAM managed policy named "AppenderExampleSNSSubscriber" that grants access to subscribe
   to the SNS topic. This is not used by the example but is here as a base for your own SNS
   policies.
@@ -97,7 +98,7 @@ To build the example program, use Maven:
 This will produce an executable JAR, which you can run from the command-line (the wildcard
 works with Linux; if you're running elsewhere you might need to specify the exact name):
 
-    java -jar target/aws-appenders-example-*.0.0.jar
+    java -jar target/aws-appenders-example-*.jar
 
 This program will spawn two threads, each of which writes a log message at one-second intervals.
 Log levels are randomly assigned: 65% DEBUG, 20% INFO, 10% WARN, and 5% ERROR.

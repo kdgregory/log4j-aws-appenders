@@ -46,7 +46,7 @@ public class KinesisWriterConfig
      *                              ready to send.
      *  @param discardThreshold     Maximum number of messages to retain if unable to send.
      *  @param discardAction        What to do with unsent messages over the threshold.
-     *  @parma clientFactoryMethod  Possibly-null FQN of a static method to create client.
+     *  @param clientFactoryMethod  Possibly-null FQN of a static method to create client.
      *  @param clientEndpoint       Possibly-null endpoint for client.
      *  @param autoCreate           If true, stream will be created if it doesn't already
      *                              exist. If false, writer will fail to start.
@@ -57,7 +57,7 @@ public class KinesisWriterConfig
      *                              use the default retention period.
      */
     public KinesisWriterConfig(
-        String streamName, String partitionKey, int partitionKeyLength, 
+        String streamName, String partitionKey, int partitionKeyLength,
         long batchDelay, int discardThreshold, DiscardAction discardAction,
         String clientFactoryMethod, String clientEndpoint,
         boolean autoCreate, int shardCount, Integer retentionPeriod)

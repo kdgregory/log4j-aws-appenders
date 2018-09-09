@@ -172,6 +172,7 @@ extends AbstractAppender<SNSWriterConfig,SNSAppenderStatistics,SNSAppenderStatis
         return new SNSWriterConfig(actualTopicName, actualTopicArn, autoCreate, actualSubject, discardThreshold, discardAction, clientFactory, clientEndpoint);
     }
 
+
     @Override
     protected boolean isMessageTooLarge(LogMessage message)
     {

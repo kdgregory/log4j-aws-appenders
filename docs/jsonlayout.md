@@ -8,7 +8,7 @@ it's faster and less error-prone to simply send JSON.
 
 This layout transforms the Log4J [LogEvent](http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/pattern/LogEvent.html)
 into JSON, adding optional information such as the server's hostname, EC2 instance tags, and
-user-defined metadata.
+user-defined metadata. You can use it with any appender, not just the ones in this library.
 
 
 ## Configuration
@@ -71,5 +71,53 @@ message will contain the following element:
         "deployedTo": "prod",
         "runDate": "20180609"
     }
+}
+```
+
+## Example
+
+This configuration:
+
+```
+log4j.appender.example.layout=com.kdgregory.log4j.aws.JsonLayout
+log4j.appender.example.layout.appendNewlines=true
+log4j.appender.example.layout.enableHostname=true
+log4j.appender.example.layout.enableLocation=true
+log4j.appender.example.layout.tags=applicationName=Example,env={sysprop:env},runDate={date}
+```
+
+Which, when the application is invoked with `-Denv=prod`, will produce lines of output that look like this:
+
+```
+{"exception":["java.lang.Exception: sample exception","\tat com.kdgregory.log4j.aws.example.Main$LogGeneratorRunnable.run(Main.java:100)","\tat java.lang.Thread.run(Thread.java:745)"],"hostname":"peregrine","level":"ERROR","locationInfo":{"className":"com.kdgregory.log4j.aws.example.Main$LogGeneratorRunnable","fileName":"Main.java","lineNumber":"100","methodName":"run"},"logger":"com.kdgregory.log4j.aws.example.Main","message":"value is 95","processId":"25456","tags":{"applicationName":"Example","env":"prod","runDate":"20180908"},"thread":"example-0","timestamp":"2018-09-08T18:41:22.476Z"}
+```
+
+Which, when pretty-printed, looks like this:
+
+```
+{
+    "exception": [
+        "java.lang.Exception: sample exception",
+        "\tat com.kdgregory.log4j.aws.example.Main$LogGeneratorRunnable.run(Main.java:100)",
+        "\tat java.lang.Thread.run(Thread.java:745)"
+    ],
+    "hostname": "peregrine",
+    "level": "ERROR",
+    "locationInfo": {
+        "className": "com.kdgregory.log4j.aws.example.Main$LogGeneratorRunnable",
+        "fileName": "Main.java",
+        "lineNumber": "100",
+        "methodName": "run"
+    },
+    "logger": "com.kdgregory.log4j.aws.example.Main",
+    "message": "value is 95",
+    "processId": "25456",
+    "tags": {
+        "applicationName": "Example",
+        "env": "prod",
+        "runDate": "20180908"
+    },
+    "thread": "example-0",
+    "timestamp": "2018-09-08T18:41:22.476Z"
 }
 ```

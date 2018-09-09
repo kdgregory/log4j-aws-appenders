@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,10 +24,6 @@ import org.apache.log4j.spi.LoggingEvent;
 /**
  *  Holder for an in-queue logging message. Each instance has a timestamp and the
  *  message, stored as both a string and UTF-8 encoded bytes.
- *  <p>
- *  Note:: instances are Comparable, but comparison is not consistent with equality.
- *  This is intentional: we need to sort instances by timestamp, but want to retain
- *  insert ordering when two instances have the same timestamp.
  */
 public class LogMessage
 implements Comparable<LogMessage>
@@ -131,6 +127,16 @@ implements Comparable<LogMessage>
     }
 
 
+    /**
+     *  Compares instances based on their timestamp.
+     *  <p>
+     *  Note that an "equal" comparison is not consistent with <code>equals()</code>,
+     *  which uses default instance equality. This is intentional: one the one hand,
+     *  there's no reason to test equality for two instances; they should be considered
+     *  opaque. On the other, we don't want the comparision to do more than it should:
+     *  we're using a stable sort, and rely on that fact to order two messages with the
+     *  same timestamp in the order they were passed to <code>append()</code>.
+     */
     @Override
     public int compareTo(LogMessage that)
     {

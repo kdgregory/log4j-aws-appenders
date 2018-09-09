@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,8 +39,8 @@ public class Utils
             // this will simply break to the caller
         }
     }
-    
-    
+
+
     /**
      *  Retrieves the current AWS account ID, using reflection so that we don't
      *  have a hard reference to the STS SDK JAR (ie, if you don't want account
@@ -62,9 +62,9 @@ public class Utils
             Method getAccountMethod = responseKlass.getMethod("getAccount");
             return (String)getAccountMethod.invoke(response);
         }
-        catch (Exception ex)
+        catch (Throwable ex)
         {
-            LogLog.warn("substitutions: unable to retrieve AWS account ID");
+            LogLog.warn("substitutions: unable to retrieve AWS account ID", ex);
             return null;
         }
     }

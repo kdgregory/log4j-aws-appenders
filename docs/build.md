@@ -1,10 +1,11 @@
 There are three projects in this repository:
 
-* [appenders](../appenders) contains the actual appender code.
-* [tests](../tests) is a set of integration tests. These are in a separate module so that they
+* [log4j1-appenders](../log4j1-appenders): the Log4J 1.x compatible appenders.
+* [log4j1-integration-tests](../log4j1-integration-tests): a set of integration tests
+  for the Log4J 1.x appenders. These are in a separate project so that they can be
   can be run as desired, rather than as part of every build.
-* [example](../example) is a simple example that writes log message to all supported destinations.
-  It includes CloudFormation templates to create those destinations.
+* [log4j1-example](../log4j1-example): an example program using all of the Log4J 1.x
+  appenders. It includes CloudFormation templates to create destinations.
 
 
 ## Building

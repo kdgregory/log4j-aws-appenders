@@ -32,6 +32,7 @@ import org.apache.log4j.PropertyConfigurator;
 
 import net.sf.practicalxml.converter.json.Json2XmlConverter;
 import net.sf.practicalxml.xpath.XPathWrapper;
+import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
@@ -70,7 +71,7 @@ public class SNSAppenderIntegrationTest
     public void smoketestByArn() throws Exception
     {
         setUp("SNSAppenderIntegrationTest/smoketestByArn.properties");
-        localLogger.info("smoketest: starting");
+        localLogger.info("smoketestByArn: starting");
 
         createTopicAndQueue();
 
@@ -78,22 +79,24 @@ public class SNSAppenderIntegrationTest
 
         Logger testLogger = Logger.getLogger("TestLogger");
         SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
+        SNSAppenderStatistics appenderStats = appender.getAppenderStatistics();
 
         (new MessageWriter(testLogger, numMessages)).run();
 
-        localLogger.info("smoketest: reading messages");
+        localLogger.info("smoketestByArn: reading messages");
         List<String> messages = retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
         assertMessageContent(messages, "");
 
-        SNSAppenderStatistics appenderStats = appender.getAppenderStatistics();
-        assertEquals("topic name, from statistics",     resourceName,   appenderStats.getActualTopicName());
-        assertEquals("topic ARN, from statistics",      topicArn,       appenderStats.getActualTopicArn());
-        assertEquals("messages written, from stats",    numMessages,    appenderStats.getMessagesSent());
+        assertEquals("actual topic name, from statistics",  resourceName,   appenderStats.getActualTopicName());
+        assertEquals("actual topic ARN, from statistics",   topicArn,       appenderStats.getActualTopicArn());
+        assertEquals("messages written, from stats",        numMessages,    appenderStats.getMessagesSent());
 
         assertEquals("client factory called", "com.kdgregory.log4j.aws.SNSAppenderIntegrationTest.createClient",
                                               getWriter(appender).getClientFactoryUsed());
+
+        localLogger.info("smoketestByArn: finished");
     }
 
 
@@ -101,7 +104,7 @@ public class SNSAppenderIntegrationTest
     public void smoketestByName() throws Exception
     {
         setUp("SNSAppenderIntegrationTest/smoketestByName.properties");
-        localLogger.info("smoketest: starting");
+        localLogger.info("smoketestByName: starting");
 
         createTopicAndQueue();
 
@@ -109,26 +112,121 @@ public class SNSAppenderIntegrationTest
 
         Logger testLogger = Logger.getLogger("TestLogger");
         SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
+        SNSAppenderStatistics appenderStats = appender.getAppenderStatistics();
 
         (new MessageWriter(testLogger, numMessages)).run();
 
-        localLogger.info("smoketest: reading messages");
+        localLogger.info("smoketestByName: reading messages");
         List<String> messages = retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
         assertMessageContent(messages, "Example");
 
-        SNSAppenderStatistics appenderStats = appender.getAppenderStatistics();
-        assertEquals("topic name, from statistics",     resourceName,   appenderStats.getActualTopicName());
-        assertEquals("topic ARN, from statistics",      topicArn,       appenderStats.getActualTopicArn());
-        assertEquals("messages written, from stats",    numMessages,    appenderStats.getMessagesSent());
+        assertEquals("actual topic name, from statistics",  resourceName,   appenderStats.getActualTopicName());
+        assertEquals("actual topic ARN, from statistics",   topicArn,       appenderStats.getActualTopicArn());
+        assertEquals("messages written, from stats",        numMessages,    appenderStats.getMessagesSent());
 
         assertEquals("client factory called", "com.amazonaws.services.sns.AmazonSNSClientBuilder.defaultClient",
                                               getWriter(appender).getClientFactoryUsed());
+
+        localLogger.info("smoketestByName: finished");
     }
 
 
-    // TODO - add multi-appender tests, test that creates topic
+    @Test
+    public void testTopicMissingAutoCreate() throws Exception
+    {
+        setUp("SNSAppenderIntegrationTest/testTopicMissingAutoCreate.properties");
+        localLogger.info("testAutoCreate: starting");
+
+        final int numMessages = 11;
+
+        Logger testLogger = Logger.getLogger("TestLogger");
+        SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
+        SNSAppenderStatistics appenderStats = appender.getAppenderStatistics();
+
+        (new MessageWriter(testLogger, numMessages)).run();
+
+        // since we didn't hook a queue up to the topic we can't actually look at the messages
+        // we also have to spin-loop on the appender to determine when it's been initialized
+
+        SNSLogWriter writer = null;
+        for (int ii = 0 ; ii < 60 ; ii++)
+        {
+            writer = ClassUtil.getFieldValue(appender, "writer", SNSLogWriter.class);
+            Thread.sleep(1000);
+        }
+        assertNotNull("writer was created", writer);
+
+        for (int ii = 0 ; ii < 60 ; ii++)
+        {
+            if (writer.isInitializationComplete())
+                break;
+            Thread.sleep(1000);
+        }
+        assertTrue("writer initialization complete", writer.isInitializationComplete());
+
+        topicArn = lookupTopic(resourceName);
+        assertNotEmpty("topic was created", topicArn);
+
+        assertEquals("actual topic name, from statistics",  resourceName,   appenderStats.getActualTopicName());
+        assertEquals("actual topic ARN, from statistics",   topicArn,       appenderStats.getActualTopicArn());
+        assertEquals("messages written, from stats",        numMessages,    appenderStats.getMessagesSent());
+
+        localLogger.info("testAutoCreate: finished");
+    }
+
+
+    @Test
+    public void testTopicMissingNoAutoCreate() throws Exception
+    {
+        setUp("SNSAppenderIntegrationTest/testTopicMissingNoAutoCreate.properties");
+        localLogger.info("testTopicMissingNoAutoCreate: starting");
+
+        final int numMessages = 11;
+
+        Logger testLogger = Logger.getLogger("TestLogger");
+        SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
+        SNSAppenderStatistics appenderStats = appender.getAppenderStatistics();
+
+        (new MessageWriter(testLogger, numMessages)).run();
+
+        // since we didn't hook a queue up to the topic we can't actually look at the messages
+        // we also have to spin-loop on the appender to determine when it's been initialized
+
+        SNSLogWriter writer = null;
+        for (int ii = 0 ; ii < 60 ; ii++)
+        {
+            writer = ClassUtil.getFieldValue(appender, "writer", SNSLogWriter.class);
+            Thread.sleep(1000);
+        }
+        assertNotNull("writer was created", writer);
+
+        // if we can't create the topic then initialization fails, so we'll spin looking for
+        // an error to be reported via statistics
+
+        String errorMessage = "";
+        for (int ii = 0 ; ii < 60 ; ii++)
+        {
+            errorMessage = appenderStats.getLastErrorMessage();
+            if (! StringUtil.isEmpty(errorMessage))
+                break;
+            Thread.sleep(1000);
+        }
+        assertNotEmpty("writer initialization failed", errorMessage);
+        assertTrue("error message contains topic name (was: " + errorMessage + ")", errorMessage.contains(resourceName));
+
+        topicArn = lookupTopic(resourceName);
+        assertNull("topic was not created", topicArn);
+
+        // note: if we don't initialize, we don't update name/ARN in statistics
+        assertEquals("actual topic name, from statistics",  null,           appenderStats.getActualTopicName());
+        assertEquals("actual topic ARN, from statistics",   null,           appenderStats.getActualTopicArn());
+        assertEquals("messages written, from stats",        0,              appenderStats.getMessagesSent());
+
+        localLogger.info("testTopicMissingNoAutoCreate: finished");
+    }
+
 
 //----------------------------------------------------------------------------
 //  Helpers
@@ -266,6 +364,30 @@ public class SNSAppenderIntegrationTest
                                             .withProtocol("sqs")
                                             .withEndpoint(queueArn);
         localSNSclient.subscribe(subscribeRequest);
+    }
+
+
+    /**
+     *  Loops through all topic names, looking for the one that matches the provided name.
+     *  Returns the topic's ARN, null if unable to find it.
+     */
+    private String lookupTopic(String topicName)
+    {
+        ListTopicsRequest request = new ListTopicsRequest();
+        ListTopicsResult response;
+        do
+        {
+            response = localSNSclient.listTopics(request);
+            for (Topic topic : response.getTopics())
+            {
+                if (topic.getTopicArn().endsWith(topicName))
+                    return topic.getTopicArn();
+            }
+            request.setNextToken(response.getNextToken());
+        }
+        while (! StringUtil.isEmpty(response.getNextToken()));
+
+        return null;
     }
 
 

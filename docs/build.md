@@ -1,5 +1,6 @@
 There are three projects in this repository:
 
+* [writers](../writers): the AWS log-writers and supporting code.
 * [log4j1-appenders](../log4j1-appenders): the Log4J 1.x compatible appenders.
 * [log4j1-integration-tests](../log4j1-integration-tests): a set of integration tests
   for the Log4J 1.x appenders. These are in a separate project so that they can be

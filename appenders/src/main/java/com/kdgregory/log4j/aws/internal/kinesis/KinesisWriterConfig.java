@@ -57,7 +57,7 @@ public class KinesisWriterConfig
      *                              use the default retention period.
      */
     public KinesisWriterConfig(
-        String streamName, String partitionKey, int partitionKeyLength, 
+        String streamName, String partitionKey, int partitionKeyLength,
         long batchDelay, int discardThreshold, DiscardAction discardAction,
         String clientFactoryMethod, String clientEndpoint,
         boolean autoCreate, int shardCount, Integer retentionPeriod)

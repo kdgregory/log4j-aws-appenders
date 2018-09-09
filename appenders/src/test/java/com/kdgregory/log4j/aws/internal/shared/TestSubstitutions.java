@@ -3,9 +3,9 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,13 +38,13 @@ import com.kdgregory.log4j.aws.internal.shared.Substitutions;
 public class TestSubstitutions
 {
     private static Date TEST_DATE = new Date(1496082062000L);    // Mon May 29 14:21:02 EDT 2017
-    
+
     @Before
     public void setUp() throws Exception
     {
         // since we make AWS calls within this test, we need to configure a logger in
         // case those calls go awry; otherwise, Log4J will grab whatever it finds
-        
+
         URL config = ClassLoader.getSystemResource("log4j.properties");
         PropertyConfigurator.configure(config);
     }

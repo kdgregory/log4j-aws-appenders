@@ -61,7 +61,7 @@
 
         <dependency>
             <groupId>com.kdgregory.log4j</groupId>
-            <artifactId>aws-writers</artifactId>
+            <artifactId>aws-core</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>

@@ -14,7 +14,7 @@
     </description>
 
     <modules>
-        <module>writers</module>
+        <module>aws-core</module>
         <module>log4j1-appenders</module>
     </modules>
 

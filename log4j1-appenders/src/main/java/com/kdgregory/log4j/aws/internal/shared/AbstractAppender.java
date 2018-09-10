@@ -21,12 +21,12 @@ import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
 
-import com.kdgregory.aws.logwriters.common.AbstractAppenderStatistics;
-import com.kdgregory.aws.logwriters.common.DiscardAction;
-import com.kdgregory.aws.logwriters.common.LogMessage;
-import com.kdgregory.aws.logwriters.common.LogWriter;
-import com.kdgregory.aws.logwriters.internal.ThreadFactory;
-import com.kdgregory.aws.logwriters.internal.WriterFactory;
+import com.kdgregory.log4j.aws.internal.AbstractAppenderStatistics;
+import com.kdgregory.log4j.common.DiscardAction;
+import com.kdgregory.log4j.common.LogMessage;
+import com.kdgregory.log4j.common.LogWriter;
+import com.kdgregory.log4j.common.ThreadFactory;
+import com.kdgregory.log4j.common.WriterFactory;
 
 
 /**

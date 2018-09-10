@@ -16,10 +16,10 @@ package com.kdgregory.log4j.testhelpers;
 
 import java.util.concurrent.CountDownLatch;
 
-import com.kdgregory.aws.logwriters.common.DiscardAction;
-import com.kdgregory.aws.logwriters.common.LogMessage;
-import com.kdgregory.aws.logwriters.common.LogWriter;
-import com.kdgregory.aws.logwriters.internal.WriterFactory;
+import com.kdgregory.log4j.common.DiscardAction;
+import com.kdgregory.log4j.common.LogMessage;
+import com.kdgregory.log4j.common.LogWriter;
+import com.kdgregory.log4j.common.WriterFactory;
 
 
 /**

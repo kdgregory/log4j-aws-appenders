@@ -22,7 +22,7 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.Priority;
 import org.apache.log4j.spi.LoggingEvent;
 
-import com.kdgregory.aws.logwriters.common.LogMessage;
+import com.kdgregory.log4j.common.LogMessage;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

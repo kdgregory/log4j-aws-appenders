@@ -43,13 +43,13 @@ import com.amazonaws.services.logs.model.InputLogEvent;
 import com.amazonaws.services.logs.model.PutLogEventsRequest;
 import com.amazonaws.services.logs.model.PutLogEventsResult;
 
-import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchAppenderStatistics;
-import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterFactory;
-import com.kdgregory.log4j.aws.internal.shared.AbstractLogWriter;
-import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
-import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.log4j.aws.internal.shared.MessageQueue;
-import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
+import com.kdgregory.aws.logwriters.cloudwatch.CloudWatchAppenderStatistics;
+import com.kdgregory.aws.logwriters.cloudwatch.CloudWatchWriterFactory;
+import com.kdgregory.aws.logwriters.common.DiscardAction;
+import com.kdgregory.aws.logwriters.common.LogMessage;
+import com.kdgregory.aws.logwriters.internal.AbstractLogWriter;
+import com.kdgregory.aws.logwriters.internal.DefaultThreadFactory;
+import com.kdgregory.aws.logwriters.internal.MessageQueue;
 import com.kdgregory.log4j.testhelpers.*;
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.*;
 

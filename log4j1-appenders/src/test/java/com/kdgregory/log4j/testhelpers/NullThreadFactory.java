@@ -16,8 +16,8 @@ package com.kdgregory.log4j.testhelpers;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
-import com.kdgregory.log4j.aws.internal.shared.ThreadFactory;
+import com.kdgregory.aws.logwriters.common.LogWriter;
+import com.kdgregory.aws.logwriters.internal.ThreadFactory;
 
 
 /**

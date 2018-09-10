@@ -25,11 +25,11 @@ import java.util.concurrent.Semaphore;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.*;
 
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
-import com.kdgregory.log4j.aws.internal.shared.WriterFactory;
-import com.kdgregory.log4j.aws.internal.sns.SNSAppenderStatistics;
-import com.kdgregory.log4j.aws.internal.sns.SNSLogWriter;
-import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
+import com.kdgregory.aws.logwriters.common.LogWriter;
+import com.kdgregory.aws.logwriters.internal.WriterFactory;
+import com.kdgregory.aws.logwriters.sns.SNSAppenderStatistics;
+import com.kdgregory.aws.logwriters.sns.SNSLogWriter;
+import com.kdgregory.aws.logwriters.sns.SNSWriterConfig;
 
 
 /**

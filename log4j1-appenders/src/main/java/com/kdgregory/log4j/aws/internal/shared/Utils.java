@@ -14,58 +14,50 @@
 
 package com.kdgregory.log4j.aws.internal.shared;
 
-import java.lang.reflect.Method;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 
-import org.apache.log4j.helpers.LogLog;
+import org.apache.log4j.Layout;
+import org.apache.log4j.spi.LoggingEvent;
 
+import com.kdgregory.aws.logwriters.common.LogMessage;
 
 /**
- *  Various static utility functions. Most are copied from KDGCommons, to avoid
- *  potential dependency conflicts.
+ *  Utility classes for working with Log4J. These methods may get absorbed elsewhere.
  */
 public class Utils
 {
     /**
-     *  Sleeps until the specified time elapses or the thread is interrupted.
+     *  Transforms a Log4J loggingEvent into a LogMessage.
+     *
+     *  @throws RuntimeException if any error occurred during formatting or conversion.
+     *          Will include any root cause other than UnsupportedEncodingException.
      */
-    public static void sleepQuietly(long time)
+    public static LogMessage convertToLogMessage(LoggingEvent event, Layout layout)
     {
         try
         {
-            Thread.sleep(time);
-        }
-        catch (InterruptedException ignored)
-        {
-            // this will simply break to the caller
-        }
-    }
+            StringWriter out = new StringWriter(1024);
+            out.write(layout.format(event));
+            if ((event.getThrowableInformation() != null) && layout.ignoresThrowable())
+            {
+                for (String traceline : event.getThrowableStrRep())
+                {
+                    out.write(traceline);
+                    out.write(Layout.LINE_SEP);
+                }
+            }
+            out.close();
 
-
-    /**
-     *  Retrieves the current AWS account ID, using reflection so that we don't
-     *  have a hard reference to the STS SDK JAR (ie, if you don't want account
-     *  IDs you don't need the JAR).
-     *  <p>
-     *  Returns null if unable to determine the account ID for any reason.
-     */
-    public static String retrieveAWSAccountId()
-    {
-        try
-        {
-            Class<?> stsClientKlass = Class.forName("com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient");
-            Class<?> requestKlass = Class.forName("com.amazonaws.services.securitytoken.model.GetCallerIdentityRequest");
-            Class<?> responseKlass = Class.forName("com.amazonaws.services.securitytoken.model.GetCallerIdentityResult");
-            Object stsClient = stsClientKlass.newInstance();
-            Object request = requestKlass.newInstance();
-            Method requestMethod = stsClientKlass.getMethod("getCallerIdentity", requestKlass);
-            Object response = requestMethod.invoke(stsClient, request);
-            Method getAccountMethod = responseKlass.getMethod("getAccount");
-            return (String)getAccountMethod.invoke(response);
+            return new LogMessage(event.getTimeStamp(), out.toString());
         }
-        catch (Throwable ex)
+        catch (UnsupportedEncodingException e)
         {
-            LogLog.warn("substitutions: unable to retrieve AWS account ID", ex);
-            return null;
+            throw new RuntimeException("UnsupportedEncodingException when converting to UTF-8");
+        }
+        catch (Exception ex)
+        {
+            throw new RuntimeException("error creating LogMessage", ex);
         }
     }
 }

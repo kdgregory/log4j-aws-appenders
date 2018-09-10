@@ -17,10 +17,10 @@ package com.kdgregory.log4j.testhelpers.aws.cloudwatch;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchWriterConfig;
-import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
-import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
+import com.kdgregory.aws.logwriters.cloudwatch.CloudWatchWriterConfig;
+import com.kdgregory.aws.logwriters.common.DiscardAction;
+import com.kdgregory.aws.logwriters.common.LogMessage;
+import com.kdgregory.aws.logwriters.common.LogWriter;
 
 
 public class MockCloudWatchWriter

@@ -17,10 +17,10 @@ package com.kdgregory.log4j.testhelpers.aws.sns;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.log4j.aws.internal.shared.LogWriter;
-import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
-import com.kdgregory.log4j.aws.internal.sns.SNSWriterConfig;
+import com.kdgregory.aws.logwriters.common.DiscardAction;
+import com.kdgregory.aws.logwriters.common.LogMessage;
+import com.kdgregory.aws.logwriters.common.LogWriter;
+import com.kdgregory.aws.logwriters.sns.SNSWriterConfig;
 
 
 public class MockSNSWriter

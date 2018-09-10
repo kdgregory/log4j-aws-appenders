@@ -41,10 +41,10 @@ import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.test.SelfMock;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
+import com.kdgregory.aws.logwriters.cloudwatch.CloudWatchAppenderStatisticsMXBean;
+import com.kdgregory.aws.logwriters.kinesis.KinesisAppenderStatisticsMXBean;
+import com.kdgregory.aws.logwriters.sns.SNSAppenderStatisticsMXBean;
 import com.kdgregory.log4j.aws.StatisticsMBean;
-import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchAppenderStatisticsMXBean;
-import com.kdgregory.log4j.aws.internal.kinesis.KinesisAppenderStatisticsMXBean;
-import com.kdgregory.log4j.aws.internal.sns.SNSAppenderStatisticsMXBean;
 import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.MockCloudWatchWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.TestableCloudWatchAppender;

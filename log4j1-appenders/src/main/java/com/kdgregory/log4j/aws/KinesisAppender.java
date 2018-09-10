@@ -17,15 +17,15 @@ package com.kdgregory.log4j.aws;
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 
-import com.kdgregory.log4j.aws.internal.kinesis.KinesisAppenderStatistics;
-import com.kdgregory.log4j.aws.internal.kinesis.KinesisAppenderStatisticsMXBean;
-import com.kdgregory.log4j.aws.internal.kinesis.KinesisConstants;
-import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterConfig;
-import com.kdgregory.log4j.aws.internal.kinesis.KinesisWriterFactory;
+import com.kdgregory.aws.logwriters.common.LogMessage;
+import com.kdgregory.aws.logwriters.common.Substitutions;
+import com.kdgregory.aws.logwriters.internal.DefaultThreadFactory;
+import com.kdgregory.aws.logwriters.kinesis.KinesisAppenderStatistics;
+import com.kdgregory.aws.logwriters.kinesis.KinesisAppenderStatisticsMXBean;
+import com.kdgregory.aws.logwriters.kinesis.KinesisConstants;
+import com.kdgregory.aws.logwriters.kinesis.KinesisWriterConfig;
+import com.kdgregory.aws.logwriters.kinesis.KinesisWriterFactory;
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
-import com.kdgregory.log4j.aws.internal.shared.DefaultThreadFactory;
-import com.kdgregory.log4j.aws.internal.shared.LogMessage;
-import com.kdgregory.log4j.aws.internal.shared.Substitutions;
 
 
 /**

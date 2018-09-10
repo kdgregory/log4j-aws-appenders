@@ -21,7 +21,12 @@ import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
 
-import com.kdgregory.log4j.aws.internal.shared.MessageQueue.DiscardAction;
+import com.kdgregory.aws.logwriters.common.AbstractAppenderStatistics;
+import com.kdgregory.aws.logwriters.common.DiscardAction;
+import com.kdgregory.aws.logwriters.common.LogMessage;
+import com.kdgregory.aws.logwriters.common.LogWriter;
+import com.kdgregory.aws.logwriters.internal.ThreadFactory;
+import com.kdgregory.aws.logwriters.internal.WriterFactory;
 
 
 /**
@@ -374,7 +379,7 @@ extends AppenderSkeleton
 
         try
         {
-            internalAppend(new LogMessage(event, getLayout()));
+            internalAppend(Utils.convertToLogMessage(event, getLayout()));
         }
         catch (Exception ex)
         {

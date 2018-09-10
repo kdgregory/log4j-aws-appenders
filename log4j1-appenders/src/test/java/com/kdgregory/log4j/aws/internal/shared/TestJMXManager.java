@@ -26,9 +26,10 @@ import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.test.SelfMock;
 
+import com.kdgregory.aws.logwriters.cloudwatch.CloudWatchAppenderStatistics;
+import com.kdgregory.aws.logwriters.cloudwatch.CloudWatchAppenderStatisticsMXBean;
+import com.kdgregory.aws.logwriters.common.AbstractAppenderStatistics;
 import com.kdgregory.log4j.aws.StatisticsMBean;
-import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchAppenderStatistics;
-import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchAppenderStatisticsMXBean;
 
 
 /**

@@ -19,6 +19,7 @@ import com.kdgregory.aws.logging.common.ThreadFactory;
 import com.kdgregory.aws.logging.common.WriterFactory;
 import com.kdgregory.aws.logging.kinesis.KinesisAppenderStatistics;
 import com.kdgregory.aws.logging.kinesis.KinesisWriterConfig;
+import com.kdgregory.aws.logging.testhelpers.kinesis.MockKinesisWriter;
 import com.kdgregory.log4j.aws.KinesisAppender;
 
 

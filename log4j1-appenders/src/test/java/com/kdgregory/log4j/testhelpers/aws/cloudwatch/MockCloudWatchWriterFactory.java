@@ -18,6 +18,7 @@ import com.kdgregory.aws.logging.cloudwatch.CloudWatchAppenderStatistics;
 import com.kdgregory.aws.logging.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.aws.logging.common.LogWriter;
 import com.kdgregory.aws.logging.common.WriterFactory;
+import com.kdgregory.aws.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
 import com.kdgregory.log4j.aws.CloudWatchAppender;
 
 

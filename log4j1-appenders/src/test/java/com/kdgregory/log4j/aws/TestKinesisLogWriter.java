@@ -55,10 +55,10 @@ import com.kdgregory.aws.logging.internal.AbstractLogWriter;
 import com.kdgregory.aws.logging.kinesis.KinesisAppenderStatistics;
 import com.kdgregory.aws.logging.kinesis.KinesisLogWriter;
 import com.kdgregory.aws.logging.kinesis.KinesisWriterFactory;
-import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
-import com.kdgregory.log4j.testhelpers.NullThreadFactory;
-import com.kdgregory.log4j.testhelpers.TestingException;
-import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisClient;
+import com.kdgregory.aws.logging.testhelpers.InlineThreadFactory;
+import com.kdgregory.aws.logging.testhelpers.NullThreadFactory;
+import com.kdgregory.aws.logging.testhelpers.TestingException;
+import com.kdgregory.aws.logging.testhelpers.kinesis.MockKinesisClient;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.TestableKinesisAppender;
 

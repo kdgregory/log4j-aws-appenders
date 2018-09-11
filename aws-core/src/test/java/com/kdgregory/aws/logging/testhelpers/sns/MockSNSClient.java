@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.testhelpers.aws.sns;
+package com.kdgregory.aws.logging.testhelpers.sns;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;

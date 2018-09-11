@@ -50,6 +50,10 @@ import com.kdgregory.aws.logging.common.DiscardAction;
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.common.MessageQueue;
 import com.kdgregory.aws.logging.internal.AbstractLogWriter;
+import com.kdgregory.aws.logging.testhelpers.InlineThreadFactory;
+import com.kdgregory.aws.logging.testhelpers.NullThreadFactory;
+import com.kdgregory.aws.logging.testhelpers.TestingException;
+import com.kdgregory.aws.logging.testhelpers.cloudwatch.MockCloudWatchClient;
 import com.kdgregory.log4j.testhelpers.*;
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.*;
 

@@ -18,6 +18,7 @@ import com.kdgregory.aws.logging.common.LogWriter;
 import com.kdgregory.aws.logging.common.WriterFactory;
 import com.kdgregory.aws.logging.sns.SNSAppenderStatistics;
 import com.kdgregory.aws.logging.sns.SNSWriterConfig;
+import com.kdgregory.aws.logging.testhelpers.sns.MockSNSWriter;
 
 
 public class MockSNSWriterFactory

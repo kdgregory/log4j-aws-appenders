@@ -43,10 +43,10 @@ import com.kdgregory.aws.logging.common.MessageQueue;
 import com.kdgregory.aws.logging.internal.AbstractLogWriter;
 import com.kdgregory.aws.logging.sns.SNSAppenderStatistics;
 import com.kdgregory.aws.logging.sns.SNSWriterFactory;
-import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
-import com.kdgregory.log4j.testhelpers.NullThreadFactory;
-import com.kdgregory.log4j.testhelpers.TestingException;
-import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSClient;
+import com.kdgregory.aws.logging.testhelpers.InlineThreadFactory;
+import com.kdgregory.aws.logging.testhelpers.NullThreadFactory;
+import com.kdgregory.aws.logging.testhelpers.TestingException;
+import com.kdgregory.aws.logging.testhelpers.sns.MockSNSClient;
 import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.sns.TestableSNSAppender;
 

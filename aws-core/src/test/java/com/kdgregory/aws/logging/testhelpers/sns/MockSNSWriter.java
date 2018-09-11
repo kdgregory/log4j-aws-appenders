@@ -12,18 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.testhelpers.aws.cloudwatch;
+package com.kdgregory.aws.logging.testhelpers.sns;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kdgregory.aws.logging.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.aws.logging.common.DiscardAction;
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.common.LogWriter;
+import com.kdgregory.aws.logging.sns.SNSWriterConfig;
 
 
-public class MockCloudWatchWriter
+public class MockSNSWriter
 implements LogWriter
 {
     public List<LogMessage> messages = new ArrayList<LogMessage>();
@@ -31,16 +31,12 @@ implements LogWriter
 
     public boolean stopped;
 
-    public String logGroup;
-    public String logStream;
-    public long batchDelay;
+    public SNSWriterConfig config;
 
 
-    public MockCloudWatchWriter(CloudWatchWriterConfig config)
+    public MockSNSWriter(SNSWriterConfig config)
     {
-        this.logGroup = config.logGroup;
-        this.logStream = config.logStream;
-        this.batchDelay = config.batchDelay;
+        this.config = config;
     }
 
 //----------------------------------------------------------------------------
@@ -65,7 +61,7 @@ implements LogWriter
     @Override
     public void setBatchDelay(long value)
     {
-        this.batchDelay = value;
+        throw new IllegalStateException("this function should never be called");
     }
 
 

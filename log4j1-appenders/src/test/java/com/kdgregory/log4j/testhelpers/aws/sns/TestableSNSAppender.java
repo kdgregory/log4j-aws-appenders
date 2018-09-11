@@ -20,6 +20,7 @@ import com.kdgregory.aws.logging.common.ThreadFactory;
 import com.kdgregory.aws.logging.common.WriterFactory;
 import com.kdgregory.aws.logging.sns.SNSAppenderStatistics;
 import com.kdgregory.aws.logging.sns.SNSWriterConfig;
+import com.kdgregory.aws.logging.testhelpers.sns.MockSNSWriter;
 import com.kdgregory.log4j.aws.SNSAppender;
 
 

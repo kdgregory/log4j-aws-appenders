@@ -12,33 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.testhelpers.aws.kinesis;
+package com.kdgregory.aws.logging.testhelpers.cloudwatch;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import com.kdgregory.aws.logging.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.aws.logging.common.DiscardAction;
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.common.LogWriter;
-import com.kdgregory.aws.logging.kinesis.KinesisWriterConfig;
 
 
-public class MockKinesisWriter
+public class MockCloudWatchWriter
 implements LogWriter
 {
     public List<LogMessage> messages = new ArrayList<LogMessage>();
     public LogMessage lastMessage;
+
     public boolean stopped;
 
-    public String streamName;
-    public String partitionKey;
+    public String logGroup;
+    public String logStream;
     public long batchDelay;
 
 
-    public MockKinesisWriter(KinesisWriterConfig config)
+    public MockCloudWatchWriter(CloudWatchWriterConfig config)
     {
-        this.streamName = config.streamName;
-        this.partitionKey = config.partitionKey;
+        this.logGroup = config.logGroup;
+        this.logStream = config.logStream;
         this.batchDelay = config.batchDelay;
     }
 

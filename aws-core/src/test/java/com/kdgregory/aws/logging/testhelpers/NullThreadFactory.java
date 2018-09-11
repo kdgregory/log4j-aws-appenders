@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.testhelpers;
+package com.kdgregory.aws.logging.testhelpers;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 
@@ -21,14 +21,13 @@ import com.kdgregory.aws.logging.common.ThreadFactory;
 
 
 /**
- *  A {@link ThreadFactory} used for testing: it executes the writer in the current
- *  thread. The writer's run() method should return immediately to avoid deadlock.
+ *  A {@link ThreadFactory} used for testing: it doesn't invoke the writer at all.
  */
-public class InlineThreadFactory implements ThreadFactory
+public class NullThreadFactory implements ThreadFactory
 {
     @Override
     public void startLoggingThread(LogWriter writer, UncaughtExceptionHandler exceptionHandler)
     {
-        writer.run();
+        // nothing here
     }
 }

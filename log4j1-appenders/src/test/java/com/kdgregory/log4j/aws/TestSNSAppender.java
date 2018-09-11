@@ -30,10 +30,10 @@ import org.apache.log4j.helpers.LogLog;
 import net.sf.kdgcommons.lang.StringUtil;
 import net.sf.kdgcommons.test.StringAsserts;
 
-import com.kdgregory.log4j.aws.sns.SNSAppenderStatistics;
-import com.kdgregory.log4j.aws.sns.SNSWriterConfig;
-import com.kdgregory.log4j.common.DefaultThreadFactory;
-import com.kdgregory.log4j.common.LogMessage;
+import com.kdgregory.aws.logging.common.DefaultThreadFactory;
+import com.kdgregory.aws.logging.common.LogMessage;
+import com.kdgregory.aws.logging.sns.SNSAppenderStatistics;
+import com.kdgregory.aws.logging.sns.SNSWriterConfig;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
 import com.kdgregory.log4j.testhelpers.TestingException;

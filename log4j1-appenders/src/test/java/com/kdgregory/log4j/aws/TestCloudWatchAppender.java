@@ -32,10 +32,10 @@ import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.amazonaws.services.logs.AWSLogs;
 
-import com.kdgregory.log4j.aws.cloudwatch.CloudWatchAppenderStatistics;
-import com.kdgregory.log4j.aws.cloudwatch.CloudWatchWriterConfig;
-import com.kdgregory.log4j.common.DefaultThreadFactory;
-import com.kdgregory.log4j.common.LogMessage;
+import com.kdgregory.aws.logging.cloudwatch.CloudWatchAppenderStatistics;
+import com.kdgregory.aws.logging.cloudwatch.CloudWatchWriterConfig;
+import com.kdgregory.aws.logging.common.DefaultThreadFactory;
+import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.InlineThreadFactory;
 import com.kdgregory.log4j.testhelpers.TestingException;

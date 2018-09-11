@@ -14,11 +14,11 @@
 
 package com.kdgregory.log4j.testhelpers.aws.cloudwatch;
 
+import com.kdgregory.aws.logging.cloudwatch.CloudWatchAppenderStatistics;
+import com.kdgregory.aws.logging.cloudwatch.CloudWatchWriterConfig;
+import com.kdgregory.aws.logging.common.LogWriter;
+import com.kdgregory.aws.logging.common.WriterFactory;
 import com.kdgregory.log4j.aws.CloudWatchAppender;
-import com.kdgregory.log4j.aws.cloudwatch.CloudWatchAppenderStatistics;
-import com.kdgregory.log4j.aws.cloudwatch.CloudWatchWriterConfig;
-import com.kdgregory.log4j.common.LogWriter;
-import com.kdgregory.log4j.common.WriterFactory;
 
 
 public class MockCloudWatchWriterFactory

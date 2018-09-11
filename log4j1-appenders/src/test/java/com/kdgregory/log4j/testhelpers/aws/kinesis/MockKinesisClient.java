@@ -24,11 +24,11 @@ import java.util.concurrent.Semaphore;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
 
-import com.kdgregory.log4j.aws.kinesis.KinesisAppenderStatistics;
-import com.kdgregory.log4j.aws.kinesis.KinesisLogWriter;
-import com.kdgregory.log4j.aws.kinesis.KinesisWriterConfig;
-import com.kdgregory.log4j.common.LogWriter;
-import com.kdgregory.log4j.common.WriterFactory;
+import com.kdgregory.aws.logging.common.LogWriter;
+import com.kdgregory.aws.logging.common.WriterFactory;
+import com.kdgregory.aws.logging.kinesis.KinesisAppenderStatistics;
+import com.kdgregory.aws.logging.kinesis.KinesisLogWriter;
+import com.kdgregory.aws.logging.kinesis.KinesisWriterConfig;
 
 
 /**

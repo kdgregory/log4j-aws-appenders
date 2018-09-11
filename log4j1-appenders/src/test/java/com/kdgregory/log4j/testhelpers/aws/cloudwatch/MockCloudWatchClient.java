@@ -25,11 +25,11 @@ import java.util.concurrent.Semaphore;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.*;
 
-import com.kdgregory.log4j.aws.cloudwatch.CloudWatchAppenderStatistics;
-import com.kdgregory.log4j.aws.cloudwatch.CloudWatchLogWriter;
-import com.kdgregory.log4j.aws.cloudwatch.CloudWatchWriterConfig;
-import com.kdgregory.log4j.common.LogWriter;
-import com.kdgregory.log4j.common.WriterFactory;
+import com.kdgregory.aws.logging.cloudwatch.CloudWatchAppenderStatistics;
+import com.kdgregory.aws.logging.cloudwatch.CloudWatchLogWriter;
+import com.kdgregory.aws.logging.cloudwatch.CloudWatchWriterConfig;
+import com.kdgregory.aws.logging.common.LogWriter;
+import com.kdgregory.aws.logging.common.WriterFactory;
 
 
 /**

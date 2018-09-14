@@ -35,6 +35,7 @@ import com.amazonaws.services.logs.AWSLogs;
 import com.kdgregory.aws.logging.cloudwatch.CloudWatchAppenderStatistics;
 import com.kdgregory.aws.logging.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.aws.logging.common.DefaultThreadFactory;
+import com.kdgregory.aws.logging.common.DiscardAction;
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.testhelpers.InlineThreadFactory;
 import com.kdgregory.aws.logging.testhelpers.TestingException;
@@ -423,5 +424,31 @@ public class TestCloudWatchAppender
 
         assertNull("writer has been reset",         appender.getWriter());
         assertEquals("last writer exception class", TestingException.class, appenderStats.getLastError().getClass());
+    }
+
+
+    @Test
+    public void testReconfigureDiscardProperties() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testReconfigureDiscardProperties.properties");
+
+        logger.debug("a message to trigger writer creation");
+
+        MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
+
+        assertEquals("initial discard threshold, from appender",    12345,                              appender.getDiscardThreshold());
+        assertEquals("initial discard action, from appender",       DiscardAction.newest.toString(),    appender.getDiscardAction());
+
+        assertEquals("initial discard threshold, from writer",      12345,                              writer.discardThreshold);
+        assertEquals("initial discard action, from writer",         DiscardAction.newest,               writer.discardAction);
+
+        appender.setDiscardThreshold(54321);
+        appender.setDiscardAction(DiscardAction.oldest.toString());
+
+        assertEquals("updated discard threshold, from appender",    54321,                              appender.getDiscardThreshold());
+        assertEquals("updated discard action, from appender",       DiscardAction.oldest.toString(),    appender.getDiscardAction());
+
+        assertEquals("updated discard threshold, from writer",      54321,                              writer.discardThreshold);
+        assertEquals("updated discard action, from writer",         DiscardAction.oldest,               writer.discardAction);
     }
 }

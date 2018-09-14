@@ -34,6 +34,8 @@ implements LogWriter
     public String logGroup;
     public String logStream;
     public long batchDelay;
+    public int discardThreshold;
+    public DiscardAction discardAction;
 
 
     public MockCloudWatchWriter(CloudWatchWriterConfig config)
@@ -41,6 +43,8 @@ implements LogWriter
         this.logGroup = config.logGroup;
         this.logStream = config.logStream;
         this.batchDelay = config.batchDelay;
+        this.discardThreshold = config.discardThreshold;
+        this.discardAction = config.discardAction;
     }
 
 //----------------------------------------------------------------------------
@@ -72,13 +76,13 @@ implements LogWriter
     @Override
     public void setDiscardThreshold(int value)
     {
-        // ignored for now
+        this.discardThreshold = value;
     }
 
     @Override
     public void setDiscardAction(DiscardAction value)
     {
-        // ignored for now
+        this.discardAction = value;
     }
 
 //----------------------------------------------------------------------------

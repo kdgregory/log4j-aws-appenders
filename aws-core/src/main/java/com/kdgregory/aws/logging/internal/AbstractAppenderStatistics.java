@@ -62,6 +62,11 @@ public abstract class AbstractAppenderStatistics
     /**
      *  Sets the last error. Either the message or the throwable may be null (but
      *  not both).
+     *  <p>
+     *  Note: if multiple errors occur in rapid succession, the observer may see a
+     *  mixture of reported values. This is unlikely to occur outside of testing,
+     *  and the cure is to syncronize this method with the various gets, which I
+     *  don't particularly want to do.
      */
     public void setLastError(String message, Throwable error)
     {
@@ -69,7 +74,6 @@ public abstract class AbstractAppenderStatistics
         lastError = error;
         lastErrorMessage = (message != null) ? message : error.toString();
 
-        lastErrorStacktrace = null;
         if (error != null)
         {
             List<String> stacktrace = new ArrayList<String>();
@@ -78,6 +82,10 @@ public abstract class AbstractAppenderStatistics
                 stacktrace.add(ste.toString());
             }
             lastErrorStacktrace = stacktrace;
+        }
+        else
+        {
+            lastErrorStacktrace = null;
         }
     }
 

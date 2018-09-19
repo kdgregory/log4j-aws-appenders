@@ -505,7 +505,6 @@ public class TestCloudWatchLogWriter
     }
 
 
-
     @Test
     public void testDiscardOldest() throws Exception
     {

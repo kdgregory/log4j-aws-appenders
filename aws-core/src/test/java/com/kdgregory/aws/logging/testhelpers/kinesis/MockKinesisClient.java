@@ -18,6 +18,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
@@ -58,10 +59,18 @@ implements InvocationHandler
     private Semaphore allowMainThread = new Semaphore(0);
     private Semaphore allowWriterThread = new Semaphore(0);
 
+    // the list of known streams, initialized by the constructor
+    public List<String> knownStreams = new ArrayList<String>();
+
+    // this provides a countdown for the CREATING status from describe;
+    // by default all describes return ACTIVE if the stream exists
+    public int creatingStatusCount;
+
     // the number of times each method was invoked
     public volatile int describeStreamInvocationCount;
     public volatile int createStreamInvocationCount;
     public volatile int putRecordsInvocationCount;
+    public volatile int increaseRetentionPeriodInvocationCount;
 
     // arguments passed to the last describeStream call
     public volatile String describeStreamStreamName;
@@ -69,6 +78,10 @@ implements InvocationHandler
     // arguments passed to the last createStream call
     public volatile String createStreamStreamName;
     public volatile Integer createStreamShardCount;
+
+    // arguments passed to the last increaseStreamRetentionPeriod call
+    public String increaseRetentionPeriodStreamName;
+    public Integer increaseRetentionPeriodHours;
 
     // arguments passed to the last putRecords call
     public volatile String putRecordsStreamName;
@@ -78,6 +91,33 @@ implements InvocationHandler
     public volatile List<PutRecordsRequestEntry> putRecordsSuccesses = new ArrayList<PutRecordsRequestEntry>();
     public volatile List<PutRecordsRequestEntry> putRecordsFailures = new ArrayList<PutRecordsRequestEntry>();
 
+
+
+
+    /**
+     *  Constructs an instance that has a list of streams and will return them
+     *  all in a single describe call.
+     */
+    public MockKinesisClient(String... streamNames)
+    {
+        knownStreams.addAll(Arrays.asList(streamNames));
+    }
+
+
+    /**
+     *  Constructs an instance that does not know about any streams. The passed
+     *  count controls how many times describeStream will return CREATING before
+     *  it returns ACTIVE.
+     */
+    public MockKinesisClient(int creatingStatusCount)
+    {
+        this.creatingStatusCount = creatingStatusCount;
+    }
+
+
+//----------------------------------------------------------------------------
+//  Public methods
+//----------------------------------------------------------------------------
 
     /**
      *  Pauses the main thread and allows the writer thread to proceed.
@@ -146,6 +186,14 @@ implements InvocationHandler
             createStreamShardCount = request.getShardCount();
             return createStream(request);
         }
+        else if (method.getName().equals("increaseStreamRetentionPeriod"))
+        {
+            increaseRetentionPeriodInvocationCount++;
+            IncreaseStreamRetentionPeriodRequest request = (IncreaseStreamRetentionPeriodRequest)args[0];
+            increaseRetentionPeriodStreamName = request.getStreamName();
+            increaseRetentionPeriodHours = request.getRetentionPeriodHours();
+            return increaseStreamRetentionPeriod(request);
+        }
         else if (method.getName().equals("putRecords"))
         {
             putRecordsInvocationCount++;
@@ -186,22 +234,17 @@ implements InvocationHandler
     {
         StreamDescription streamDesc = new StreamDescription();
 
-        if (request.getStreamName().equals("argle"))
+        if (! knownStreams.contains(request.getStreamName()))
         {
-            streamDesc.setStreamStatus(StreamStatus.ACTIVE);
+            throw new ResourceNotFoundException("");
         }
-        else if (request.getStreamName().equals(createStreamStreamName))
+        else if (creatingStatusCount-- > 0)
         {
-            if (createStreamInvocationCount == 0)
-                throw new ResourceNotFoundException("");
-            else if (describeStreamInvocationCount < 3)
-                streamDesc.setStreamStatus(StreamStatus.CREATING);
-            else
-                streamDesc.setStreamStatus(StreamStatus.ACTIVE);
+            streamDesc.setStreamStatus(StreamStatus.CREATING);
         }
         else
         {
-            throw new ResourceNotFoundException("");
+            streamDesc.setStreamStatus(StreamStatus.ACTIVE);
         }
 
         return new DescribeStreamResult().withStreamDescription(streamDesc);
@@ -210,7 +253,14 @@ implements InvocationHandler
 
     protected CreateStreamResult createStream(CreateStreamRequest request)
     {
+        knownStreams.add(request.getStreamName());
         return new CreateStreamResult();
+    }
+
+
+    protected IncreaseStreamRetentionPeriodResult increaseStreamRetentionPeriod(IncreaseStreamRetentionPeriodRequest request)
+    {
+        return new IncreaseStreamRetentionPeriodResult();
     }
 
 

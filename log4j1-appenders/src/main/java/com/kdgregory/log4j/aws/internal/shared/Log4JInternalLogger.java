@@ -12,30 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.aws.logging.cloudwatch;
+package com.kdgregory.log4j.aws.internal.shared;
 
-import com.kdgregory.aws.logging.common.LogWriter;
-import com.kdgregory.aws.logging.common.WriterFactory;
+import org.apache.log4j.helpers.LogLog;
+
 import com.kdgregory.aws.logging.internal.InternalLogger;
 
+
 /**
- *  Factory to create CloudWatchLogWriter instances.
+ *  An implementation of <code>InternalLogger</code> that passes all messages
+ *  to the Log4J <code>LogLog</code> object.s
  */
-public class CloudWatchWriterFactory
-implements WriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics>
+public class Log4JInternalLogger implements InternalLogger
 {
-    private InternalLogger internalLogger;
-
-
-    public CloudWatchWriterFactory(InternalLogger internalLogger)
+    @Override
+    public void debug(String message)
     {
-        this.internalLogger = internalLogger;
+        LogLog.debug(message);
     }
 
 
     @Override
-    public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats)
+    public void error(String message, Throwable ex)
     {
-        return new CloudWatchLogWriter(config, stats, internalLogger);
+        if (ex != null)
+            LogLog.error(message, ex);
+        else
+            LogLog.error(message);
     }
+
 }

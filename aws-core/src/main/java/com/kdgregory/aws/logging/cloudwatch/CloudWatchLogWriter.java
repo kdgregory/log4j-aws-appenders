@@ -25,6 +25,7 @@ import com.amazonaws.services.logs.model.*;
 
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.internal.AbstractLogWriter;
+import com.kdgregory.aws.logging.internal.InternalLogger;
 import com.kdgregory.aws.logging.internal.Utils;
 
 
@@ -36,14 +37,15 @@ extends AbstractLogWriter
     private String clientFactoryMethod;
     private String clientEndpoint;
 
+    private CloudWatchAppenderStatistics stats;
+    private InternalLogger logger;
+
     protected AWSLogs client;
 
-    private CloudWatchAppenderStatistics stats;
 
-
-    public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats)
+    public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats, InternalLogger logger)
     {
-        super(stats, config.batchDelay, config.discardThreshold, config.discardAction);
+        super(stats, logger, config.batchDelay, config.discardThreshold, config.discardAction);
         this.groupName = config.logGroup;
         this.streamName = config.logStream;
         this.clientFactoryMethod = config.clientFactoryMethod;
@@ -52,6 +54,8 @@ extends AbstractLogWriter
         this.stats = stats;
         this.stats.setActualLogGroupName(this.groupName);
         this.stats.setActualLogStreamName(this.streamName);
+
+        this.logger = logger;
     }
 
 //----------------------------------------------------------------------------
@@ -68,8 +72,7 @@ extends AbstractLogWriter
         }
         if (client == null)
         {
-            // TODO - report
-//            LogLog.debug(getClass().getSimpleName() + ": creating service client via constructor");
+            logger.debug(getClass().getSimpleName() + ": creating service client via constructor");
             client = tryConfigureEndpointOrRegion(new AWSLogsClient(), clientEndpoint);
         }
     }
@@ -93,8 +96,7 @@ extends AbstractLogWriter
             LogGroup logGroup = findLogGroup();
             if (logGroup == null)
             {
-            // TODO - report
-//                LogLog.debug("creating CloudWatch log group: " + groupName);
+                logger.debug("creating CloudWatch log group: " + groupName);
                 createLogGroup();
             }
 
@@ -102,8 +104,7 @@ extends AbstractLogWriter
             LogStream logStream = findLogStream();
             if (logStream == null)
             {
-            // TODO - report
-//                LogLog.debug("creating CloudWatch log stream: " + streamName);
+                logger.debug("creating CloudWatch log stream: " + streamName);
                 createLogStream();
             }
 
@@ -156,6 +157,7 @@ extends AbstractLogWriter
         LogStream stream = findLogStream();
         if (stream == null)
         {
+            logger.error("log stream missing: " + streamName, null);
             stats.setLastError("log stream missing: " + streamName, null);
             ensureDestinationAvailable();
             return batch;
@@ -173,8 +175,7 @@ extends AbstractLogWriter
         }
         catch (Exception ex)
         {
-            // TODO - report
-//            LogLog.error("failed to send batch", ex);
+            logger.error("failed to send batch", ex);
             stats.setLastError(null, ex);
             return batch;
         }

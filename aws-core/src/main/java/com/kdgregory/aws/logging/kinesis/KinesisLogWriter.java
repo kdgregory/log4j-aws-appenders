@@ -27,6 +27,7 @@ import com.amazonaws.services.kinesis.model.*;
 
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.internal.AbstractLogWriter;
+import com.kdgregory.aws.logging.internal.InternalLogger;
 import com.kdgregory.aws.logging.internal.Utils;
 
 
@@ -57,18 +58,21 @@ extends AbstractLogWriter
 
     private KinesisWriterConfig config;
     private KinesisAppenderStatistics stats;
+    private InternalLogger logger;
+
     protected AmazonKinesis client;
 
     // only used for random partition keys; cheap enough we'll eagerly create
     private Random rnd = new Random();
 
 
-    public KinesisLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats)
+    public KinesisLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats, InternalLogger logger)
     {
-        super(stats, config.batchDelay, config.discardThreshold, config.discardAction);
+        super(stats, logger, config.batchDelay, config.discardThreshold, config.discardAction);
 
         this.config = config;
         this.stats = stats;
+        this.logger = logger;
 
         stats.setActualStreamName(config.streamName);
     }
@@ -88,8 +92,7 @@ extends AbstractLogWriter
         }
         if (client == null)
         {
-            // TODO - need a new way to report status
-//            LogLog.debug(getClass().getSimpleName() + ": creating service client via constructor");
+            logger.debug(getClass().getSimpleName() + ": creating service client via constructor");
             client = tryConfigureEndpointOrRegion(new AmazonKinesisClient(), config.clientEndpoint);
         }
     }
@@ -180,8 +183,7 @@ extends AbstractLogWriter
         {
             try
             {
-                // TODO - need a new way to report status
-//                LogLog.debug("creating Kinesis stream: " + config.streamName + " with " + config.shardCount + " shards");
+                logger.debug("creating Kinesis stream: " + config.streamName + " with " + config.shardCount + " shards");
                 CreateStreamRequest request = new CreateStreamRequest()
                                               .withStreamName(config.streamName)
                                               .withShardCount(config.shardCount);
@@ -324,8 +326,7 @@ extends AbstractLogWriter
             }
         }
 
-        // TODO - need a new way to report status
-//        LogLog.error("failed to send batch after " + SEND_RETRY_LIMIT + " retries", stats.getLastError());
+        logger.error("failed to send batch after " + SEND_RETRY_LIMIT + " retries", stats.getLastError());
         for (int ii = 0 ; ii < request.getRecords().size() ; ii++)
         {
             failures.add(Integer.valueOf(ii));

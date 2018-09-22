@@ -12,30 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.aws.logging.cloudwatch;
+package com.kdgregory.aws.logging.testhelpers;
 
-import com.kdgregory.aws.logging.common.LogWriter;
-import com.kdgregory.aws.logging.common.WriterFactory;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.kdgregory.aws.logging.internal.InternalLogger;
 
+
 /**
- *  Factory to create CloudWatchLogWriter instances.
+ *  An implementation of <code>InternalLogger</code> that retains messages for
+ *  analysis by test code.
  */
-public class CloudWatchWriterFactory
-implements WriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics>
+public class TestableInternalLogger
+implements InternalLogger
 {
-    private InternalLogger internalLogger;
-
-
-    public CloudWatchWriterFactory(InternalLogger internalLogger)
-    {
-        this.internalLogger = internalLogger;
-    }
+    public List<String> debugMessages = new ArrayList<String>();
+    public List<String> errorMessages = new ArrayList<String>();
+    public List<Throwable> errorExceptions = new ArrayList<Throwable>();
 
 
     @Override
-    public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats)
+    public void debug(String message)
     {
-        return new CloudWatchLogWriter(config, stats, internalLogger);
+        debugMessages.add(message);
     }
+
+    @Override
+    public void error(String message, Throwable ex)
+    {
+        errorMessages.add(message);
+        errorExceptions.add(ex);
+    }
+
 }

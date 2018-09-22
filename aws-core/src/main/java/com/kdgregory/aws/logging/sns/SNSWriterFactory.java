@@ -16,14 +16,24 @@ package com.kdgregory.aws.logging.sns;
 
 import com.kdgregory.aws.logging.common.LogWriter;
 import com.kdgregory.aws.logging.common.WriterFactory;
+import com.kdgregory.aws.logging.internal.InternalLogger;
 
 
 public class SNSWriterFactory
 implements WriterFactory<SNSWriterConfig,SNSAppenderStatistics>
 {
+    private InternalLogger internalLogger;
+
+
+    public SNSWriterFactory(InternalLogger internalLogger)
+    {
+        this.internalLogger = internalLogger;
+    }
+
+
     @Override
     public LogWriter newLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats)
     {
-        return new SNSLogWriter(config, stats);
+        return new SNSLogWriter(config, stats, internalLogger);
     }
 }

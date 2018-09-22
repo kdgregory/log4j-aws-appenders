@@ -27,6 +27,7 @@ import com.amazonaws.services.kinesis.model.*;
 
 import com.kdgregory.aws.logging.common.LogWriter;
 import com.kdgregory.aws.logging.common.WriterFactory;
+import com.kdgregory.aws.logging.internal.InternalLogger;
 import com.kdgregory.aws.logging.kinesis.KinesisAppenderStatistics;
 import com.kdgregory.aws.logging.kinesis.KinesisLogWriter;
 import com.kdgregory.aws.logging.kinesis.KinesisWriterConfig;
@@ -145,14 +146,14 @@ implements InvocationHandler
     /**
      *  Returns a Kinesis WriterFactory that includes our mock client.
      */
-    public WriterFactory<KinesisWriterConfig,KinesisAppenderStatistics> newWriterFactory()
+    public WriterFactory<KinesisWriterConfig,KinesisAppenderStatistics> newWriterFactory(final InternalLogger internalLogger)
     {
         return new WriterFactory<KinesisWriterConfig,KinesisAppenderStatistics>()
         {
             @Override
             public LogWriter newLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats)
             {
-                return new KinesisLogWriter(config, stats)
+                return new KinesisLogWriter(config, stats, internalLogger)
                 {
                     @Override
                     protected void createAWSClient()

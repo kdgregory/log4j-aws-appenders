@@ -41,16 +41,20 @@ implements LogWriter
 
     private volatile Long shutdownTime;                     // this is an actual timestamp, not an elapsed time
 
-    private AbstractAppenderStatistics appenderStats;       // used for reporting errors
+    private AbstractAppenderStatistics appenderStats;
+    private InternalLogger logger;
 
     private volatile int batchCount;                        // these can be read via accessor methods; they're intended for testing
     private volatile boolean initializationComplete;
     private volatile String factoryMethodUsed;
 
 
-    public AbstractLogWriter(AbstractAppenderStatistics appenderStats, long batchDelay, int discardThreshold, DiscardAction discardAction)
+    public AbstractLogWriter(
+        AbstractAppenderStatistics appenderStats, InternalLogger logger,
+        long batchDelay, int discardThreshold, DiscardAction discardAction)
     {
         this.appenderStats = appenderStats;
+        this.logger = logger;
         this.batchDelay = batchDelay;
         messageQueue = new MessageQueue(discardThreshold, discardAction);
 
@@ -231,6 +235,7 @@ implements LogWriter
      */
     protected boolean initializationFailure(String message, Exception exception)
     {
+        logger.error(message, exception);
         appenderStats.setLastError(message, exception);
         return false;
     }
@@ -304,8 +309,7 @@ implements LogWriter
             Method factoryMethod = factoryKlass.getDeclaredMethod(clientFactoryName.substring(methodIdx + 1));
             T client = expectedClientClass.cast(factoryMethod.invoke(null));
             factoryMethodUsed = clientFactoryName;
-            // TODO - report factory creation
-//            LogLog.debug(getClass().getSimpleName() + ": created client from factory: " + clientFactoryName);
+            logger.debug(getClass().getSimpleName() + ": created client from factory: " + clientFactoryName);
             return client;
         }
         catch (Exception ex)
@@ -329,8 +333,7 @@ implements LogWriter
         // explicit endpoint takes precedence over region retrieved from environment
         if (endpoint != null)
         {
-            // TODO - report endpoint configuration
-//            LogLog.debug(getClass().getSimpleName() + ": configuring endpoint: " + endpoint);
+            logger.debug(getClass().getSimpleName() + ": configuring endpoint: " + endpoint);
             client.setEndpoint(endpoint);
             return client;
         }
@@ -338,8 +341,7 @@ implements LogWriter
         String region = System.getenv("AWS_REGION");
         if (region != null)
         {
-            // TODO - report region configuration
-//            LogLog.debug(getClass().getSimpleName() + ": configuring region: " + region);
+            logger.debug(getClass().getSimpleName() + ": configuring region: " + region);
             client.configureRegion(Regions.fromName(region));
             return client;
         }

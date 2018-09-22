@@ -30,6 +30,7 @@ import com.kdgregory.aws.logging.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.aws.logging.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.aws.logging.common.LogWriter;
 import com.kdgregory.aws.logging.common.WriterFactory;
+import com.kdgregory.aws.logging.internal.InternalLogger;
 
 
 /**
@@ -150,14 +151,14 @@ implements InvocationHandler
     /**
      *  Creates a new WriterFactory, with the stock CloudWatch writer.
      */
-    public WriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics> newWriterFactory()
+    public WriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics> newWriterFactory(final InternalLogger internalLogger)
     {
         return new WriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics>()
         {
             @Override
             public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats)
             {
-                return new CloudWatchLogWriter(config, stats)
+                return new CloudWatchLogWriter(config, stats, internalLogger)
                 {
                     @Override
                     protected void createAWSClient()

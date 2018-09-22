@@ -16,6 +16,7 @@ package com.kdgregory.aws.logging.kinesis;
 
 import com.kdgregory.aws.logging.common.LogWriter;
 import com.kdgregory.aws.logging.common.WriterFactory;
+import com.kdgregory.aws.logging.internal.InternalLogger;
 
 
 /**
@@ -24,9 +25,18 @@ import com.kdgregory.aws.logging.common.WriterFactory;
  */
 public class KinesisWriterFactory implements WriterFactory<KinesisWriterConfig, KinesisAppenderStatistics>
 {
+    private InternalLogger internalLogger;
+
+
+    public KinesisWriterFactory(InternalLogger internalLogger)
+    {
+        this.internalLogger = internalLogger;
+    }
+
+
     @Override
     public LogWriter newLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats)
     {
-        return new KinesisLogWriter(config, stats);
+        return new KinesisLogWriter(config, stats, internalLogger);
     }
 }

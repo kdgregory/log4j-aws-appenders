@@ -25,6 +25,7 @@ import com.kdgregory.aws.logging.common.DefaultThreadFactory;
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.common.Substitutions;
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
+import com.kdgregory.log4j.aws.internal.shared.Log4JInternalLogger;
 
 
 /**
@@ -51,7 +52,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchAppenderStatistics,Clo
     public CloudWatchAppender()
     {
         super(new DefaultThreadFactory(),
-              new CloudWatchWriterFactory(),
+              new CloudWatchWriterFactory(new Log4JInternalLogger()),
               new CloudWatchAppenderStatistics(),
               CloudWatchAppenderStatisticsMXBean.class);
 

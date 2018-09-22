@@ -49,6 +49,7 @@ import com.kdgregory.aws.logging.common.MessageQueue;
 import com.kdgregory.aws.logging.kinesis.KinesisAppenderStatistics;
 import com.kdgregory.aws.logging.kinesis.KinesisLogWriter;
 import com.kdgregory.aws.logging.kinesis.KinesisWriterConfig;
+import com.kdgregory.aws.logging.testhelpers.TestableInternalLogger;
 import com.kdgregory.aws.logging.testhelpers.TestingException;
 import com.kdgregory.aws.logging.testhelpers.kinesis.MockKinesisClient;
 
@@ -94,6 +95,12 @@ public class TestKinesisLogWriter
 
 
     /**
+     *  Used to accumulate logging messages from the writer.
+     */
+    private TestableInternalLogger internalLogger = new TestableInternalLogger();
+
+
+    /**
      *  The default mock object; can be overridden if necessary.
      */
     private MockKinesisClient mock = new MockKinesisClient(DEFAULT_STREAM_NAME);
@@ -133,7 +140,7 @@ public class TestKinesisLogWriter
     private KinesisLogWriter createWriter()
     throws Exception
     {
-        writer = (KinesisLogWriter)mock.newWriterFactory().newLogWriter(config, stats);
+        writer = (KinesisLogWriter)mock.newWriterFactory(internalLogger).newLogWriter(config, stats);
         new DefaultThreadFactory().startLoggingThread(writer, defaultUncaughtExceptionHandler);
 
         // we'll spin until either the writer is initialized, signals an error,
@@ -196,7 +203,7 @@ public class TestKinesisLogWriter
             0,                              // shardCount,
             null);                          // retentionPeriod
 
-        writer = new KinesisLogWriter(config, stats);
+        writer = new KinesisLogWriter(config, stats, internalLogger);
         MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         // the writer uses the config object for most of its configuration,
@@ -549,7 +556,7 @@ public class TestKinesisLogWriter
 
         // this test doesn't need a background thread running
 
-        writer = new KinesisLogWriter(config, stats);
+        writer = new KinesisLogWriter(config, stats, internalLogger);
         MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         for (int ii = 0 ; ii < 20 ; ii++)
@@ -573,7 +580,7 @@ public class TestKinesisLogWriter
 
         // this test doesn't need a background thread running
 
-        writer = new KinesisLogWriter(config, stats);
+        writer = new KinesisLogWriter(config, stats, internalLogger);
         MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         for (int ii = 0 ; ii < 20 ; ii++)
@@ -597,7 +604,7 @@ public class TestKinesisLogWriter
 
         // this test doesn't need a background thread running
 
-        writer = new KinesisLogWriter(config, stats);
+        writer = new KinesisLogWriter(config, stats, internalLogger);
         MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         for (int ii = 0 ; ii < 20 ; ii++)
@@ -621,7 +628,7 @@ public class TestKinesisLogWriter
 
         // this test doesn't need a background thread running
 
-        writer = new KinesisLogWriter(config, stats);
+        writer = new KinesisLogWriter(config, stats, internalLogger);
         MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         assertEquals("initial discard threshold",   123,                    messageQueue.getDiscardThreshold());
@@ -642,7 +649,7 @@ public class TestKinesisLogWriter
 
         // we have to manually initialize this writer so that it won't get the default mock client
 
-        writer = new KinesisLogWriter(config, stats);
+        writer = new KinesisLogWriter(config, stats, internalLogger);
         new DefaultThreadFactory().startLoggingThread(writer, defaultUncaughtExceptionHandler);
 
         for (int ii = 0 ; ii < 100 ; ii++)

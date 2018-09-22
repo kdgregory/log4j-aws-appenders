@@ -39,6 +39,7 @@ import com.kdgregory.aws.logging.common.MessageQueue;
 import com.kdgregory.aws.logging.sns.SNSAppenderStatistics;
 import com.kdgregory.aws.logging.sns.SNSLogWriter;
 import com.kdgregory.aws.logging.sns.SNSWriterConfig;
+import com.kdgregory.aws.logging.testhelpers.TestableInternalLogger;
 import com.kdgregory.aws.logging.testhelpers.TestingException;
 import com.kdgregory.aws.logging.testhelpers.sns.MockSNSClient;
 
@@ -76,6 +77,12 @@ public class TestSNSLogWriter
      *  each test.
      */
     private SNSAppenderStatistics stats = new SNSAppenderStatistics();
+
+
+    /**
+     *  Used to accumulate logging messages from the writer.
+     */
+    private TestableInternalLogger internalLogger = new TestableInternalLogger();
 
 
     /**
@@ -126,7 +133,7 @@ public class TestSNSLogWriter
     private SNSLogWriter createWriter()
     throws Exception
     {
-        writer = (SNSLogWriter)mock.newWriterFactory().newLogWriter(config, stats);
+        writer = (SNSLogWriter)mock.newWriterFactory(internalLogger).newLogWriter(config, stats);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         new DefaultThreadFactory().startLoggingThread(writer, defaultUncaughtExceptionHandler);
@@ -180,7 +187,7 @@ public class TestSNSLogWriter
     {
         // we don't want to initialize the writer, so will create it outselves
 
-        writer = new SNSLogWriter(config, stats);
+        writer = new SNSLogWriter(config, stats, internalLogger);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         // the writer uses the config object for all of its configuration,
@@ -520,7 +527,7 @@ public class TestSNSLogWriter
 
         // this test doesn't need a background thread running
 
-        writer = new SNSLogWriter(config, stats);
+        writer = new SNSLogWriter(config, stats, internalLogger);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         for (int ii = 0 ; ii < 20 ; ii++)
@@ -544,7 +551,7 @@ public class TestSNSLogWriter
 
         // this test doesn't need a background thread running
 
-        writer = new SNSLogWriter(config, stats);
+        writer = new SNSLogWriter(config, stats, internalLogger);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         for (int ii = 0 ; ii < 20 ; ii++)
@@ -568,7 +575,7 @@ public class TestSNSLogWriter
 
         // this test doesn't need a background thread running
 
-        writer = new SNSLogWriter(config, stats);
+        writer = new SNSLogWriter(config, stats, internalLogger);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         for (int ii = 0 ; ii < 20 ; ii++)
@@ -592,7 +599,7 @@ public class TestSNSLogWriter
 
         // this test doesn't need a background thread running
 
-        writer = new SNSLogWriter(config, stats);
+        writer = new SNSLogWriter(config, stats, internalLogger);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         assertEquals("initial discard threshold",   123,                    messageQueue.getDiscardThreshold());
@@ -614,7 +621,7 @@ public class TestSNSLogWriter
 
         // we have to manually initialize this writer so that it won't get the default mock client
 
-        writer = new SNSLogWriter(config, stats);
+        writer = new SNSLogWriter(config, stats, internalLogger);
         new DefaultThreadFactory().startLoggingThread(writer, defaultUncaughtExceptionHandler);
 
         for (int ii = 0 ; ii < 100 ; ii++)

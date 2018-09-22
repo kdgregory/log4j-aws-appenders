@@ -39,6 +39,7 @@ import com.kdgregory.aws.logging.common.DefaultThreadFactory;
 import com.kdgregory.aws.logging.common.DiscardAction;
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.common.MessageQueue;
+import com.kdgregory.aws.logging.testhelpers.TestableInternalLogger;
 import com.kdgregory.aws.logging.testhelpers.TestingException;
 import com.kdgregory.aws.logging.testhelpers.cloudwatch.MockCloudWatchClient;
 
@@ -73,6 +74,12 @@ public class TestCloudWatchLogWriter
      *  each test.
      */
     private CloudWatchAppenderStatistics stats = new CloudWatchAppenderStatistics();
+
+
+    /**
+     *  Used to accumulate logging messages from the writer.
+     */
+    private TestableInternalLogger internalLogger = new TestableInternalLogger();
 
 
     /**
@@ -115,7 +122,7 @@ public class TestCloudWatchLogWriter
     private CloudWatchLogWriter createWriter()
     throws Exception
     {
-        writer = (CloudWatchLogWriter)mock.newWriterFactory().newLogWriter(config, stats);
+        writer = (CloudWatchLogWriter)mock.newWriterFactory(internalLogger).newLogWriter(config, stats);
         new DefaultThreadFactory().startLoggingThread(writer, defaultUncaughtExceptionHandler);
 
         // we'll spin until either the writer is initialized, signals an error,
@@ -167,7 +174,7 @@ public class TestCloudWatchLogWriter
     {
         config = new CloudWatchWriterConfig("foo", "bar", 123, 456, DiscardAction.newest, "com.example.factory.Method", "us-west-1");
 
-        writer = new CloudWatchLogWriter(config, stats);
+        writer = new CloudWatchLogWriter(config, stats, internalLogger);
         MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         assertEquals("writer batch delay",              123L,                   writer.getBatchDelay());
@@ -525,7 +532,7 @@ public class TestCloudWatchLogWriter
 
         // this test doesn't need a background thread running
 
-        writer = new CloudWatchLogWriter(config, stats);
+        writer = new CloudWatchLogWriter(config, stats, internalLogger);
         MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         for (int ii = 0 ; ii < 20 ; ii++)
@@ -549,7 +556,7 @@ public class TestCloudWatchLogWriter
 
         // this test doesn't need a background thread running
 
-        writer = new CloudWatchLogWriter(config, stats);
+        writer = new CloudWatchLogWriter(config, stats, internalLogger);
         MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         for (int ii = 0 ; ii < 20 ; ii++)
@@ -573,7 +580,7 @@ public class TestCloudWatchLogWriter
 
         // this test doesn't need a background thread running
 
-        writer = new CloudWatchLogWriter(config, stats);
+        writer = new CloudWatchLogWriter(config, stats, internalLogger);
         MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         for (int ii = 0 ; ii < 20 ; ii++)
@@ -597,7 +604,7 @@ public class TestCloudWatchLogWriter
 
         // this test doesn't need a background thread running
 
-        writer = new CloudWatchLogWriter(config, stats);
+        writer = new CloudWatchLogWriter(config, stats, internalLogger);
         MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         assertEquals("initial discard threshold",   123,                    messageQueue.getDiscardThreshold());
@@ -620,7 +627,7 @@ public class TestCloudWatchLogWriter
 
         // we have to manually initialize this writer so that it won't get a mock client
 
-        writer = new CloudWatchLogWriter(config, stats);
+        writer = new CloudWatchLogWriter(config, stats, internalLogger);
         new DefaultThreadFactory().startLoggingThread(writer, defaultUncaughtExceptionHandler);
 
         for (int ii = 0 ; ii < 100 ; ii++)

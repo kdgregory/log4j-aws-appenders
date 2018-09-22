@@ -28,6 +28,7 @@ import com.amazonaws.services.sns.model.*;
 
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.internal.AbstractLogWriter;
+import com.kdgregory.aws.logging.internal.InternalLogger;
 
 
 public class SNSLogWriter
@@ -35,16 +36,18 @@ extends AbstractLogWriter
 {
     protected SNSWriterConfig config;
     private SNSAppenderStatistics stats;
+    private InternalLogger logger;
 
     protected AmazonSNS client;
     protected String topicArn;
 
 
-    public SNSLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats)
+    public SNSLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats, InternalLogger logger)
     {
-        super(stats, 1, config.discardThreshold, config.discardAction);
+        super(stats, logger, 1, config.discardThreshold, config.discardAction);
         this.config = config;
         this.stats = stats;
+        this.logger = logger;
     }
 
 //----------------------------------------------------------------------------
@@ -61,8 +64,7 @@ extends AbstractLogWriter
         }
         if (client == null)
         {
-            // TODO - need a new way to report status
-//            LogLog.debug(getClass().getSimpleName() + ": creating service client via constructor");
+            logger.debug(getClass().getSimpleName() + ": creating service client via constructor");
             client = tryConfigureEndpointOrRegion(new AmazonSNSClient(), config.clientEndpoint);
         }
     }
@@ -114,8 +116,7 @@ extends AbstractLogWriter
             catch (Exception ex)
             {
                 stats.setLastError(null, ex);
-                // TODO - need a new way to report status
-//                LogLog.error("failed to send message", ex);
+                logger.error("failed to send message", ex);
                 failures.add(message);
             }
         }
@@ -182,22 +183,19 @@ extends AbstractLogWriter
         topicArn = retrieveAllTopicsByName().get(config.topicName);
         if (topicArn != null)
         {
-            // TODO - need a new way to report status
-//            LogLog.debug("using existing SNS topic: " + topicName);
+            logger.debug("using existing SNS topic: " + topicName);
             return true;
         }
         else if (config.autoCreate)
         {
-            // TODO - need a new way to report status
-//            LogLog.debug("creating SNS topic: " + topicName);
+            logger.debug("creating SNS topic: " + topicName);
             CreateTopicResult response = client.createTopic(topicName);
             topicArn = response.getTopicArn();
             return true;
         }
         else
         {
-            // TODO - need a new way to report status
-//            LogLog.error("topic does not exist and auto-create not enabled: " + topicName);
+            logger.error("topic does not exist and auto-create not enabled: " + topicName, null);
             stats.setLastError("topic does not exist: " + topicName, null);
             return false;
         }

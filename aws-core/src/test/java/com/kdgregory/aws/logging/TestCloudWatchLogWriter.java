@@ -18,6 +18,7 @@ package com.kdgregory.aws.logging;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.List;
 
+import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -87,10 +88,9 @@ public class TestCloudWatchLogWriter
 
 
     /**
-     *  This will be set by the test thread's uncaught exception handler.
-     *  TODO - add an @After check for any uncaught exceptions
+     *  This will be set by the writer thread's uncaught exception handler. It
+     *  should never happen with these tests.
      */
-    @SuppressWarnings("unused")
     private Throwable uncaughtException;
 
 
@@ -144,6 +144,18 @@ public class TestCloudWatchLogWriter
     {
         staticFactoryMock = new MockCloudWatchClient();
         return staticFactoryMock.createClient();
+    }
+
+//----------------------------------------------------------------------------
+//  JUnit scaffolding
+//----------------------------------------------------------------------------
+
+    @After
+    public void checkUncaughtExceptions()
+    throws Throwable
+    {
+        if (uncaughtException != null)
+            throw uncaughtException;
     }
 
 //----------------------------------------------------------------------------

@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -105,10 +106,9 @@ public class TestKinesisLogWriter
 
 
     /**
-     *  This will be set by the test thread's uncaught exception handler.
-     *  TODO - add an @After check for any uncaught exceptions
+     *  This will be set by the writer thread's uncaught exception handler. It
+     *  should never happen with these tests.
      */
-    @SuppressWarnings("unused")
     private Throwable uncaughtException;
 
 
@@ -165,6 +165,18 @@ public class TestKinesisLogWriter
     }
 
 //----------------------------------------------------------------------------
+//  JUnit scaffolding
+//----------------------------------------------------------------------------
+
+    @After
+    public void checkUncaughtExceptions()
+    throws Throwable
+    {
+        if (uncaughtException != null)
+            throw uncaughtException;
+    }
+
+//----------------------------------------------------------------------------
 //  Testcases
 //----------------------------------------------------------------------------
 
@@ -184,7 +196,7 @@ public class TestKinesisLogWriter
             0,                              // shardCount,
             null);                          // retentionPeriod
 
-        KinesisLogWriter writer = new KinesisLogWriter(config, stats);
+        writer = new KinesisLogWriter(config, stats);
         MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         // the writer uses the config object for most of its configuration,

@@ -19,6 +19,7 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Arrays;
 import java.util.List;
 
+import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -98,10 +99,9 @@ public class TestSNSLogWriter
 
 
     /**
-     *  This will be set by the test thread's uncaught exception handler.
-     *  TODO - add an @After check for any uncaught exceptions
+     *  This will be set by the writer thread's uncaught exception handler. It
+     *  should never happen with these tests.
      */
-    @SuppressWarnings("unused")
     private Throwable uncaughtException;
 
 
@@ -157,6 +157,18 @@ public class TestSNSLogWriter
     {
         staticFactoryMock = new MockSNSClient(TEST_TOPIC_NAME, Arrays.asList(TEST_TOPIC_NAME));
         return staticFactoryMock.createClient();
+    }
+
+//----------------------------------------------------------------------------
+//  JUnit scaffolding
+//----------------------------------------------------------------------------
+
+    @After
+    public void checkUncaughtExceptions()
+    throws Throwable
+    {
+        if (uncaughtException != null)
+            throw uncaughtException;
     }
 
 //----------------------------------------------------------------------------
@@ -449,7 +461,7 @@ public class TestSNSLogWriter
         assertEquals("message queue set to discard all",    0,                      messageQueue.getDiscardThreshold());
         assertEquals("message queue set to discard all",    DiscardAction.oldest,   messageQueue.getDiscardAction());
     }
-    
+
 
     @Test
     public void testBatchErrorHandling() throws Exception
@@ -470,7 +482,7 @@ public class TestSNSLogWriter
                 }
             }
         };
-        
+
         config.topicName = TEST_TOPIC_NAME;
         createWriter();
 
@@ -484,7 +496,7 @@ public class TestSNSLogWriter
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
 
         // the first attempt should fail, so we'll wait for a second
-        
+
         mock.allowWriterThread();
         mock.allowWriterThread();
 
@@ -592,16 +604,16 @@ public class TestSNSLogWriter
         assertEquals("updated discard threshold",   456,                    messageQueue.getDiscardThreshold());
         assertEquals("updated discard action",      DiscardAction.newest,   messageQueue.getDiscardAction());
     }
-    
-    
+
+
     @Test
     public void testStaticClientFactory() throws Exception
     {
         config.topicName = TEST_TOPIC_NAME;
         config.clientFactoryMethod = getClass().getName() + ".createMockClient";
-        
+
         // we have to manually initialize this writer so that it won't get the default mock client
-        
+
         writer = new SNSLogWriter(config, stats);
         new DefaultThreadFactory().startLoggingThread(writer, defaultUncaughtExceptionHandler);
 

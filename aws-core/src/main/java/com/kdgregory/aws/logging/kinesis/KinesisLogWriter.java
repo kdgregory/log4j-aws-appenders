@@ -321,7 +321,8 @@ extends AbstractLogWriter
             }
             catch (Exception ex)
             {
-                stats.setLastError(null, ex);
+                logger.error("failed to send batch", ex);
+                stats.setLastError("failed to send batch", ex);
                 Utils.sleepQuietly(250 * (attempt + 1));
             }
         }

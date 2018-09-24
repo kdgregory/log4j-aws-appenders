@@ -90,7 +90,7 @@ extends AbstractLogWriter
         }
         catch (Exception ex)
         {
-            return initializationFailure("exception in initializer", ex);
+            return initializationFailure("unable to configure", ex);
         }
     }
 
@@ -116,7 +116,6 @@ extends AbstractLogWriter
             catch (Exception ex)
             {
                 stats.setLastError(null, ex);
-                logger.error("failed to send message", ex);
                 failures.add(message);
             }
         }
@@ -160,7 +159,7 @@ extends AbstractLogWriter
         }
         else
         {
-            return initializationFailure("unable to find specified topicArn: " + config.topicArn, null);
+            return initializationFailure("topic does not exist: " + config.topicArn, null);
         }
     }
 
@@ -183,7 +182,6 @@ extends AbstractLogWriter
         topicArn = retrieveAllTopicsByName().get(config.topicName);
         if (topicArn != null)
         {
-            logger.debug("using existing SNS topic: " + topicName);
             return true;
         }
         else if (config.autoCreate)

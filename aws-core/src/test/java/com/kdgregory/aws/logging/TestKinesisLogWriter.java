@@ -28,18 +28,10 @@ import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
-import net.sf.kdgcommons.test.StringAsserts;
-
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
-import com.amazonaws.services.kinesis.model.DescribeStreamRequest;
-import com.amazonaws.services.kinesis.model.DescribeStreamResult;
-import com.amazonaws.services.kinesis.model.LimitExceededException;
-import com.amazonaws.services.kinesis.model.PutRecordsRequest;
-import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
-import com.amazonaws.services.kinesis.model.PutRecordsResult;
-import com.amazonaws.services.kinesis.model.PutRecordsResultEntry;
+import com.amazonaws.services.kinesis.model.*;
 import com.amazonaws.util.BinaryUtils;
 
 import com.kdgregory.aws.logging.common.DefaultThreadFactory;
@@ -209,10 +201,10 @@ public class TestKinesisLogWriter
         // the writer uses the config object for most of its configuration,
         // so we just look for the pieces that it exposes or passes on
 
-        assertEquals("writer batch delay",              123L,                   writer.getBatchDelay());
-        assertEquals("message queue discard policy",    DiscardAction.newest,   messageQueue.getDiscardAction());
-        assertEquals("message queue discard threshold", 456,                    messageQueue.getDiscardThreshold());
-        assertEquals("stats actual stream name",        DEFAULT_STREAM_NAME,    stats.getActualStreamName());
+        assertEquals("writer batch delay",                  123L,                       writer.getBatchDelay());
+        assertEquals("message queue discard policy",        DiscardAction.newest,       messageQueue.getDiscardAction());
+        assertEquals("message queue discard threshold",     456,                        messageQueue.getDiscardThreshold());
+        assertEquals("stats: actual stream name",           DEFAULT_STREAM_NAME,        stats.getActualStreamName());
     }
 
 
@@ -236,8 +228,11 @@ public class TestKinesisLogWriter
                                                                         BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(0).getData()),
                                                                         "UTF-8"));
 
-        assertEquals("actual stream name, from statistics",         DEFAULT_STREAM_NAME,    stats.getActualStreamName());
-        assertEquals("sent message count, from statistics",         1,                      stats.getMessagesSent());
+        assertEquals("stats: actual stream name",                   DEFAULT_STREAM_NAME,    stats.getActualStreamName());
+        assertEquals("stats: sent message count",                   1,                      stats.getMessagesSent());
+
+        assertEquals("debug message count",                         0,                      internalLogger.debugMessages.size());
+        assertEquals("error message count",                         0,                      internalLogger.errorMessages.size());
     }
 
 
@@ -276,6 +271,10 @@ public class TestKinesisLogWriter
 
         assertEquals("actual stream name, from statistics",         DEFAULT_STREAM_NAME,    stats.getActualStreamName());
         assertEquals("sent message count, from statistics",         1,                      stats.getMessagesSent());
+
+        assertEquals("debug message count",                         1,                      internalLogger.debugMessages.size());
+        assertRegex("debug message indicates creating stream",      ".*creat.*stream.*",    internalLogger.debugMessages.get(0));
+        assertEquals("error message count",                         0,                      internalLogger.errorMessages.size());
     }
 
 
@@ -297,6 +296,11 @@ public class TestKinesisLogWriter
                    initializationMessage.contains("does not exist"));
         assertTrue("initialization message contains stream name (was: " + initializationMessage + ")",
                    initializationMessage.contains(DEFAULT_STREAM_NAME));
+
+        assertEquals("debug message count",                         0,                      internalLogger.debugMessages.size());
+        assertEquals("error message count",                         1,                      internalLogger.errorMessages.size());
+        assertRegex("error message indicates problem",              ".*auto-create not enabled",
+                                                                    internalLogger.errorMessages.get(0));
     }
 
 
@@ -317,6 +321,10 @@ public class TestKinesisLogWriter
                    initializationMessage.contains("invalid stream name"));
         assertTrue("initialization message contains invalid name (was: " + initializationMessage + ")",
                    initializationMessage.contains(config.streamName));
+
+        assertEquals("debug message count",                         0,                      internalLogger.debugMessages.size());
+        assertEquals("error message count",                         1,                      internalLogger.errorMessages.size());
+        assertRegex("error message",                                ".*invalid.*stream.*",  internalLogger.errorMessages.get(0));
     }
 
 
@@ -335,6 +343,10 @@ public class TestKinesisLogWriter
 
         assertTrue("initialization message indicates invalid partition key (was: " + initializationMessage + ")",
                    initializationMessage.contains("invalid partition key"));
+
+        assertEquals("debug message count",                         0,                      internalLogger.debugMessages.size());
+        assertEquals("error message count",                         1,                      internalLogger.errorMessages.size());
+        assertRegex("error message",                                ".*invalid.*key.*",     internalLogger.errorMessages.get(0));
     }
 
 
@@ -397,7 +409,7 @@ public class TestKinesisLogWriter
 
         for (String key : partitionKeys)
         {
-            StringAsserts.assertRegex("partition key is some number of digits (was: " + key + ")", "\\d+", key);
+            assertRegex("partition key is some number of digits (was: " + key + ")", "\\d+", key);
         }
     }
 
@@ -415,21 +427,23 @@ public class TestKinesisLogWriter
         };
 
         createWriter();
+        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         assertEquals("describeStream: invocation count",            1,                          mock.describeStreamInvocationCount);
         assertEquals("createStream: invocation count",              0,                          mock.createStreamInvocationCount);
 
-        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
-
         assertEquals("message queue set to discard all",            0,                          messageQueue.getDiscardThreshold());
         assertEquals("message queue set to discard all",            DiscardAction.oldest,       messageQueue.getDiscardAction());
 
-        String initializationMessage = stats.getLastErrorMessage();
-        Throwable initializationError = stats.getLastError();
+        assertRegex("stats: error message",                         "unable to configure.*",    stats.getLastErrorMessage());
+        assertEquals("stats: exception",                            TestingException.class,     stats.getLastError().getClass());
+        assertEquals("stats: exception message",                    "not now, not ever",        stats.getLastError().getMessage());
+        assertTrue("stats: exception trace",                                                    stats.getLastErrorStacktrace().size() > 0);
+        assertNotNull("stats: exception timestamp",                                             stats.getLastErrorTimestamp());
 
-        assertNotEmpty("initialization message was non-blank",                                  initializationMessage);
-        assertEquals("initialization exception retained",           TestingException.class,     initializationError.getClass());
-        assertEquals("initialization error message",                "not now, not ever",        initializationError.getMessage());
+        assertEquals("log: debug message count",                    0,                          internalLogger.debugMessages.size());
+        assertEquals("log: error message count",                    1,                          internalLogger.errorMessages.size());
+        assertRegex("log: error message",                           "unable to configure.*",    internalLogger.errorMessages.get(0));
     }
 
 
@@ -458,13 +472,21 @@ public class TestKinesisLogWriter
 
         assertEquals("putRecords: invocation count",            2,                              mock.putRecordsInvocationCount);
         assertEquals("putRecords: number of messages",          1,                              mock.putRecordsSourceRecords.size());
+
         assertEquals("stats: number of messages sent",          0,                              stats.getMessagesSent());
-        assertNotEmpty("stats: error message",                                                  stats.getLastErrorMessage());
+        assertRegex("stats: error message",                    "failed to send.*",                                    stats.getLastErrorMessage());
         assertNotNull("stats: error timestamp",                                                 stats.getLastErrorTimestamp());
         assertEquals("stats: exception retained",               TestingException.class,         stats.getLastError().getClass());
         assertEquals("stats: exception message",                "I don't wanna do the work",    stats.getLastError().getMessage());
         assertTrue("stats: error stacktrace",                                                   stats.getLastErrorStacktrace().size() > 0);
         assertTrue("message queue still accepts messages",                                      messageQueue.getDiscardThreshold() > 0);
+
+        assertEquals("log: debug message count",                0,                              internalLogger.debugMessages.size());
+        assertEquals("log: error message count",                2,                              internalLogger.errorMessages.size());
+        assertRegex("log: error message (0)",                   "failed to send.*",             internalLogger.errorMessages.get(0));
+        assertEquals("log: exception (0)",                      TestingException.class,         internalLogger.errorExceptions.get(0).getClass());
+        assertRegex("log: error message (1)",                   "failed to send.*",             internalLogger.errorMessages.get(1));
+        assertEquals("log: exception (1)",                      TestingException.class,         internalLogger.errorExceptions.get(1).getClass());
 
         // the background thread will try to assemble another batch right away, so we can't examine
         // the message queue; instead we'll wait for the writer to call PutRecords again
@@ -663,12 +685,17 @@ public class TestKinesisLogWriter
         assertTrue("writer successfully initialized",                                       writer.isInitializationComplete());
         assertNotNull("factory called (local flag)",                                        staticFactoryMock);
         assertEquals("factory called (writer flag)",            config.clientFactoryMethod, writer.getClientFactoryUsed());
-        assertNull("no initialization error",                                               stats.getLastError());
-        assertNull("no initialization message",                                             stats.getLastErrorMessage());
-        assertNull("no initialization error",                                               stats.getLastError());
+
         assertEquals("describeStream: invocation count",        1,                          staticFactoryMock.describeStreamInvocationCount);
         assertEquals("createStream: invocation count",          0,                          staticFactoryMock.createStreamInvocationCount);
         assertEquals("putRecords: invocation count",            0,                          staticFactoryMock.putRecordsInvocationCount);
+
+        assertNull("stats: no initialization message",                                      stats.getLastErrorMessage());
+        assertNull("stats: no initialization error",                                        stats.getLastError());
+        assertEquals("stats: actual stream name",               DEFAULT_STREAM_NAME,        stats.getActualStreamName());
+
+        assertRegex("log: debug message indicating factory",    ".*created client from factory.*" + getClass().getName() + ".*",
+                                                                internalLogger.debugMessages.get(0));
     }
 
 }

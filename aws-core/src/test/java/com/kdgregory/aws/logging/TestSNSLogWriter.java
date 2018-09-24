@@ -28,9 +28,7 @@ import net.sf.kdgcommons.lang.StringUtil;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.model.CreateTopicResult;
-import com.amazonaws.services.sns.model.PublishRequest;
-import com.amazonaws.services.sns.model.PublishResult;
+import com.amazonaws.services.sns.model.*;
 
 import com.kdgregory.aws.logging.common.DefaultThreadFactory;
 import com.kdgregory.aws.logging.common.DiscardAction;
@@ -193,9 +191,9 @@ public class TestSNSLogWriter
         // the writer uses the config object for all of its configuration,
         // so we just look for the pieces that it exposes or passes on
 
-        assertEquals("writer batch delay",                  1L,                     writer.getBatchDelay());
-        assertEquals("message queue discard policy",        DiscardAction.oldest,   messageQueue.getDiscardAction());
-        assertEquals("message queue discard threshold",     1000,                   messageQueue.getDiscardThreshold());
+        assertEquals("writer batch delay",                      1L,                     writer.getBatchDelay());
+        assertEquals("message queue discard policy",            DiscardAction.oldest,   messageQueue.getDiscardAction());
+        assertEquals("message queue discard threshold",         1000,                   messageQueue.getDiscardThreshold());
     }
 
 
@@ -205,12 +203,13 @@ public class TestSNSLogWriter
         config.topicName = TEST_TOPIC_NAME;
         createWriter();
 
-        assertNull("no initialization error",                                       stats.getLastError());
-        assertEquals("invocations of listTopics",           1,                      mock.listTopicsInvocationCount);
-        assertEquals("invocations of createTopic",          0,                      mock.createTopicInvocationCount);
-        assertEquals("invocations of publish",              0,                      mock.publishInvocationCount);
-        assertEquals("topic name, from statistics",         TEST_TOPIC_NAME,        stats.getActualTopicName());
-        assertEquals("topic ARN, from statistics",          TEST_TOPIC_ARN,         stats.getActualTopicArn());
+        assertEquals("after init, invocations of listTopics",   1,                      mock.listTopicsInvocationCount);
+        assertEquals("after init, invocations of createTopic",  0,                      mock.createTopicInvocationCount);
+        assertEquals("after init, invocations of publish",      0,                      mock.publishInvocationCount);
+
+        assertNull("after init, stats: no errors",                                      stats.getLastError());
+        assertEquals("after init, stats: topic name",           TEST_TOPIC_NAME,        stats.getActualTopicName());
+        assertEquals("after init, stats: topic ARN",            TEST_TOPIC_ARN,         stats.getActualTopicArn());
 
         // the SNS writer should use batch sizes of 1, regardless of config, so we'll
         // add both messages at the same time, then wait separately to verify batching
@@ -220,19 +219,22 @@ public class TestSNSLogWriter
 
         mock.allowWriterThread();
 
-        assertEquals("first publish, invocation count",     1,                      mock.publishInvocationCount);
-        assertEquals("first publish, arn",                  TEST_TOPIC_ARN,         mock.lastPublishArn);
-        assertEquals("first publish, subject",              null,                   mock.lastPublishSubject);
-        assertEquals("first publish, body",                 "message one",          mock.lastPublishMessage);
-        assertEquals("first publish, sent statistics",      1,                      stats.getMessagesSent());
+        assertEquals("first publish, invocation count",         1,                      mock.publishInvocationCount);
+        assertEquals("first publish, arn",                      TEST_TOPIC_ARN,         mock.lastPublishArn);
+        assertEquals("first publish, subject",                  null,                   mock.lastPublishSubject);
+        assertEquals("first publish, body",                     "message one",          mock.lastPublishMessage);
+        assertEquals("first publish, sent statistics",          1,                      stats.getMessagesSent());
 
         mock.allowWriterThread();
 
-        assertEquals("second publish, invocation count",    2,                      mock.publishInvocationCount);
-        assertEquals("second publish, arn",                 TEST_TOPIC_ARN,         mock.lastPublishArn);
-        assertEquals("second publish, subject",             null,                   mock.lastPublishSubject);
-        assertEquals("second publish, body",                "message two",          mock.lastPublishMessage);
-        assertEquals("second publish, sent statistics",     2,                      stats.getMessagesSent());
+        assertEquals("second publish, invocation count",        2,                      mock.publishInvocationCount);
+        assertEquals("second publish, arn",                     TEST_TOPIC_ARN,         mock.lastPublishArn);
+        assertEquals("second publish, subject",                 null,                   mock.lastPublishSubject);
+        assertEquals("second publish, body",                    "message two",          mock.lastPublishMessage);
+        assertEquals("second publish, sent statistics",         2,                      stats.getMessagesSent());
+
+        assertEquals("debug message count",                     0,                      internalLogger.debugMessages.size());
+        assertEquals("error message count",                     0,                      internalLogger.errorMessages.size());
     }
 
 
@@ -244,21 +246,25 @@ public class TestSNSLogWriter
         config.topicName = TEST_TOPIC_NAME;
         createWriter();
 
-        assertNull("no initialization error",                                       stats.getLastError());
-        assertEquals("invocations of listTopics",           2,                      mock.listTopicsInvocationCount);
-        assertEquals("invocations of createTopic",          0,                      mock.createTopicInvocationCount);
-        assertEquals("invocations of publish",              0,                      mock.publishInvocationCount);
-        assertEquals("topic name, from statistics",         TEST_TOPIC_NAME,        stats.getActualTopicName());
-        assertEquals("topic ARN, from statistics",          TEST_TOPIC_ARN,         stats.getActualTopicArn());
+        assertEquals("after init, invocations of listTopics",   2,                      mock.listTopicsInvocationCount);
+        assertEquals("after init, invocations of createTopic",  0,                      mock.createTopicInvocationCount);
+        assertEquals("after init, invocations of publish",      0,                      mock.publishInvocationCount);
+
+        assertNull("after init, stats: no errors",                                      stats.getLastError());
+        assertEquals("after init, stats: topic name",           TEST_TOPIC_NAME,        stats.getActualTopicName());
+        assertEquals("after init, stats: topic ARN",            TEST_TOPIC_ARN,         stats.getActualTopicArn());
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
         mock.allowWriterThread();
 
-        assertEquals("after publish, invocation count",     1,                      mock.publishInvocationCount);
-        assertEquals("after publish, arn",                  TEST_TOPIC_ARN,         mock.lastPublishArn);
-        assertEquals("after publish, subject",              null,                   mock.lastPublishSubject);
-        assertEquals("after publish, body",                 "message one",          mock.lastPublishMessage);
-        assertEquals("after publish, sent statistics",      1,                      stats.getMessagesSent());
+        assertEquals("after publish, invocation count",         1,                      mock.publishInvocationCount);
+        assertEquals("after publish, arn",                      TEST_TOPIC_ARN,         mock.lastPublishArn);
+        assertEquals("after publish, subject",                  null,                   mock.lastPublishSubject);
+        assertEquals("after publish, body",                     "message one",          mock.lastPublishMessage);
+        assertEquals("after publish, sent statistics",          1,                      stats.getMessagesSent());
+
+        assertEquals("log: debug message count",                0,                      internalLogger.debugMessages.size());
+        assertEquals("log: error message count",                0,                      internalLogger.errorMessages.size());
     }
 
 
@@ -270,16 +276,20 @@ public class TestSNSLogWriter
         config.topicName = TEST_TOPIC_NAME;
         createWriter();
 
-        String initializationMessage = stats.getLastErrorMessage();
-
-        assertTrue("initialization error mentions topic name (was: " + initializationMessage + ")",
-                                                                                    initializationMessage.contains(TEST_TOPIC_NAME));
         assertEquals("invocations of listTopics",           1,                      mock.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",          0,                      mock.createTopicInvocationCount);
-        assertEquals("topic name, from statistics",         null,                   stats.getActualTopicName());
-        assertEquals("topic ARN, from statistics",          null,                   stats.getActualTopicArn());
         assertEquals("message queue set to discard all",    0,                      messageQueue.getDiscardThreshold());
         assertEquals("message queue set to discard all",    DiscardAction.oldest,   messageQueue.getDiscardAction());
+
+        assertEquals("stats: topic name",                   null,                   stats.getActualTopicName());
+        assertEquals("stats: topic ARN",                    null,                   stats.getActualTopicArn());
+        assertRegex("stats: error message",                 ".*not exist.*" + TEST_TOPIC_NAME + ".*",
+                                                            stats.getLastErrorMessage());
+
+        assertEquals("log: debug message count",            0,                      internalLogger.debugMessages.size());
+        assertEquals("log: error message count",            1,                      internalLogger.errorMessages.size());
+        assertRegex("log: error message",                   ".*not exist.*" + TEST_TOPIC_NAME + ".*",
+                                                            internalLogger.errorMessages.get(0));
     }
 
 
@@ -292,12 +302,13 @@ public class TestSNSLogWriter
         config.autoCreate = true;
         createWriter();
 
-        assertNull("no initialization error",                                       stats.getLastError());
-        assertEquals("invocations of listTopics",           1,                      mock.listTopicsInvocationCount);
-        assertEquals("invocations of createTopic",          1,                      mock.createTopicInvocationCount);
-        assertEquals("invocations of publish",              0,                      mock.publishInvocationCount);
-        assertEquals("topic name, from statistics",         TEST_TOPIC_NAME,        stats.getActualTopicName());
-        assertEquals("topic ARN, from statistics",          TEST_TOPIC_ARN,         stats.getActualTopicArn());
+        assertEquals("after init, invocations of listTopics",   1,                      mock.listTopicsInvocationCount);
+        assertEquals("after init, invocations of createTopic",  1,                      mock.createTopicInvocationCount);
+        assertEquals("after init, invocations of publish",      0,                      mock.publishInvocationCount);
+
+        assertNull("after init, stats: no errors",                                      stats.getLastError());
+        assertEquals("after init, stats: topic name",           TEST_TOPIC_NAME,        stats.getActualTopicName());
+        assertEquals("after init, stats: topic ARN",            TEST_TOPIC_ARN,         stats.getActualTopicArn());
 
         // the SNS writer should use batch sizes of 1, regardless of config, so we'll
         // add both messages at the same time, then wait separately to verify batching
@@ -305,11 +316,16 @@ public class TestSNSLogWriter
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
         mock.allowWriterThread();
 
-        assertEquals("after publish, invocation count",     1,                      mock.publishInvocationCount);
-        assertEquals("after publish, arn",                  TEST_TOPIC_ARN,         mock.lastPublishArn);
-        assertEquals("after publish, subject",              null,                   mock.lastPublishSubject);
-        assertEquals("after publish, body",                 "message one",          mock.lastPublishMessage);
-        assertEquals("after publish, sent statistics",      1,                      stats.getMessagesSent());
+        assertEquals("after publish, invocation count",         1,                      mock.publishInvocationCount);
+        assertEquals("after publish, arn",                      TEST_TOPIC_ARN,         mock.lastPublishArn);
+        assertEquals("after publish, subject",                  null,                   mock.lastPublishSubject);
+        assertEquals("after publish, body",                     "message one",          mock.lastPublishMessage);
+        assertEquals("after publish, sent statistics",          1,                      stats.getMessagesSent());
+
+        assertEquals("log: debug message count",                1,                      internalLogger.debugMessages.size());
+        assertEquals("log: error message count",                0,                      internalLogger.errorMessages.size());
+        assertRegex("log: indicates create",                    ".*creat.*" + TEST_TOPIC_NAME + ".*",
+                                                                internalLogger.debugMessages.get(0));
     }
 
 
@@ -319,12 +335,13 @@ public class TestSNSLogWriter
         config.topicArn = TEST_TOPIC_ARN;
         createWriter();
 
-        assertNull("no initialization error",                                       stats.getLastError());
-        assertEquals("invocations of listTopics",           1,                      mock.listTopicsInvocationCount);
-        assertEquals("invocations of createTopic",          0,                      mock.createTopicInvocationCount);
-        assertEquals("invocations of publish",              0,                      mock.publishInvocationCount);
-        assertEquals("topic name, from statistics",         TEST_TOPIC_NAME,        stats.getActualTopicName());
-        assertEquals("topic ARN, from statistics",          TEST_TOPIC_ARN,         stats.getActualTopicArn());
+        assertEquals("after init, invocations of listTopics",   1,                      mock.listTopicsInvocationCount);
+        assertEquals("after init, invocations of createTopic",  0,                      mock.createTopicInvocationCount);
+        assertEquals("after init, invocations of publish",      0,                      mock.publishInvocationCount);
+
+        assertNull("after init, stats: no errors",                                      stats.getLastError());
+        assertEquals("after init, stats: topic name",           TEST_TOPIC_NAME,        stats.getActualTopicName());
+        assertEquals("after init, stats: topic ARN",            TEST_TOPIC_ARN,         stats.getActualTopicArn());
 
         // the SNS writer should use batch sizes of 1, regardless of config, so we'll
         // add both messages at the same time, then wait separately to verify batching
@@ -334,19 +351,22 @@ public class TestSNSLogWriter
 
         mock.allowWriterThread();
 
-        assertEquals("first publish, invocation count",     1,                      mock.publishInvocationCount);
-        assertEquals("first publish, arn",                  TEST_TOPIC_ARN,         mock.lastPublishArn);
-        assertEquals("first publish, subject",              null,                   mock.lastPublishSubject);
-        assertEquals("first publish, body",                 "message one",          mock.lastPublishMessage);
-        assertEquals("first publish, sent statistics",      1,                      stats.getMessagesSent());
+        assertEquals("first publish, invocation count",         1,                      mock.publishInvocationCount);
+        assertEquals("first publish, arn",                      TEST_TOPIC_ARN,         mock.lastPublishArn);
+        assertEquals("first publish, subject",                  null,                   mock.lastPublishSubject);
+        assertEquals("first publish, body",                     "message one",          mock.lastPublishMessage);
+        assertEquals("first publish, sent statistics",          1,                      stats.getMessagesSent());
 
         mock.allowWriterThread();
 
-        assertEquals("second publish, invocation count",    2,                      mock.publishInvocationCount);
-        assertEquals("second publish, arn",                 TEST_TOPIC_ARN,         mock.lastPublishArn);
-        assertEquals("second publish, subject",             null,                   mock.lastPublishSubject);
-        assertEquals("second publish, body",                "message two",          mock.lastPublishMessage);
-        assertEquals("second publish, sent statistics",     2,                      stats.getMessagesSent());
+        assertEquals("second publish, invocation count",        2,                      mock.publishInvocationCount);
+        assertEquals("second publish, arn",                     TEST_TOPIC_ARN,         mock.lastPublishArn);
+        assertEquals("second publish, subject",                 null,                   mock.lastPublishSubject);
+        assertEquals("second publish, body",                    "message two",          mock.lastPublishMessage);
+        assertEquals("second publish, sent statistics",         2,                      stats.getMessagesSent());
+
+        assertEquals("log: debug message count",                0,                      internalLogger.debugMessages.size());
+        assertEquals("log: error message count",                0,                      internalLogger.errorMessages.size());
     }
 
 
@@ -358,21 +378,25 @@ public class TestSNSLogWriter
         config.topicArn = TEST_TOPIC_ARN;
         createWriter();
 
-        assertNull("no initialization error",                                       stats.getLastError());
-        assertEquals("invocations of listTopics",           2,                      mock.listTopicsInvocationCount);
-        assertEquals("invocations of createTopic",          0,                      mock.createTopicInvocationCount);
-        assertEquals("invocations of publish",              0,                      mock.publishInvocationCount);
-        assertEquals("topic name, from statistics",         TEST_TOPIC_NAME,        stats.getActualTopicName());
-        assertEquals("topic ARN, from statistics",          TEST_TOPIC_ARN,         stats.getActualTopicArn());
+        assertEquals("after init, invocations of listTopics",   2,                      mock.listTopicsInvocationCount);
+        assertEquals("after init, invocations of createTopic",  0,                      mock.createTopicInvocationCount);
+        assertEquals("after init, invocations of publish",      0,                      mock.publishInvocationCount);
+
+        assertNull("after init, stats: no errors",                                      stats.getLastError());
+        assertEquals("after init, stats: topic name",           TEST_TOPIC_NAME,        stats.getActualTopicName());
+        assertEquals("after init, stats: topic ARN",            TEST_TOPIC_ARN,         stats.getActualTopicArn());
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
         mock.allowWriterThread();
 
-        assertEquals("after publish, invocation count",     1,                      mock.publishInvocationCount);
-        assertEquals("after publish, arn",                  TEST_TOPIC_ARN,         mock.lastPublishArn);
-        assertEquals("after publish, subject",              null,                   mock.lastPublishSubject);
-        assertEquals("after publish, body",                 "message one",          mock.lastPublishMessage);
-        assertEquals("after publish, sent statistics",      1,                      stats.getMessagesSent());
+        assertEquals("after publish, invocation count",         1,                      mock.publishInvocationCount);
+        assertEquals("after publish, arn",                      TEST_TOPIC_ARN,         mock.lastPublishArn);
+        assertEquals("after publish, subject",                  null,                   mock.lastPublishSubject);
+        assertEquals("after publish, body",                     "message one",          mock.lastPublishMessage);
+        assertEquals("after publish, sent statistics",          1,                      stats.getMessagesSent());
+
+        assertEquals("log: debug message count",                0,                      internalLogger.debugMessages.size());
+        assertEquals("log: error message count",                0,                      internalLogger.errorMessages.size());
     }
 
 
@@ -384,16 +408,20 @@ public class TestSNSLogWriter
         config.topicArn = TEST_TOPIC_ARN;
         createWriter();
 
-        String initializationMessage = stats.getLastErrorMessage();
-
-        assertTrue("initialization error mentions topic arn (was: " + initializationMessage + ")",
-                                                                                    initializationMessage.contains(TEST_TOPIC_ARN));
         assertEquals("invocations of listTopics",           1,                      mock.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",          0,                      mock.createTopicInvocationCount);
-        assertEquals("topic name, from statistics",         null,                   stats.getActualTopicName());
-        assertEquals("topic ARN, from statistics",          null,                   stats.getActualTopicArn());
         assertEquals("message queue set to discard all",    0,                      messageQueue.getDiscardThreshold());
         assertEquals("message queue set to discard all",    DiscardAction.oldest,   messageQueue.getDiscardAction());
+
+        assertEquals("stats: topic name",                   null,                   stats.getActualTopicName());
+        assertEquals("stats: topic ARN",                    null,                   stats.getActualTopicArn());
+        assertRegex("stats: error message",                 ".*not exist.*" + TEST_TOPIC_ARN + ".*",
+                                                            stats.getLastErrorMessage());
+
+        assertEquals("log: debug message count",            0,                      internalLogger.debugMessages.size());
+        assertEquals("log: error message count",            1,                      internalLogger.errorMessages.size());
+        assertRegex("log: error message",                   ".*not exist.*" + TEST_TOPIC_ARN + ".*",
+                                                            internalLogger.errorMessages.get(0));
     }
 
 
@@ -404,21 +432,25 @@ public class TestSNSLogWriter
         config.subject = "example";
         createWriter();
 
-        assertNull("no initialization error",                                       stats.getLastError());
-        assertEquals("invocations of listTopics",           1,                      mock.listTopicsInvocationCount);
-        assertEquals("invocations of createTopic",          0,                      mock.createTopicInvocationCount);
-        assertEquals("invocations of publish",              0,                      mock.publishInvocationCount);
-        assertEquals("topic name, from statistics",         TEST_TOPIC_NAME,        stats.getActualTopicName());
-        assertEquals("topic ARN, from statistics",          TEST_TOPIC_ARN,         stats.getActualTopicArn());
+        assertEquals("after init, invocations of listTopics",   1,                      mock.listTopicsInvocationCount);
+        assertEquals("after init, invocations of createTopic",  0,                      mock.createTopicInvocationCount);
+        assertEquals("after init, invocations of publish",      0,                      mock.publishInvocationCount);
+
+        assertNull("after init, stats: no errors",                                      stats.getLastError());
+        assertEquals("after init, stats: topic name",           TEST_TOPIC_NAME,        stats.getActualTopicName());
+        assertEquals("after init, stats: topic ARN",            TEST_TOPIC_ARN,         stats.getActualTopicArn());
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
-                mock.allowWriterThread();
+        mock.allowWriterThread();
 
-        assertEquals("first publish, invocation count",     1,                      mock.publishInvocationCount);
-        assertEquals("first publish, arn",                  TEST_TOPIC_ARN,         mock.lastPublishArn);
-        assertEquals("first publish, subject",              "example",              mock.lastPublishSubject);
-        assertEquals("first publish, body",                 "message one",          mock.lastPublishMessage);
-        assertEquals("first publish, sent statistics",      1,                      stats.getMessagesSent());
+        assertEquals("first publish, invocation count",         1,                      mock.publishInvocationCount);
+        assertEquals("first publish, arn",                      TEST_TOPIC_ARN,         mock.lastPublishArn);
+        assertEquals("first publish, subject",                  "example",              mock.lastPublishSubject);
+        assertEquals("first publish, body",                     "message one",          mock.lastPublishMessage);
+        assertEquals("first publish, sent statistics",          1,                      stats.getMessagesSent());
+
+        assertEquals("log: debug message count",                0,                      internalLogger.debugMessages.size());
+        assertEquals("log: error message count",                0,                      internalLogger.errorMessages.size());
     }
 
 
@@ -430,14 +462,18 @@ public class TestSNSLogWriter
 
         String initializationMessage = stats.getLastErrorMessage();
 
-        assertTrue("initialization error mentions topic name (was: " + initializationMessage + ")",
-                                                                                    initializationMessage.contains(config.topicName));
-        assertEquals("invocations of listTopics",           0,                      mock.listTopicsInvocationCount);
-        assertEquals("invocations of createTopic",          0,                      mock.createTopicInvocationCount);
-        assertEquals("topic name, from statistics",         null,                   stats.getActualTopicName());
-        assertEquals("topic ARN, from statistics",          null,                   stats.getActualTopicArn());
-        assertEquals("message queue set to discard all",    0,                      messageQueue.getDiscardThreshold());
-        assertEquals("message queue set to discard all",    DiscardAction.oldest,   messageQueue.getDiscardAction());
+        assertRegex("initialization message (was: " + initializationMessage + ")",
+                                                                ".*invalid.*topic.*",  initializationMessage);
+        assertEquals("invocations of listTopics",               0,                      mock.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",              0,                      mock.createTopicInvocationCount);
+        assertEquals("topic name, from statistics",             null,                   stats.getActualTopicName());
+        assertEquals("topic ARN, from statistics",              null,                   stats.getActualTopicArn());
+        assertEquals("message queue set to discard all",        0,                      messageQueue.getDiscardThreshold());
+        assertEquals("message queue set to discard all",        DiscardAction.oldest,   messageQueue.getDiscardAction());
+
+        assertEquals("debug message count",                     0,                      internalLogger.debugMessages.size());
+        assertEquals("error message count",                     1,                      internalLogger.errorMessages.size());
+        assertRegex("error message",                            ".*invalid.*topic.*",  internalLogger.errorMessages.get(0));
     }
 
 
@@ -447,26 +483,28 @@ public class TestSNSLogWriter
         mock = new MockSNSClient(TEST_TOPIC_NAME, Arrays.asList("somethingElse"))
         {
             @Override
-            protected CreateTopicResult createTopic(String name)
+            protected ListTopicsResult listTopics(ListTopicsRequest request)
             {
                 throw new TestingException("arbitrary failure");
             }
         };
 
         config.topicName = TEST_TOPIC_NAME;
-        config.autoCreate = true;
         createWriter();
 
-        assertNotEmpty("initialization error message",                              stats.getLastErrorMessage());
-        assertEquals("invocations of listTopics",           1,                      mock.listTopicsInvocationCount);
-        assertEquals("invocations of createTopic",          1,                      mock.createTopicInvocationCount);
-        assertEquals("topic name, from statistics",         null,                   stats.getActualTopicName());
-        assertEquals("topic ARN, from statistics",          null,                   stats.getActualTopicArn());
-        assertNotNull("error timestmap, from statistics",                           stats.getLastErrorTimestamp());
-        assertEquals("error class, from statistics",        TestingException.class, stats.getLastError().getClass());
-        assertEquals("error message, from statistics",      "arbitrary failure",    stats.getLastError().getMessage());
-        assertEquals("message queue set to discard all",    0,                      messageQueue.getDiscardThreshold());
-        assertEquals("message queue set to discard all",    DiscardAction.oldest,   messageQueue.getDiscardAction());
+        String errorMessage = stats.getLastErrorMessage();
+
+        assertEquals("invocation count: listTopics",                    1,                          mock.listTopicsInvocationCount);
+
+        assertRegex("stats: error message (was: " + errorMessage + ")", "unable to configure.*",    errorMessage);
+        assertEquals("stats: exception",                                TestingException.class,     stats.getLastError().getClass());
+        assertEquals("stats: exception message",                        "arbitrary failure",        stats.getLastError().getMessage());
+        assertTrue("stats: exception trace",                                                        stats.getLastErrorStacktrace().size() > 0);
+        assertNotNull("stats: exception timestamp",                                                 stats.getLastErrorTimestamp());
+
+        assertEquals("log: debug message count",                        0,                          internalLogger.debugMessages.size());
+        assertEquals("log: error message count",                        1,                          internalLogger.errorMessages.size());
+        assertRegex("log: error message",                               "unable to configure.*",    internalLogger.errorMessages.get(0));
     }
 
 
@@ -494,11 +532,11 @@ public class TestSNSLogWriter
         createWriter();
 
         assertNull("no initialization error",                                       stats.getLastError());
+        assertEquals("stats: topic name",                   TEST_TOPIC_NAME,        stats.getActualTopicName());
+        assertEquals("stats: topic ARN",                    TEST_TOPIC_ARN,         stats.getActualTopicArn());
         assertEquals("invocations of listTopics",           1,                      mock.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",          0,                      mock.createTopicInvocationCount);
         assertEquals("invocations of publish",              0,                      mock.publishInvocationCount);
-        assertEquals("topic name, from statistics",         TEST_TOPIC_NAME,        stats.getActualTopicName());
-        assertEquals("topic ARN, from statistics",          TEST_TOPIC_ARN,         stats.getActualTopicArn());
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
 
@@ -512,10 +550,14 @@ public class TestSNSLogWriter
         assertEquals("publish, subject",                    null,                   mock.lastPublishSubject);
         assertEquals("publish, body",                       "message one",          mock.lastPublishMessage);
         assertEquals("publish, sent statistics",            1,                      stats.getMessagesSent());
+
         assertNotEmpty("statistics retains error message",                          stats.getLastErrorMessage());
         assertNotNull("statistics retains error timestamp",                         stats.getLastErrorMessage());
         assertNotNull("statistics retains error throwable",                         stats.getLastError());
         assertTrue("statistics retains error trace",                                stats.getLastErrorStacktrace().size() > 0);
+
+        assertEquals("log: debug message count",            0,                          internalLogger.debugMessages.size());
+        assertEquals("log: error message count",            0,                          internalLogger.errorMessages.size());
     }
 
 
@@ -632,15 +674,20 @@ public class TestSNSLogWriter
                 Thread.sleep(50);
         }
 
-        assertTrue("writer successfully initialized",                               writer.isInitializationComplete());
-        assertNotNull("factory called (local flag)",                                staticFactoryMock);
-        assertEquals("factory called (writer flag)",    config.clientFactoryMethod, writer.getClientFactoryUsed());
-        assertNull("no initialization error",                                       stats.getLastError());
-        assertNull("no initialization message",                                     stats.getLastErrorMessage());
-        assertEquals("invocations of listTopics",       1,                          staticFactoryMock.listTopicsInvocationCount);
-        assertEquals("invocations of createTopic",      0,                          staticFactoryMock.createTopicInvocationCount);
-        assertEquals("invocations of publish",          0,                          staticFactoryMock.publishInvocationCount);
-        assertEquals("topic name, from statistics",     TEST_TOPIC_NAME,            stats.getActualTopicName());
-        assertEquals("topic ARN, from statistics",      TEST_TOPIC_ARN,             stats.getActualTopicArn());
+        assertTrue("writer successfully initialized",                                       writer.isInitializationComplete());
+        assertNotNull("factory called (local flag)",                                        staticFactoryMock);
+        assertEquals("factory called (writer flag)",            config.clientFactoryMethod, writer.getClientFactoryUsed());
+
+        assertEquals("invocations of listTopics",               1,                          staticFactoryMock.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",              0,                          staticFactoryMock.createTopicInvocationCount);
+        assertEquals("invocations of publish",                  0,                          staticFactoryMock.publishInvocationCount);
+
+        assertNull("stats: no initialization message",                                      stats.getLastErrorMessage());
+        assertNull("stats: no initialization error",                                        stats.getLastError());
+        assertEquals("stats: topic name",                       TEST_TOPIC_NAME,            stats.getActualTopicName());
+        assertEquals("stats: topic ARN",                        TEST_TOPIC_ARN,             stats.getActualTopicArn());
+
+        assertRegex("log: debug message indicating factory",    ".*created client from factory.*" + getClass().getName() + ".*",
+                                                                internalLogger.debugMessages.get(0));
     }
 }

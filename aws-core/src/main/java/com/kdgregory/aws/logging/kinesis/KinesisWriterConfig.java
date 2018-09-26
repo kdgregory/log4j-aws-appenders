@@ -15,6 +15,7 @@
 package com.kdgregory.aws.logging.kinesis;
 
 import com.kdgregory.aws.logging.common.DiscardAction;
+import com.kdgregory.aws.logging.internal.AbstractWriterConfig;
 
 
 /**
@@ -22,15 +23,11 @@ import com.kdgregory.aws.logging.common.DiscardAction;
  *  (because config can change). It is not exposed to the outside world.
  */
 public class KinesisWriterConfig
+extends AbstractWriterConfig
 {
     public String           streamName;
     public String           partitionKey;
     public int              partitionKeyLength;
-    public long             batchDelay;
-    public int              discardThreshold;
-    public DiscardAction    discardAction;
-    public String           clientFactoryMethod;
-    public String           clientEndpoint;
     public boolean          autoCreate;
     public int              shardCount;
     public Integer          retentionPeriod;
@@ -62,14 +59,11 @@ public class KinesisWriterConfig
         String clientFactoryMethod, String clientEndpoint,
         boolean autoCreate, int shardCount, Integer retentionPeriod)
     {
+        super(batchDelay, discardThreshold, discardAction, clientFactoryMethod, clientEndpoint);
+
         this.streamName = streamName;
         this.partitionKey = partitionKey;
         this.partitionKeyLength = (partitionKeyLength > 0) ? partitionKeyLength : 8;
-        this.batchDelay = batchDelay;
-        this.discardThreshold = discardThreshold;
-        this.discardAction = discardAction;
-        this.clientFactoryMethod = clientFactoryMethod;
-        this.clientEndpoint = clientEndpoint;
         this.autoCreate = autoCreate;
         this.shardCount = shardCount;
         this.retentionPeriod = retentionPeriod;

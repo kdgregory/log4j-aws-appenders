@@ -34,30 +34,28 @@ import com.kdgregory.aws.logging.common.MessageQueue;
 public abstract class AbstractLogWriter
 implements LogWriter
 {
-    private MessageQueue messageQueue;
-    private long batchDelay;
+    private AbstractWriterConfig config;
+    private AbstractAppenderStatistics appenderStats;
+    private InternalLogger logger;
 
+    private MessageQueue messageQueue;
     private Thread dispatchThread;
 
     private volatile Long shutdownTime;                     // this is an actual timestamp, not an elapsed time
 
-    private AbstractAppenderStatistics appenderStats;
-    private InternalLogger logger;
-
-    private volatile int batchCount;                        // these can be read via accessor methods; they're intended for testing
+    // these can be read via accessor methods; they're intended for testing
     private volatile boolean initializationComplete;
     private volatile String factoryMethodUsed;
+    private volatile int batchCount;
 
 
-    public AbstractLogWriter(
-        AbstractAppenderStatistics appenderStats, InternalLogger logger,
-        long batchDelay, int discardThreshold, DiscardAction discardAction)
+    public AbstractLogWriter(AbstractWriterConfig config, AbstractAppenderStatistics appenderStats, InternalLogger logger)
     {
+        this.config = config;
         this.appenderStats = appenderStats;
         this.logger = logger;
-        this.batchDelay = batchDelay;
-        messageQueue = new MessageQueue(discardThreshold, discardAction);
 
+        messageQueue = new MessageQueue(config.discardThreshold, config.discardAction);
         this.appenderStats.setMessageQueue(messageQueue);
     }
 
@@ -71,7 +69,7 @@ implements LogWriter
      */
     public long getBatchDelay()
     {
-        return batchDelay;
+        return config.batchDelay;
     }
 
 
@@ -116,14 +114,14 @@ implements LogWriter
     @Override
     public void setBatchDelay(long value)
     {
-        this.batchDelay = value;
+        config.batchDelay = value;
     }
 
 
     @Override
     public void stop()
     {
-        shutdownTime = Long.valueOf(System.currentTimeMillis() + batchDelay);
+        shutdownTime = Long.valueOf(System.currentTimeMillis() + config.batchDelay);
         if (dispatchThread != null)
         {
             dispatchThread.interrupt();
@@ -261,7 +259,7 @@ implements LogWriter
         if (message == null)
             return batch;
 
-        long batchTimeout = System.currentTimeMillis() + batchDelay;
+        long batchTimeout = System.currentTimeMillis() + config.batchDelay;
         int batchBytes = 0;
         int batchMsgs = 0;
         while (message != null)

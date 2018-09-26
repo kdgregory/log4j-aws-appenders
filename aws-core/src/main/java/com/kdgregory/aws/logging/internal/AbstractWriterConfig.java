@@ -12,24 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.aws.logging.cloudwatch;
+package com.kdgregory.aws.logging.internal;
 
 import com.kdgregory.aws.logging.common.DiscardAction;
-import com.kdgregory.aws.logging.internal.AbstractWriterConfig;
 
 /**
- *  Holds configuration that is passed to the writer factory.
+ *  Holds common configuration; all writer-specific config objects are subclasses.
  */
-public class CloudWatchWriterConfig
-extends AbstractWriterConfig
+public abstract class AbstractWriterConfig
 {
-    public String logGroupName;
-    public String logStreamName;
-
+    public long batchDelay;
+    public int discardThreshold;
+    public DiscardAction discardAction;
+    public String clientFactoryMethod;
+    public String clientEndpoint;
 
     /**
-     *  @param actualLogGroup       Name of the log group, with all substitutions applied.
-     *  @param actualLogStream      Name of the log stream, with all substitutions applied.
      *  @param batchDelay           Number of milliseconds to wait after receiving first
      *                              message in batch.
      *  @param discardThreshold     Maximum number of messages to retain if unable to send.
@@ -37,14 +35,14 @@ extends AbstractWriterConfig
      *  @param clientFactoryMethod  Possibly-null FQN of a static method to create client.
      *  @param clientEndpoint       Possibly-null endpoint for client.
      */
-    public CloudWatchWriterConfig(
-        String actualLogGroup, String actualLogStream,
+    public AbstractWriterConfig(
         long batchDelay, int discardThreshold, DiscardAction discardAction,
         String clientFactoryMethod, String clientEndpoint)
     {
-        super(batchDelay, discardThreshold, discardAction, clientFactoryMethod, clientEndpoint);
-
-        this.logGroupName = actualLogGroup;
-        this.logStreamName = actualLogStream;
+        this.batchDelay = batchDelay;
+        this.discardThreshold = discardThreshold;
+        this.discardAction = discardAction;
+        this.clientFactoryMethod = clientFactoryMethod;
+        this.clientEndpoint = clientEndpoint;
     }
 }

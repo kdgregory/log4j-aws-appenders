@@ -68,7 +68,7 @@ extends AbstractLogWriter
 
     public KinesisLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats, InternalLogger logger)
     {
-        super(stats, logger, config.batchDelay, config.discardThreshold, config.discardAction);
+        super(config, stats, logger);
 
         this.config = config;
         this.stats = stats;

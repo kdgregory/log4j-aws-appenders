@@ -41,7 +41,7 @@ extends AbstractLogWriter
 
     public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats, InternalLogger logger)
     {
-        super(stats, logger, config.batchDelay, config.discardThreshold, config.discardAction);
+        super(config, stats, logger);
 
         this.config = config;
 

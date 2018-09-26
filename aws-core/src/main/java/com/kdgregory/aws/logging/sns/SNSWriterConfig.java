@@ -15,6 +15,7 @@
 package com.kdgregory.aws.logging.sns;
 
 import com.kdgregory.aws.logging.common.DiscardAction;
+import com.kdgregory.aws.logging.internal.AbstractWriterConfig;
 
 
 /**
@@ -22,15 +23,12 @@ import com.kdgregory.aws.logging.common.DiscardAction;
  *  (because config can change). It is not exposed to the outside world.
  */
 public class SNSWriterConfig
+extends AbstractWriterConfig
 {
     public String topicName;
     public String topicArn;
     public boolean autoCreate;
     public String subject;
-    public int discardThreshold;
-    public DiscardAction discardAction;
-    public String clientFactoryMethod;
-    public String clientEndpoint;
 
 
     /**
@@ -48,13 +46,11 @@ public class SNSWriterConfig
         int discardThreshold, DiscardAction discardAction,
         String clientFactoryMethod, String clientEndpoint)
     {
+        super(1, discardThreshold, discardAction, clientFactoryMethod, clientEndpoint);
+
         this.topicName = topicName;
         this.topicArn = topicArn;
         this.autoCreate = autoCreate;
         this.subject = subject;
-        this.discardThreshold = discardThreshold;
-        this.discardAction = discardAction;
-        this.clientFactoryMethod = clientFactoryMethod;
-        this.clientEndpoint = clientEndpoint;
     }
 }

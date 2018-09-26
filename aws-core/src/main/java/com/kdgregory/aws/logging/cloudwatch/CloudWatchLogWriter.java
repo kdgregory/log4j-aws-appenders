@@ -30,12 +30,8 @@ import com.kdgregory.aws.logging.internal.Utils;
 
 
 public class CloudWatchLogWriter
-extends AbstractLogWriter
+extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchAppenderStatistics>
 {
-    private CloudWatchWriterConfig config;
-    private CloudWatchAppenderStatistics stats;
-    private InternalLogger logger;
-
     protected AWSLogs client;
 
 
@@ -43,13 +39,8 @@ extends AbstractLogWriter
     {
         super(config, stats, logger);
 
-        this.config = config;
-
-        this.stats = stats;
         this.stats.setActualLogGroupName(config.logGroupName);
         this.stats.setActualLogStreamName(config.logStreamName);
-
-        this.logger = logger;
     }
 
 //----------------------------------------------------------------------------

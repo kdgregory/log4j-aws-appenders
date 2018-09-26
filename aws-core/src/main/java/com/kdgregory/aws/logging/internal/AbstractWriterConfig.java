@@ -21,7 +21,7 @@ import com.kdgregory.aws.logging.common.DiscardAction;
  */
 public abstract class AbstractWriterConfig
 {
-    public long batchDelay;
+    public volatile long batchDelay;
     public int discardThreshold;
     public DiscardAction discardAction;
     public String clientFactoryMethod;
@@ -29,7 +29,7 @@ public abstract class AbstractWriterConfig
 
     /**
      *  @param batchDelay           Number of milliseconds to wait after receiving first
-     *                              message in batch.
+     *                              message in batch. May be updated while running.
      *  @param discardThreshold     Maximum number of messages to retain if unable to send.
      *  @param discardAction        What to do with unsent messages over the threshold.
      *  @param clientFactoryMethod  Possibly-null FQN of a static method to create client.

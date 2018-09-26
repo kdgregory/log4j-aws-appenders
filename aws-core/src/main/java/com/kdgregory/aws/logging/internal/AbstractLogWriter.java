@@ -31,17 +31,19 @@ import com.kdgregory.aws.logging.common.MessageQueue;
 /**
  *  Manages common LogWriter activities.
  */
-public abstract class AbstractLogWriter
+public abstract class AbstractLogWriter<ConfigType extends AbstractWriterConfig,StatsType extends AbstractAppenderStatistics>
 implements LogWriter
 {
-    private AbstractWriterConfig config;
-    private AbstractAppenderStatistics appenderStats;
-    private InternalLogger logger;
+    // these three are provided to constructor, used both here and in subclass
+    protected ConfigType config;
+    protected StatsType stats;
+    protected InternalLogger logger;
 
     private MessageQueue messageQueue;
     private Thread dispatchThread;
 
-    private volatile Long shutdownTime;                     // this is an actual timestamp, not an elapsed time
+    // this is an actual timestamp, not an elapsed time
+    private volatile Long shutdownTime;
 
     // these can be read via accessor methods; they're intended for testing
     private volatile boolean initializationComplete;
@@ -49,16 +51,15 @@ implements LogWriter
     private volatile int batchCount;
 
 
-    public AbstractLogWriter(AbstractWriterConfig config, AbstractAppenderStatistics appenderStats, InternalLogger logger)
+    public AbstractLogWriter(ConfigType config, StatsType appenderStats, InternalLogger logger)
     {
         this.config = config;
-        this.appenderStats = appenderStats;
+        this.stats = appenderStats;
         this.logger = logger;
 
         messageQueue = new MessageQueue(config.discardThreshold, config.discardAction);
-        this.appenderStats.setMessageQueue(messageQueue);
+        this.stats.setMessageQueue(messageQueue);
     }
-
 
 //----------------------------------------------------------------------------
 //  Accessors
@@ -234,7 +235,7 @@ implements LogWriter
     protected boolean initializationFailure(String message, Exception exception)
     {
         logger.error(message, exception);
-        appenderStats.setLastError(message, exception);
+        stats.setLastError(message, exception);
         return false;
     }
 

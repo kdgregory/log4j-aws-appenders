@@ -32,7 +32,7 @@ import com.kdgregory.aws.logging.internal.Utils;
 
 
 public class KinesisLogWriter
-extends AbstractLogWriter
+extends AbstractLogWriter<KinesisWriterConfig,KinesisAppenderStatistics>
 {
     // this controls the number of times that we'll accept rate limiting on describe
     private final static int DESCRIBE_TRIES = 300;
@@ -56,10 +56,6 @@ extends AbstractLogWriter
     private final static int CREATE_RETRY_SLEEP = 5000;
 
 
-    private KinesisWriterConfig config;
-    private KinesisAppenderStatistics stats;
-    private InternalLogger logger;
-
     protected AmazonKinesis client;
 
     // only used for random partition keys; cheap enough we'll eagerly create
@@ -69,10 +65,6 @@ extends AbstractLogWriter
     public KinesisLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats, InternalLogger logger)
     {
         super(config, stats, logger);
-
-        this.config = config;
-        this.stats = stats;
-        this.logger = logger;
 
         stats.setActualStreamName(config.streamName);
     }

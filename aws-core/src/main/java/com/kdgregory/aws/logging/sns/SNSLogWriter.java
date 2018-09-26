@@ -32,12 +32,8 @@ import com.kdgregory.aws.logging.internal.InternalLogger;
 
 
 public class SNSLogWriter
-extends AbstractLogWriter
+extends AbstractLogWriter<SNSWriterConfig,SNSAppenderStatistics>
 {
-    protected SNSWriterConfig config;
-    private SNSAppenderStatistics stats;
-    private InternalLogger logger;
-
     protected AmazonSNS client;
     protected String topicArn;
 
@@ -45,9 +41,6 @@ extends AbstractLogWriter
     public SNSLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats, InternalLogger logger)
     {
         super(config, stats, logger);
-        this.config = config;
-        this.stats = stats;
-        this.logger = logger;
     }
 
 //----------------------------------------------------------------------------

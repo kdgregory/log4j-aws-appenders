@@ -40,8 +40,8 @@ implements LogWriter
 
     public MockCloudWatchWriter(CloudWatchWriterConfig config)
     {
-        this.logGroup = config.logGroup;
-        this.logStream = config.logStream;
+        this.logGroup = config.logGroupName;
+        this.logStream = config.logStreamName;
         this.batchDelay = config.batchDelay;
         this.discardThreshold = config.discardThreshold;
         this.discardAction = config.discardAction;

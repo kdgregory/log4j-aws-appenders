@@ -230,7 +230,7 @@ public class TestCloudWatchLogWriter
     @Test
     public void testOperationWithExistingGroupAndNewStream() throws Exception
     {
-        config.logStream = "zippy";
+        config.logStreamName = "zippy";
 
         createWriter();
 
@@ -280,8 +280,8 @@ public class TestCloudWatchLogWriter
     @Test
     public void testOperationWithNewGroupAndStream() throws Exception
     {
-        config.logGroup = "griffy";
-        config.logStream = "zippy";
+        config.logGroupName = "griffy";
+        config.logStreamName = "zippy";
 
         createWriter();
 
@@ -334,8 +334,8 @@ public class TestCloudWatchLogWriter
     public void testPaginatedDescribes() throws Exception
     {
         // these two names are at the end of the default list
-        config.logGroup = "argle";
-        config.logStream = "fribble";
+        config.logGroupName = "argle";
+        config.logStreamName = "fribble";
 
         mock = new MockCloudWatchClient(MockCloudWatchClient.NAMES, 5, MockCloudWatchClient.NAMES, 5);
         createWriter();
@@ -362,8 +362,8 @@ public class TestCloudWatchLogWriter
     @Test
     public void testInvalidGroupName() throws Exception
     {
-        config.logGroup = "I'm No Good!";
-        config.logStream = "Although, I Am";
+        config.logGroupName = "I'm No Good!";
+        config.logStreamName = "Although, I Am";
 
         createWriter();
 
@@ -371,7 +371,7 @@ public class TestCloudWatchLogWriter
 
         String errorMessage = stats.getLastErrorMessage();
         assertRegex("error message indicates failure, with group name (was: " + errorMessage + ")",
-                    ".*log group.*" + config.logGroup + "$",
+                    ".*log group.*" + config.logGroupName + "$",
                     errorMessage);
 
         assertEquals("describeLogGroups: invocation count",     0,                      mock.describeLogGroupsInvocationCount);
@@ -386,8 +386,8 @@ public class TestCloudWatchLogWriter
     @Test
     public void testInvalidStreamName() throws Exception
     {
-        config.logGroup = "IAmOK";
-        config.logStream = "But: I'm Not";
+        config.logGroupName = "IAmOK";
+        config.logStreamName = "But: I'm Not";
 
         createWriter();
 
@@ -395,7 +395,7 @@ public class TestCloudWatchLogWriter
 
         String errorMessage = stats.getLastErrorMessage();
         assertRegex("error message indicates failure, with stream name (was: " + errorMessage + ")",
-                    ".*log stream.*" + config.logStream + "$",
+                    ".*log stream.*" + config.logStreamName + "$",
                     errorMessage);
 
         assertEquals("describeLogGroups: invocation count",     0,                      mock.describeLogGroupsInvocationCount);
@@ -653,8 +653,8 @@ public class TestCloudWatchLogWriter
     public void testStaticClientFactory() throws Exception
     {
         config.clientFactoryMethod = this.getClass().getName() + ".createMockClient";
-        config.logGroup = "argle";
-        config.logStream = "bargle";
+        config.logGroupName = "argle";
+        config.logStreamName = "bargle";
 
         // we have to manually initialize this writer so that it won't get a mock client
 

@@ -21,8 +21,8 @@ import com.kdgregory.aws.logging.common.DiscardAction;
  */
 public class CloudWatchWriterConfig
 {
-    public String logGroup;
-    public String logStream;
+    public String logGroupName;
+    public String logStreamName;
     public long batchDelay;
     public int discardThreshold;
     public DiscardAction discardAction;
@@ -45,8 +45,8 @@ public class CloudWatchWriterConfig
         long batchDelay, int discardThreshold, DiscardAction discardAction,
         String clientFactoryMethod, String clientEndpoint)
     {
-        this.logGroup = actualLogGroup;
-        this.logStream = actualLogStream;
+        this.logGroupName = actualLogGroup;
+        this.logStreamName = actualLogStream;
         this.batchDelay = batchDelay;
         this.discardThreshold = discardThreshold;
         this.discardAction = discardAction;

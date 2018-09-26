@@ -32,11 +32,7 @@ import com.kdgregory.aws.logging.internal.Utils;
 public class CloudWatchLogWriter
 extends AbstractLogWriter
 {
-    private String groupName;
-    private String streamName;
-    private String clientFactoryMethod;
-    private String clientEndpoint;
-
+    private CloudWatchWriterConfig config;
     private CloudWatchAppenderStatistics stats;
     private InternalLogger logger;
 
@@ -46,14 +42,12 @@ extends AbstractLogWriter
     public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats, InternalLogger logger)
     {
         super(stats, logger, config.batchDelay, config.discardThreshold, config.discardAction);
-        this.groupName = config.logGroup;
-        this.streamName = config.logStream;
-        this.clientFactoryMethod = config.clientFactoryMethod;
-        this.clientEndpoint = config.clientEndpoint;
+
+        this.config = config;
 
         this.stats = stats;
-        this.stats.setActualLogGroupName(this.groupName);
-        this.stats.setActualLogStreamName(this.streamName);
+        this.stats.setActualLogGroupName(config.logGroupName);
+        this.stats.setActualLogStreamName(config.logStreamName);
 
         this.logger = logger;
     }
@@ -65,15 +59,15 @@ extends AbstractLogWriter
     @Override
     protected void createAWSClient()
     {
-        client = tryClientFactory(clientFactoryMethod, AWSLogs.class, true);
-        if ((client == null) && (clientEndpoint == null))
+        client = tryClientFactory(config.clientFactoryMethod, AWSLogs.class, true);
+        if ((client == null) && (config.clientEndpoint == null))
         {
             client = tryClientFactory("com.amazonaws.services.logs.AWSLogsClientBuilder.defaultClient", AWSLogs.class, false);
         }
         if (client == null)
         {
             logger.debug(getClass().getSimpleName() + ": creating service client via constructor");
-            client = tryConfigureEndpointOrRegion(new AWSLogsClient(), clientEndpoint);
+            client = tryConfigureEndpointOrRegion(new AWSLogsClient(), config.clientEndpoint);
         }
     }
 
@@ -81,14 +75,14 @@ extends AbstractLogWriter
     @Override
     protected boolean ensureDestinationAvailable()
     {
-        if (! Pattern.matches(CloudWatchConstants.ALLOWED_GROUP_NAME_REGEX, groupName))
+        if (! Pattern.matches(CloudWatchConstants.ALLOWED_GROUP_NAME_REGEX, config.logGroupName))
         {
-            return initializationFailure("invalid log group name: " + groupName, null);
+            return initializationFailure("invalid log group name: " + config.logGroupName, null);
         }
 
-        if (! Pattern.matches(CloudWatchConstants.ALLOWED_STREAM_NAME_REGEX, streamName))
+        if (! Pattern.matches(CloudWatchConstants.ALLOWED_STREAM_NAME_REGEX, config.logStreamName))
         {
-            return initializationFailure("invalid log stream name: " + streamName, null);
+            return initializationFailure("invalid log stream name: " + config.logStreamName, null);
         }
 
         try
@@ -96,7 +90,7 @@ extends AbstractLogWriter
             LogGroup logGroup = findLogGroup();
             if (logGroup == null)
             {
-                logger.debug("creating CloudWatch log group: " + groupName);
+                logger.debug("creating CloudWatch log group: " + config.logGroupName);
                 createLogGroup();
             }
 
@@ -104,7 +98,7 @@ extends AbstractLogWriter
             LogStream logStream = findLogStream();
             if (logStream == null)
             {
-                logger.debug("creating CloudWatch log stream: " + streamName);
+                logger.debug("creating CloudWatch log stream: " + config.logStreamName);
                 createLogStream();
             }
 
@@ -149,16 +143,16 @@ extends AbstractLogWriter
             return batch;
 
         PutLogEventsRequest request = new PutLogEventsRequest()
-                                      .withLogGroupName(groupName)
-                                      .withLogStreamName(streamName)
+                                      .withLogGroupName(config.logGroupName)
+                                      .withLogStreamName(config.logStreamName)
                                       .withLogEvents(constructLogEvents(batch));
 
         // if we can't find the stream we'll try to re-create it
         LogStream stream = findLogStream();
         if (stream == null)
         {
-            logger.error("log stream missing: " + streamName, null);
-            stats.setLastError("log stream missing: " + streamName, null);
+            logger.error("log stream missing: " + config.logStreamName, null);
+            stats.setLastError("log stream missing: " + config.logStreamName, null);
             ensureDestinationAvailable();
             return batch;
         }
@@ -198,14 +192,14 @@ extends AbstractLogWriter
 
     private LogGroup findLogGroup()
     {
-        DescribeLogGroupsRequest request = new DescribeLogGroupsRequest().withLogGroupNamePrefix(groupName);
+        DescribeLogGroupsRequest request = new DescribeLogGroupsRequest().withLogGroupNamePrefix(config.logGroupName);
         DescribeLogGroupsResult result;
         do
         {
             result = client.describeLogGroups(request);
             for (LogGroup group : result.getLogGroups())
             {
-                if (group.getLogGroupName().equals(groupName))
+                if (group.getLogGroupName().equals(config.logGroupName))
                     return group;
             }
             request.setNextToken(result.getNextToken());
@@ -221,7 +215,7 @@ extends AbstractLogWriter
         {
             try
             {
-                CreateLogGroupRequest request = new CreateLogGroupRequest().withLogGroupName(groupName);
+                CreateLogGroupRequest request = new CreateLogGroupRequest().withLogGroupName(config.logGroupName);
                 client.createLogGroup(request);
                 for (int ii = 0 ; ii < 300 ; ii++)
                 {
@@ -249,15 +243,15 @@ extends AbstractLogWriter
     private LogStream findLogStream()
     {
         DescribeLogStreamsRequest request = new DescribeLogStreamsRequest()
-                                            .withLogGroupName(groupName)
-                                            .withLogStreamNamePrefix(streamName);
+                                            .withLogGroupName(config.logGroupName)
+                                            .withLogStreamNamePrefix(config.logStreamName);
         DescribeLogStreamsResult result;
         do
         {
             result = client.describeLogStreams(request);
             for (LogStream stream : result.getLogStreams())
             {
-                if (stream.getLogStreamName().equals(streamName))
+                if (stream.getLogStreamName().equals(config.logStreamName))
                     return stream;
             }
             request.setNextToken(result.getNextToken());
@@ -271,8 +265,8 @@ extends AbstractLogWriter
         try
         {
             CreateLogStreamRequest request = new CreateLogStreamRequest()
-                                             .withLogGroupName(groupName)
-                                             .withLogStreamName(streamName);
+                                             .withLogGroupName(config.logGroupName)
+                                             .withLogStreamName(config.logStreamName);
             client.createLogStream(request);
 
             for (int ii = 0 ; ii < 300 ; ii++)

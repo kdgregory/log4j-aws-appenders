@@ -32,9 +32,9 @@ import com.kdgregory.aws.logging.internal.InternalLogger;
 
 
 public class SNSLogWriter
-extends AbstractLogWriter<SNSWriterConfig,SNSAppenderStatistics>
+extends AbstractLogWriter<SNSWriterConfig,SNSAppenderStatistics,AmazonSNS>
 {
-    protected AmazonSNS client;
+    // this is set when configuring by name, exposed for testing
     protected String topicArn;
 
 
@@ -48,18 +48,19 @@ extends AbstractLogWriter<SNSWriterConfig,SNSAppenderStatistics>
 //----------------------------------------------------------------------------
 
     @Override
-    protected void createAWSClient()
+    protected AmazonSNS createAWSClient()
     {
-        client = tryClientFactory(config.clientFactoryMethod, AmazonSNS.class, true);
-        if ((client == null) && (config.clientEndpoint == null))
+        AmazonSNS localClient = tryClientFactory(config.clientFactoryMethod, AmazonSNS.class, true);
+        if ((localClient == null) && (config.clientEndpoint == null))
         {
-            client = tryClientFactory("com.amazonaws.services.sns.AmazonSNSClientBuilder.defaultClient", AmazonSNS.class, false);
+            localClient = tryClientFactory("com.amazonaws.services.sns.AmazonSNSClientBuilder.defaultClient", AmazonSNS.class, false);
         }
-        if (client == null)
+        if (localClient == null)
         {
             logger.debug(getClass().getSimpleName() + ": creating service client via constructor");
-            client = tryConfigureEndpointOrRegion(new AmazonSNSClient(), config.clientEndpoint);
+            localClient = tryConfigureEndpointOrRegion(new AmazonSNSClient(), config.clientEndpoint);
         }
+        return localClient;
     }
 
 

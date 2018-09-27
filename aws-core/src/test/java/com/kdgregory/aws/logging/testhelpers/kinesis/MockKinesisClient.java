@@ -156,9 +156,9 @@ implements InvocationHandler
                 return new KinesisLogWriter(config, stats, internalLogger)
                 {
                     @Override
-                    protected void createAWSClient()
+                    protected AmazonKinesis createAWSClient()
                     {
-                        client = createClient();
+                        return createClient();
                     }
                 };
             }

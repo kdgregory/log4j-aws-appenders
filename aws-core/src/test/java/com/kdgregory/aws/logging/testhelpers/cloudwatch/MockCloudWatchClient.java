@@ -161,9 +161,9 @@ implements InvocationHandler
                 return new CloudWatchLogWriter(config, stats, internalLogger)
                 {
                     @Override
-                    protected void createAWSClient()
+                    protected AWSLogs createAWSClient()
                     {
-                        client = createClient();
+                        return createClient();
                     }
                 };
             }

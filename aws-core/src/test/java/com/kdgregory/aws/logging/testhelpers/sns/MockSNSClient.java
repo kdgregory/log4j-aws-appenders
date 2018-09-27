@@ -130,9 +130,9 @@ public class MockSNSClient implements InvocationHandler
                 return new SNSLogWriter(config, stats, internalLogger)
                 {
                     @Override
-                    protected void createAWSClient()
+                    protected AmazonSNS createAWSClient()
                     {
-                        client = createClient();
+                        return createClient();
                     }
                 };
             }

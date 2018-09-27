@@ -30,11 +30,8 @@ import com.kdgregory.aws.logging.internal.Utils;
 
 
 public class CloudWatchLogWriter
-extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchAppenderStatistics>
+extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchAppenderStatistics,AWSLogs>
 {
-    protected AWSLogs client;
-
-
     public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats, InternalLogger logger)
     {
         super(config, stats, logger);
@@ -48,18 +45,19 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchAppenderStatistics>
 //----------------------------------------------------------------------------
 
     @Override
-    protected void createAWSClient()
+    protected AWSLogs createAWSClient()
     {
-        client = tryClientFactory(config.clientFactoryMethod, AWSLogs.class, true);
-        if ((client == null) && (config.clientEndpoint == null))
+        AWSLogs localClient = tryClientFactory(config.clientFactoryMethod, AWSLogs.class, true);
+        if ((localClient == null) && (config.clientEndpoint == null))
         {
-            client = tryClientFactory("com.amazonaws.services.logs.AWSLogsClientBuilder.defaultClient", AWSLogs.class, false);
+            localClient = tryClientFactory("com.amazonaws.services.logs.AWSLogsClientBuilder.defaultClient", AWSLogs.class, false);
         }
-        if (client == null)
+        if (localClient == null)
         {
             logger.debug(getClass().getSimpleName() + ": creating service client via constructor");
-            client = tryConfigureEndpointOrRegion(new AWSLogsClient(), config.clientEndpoint);
+            localClient = tryConfigureEndpointOrRegion(new AWSLogsClient(), config.clientEndpoint);
         }
+        return localClient;
     }
 
 

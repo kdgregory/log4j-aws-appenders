@@ -32,7 +32,7 @@ import com.kdgregory.aws.logging.internal.Utils;
 
 
 public class KinesisLogWriter
-extends AbstractLogWriter<KinesisWriterConfig,KinesisAppenderStatistics>
+extends AbstractLogWriter<KinesisWriterConfig,KinesisAppenderStatistics,AmazonKinesis>
 {
     // this controls the number of times that we'll accept rate limiting on describe
     private final static int DESCRIBE_TRIES = 300;
@@ -55,9 +55,6 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisAppenderStatistics>
     // and how long we'll sleep between attempts
     private final static int CREATE_RETRY_SLEEP = 5000;
 
-
-    protected AmazonKinesis client;
-
     // only used for random partition keys; cheap enough we'll eagerly create
     private Random rnd = new Random();
 
@@ -75,18 +72,19 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisAppenderStatistics>
 //----------------------------------------------------------------------------
 
     @Override
-    protected void createAWSClient()
+    protected AmazonKinesis createAWSClient()
     {
-        client = tryClientFactory(config.clientFactoryMethod, AmazonKinesis.class, true);
-        if ((client == null) && (config.clientEndpoint == null))
+        AmazonKinesis localClient = tryClientFactory(config.clientFactoryMethod, AmazonKinesis.class, true);
+        if ((localClient == null) && (config.clientEndpoint == null))
         {
-            client = tryClientFactory("com.amazonaws.services.kinesis.AmazonKinesisClientBuilder.defaultClient", AmazonKinesis.class, false);
+            localClient = tryClientFactory("com.amazonaws.services.kinesis.AmazonKinesisClientBuilder.defaultClient", AmazonKinesis.class, false);
         }
-        if (client == null)
+        if (localClient == null)
         {
             logger.debug(getClass().getSimpleName() + ": creating service client via constructor");
-            client = tryConfigureEndpointOrRegion(new AmazonKinesisClient(), config.clientEndpoint);
+            localClient = tryConfigureEndpointOrRegion(new AmazonKinesisClient(), config.clientEndpoint);
         }
+        return localClient;
     }
 
 

@@ -31,7 +31,7 @@ import com.kdgregory.aws.logging.common.MessageQueue;
 /**
  *  Manages common LogWriter activities.
  */
-public abstract class AbstractLogWriter<ConfigType extends AbstractWriterConfig,StatsType extends AbstractAppenderStatistics>
+public abstract class AbstractLogWriter<ConfigType extends AbstractWriterConfig,StatsType extends AbstractAppenderStatistics,AWSClientType>
 implements LogWriter
 {
     // these three are provided to constructor, used both here and in subclass
@@ -39,10 +39,11 @@ implements LogWriter
     protected StatsType stats;
     protected InternalLogger logger;
 
+    // this is assigned during initialization, used only by subclass
+    protected AWSClientType client;
+
     private MessageQueue messageQueue;
     private Thread dispatchThread;
-
-    // this is an actual timestamp, not an elapsed time
     private volatile Long shutdownTime;
 
     // these can be read via accessor methods; they're intended for testing
@@ -189,10 +190,10 @@ implements LogWriter
 
     /**
      *  Creates the appropriate AWS client. This is called as the first thing
-     *  in the run() method (because, for some reason calling it in the ctor
-     *  was failing).
+     *  in the run() method, with the result assigned to the <code>client</code>.
+     *  variable.
      */
-    protected abstract void createAWSClient();
+    protected abstract AWSClientType createAWSClient();
 
 
     /**
@@ -362,7 +363,7 @@ implements LogWriter
     {
         try
         {
-            createAWSClient();
+            client = createAWSClient();
             return ensureDestinationAvailable();
         }
         catch (Exception ex)

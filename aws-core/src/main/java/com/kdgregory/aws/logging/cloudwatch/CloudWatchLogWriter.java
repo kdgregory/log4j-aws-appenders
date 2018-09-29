@@ -20,9 +20,9 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import com.amazonaws.services.logs.AWSLogs;
-import com.amazonaws.services.logs.AWSLogsClient;
 import com.amazonaws.services.logs.model.*;
 
+import com.kdgregory.aws.logging.common.ClientFactory;
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.internal.AbstractLogWriter;
 import com.kdgregory.aws.logging.internal.InternalLogger;
@@ -32,9 +32,9 @@ import com.kdgregory.aws.logging.internal.Utils;
 public class CloudWatchLogWriter
 extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchAppenderStatistics,AWSLogs>
 {
-    public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats, InternalLogger logger)
+    public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats, InternalLogger logger, ClientFactory<AWSLogs> clientFactory)
     {
-        super(config, stats, logger);
+        super(config, stats, logger, clientFactory);
 
         this.stats.setActualLogGroupName(config.logGroupName);
         this.stats.setActualLogStreamName(config.logStreamName);
@@ -43,23 +43,6 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchAppenderStatistics,AW
 //----------------------------------------------------------------------------
 //  Hooks for superclass
 //----------------------------------------------------------------------------
-
-    @Override
-    protected AWSLogs createAWSClient()
-    {
-        AWSLogs localClient = tryClientFactory(config.clientFactoryMethod, AWSLogs.class, true);
-        if ((localClient == null) && (config.clientEndpoint == null))
-        {
-            localClient = tryClientFactory("com.amazonaws.services.logs.AWSLogsClientBuilder.defaultClient", AWSLogs.class, false);
-        }
-        if (localClient == null)
-        {
-            logger.debug(getClass().getSimpleName() + ": creating service client via constructor");
-            localClient = tryConfigureEndpointOrRegion(new AWSLogsClient(), config.clientEndpoint);
-        }
-        return localClient;
-    }
-
 
     @Override
     protected boolean ensureDestinationAvailable()

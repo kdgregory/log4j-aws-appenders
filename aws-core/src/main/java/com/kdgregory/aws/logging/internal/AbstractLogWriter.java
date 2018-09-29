@@ -14,14 +14,11 @@
 
 package com.kdgregory.aws.logging.internal;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.amazonaws.AmazonWebServiceClient;
-import com.amazonaws.regions.Regions;
-
+import com.kdgregory.aws.logging.common.ClientFactory;
 import com.kdgregory.aws.logging.common.DiscardAction;
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.common.LogWriter;
@@ -44,10 +41,13 @@ implements LogWriter
     protected StatsType stats;
     protected InternalLogger logger;
 
+    // this is provided to constructor, used only here
+    private ClientFactory<AWSClientType> clientFactory;
+
     // this is assigned during initialization, used only by subclass
     protected AWSClientType client;
 
-    // created during constructor i by nitializat()
+    // created during constructor or by initializat()
     private MessageQueue messageQueue;
     private Thread dispatchThread;
 
@@ -60,11 +60,12 @@ implements LogWriter
     private volatile int batchCount;
 
 
-    public AbstractLogWriter(ConfigType config, StatsType appenderStats, InternalLogger logger)
+    public AbstractLogWriter(ConfigType config, StatsType appenderStats, InternalLogger logger, ClientFactory<AWSClientType> clientFactory)
     {
         this.config = config;
         this.stats = appenderStats;
         this.logger = logger;
+        this.clientFactory = clientFactory;
 
         messageQueue = new MessageQueue(config.discardThreshold, config.discardAction);
         this.stats.setMessageQueue(messageQueue);
@@ -191,23 +192,73 @@ implements LogWriter
         } while (keepRunning());
     }
 
+//----------------------------------------------------------------------------
+//  Internals
+//----------------------------------------------------------------------------
+
+    /**
+     *  Creates the client and then calls {@link #ensureDestinationAvailable}.
+     *  Returns <code>true</code> if both actions succeed, <code>false</code>
+     *  if either fails.
+     */
+    private boolean initialize()
+    {
+        try
+        {
+            client = clientFactory.createClient();
+            return ensureDestinationAvailable();
+        }
+        catch (Exception ex)
+        {
+            return initializationFailure("exception in initializer", ex);
+        }
+    }
+
+
+    /**
+     *  A check for whether we should keep running: either we haven't been shut
+     *  down or there's still messages to process
+     */
+    private boolean keepRunning()
+    {
+        return shutdownTime > System.currentTimeMillis()
+            || ! messageQueue.isEmpty();
+    }
+
+
+    /**
+     *  Attempts to read the message queue, waiting until the specified timestamp
+     *  (not elapsed time!).
+     */
+    private LogMessage waitForMessage(long waitUntil)
+    {
+        long waitTime = waitUntil - System.currentTimeMillis();
+        return messageQueue.dequeue(waitTime);
+    }
+
+
+    /**
+     *  Requeues all messages in the passed list, preserving order (ie, the first
+     *  passed message in the list will be the first in the queue).
+     */
+    private void requeueMessages(List<LogMessage> messages)
+    {
+        Collections.reverse(messages);
+        for (LogMessage message : messages)
+        {
+            messageQueue.requeue(message);
+        }
+    }
 
 //----------------------------------------------------------------------------
 //  Subclass hooks
 //----------------------------------------------------------------------------
 
     /**
-     *  Creates the appropriate AWS client. This is called as the first thing
-     *  in the run() method, with the result assigned to the <code>client</code>.
-     *  variable.
-     */
-    protected abstract AWSClientType createAWSClient();
-
-
-    /**
-     *  Verifies that the logging destination is available, including creating
-     *  it if not. Return <code>true</code> if successful, <code>false</code>
-     *  if not (which will cause the appender to stop running).
+     *  Verifies that the logging destination is available (which may involve
+     *  creating it). When called, {@link #client} will be initialized. Return
+     *  <code>true</code> if successful, <code>false</code> if not (which will
+     *  cause the appender to stop running).
      */
     protected abstract boolean ensureDestinationAvailable();
 
@@ -231,7 +282,6 @@ implements LogWriter
      *  exceed the service's limits.
      */
     protected abstract boolean withinServiceLimits(int batchBytes, int numMessages);
-
 
 //----------------------------------------------------------------------------
 //  Subclass helpers
@@ -290,128 +340,4 @@ implements LogWriter
 
         return batch;
     }
-
-
-    /**
-     *  Attempts to use a factory method to create the service client.
-     *
-     *  @param  clientFactoryName   Fully qualified name of a static factory method.
-     *                              If empty or null, this function returns null (used
-     *                              to handle optionally-configured factories).
-     *  @param  expectedClientClass The interface fullfilled by this client.
-     *  @param  rethrow             If true, any reflection exceptions will be wrapped
-     *                              and rethrown; if false, exceptions return null
-     */
-    protected AWSClientType tryClientFactory(String clientFactoryName, Class<AWSClientType> expectedClientClass, boolean rethrow)
-    {
-        if ((clientFactoryName == null) || clientFactoryName.isEmpty())
-            return null;
-
-        try
-        {
-            int methodIdx = clientFactoryName.lastIndexOf('.');
-            if (methodIdx < 0)
-                throw new RuntimeException("invalid AWS client factory specified: " + clientFactoryName);
-            Class<?> factoryKlass = Class.forName(clientFactoryName.substring(0, methodIdx));
-            Method factoryMethod = factoryKlass.getDeclaredMethod(clientFactoryName.substring(methodIdx + 1));
-            AWSClientType localClient = expectedClientClass.cast(factoryMethod.invoke(null));
-            factoryMethodUsed = clientFactoryName;
-            logger.debug(getClass().getSimpleName() + ": created client from factory: " + clientFactoryName);
-            return localClient;
-        }
-        catch (Exception ex)
-        {
-            if (rethrow)
-                throw new RuntimeException("unable to invoke AWS client factory", ex);
-            else
-                return null;
-        }
-    }
-
-
-    /**
-     *  Common support code: attempts to configure client endpoint and/or region.
-     *
-     *  @param  client      A constructed writer-specific service client.
-     *  @param  endpoint    A possibly-null endpoint specification.
-     */
-    @SuppressWarnings("hiding")
-    protected AWSClientType tryConfigureEndpointOrRegion(AmazonWebServiceClient client, String endpoint)
-    {
-        // explicit endpoint takes precedence over region retrieved from environment
-        if (endpoint != null)
-        {
-            logger.debug(getClass().getSimpleName() + ": configuring endpoint: " + endpoint);
-            client.setEndpoint(endpoint);
-        }
-
-        String region = System.getenv("AWS_REGION");
-        if (region != null)
-        {
-            logger.debug(getClass().getSimpleName() + ": configuring region: " + region);
-            client.configureRegion(Regions.fromName(region));
-        }
-
-        return (AWSClientType)client;
-    }
-
-
-//----------------------------------------------------------------------------
-//  Internals
-//----------------------------------------------------------------------------
-
-    /**
-     *  Performs initialization at the start of {@link #run}. Extracted so that
-     *  we can be a bit cleaner about try/catch behavior. Returns true if successful,
-     *  false if not.
-     */
-    private boolean initialize()
-    {
-        try
-        {
-            client = createAWSClient();
-            return ensureDestinationAvailable();
-        }
-        catch (Exception ex)
-        {
-            return initializationFailure("uncaught exception", ex);
-        }
-    }
-
-
-    /**
-     *  A check for whether we should keep running: either we haven't been shut
-     *  down or there's still messages to process
-     */
-    private boolean keepRunning()
-    {
-        return shutdownTime > System.currentTimeMillis()
-            || ! messageQueue.isEmpty();
-    }
-
-
-    /**
-     *  Attempts to read the message queue, waiting until the specified timestamp
-     *  (not elapsed time!).
-     */
-    private LogMessage waitForMessage(long waitUntil)
-    {
-        long waitTime = waitUntil - System.currentTimeMillis();
-        return messageQueue.dequeue(waitTime);
-    }
-
-
-    /**
-     *  Requeues all messages in the passed list, preserving order (ie, the first
-     *  passed message in the list will be the first in the queue).
-     */
-    private void requeueMessages(List<LogMessage> messages)
-    {
-        Collections.reverse(messages);
-        for (LogMessage message : messages)
-        {
-            messageQueue.requeue(message);
-        }
-    }
-
 }

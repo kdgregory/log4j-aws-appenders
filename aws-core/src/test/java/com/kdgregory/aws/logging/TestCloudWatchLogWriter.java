@@ -32,6 +32,7 @@ import com.amazonaws.services.logs.model.*;
 import com.kdgregory.aws.logging.cloudwatch.CloudWatchAppenderStatistics;
 import com.kdgregory.aws.logging.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.aws.logging.cloudwatch.CloudWatchWriterConfig;
+import com.kdgregory.aws.logging.common.ClientFactory;
 import com.kdgregory.aws.logging.common.DefaultThreadFactory;
 import com.kdgregory.aws.logging.common.DiscardAction;
 import com.kdgregory.aws.logging.common.LogMessage;
@@ -89,6 +90,12 @@ public class TestCloudWatchLogWriter
      *  This will be assigned by createWriter();
      */
     private CloudWatchLogWriter writer;
+    
+    
+    /**
+     *  This is extracted from the writer by createWriter().
+     */
+    private MessageQueue messageQueue;
 
 
     /**
@@ -113,6 +120,21 @@ public class TestCloudWatchLogWriter
 
 
     /**
+     *  This is used whenever we explicitly create a writer (rather than use the
+     *  mock factory. It create a null client, so any attempt to use that client
+     *  will throw.
+     */
+    private ClientFactory<AWSLogs> dummyClientFactory = new ClientFactory<AWSLogs>()
+    {
+        @Override
+        public AWSLogs createClient()
+        {
+            return null;
+        }
+    };
+
+
+    /**
      *  Constructs and initializes a writer on a background thread, waiting for
      *  initialization to either complete or fail. Returns the writer.
      */
@@ -120,6 +142,8 @@ public class TestCloudWatchLogWriter
     throws Exception
     {
         writer = (CloudWatchLogWriter)mock.newWriterFactory(internalLogger).newLogWriter(config, stats);
+        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+
         new DefaultThreadFactory().startLoggingThread(writer, defaultUncaughtExceptionHandler);
 
         // we'll spin until either the writer is initialized, signals an error,
@@ -171,8 +195,8 @@ public class TestCloudWatchLogWriter
     {
         config = new CloudWatchWriterConfig("foo", "bar", 123, 456, DiscardAction.newest, "com.example.factory.Method", "us-west-1");
 
-        writer = new CloudWatchLogWriter(config, stats, internalLogger);
-        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        writer = new CloudWatchLogWriter(config, stats, internalLogger, dummyClientFactory);
+        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         assertEquals("writer batch delay",              123L,                   writer.getBatchDelay());
         assertEquals("message queue discard policy",    DiscardAction.newest,   messageQueue.getDiscardAction());
@@ -420,7 +444,6 @@ public class TestCloudWatchLogWriter
         };
 
         createWriter();
-        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         // we don't need to write any messages; writer should fail to initialize
 
@@ -456,7 +479,6 @@ public class TestCloudWatchLogWriter
         };
 
         createWriter();
-        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         // we allow two trips to putLogEvents because (1) stats are updated before the main thread
         // restarts, and (2) we want to verify that the batch is re-processed
@@ -563,8 +585,8 @@ public class TestCloudWatchLogWriter
 
         // this test doesn't need a background thread running
 
-        writer = new CloudWatchLogWriter(config, stats, internalLogger);
-        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        writer = new CloudWatchLogWriter(config, stats, internalLogger, dummyClientFactory);
+        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         for (int ii = 0 ; ii < 20 ; ii++)
         {
@@ -587,8 +609,8 @@ public class TestCloudWatchLogWriter
 
         // this test doesn't need a background thread running
 
-        writer = new CloudWatchLogWriter(config, stats, internalLogger);
-        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        writer = new CloudWatchLogWriter(config, stats, internalLogger, dummyClientFactory);
+        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         for (int ii = 0 ; ii < 20 ; ii++)
         {
@@ -611,8 +633,8 @@ public class TestCloudWatchLogWriter
 
         // this test doesn't need a background thread running
 
-        writer = new CloudWatchLogWriter(config, stats, internalLogger);
-        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        writer = new CloudWatchLogWriter(config, stats, internalLogger, dummyClientFactory);
+        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         for (int ii = 0 ; ii < 20 ; ii++)
         {
@@ -635,8 +657,8 @@ public class TestCloudWatchLogWriter
 
         // this test doesn't need a background thread running
 
-        writer = new CloudWatchLogWriter(config, stats, internalLogger);
-        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        writer = new CloudWatchLogWriter(config, stats, internalLogger, dummyClientFactory);
+        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         assertEquals("initial discard threshold",   123,                    messageQueue.getDiscardThreshold());
         assertEquals("initial discard action",      DiscardAction.none,     messageQueue.getDiscardAction());
@@ -658,7 +680,7 @@ public class TestCloudWatchLogWriter
 
         // we have to manually initialize this writer so that it won't get a mock client
 
-        writer = new CloudWatchLogWriter(config, stats, internalLogger);
+        writer = new CloudWatchLogWriter(config, stats, internalLogger, dummyClientFactory);
         new DefaultThreadFactory().startLoggingThread(writer, defaultUncaughtExceptionHandler);
 
         for (int ii = 0 ; ii < 100 ; ii++)

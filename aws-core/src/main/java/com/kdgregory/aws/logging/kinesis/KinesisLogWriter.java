@@ -22,9 +22,9 @@ import java.util.Random;
 import java.util.regex.Pattern;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
-import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.amazonaws.services.kinesis.model.*;
 
+import com.kdgregory.aws.logging.common.ClientFactory;
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.internal.AbstractLogWriter;
 import com.kdgregory.aws.logging.internal.InternalLogger;
@@ -59,9 +59,9 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisAppenderStatistics,AmazonKi
     private Random rnd = new Random();
 
 
-    public KinesisLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats, InternalLogger logger)
+    public KinesisLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats, InternalLogger logger, ClientFactory<AmazonKinesis> clientFactory)
     {
-        super(config, stats, logger);
+        super(config, stats, logger, clientFactory);
 
         stats.setActualStreamName(config.streamName);
     }
@@ -70,23 +70,6 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisAppenderStatistics,AmazonKi
 //----------------------------------------------------------------------------
 //  Hooks for superclass
 //----------------------------------------------------------------------------
-
-    @Override
-    protected AmazonKinesis createAWSClient()
-    {
-        AmazonKinesis localClient = tryClientFactory(config.clientFactoryMethod, AmazonKinesis.class, true);
-        if ((localClient == null) && (config.clientEndpoint == null))
-        {
-            localClient = tryClientFactory("com.amazonaws.services.kinesis.AmazonKinesisClientBuilder.defaultClient", AmazonKinesis.class, false);
-        }
-        if (localClient == null)
-        {
-            logger.debug(getClass().getSimpleName() + ": creating service client via constructor");
-            localClient = tryConfigureEndpointOrRegion(new AmazonKinesisClient(), config.clientEndpoint);
-        }
-        return localClient;
-    }
-
 
     @Override
     protected boolean ensureDestinationAvailable()

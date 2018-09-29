@@ -14,14 +14,16 @@
 
 package com.kdgregory.aws.logging.kinesis;
 
+import com.amazonaws.services.kinesis.AmazonKinesis;
+
+import com.kdgregory.aws.logging.common.DefaultClientFactory;
 import com.kdgregory.aws.logging.common.LogWriter;
 import com.kdgregory.aws.logging.common.WriterFactory;
 import com.kdgregory.aws.logging.internal.InternalLogger;
 
 
 /**
- *  A factory for {@link KinesisLogWriter} instances. This is exposed for
- *  testing.
+ *  Factory to create <code>KinesisLogWriter</code> instances.
  */
 public class KinesisWriterFactory implements WriterFactory<KinesisWriterConfig, KinesisAppenderStatistics>
 {
@@ -37,6 +39,8 @@ public class KinesisWriterFactory implements WriterFactory<KinesisWriterConfig, 
     @Override
     public LogWriter newLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats)
     {
-        return new KinesisLogWriter(config, stats, internalLogger);
+        return new KinesisLogWriter(
+                config, stats, internalLogger,
+                new DefaultClientFactory<AmazonKinesis>(AmazonKinesis.class, config.clientFactoryMethod, config.clientEndpoint, internalLogger));
     }
 }

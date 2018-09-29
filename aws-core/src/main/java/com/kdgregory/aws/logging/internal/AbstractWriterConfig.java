@@ -19,7 +19,7 @@ import com.kdgregory.aws.logging.common.DiscardAction;
 /**
  *  Holds common configuration; all writer-specific config objects are subclasses.
  */
-public abstract class AbstractWriterConfig
+public class AbstractWriterConfig
 {
     public volatile long batchDelay;
     public int discardThreshold;

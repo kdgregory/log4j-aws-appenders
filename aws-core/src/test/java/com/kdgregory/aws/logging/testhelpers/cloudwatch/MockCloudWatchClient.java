@@ -28,6 +28,7 @@ import com.amazonaws.services.logs.model.*;
 import com.kdgregory.aws.logging.cloudwatch.CloudWatchAppenderStatistics;
 import com.kdgregory.aws.logging.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.aws.logging.cloudwatch.CloudWatchWriterConfig;
+import com.kdgregory.aws.logging.common.ClientFactory;
 import com.kdgregory.aws.logging.common.LogWriter;
 import com.kdgregory.aws.logging.common.WriterFactory;
 import com.kdgregory.aws.logging.internal.InternalLogger;
@@ -158,14 +159,14 @@ implements InvocationHandler
             @Override
             public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats)
             {
-                return new CloudWatchLogWriter(config, stats, internalLogger)
+                return new CloudWatchLogWriter(config, stats, internalLogger, new ClientFactory<AWSLogs>()
                 {
                     @Override
-                    protected AWSLogs createAWSClient()
+                    public AWSLogs createClient()
                     {
-                        return createClient();
+                        return MockCloudWatchClient.this.createClient();
                     }
-                };
+                });
             }
         };
     }

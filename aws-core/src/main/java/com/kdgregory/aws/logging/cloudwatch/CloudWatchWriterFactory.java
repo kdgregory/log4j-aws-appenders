@@ -14,12 +14,16 @@
 
 package com.kdgregory.aws.logging.cloudwatch;
 
+import com.amazonaws.services.logs.AWSLogs;
+
+import com.kdgregory.aws.logging.common.DefaultClientFactory;
 import com.kdgregory.aws.logging.common.LogWriter;
 import com.kdgregory.aws.logging.common.WriterFactory;
 import com.kdgregory.aws.logging.internal.InternalLogger;
 
+
 /**
- *  Factory to create CloudWatchLogWriter instances.
+ *  Factory to create <code>CloudWatchLogWriter</code> instances.
  */
 public class CloudWatchWriterFactory
 implements WriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics>
@@ -36,6 +40,8 @@ implements WriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics>
     @Override
     public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats)
     {
-        return new CloudWatchLogWriter(config, stats, internalLogger);
+        return new CloudWatchLogWriter(
+                config, stats, internalLogger,
+                new DefaultClientFactory<AWSLogs>(AWSLogs.class, config.clientFactoryMethod, config.clientEndpoint, internalLogger));
     }
 }

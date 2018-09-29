@@ -23,9 +23,9 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.*;
 
+import com.kdgregory.aws.logging.common.ClientFactory;
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.internal.AbstractLogWriter;
 import com.kdgregory.aws.logging.internal.InternalLogger;
@@ -38,31 +38,14 @@ extends AbstractLogWriter<SNSWriterConfig,SNSAppenderStatistics,AmazonSNS>
     protected String topicArn;
 
 
-    public SNSLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats, InternalLogger logger)
+    public SNSLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats, InternalLogger logger, ClientFactory<AmazonSNS> clientFactory)
     {
-        super(config, stats, logger);
+        super(config, stats, logger, clientFactory);
     }
 
 //----------------------------------------------------------------------------
 //  AbstractLogWriter implementation
 //----------------------------------------------------------------------------
-
-    @Override
-    protected AmazonSNS createAWSClient()
-    {
-        AmazonSNS localClient = tryClientFactory(config.clientFactoryMethod, AmazonSNS.class, true);
-        if ((localClient == null) && (config.clientEndpoint == null))
-        {
-            localClient = tryClientFactory("com.amazonaws.services.sns.AmazonSNSClientBuilder.defaultClient", AmazonSNS.class, false);
-        }
-        if (localClient == null)
-        {
-            logger.debug(getClass().getSimpleName() + ": creating service client via constructor");
-            localClient = tryConfigureEndpointOrRegion(new AmazonSNSClient(), config.clientEndpoint);
-        }
-        return localClient;
-    }
-
 
     @Override
     protected boolean ensureDestinationAvailable()

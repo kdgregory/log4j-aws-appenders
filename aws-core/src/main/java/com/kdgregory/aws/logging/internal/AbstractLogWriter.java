@@ -47,9 +47,12 @@ implements LogWriter
     // this is assigned during initialization, used only by subclass
     protected AWSClientType client;
 
+    // created during constructor i by nitializat()
     private MessageQueue messageQueue;
     private Thread dispatchThread;
-    private volatile Long shutdownTime;
+
+    // updated by stop()
+    private volatile long shutdownTime = Long.MAX_VALUE;
 
     // these can be read via accessor methods; they're intended for testing
     private volatile boolean initializationComplete;
@@ -128,7 +131,7 @@ implements LogWriter
     @Override
     public void stop()
     {
-        shutdownTime = Long.valueOf(System.currentTimeMillis() + config.batchDelay);
+        shutdownTime = System.currentTimeMillis() + config.batchDelay;
         if (dispatchThread != null)
         {
             dispatchThread.interrupt();
@@ -261,8 +264,7 @@ implements LogWriter
         List<LogMessage> batch = new ArrayList<LogMessage>(512);
 
         // we'll wait "forever" unless there's a shutdown timestamp in effect
-        long firstMessageTimeout = (shutdownTime != null) ? shutdownTime.longValue() : Long.MAX_VALUE;
-        LogMessage message = messageQueue.dequeue(firstMessageTimeout);
+        LogMessage message = messageQueue.dequeue(shutdownTime);
         if (message == null)
             return batch;
 
@@ -383,10 +385,8 @@ implements LogWriter
      */
     private boolean keepRunning()
     {
-        return (shutdownTime == null)
-             ? true
-             : shutdownTime.longValue() > System.currentTimeMillis()
-               && messageQueue.isEmpty();
+        return shutdownTime > System.currentTimeMillis()
+            || ! messageQueue.isEmpty();
     }
 
 

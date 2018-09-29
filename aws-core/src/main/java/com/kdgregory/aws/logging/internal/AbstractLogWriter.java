@@ -31,7 +31,12 @@ import com.kdgregory.aws.logging.common.MessageQueue;
 /**
  *  Manages common LogWriter activities.
  */
-public abstract class AbstractLogWriter<ConfigType extends AbstractWriterConfig,StatsType extends AbstractAppenderStatistics,AWSClientType>
+public abstract class AbstractLogWriter
+<
+    ConfigType extends AbstractWriterConfig,
+    StatsType extends AbstractAppenderStatistics,
+    AWSClientType
+>
 implements LogWriter
 {
     // these three are provided to constructor, used both here and in subclass
@@ -295,7 +300,7 @@ implements LogWriter
      *  @param  rethrow             If true, any reflection exceptions will be wrapped
      *                              and rethrown; if false, exceptions return null
      */
-    protected <T> T tryClientFactory(String clientFactoryName, Class<T> expectedClientClass, boolean rethrow)
+    protected AWSClientType tryClientFactory(String clientFactoryName, Class<AWSClientType> expectedClientClass, boolean rethrow)
     {
         if ((clientFactoryName == null) || clientFactoryName.isEmpty())
             return null;
@@ -307,10 +312,10 @@ implements LogWriter
                 throw new RuntimeException("invalid AWS client factory specified: " + clientFactoryName);
             Class<?> factoryKlass = Class.forName(clientFactoryName.substring(0, methodIdx));
             Method factoryMethod = factoryKlass.getDeclaredMethod(clientFactoryName.substring(methodIdx + 1));
-            T client = expectedClientClass.cast(factoryMethod.invoke(null));
+            AWSClientType localClient = expectedClientClass.cast(factoryMethod.invoke(null));
             factoryMethodUsed = clientFactoryName;
             logger.debug(getClass().getSimpleName() + ": created client from factory: " + clientFactoryName);
-            return client;
+            return localClient;
         }
         catch (Exception ex)
         {
@@ -328,14 +333,14 @@ implements LogWriter
      *  @param  client      A constructed writer-specific service client.
      *  @param  endpoint    A possibly-null endpoint specification.
      */
-    protected <T extends AmazonWebServiceClient> T tryConfigureEndpointOrRegion(T client, String endpoint)
+    @SuppressWarnings("hiding")
+    protected AWSClientType tryConfigureEndpointOrRegion(AmazonWebServiceClient client, String endpoint)
     {
         // explicit endpoint takes precedence over region retrieved from environment
         if (endpoint != null)
         {
             logger.debug(getClass().getSimpleName() + ": configuring endpoint: " + endpoint);
             client.setEndpoint(endpoint);
-            return client;
         }
 
         String region = System.getenv("AWS_REGION");
@@ -343,10 +348,9 @@ implements LogWriter
         {
             logger.debug(getClass().getSimpleName() + ": configuring region: " + region);
             client.configureRegion(Regions.fromName(region));
-            return client;
         }
 
-        return client;
+        return (AWSClientType)client;
     }
 
 

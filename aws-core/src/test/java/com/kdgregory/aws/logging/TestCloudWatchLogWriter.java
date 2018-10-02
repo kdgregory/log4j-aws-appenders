@@ -35,7 +35,7 @@ import com.kdgregory.aws.logging.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.aws.logging.cloudwatch.CloudWatchWriterFactory;
 import com.kdgregory.aws.logging.common.DiscardAction;
 import com.kdgregory.aws.logging.common.LogMessage;
-import com.kdgregory.aws.logging.common.MessageQueue;
+import com.kdgregory.aws.logging.internal.MessageQueue;
 import com.kdgregory.aws.logging.testhelpers.TestingException;
 import com.kdgregory.aws.logging.testhelpers.cloudwatch.MockCloudWatchClient;
 

@@ -23,11 +23,11 @@ import net.sf.kdgcommons.lang.StringUtil;
 
 import com.kdgregory.aws.logging.common.ClientFactory;
 import com.kdgregory.aws.logging.common.DefaultThreadFactory;
-import com.kdgregory.aws.logging.common.MessageQueue;
 import com.kdgregory.aws.logging.common.WriterFactory;
 import com.kdgregory.aws.logging.internal.AbstractAppenderStatistics;
 import com.kdgregory.aws.logging.internal.AbstractLogWriter;
 import com.kdgregory.aws.logging.internal.AbstractWriterConfig;
+import com.kdgregory.aws.logging.internal.MessageQueue;
 import com.kdgregory.aws.logging.testhelpers.TestableInternalLogger;
 
 /**

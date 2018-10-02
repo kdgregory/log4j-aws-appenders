@@ -26,8 +26,6 @@ import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.collections.MapBuilder;
 
-import com.kdgregory.aws.logging.common.JsonConverter;
-
 
 public class TestJsonConverter
 {

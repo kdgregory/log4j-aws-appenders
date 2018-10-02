@@ -37,7 +37,7 @@ import com.amazonaws.util.BinaryUtils;
 
 import com.kdgregory.aws.logging.common.DiscardAction;
 import com.kdgregory.aws.logging.common.LogMessage;
-import com.kdgregory.aws.logging.common.MessageQueue;
+import com.kdgregory.aws.logging.internal.MessageQueue;
 import com.kdgregory.aws.logging.kinesis.KinesisAppenderStatistics;
 import com.kdgregory.aws.logging.kinesis.KinesisLogWriter;
 import com.kdgregory.aws.logging.kinesis.KinesisWriterConfig;

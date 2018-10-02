@@ -30,7 +30,7 @@ import com.amazonaws.services.sns.model.*;
 
 import com.kdgregory.aws.logging.common.DiscardAction;
 import com.kdgregory.aws.logging.common.LogMessage;
-import com.kdgregory.aws.logging.common.MessageQueue;
+import com.kdgregory.aws.logging.internal.MessageQueue;
 import com.kdgregory.aws.logging.sns.SNSAppenderStatistics;
 import com.kdgregory.aws.logging.sns.SNSLogWriter;
 import com.kdgregory.aws.logging.sns.SNSWriterConfig;

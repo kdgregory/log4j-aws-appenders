@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.aws.logging.common;
+package com.kdgregory.aws.logging.internal;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.kdgregory.aws.logging.common.DiscardAction;
+import com.kdgregory.aws.logging.common.LogMessage;
 
 
 /**

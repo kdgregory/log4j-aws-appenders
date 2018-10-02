@@ -24,7 +24,7 @@ import static org.junit.Assert.*;
 
 import com.kdgregory.aws.logging.common.DiscardAction;
 import com.kdgregory.aws.logging.common.LogMessage;
-import com.kdgregory.aws.logging.common.MessageQueue;
+import com.kdgregory.aws.logging.internal.MessageQueue;
 
 
 public class TestMessageQueue

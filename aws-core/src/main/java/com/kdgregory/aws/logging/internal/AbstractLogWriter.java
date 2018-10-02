@@ -22,7 +22,6 @@ import com.kdgregory.aws.logging.common.ClientFactory;
 import com.kdgregory.aws.logging.common.DiscardAction;
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.common.LogWriter;
-import com.kdgregory.aws.logging.common.MessageQueue;
 
 
 /**

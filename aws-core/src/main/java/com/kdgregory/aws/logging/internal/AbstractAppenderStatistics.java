@@ -18,8 +18,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.kdgregory.aws.logging.common.MessageQueue;
-
 
 /**
  *  Base class for writer statistics, providing fields that are used by all

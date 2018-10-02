@@ -14,8 +14,8 @@
 
 package com.kdgregory.aws.logging;
 
+import static net.sf.kdgcommons.test.StringAsserts.*;
 
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -23,26 +23,25 @@ import java.util.List;
 import java.util.Set;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
-import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
 import com.amazonaws.util.BinaryUtils;
 
-import com.kdgregory.aws.logging.common.ClientFactory;
-import com.kdgregory.aws.logging.common.DefaultThreadFactory;
 import com.kdgregory.aws.logging.common.DiscardAction;
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.common.MessageQueue;
 import com.kdgregory.aws.logging.kinesis.KinesisAppenderStatistics;
 import com.kdgregory.aws.logging.kinesis.KinesisLogWriter;
 import com.kdgregory.aws.logging.kinesis.KinesisWriterConfig;
-import com.kdgregory.aws.logging.testhelpers.TestableInternalLogger;
+import com.kdgregory.aws.logging.kinesis.KinesisWriterFactory;
 import com.kdgregory.aws.logging.testhelpers.TestingException;
 import com.kdgregory.aws.logging.testhelpers.kinesis.MockKinesisClient;
 
@@ -53,6 +52,7 @@ import com.kdgregory.aws.logging.testhelpers.kinesis.MockKinesisClient;
  *  TODO: add tests for size-based batching and endpoint configuration.
  */
 public class TestKinesisLogWriter
+extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisAppenderStatistics,AmazonKinesis>
 {
     private final static String DEFAULT_STREAM_NAME     = "argle";
     private final static String DEFAULT_PARTITION_KEY   = "bargle";
@@ -62,116 +62,25 @@ public class TestKinesisLogWriter
 //----------------------------------------------------------------------------
 
     /**
-     *  Default writer config, with group/stream that are considered "existing"
-     *  by the mock client. This is created anew for each test, so may be
-     *  modified as desired.
+     *  Rather than re-create each time, we initialize in setUp(), replace in
+     *  tests that need to do so.
      */
-    private KinesisWriterConfig config = new KinesisWriterConfig(
-        DEFAULT_STREAM_NAME,
-        DEFAULT_PARTITION_KEY,
-        DEFAULT_PARTITION_KEY.length(),
-        100,                            // batchDelay
-        10000,                          // discardThreshold
-        DiscardAction.oldest,
-        null,                           // clientFactoryMethod
-        null,                           // clientEndpoint
-        false,                          // autoCreate
-        0,                              // shardCount,
-        null);                          // retentionPeriod
+    private MockKinesisClient mock;
 
 
     /**
-     *  An appender statistics object, so that we don't have to create for
-     *  each test.
+     *  Creates a writer using the current mock client, waiting for it to be initialized.
      */
-    private KinesisAppenderStatistics stats = new KinesisAppenderStatistics();
-
-
-    /**
-     *  Used to accumulate logging messages from the writer.
-     */
-    private TestableInternalLogger internalLogger = new TestableInternalLogger();
-
-
-    /**
-     *  The default mock object; can be overridden if necessary.
-     */
-    private MockKinesisClient mock = new MockKinesisClient(DEFAULT_STREAM_NAME);
-
-
-    /**
-     *  This will be assigned by createWriter();
-     */
-    private KinesisLogWriter writer;
-
-
-    /**
-     *  This will be set by the writer thread's uncaught exception handler. It
-     *  should never happen with these tests.
-     */
-    private Throwable uncaughtException;
-
-
-    /**
-     *  Whenever we need to spin up a logging thread, use this handler.
-     */
-    private UncaughtExceptionHandler defaultUncaughtExceptionHandler
-        = new UncaughtExceptionHandler()
-        {
-            @Override
-            public void uncaughtException(Thread t, Throwable e)
-            {
-                uncaughtException = e;
-            }
-        };
-
-
-    /**
-     *  This is used whenever we explicitly create a writer (rather than use the
-     *  mock factory. It create a null client, so any attempt to use that client
-     *  will throw.
-     */
-    private ClientFactory<AmazonKinesis> dummyClientFactory = new ClientFactory<AmazonKinesis>()
-    {
-        @Override
-        public AmazonKinesis createClient()
-        {
-            return null;
-        }
-    };
-
-
-    /**
-     *  Constructs and initializes a writer on a background thread, waiting for
-     *  initialization to either complete or fail. Returns the writer.
-     */
-    private KinesisLogWriter createWriter()
+    private void createWriter()
     throws Exception
     {
-        writer = (KinesisLogWriter)mock.newWriterFactory(internalLogger).newLogWriter(config, stats);
-        new DefaultThreadFactory().startLoggingThread(writer, defaultUncaughtExceptionHandler);
-
-        // we'll spin until either the writer is initialized, signals an error,
-        // or a 5-second timeout expires
-        for (int ii = 0 ; ii < 100 ; ii++)
-        {
-            if (writer.isInitializationComplete())
-                return writer;
-            if (! StringUtil.isEmpty(stats.getLastErrorMessage()))
-                return writer;
-            Thread.sleep(50);
-        }
-
-        fail("unable to initialize writer");
-
-        // compiler doesn't know this will never happen
-        return writer;
+        createWriter(mock.newWriterFactory(internalLogger));
     }
 
 
     // the following variable and function are used by testStaticClientFactory
 
-    private static MockKinesisClient staticFactoryMock = null;
+    private static MockKinesisClient staticFactoryMock;
 
     public static AmazonKinesis createMockClient()
     {
@@ -182,6 +91,30 @@ public class TestKinesisLogWriter
 //----------------------------------------------------------------------------
 //  JUnit scaffolding
 //----------------------------------------------------------------------------
+
+    @Before
+    public void setUp()
+    {
+        config = new KinesisWriterConfig(
+            DEFAULT_STREAM_NAME,
+            DEFAULT_PARTITION_KEY,
+            DEFAULT_PARTITION_KEY.length(),
+            100,                            // batchDelay
+            10000,                          // discardThreshold
+            DiscardAction.oldest,
+            null,                           // clientFactoryMethod
+            null,                           // clientEndpoint
+            false,                          // autoCreate
+            0,                              // shardCount,
+            null);                          // retentionPeriod
+
+        stats = new KinesisAppenderStatistics();
+
+        mock = new MockKinesisClient(DEFAULT_STREAM_NAME);
+
+        staticFactoryMock = null;
+    }
+
 
     @After
     public void checkUncaughtExceptions()
@@ -212,7 +145,7 @@ public class TestKinesisLogWriter
             null);                          // retentionPeriod
 
         writer = new KinesisLogWriter(config, stats, internalLogger, dummyClientFactory);
-        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         // the writer uses the config object for most of its configuration,
         // so we just look for the pieces that it exposes or passes on
@@ -443,7 +376,6 @@ public class TestKinesisLogWriter
         };
 
         createWriter();
-        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         assertEquals("describeStream: invocation count",            1,                          mock.describeStreamInvocationCount);
         assertEquals("createStream: invocation count",              0,                          mock.createStreamInvocationCount);
@@ -476,7 +408,6 @@ public class TestKinesisLogWriter
         };
 
         createWriter();
-        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
 
@@ -595,7 +526,7 @@ public class TestKinesisLogWriter
         // this test doesn't need a background thread running
 
         writer = new KinesisLogWriter(config, stats, internalLogger, dummyClientFactory);
-        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         for (int ii = 0 ; ii < 20 ; ii++)
         {
@@ -619,7 +550,7 @@ public class TestKinesisLogWriter
         // this test doesn't need a background thread running
 
         writer = new KinesisLogWriter(config, stats, internalLogger, dummyClientFactory);
-        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         for (int ii = 0 ; ii < 20 ; ii++)
         {
@@ -643,7 +574,7 @@ public class TestKinesisLogWriter
         // this test doesn't need a background thread running
 
         writer = new KinesisLogWriter(config, stats, internalLogger, dummyClientFactory);
-        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         for (int ii = 0 ; ii < 20 ; ii++)
         {
@@ -667,7 +598,7 @@ public class TestKinesisLogWriter
         // this test doesn't need a background thread running
 
         writer = new KinesisLogWriter(config, stats, internalLogger, dummyClientFactory);
-        MessageQueue messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         assertEquals("initial discard threshold",   123,                    messageQueue.getDiscardThreshold());
         assertEquals("initial discard action",      DiscardAction.none,     messageQueue.getDiscardAction());
@@ -685,22 +616,12 @@ public class TestKinesisLogWriter
     {
         config.clientFactoryMethod = this.getClass().getName() + ".createMockClient";
 
-        // we have to manually initialize this writer so that it won't get the default mock client
+        // we don't want the default mock client
 
-        writer = new KinesisLogWriter(config, stats, internalLogger, dummyClientFactory);
-        new DefaultThreadFactory().startLoggingThread(writer, defaultUncaughtExceptionHandler);
-
-        for (int ii = 0 ; ii < 100 ; ii++)
-        {
-            if (writer.isInitializationComplete())
-                break;
-            else
-                Thread.sleep(50);
-        }
+        createWriter(new KinesisWriterFactory(internalLogger));
 
         assertTrue("writer successfully initialized",                                       writer.isInitializationComplete());
         assertNotNull("factory called (local flag)",                                        staticFactoryMock);
-        assertEquals("factory called (writer flag)",            config.clientFactoryMethod, writer.getClientFactoryUsed());
 
         assertEquals("describeStream: invocation count",        1,                          staticFactoryMock.describeStreamInvocationCount);
         assertEquals("createStream: invocation count",          0,                          staticFactoryMock.createStreamInvocationCount);
@@ -713,5 +634,4 @@ public class TestKinesisLogWriter
         assertRegex("log: debug message indicating factory",    ".*created client from factory.*" + getClass().getName() + ".*",
                                                                 internalLogger.debugMessages.get(0));
     }
-
 }

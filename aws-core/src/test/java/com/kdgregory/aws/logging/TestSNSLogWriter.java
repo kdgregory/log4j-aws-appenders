@@ -14,31 +14,27 @@
 
 package com.kdgregory.aws.logging;
 
-
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Arrays;
 import java.util.List;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.ClassUtil;
-import net.sf.kdgcommons.lang.StringUtil;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.*;
 
-import com.kdgregory.aws.logging.common.ClientFactory;
-import com.kdgregory.aws.logging.common.DefaultThreadFactory;
 import com.kdgregory.aws.logging.common.DiscardAction;
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.common.MessageQueue;
 import com.kdgregory.aws.logging.sns.SNSAppenderStatistics;
 import com.kdgregory.aws.logging.sns.SNSLogWriter;
 import com.kdgregory.aws.logging.sns.SNSWriterConfig;
-import com.kdgregory.aws.logging.testhelpers.TestableInternalLogger;
+import com.kdgregory.aws.logging.sns.SNSWriterFactory;
 import com.kdgregory.aws.logging.testhelpers.TestingException;
 import com.kdgregory.aws.logging.testhelpers.sns.MockSNSClient;
 
@@ -49,6 +45,7 @@ import com.kdgregory.aws.logging.testhelpers.sns.MockSNSClient;
  *  TODO: add tests for endpoint configuration.
  */
 public class TestSNSLogWriter
+extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSAppenderStatistics,AmazonSNS>
 {
     private final static String TEST_TOPIC_NAME = "example";
     private final static String TEST_TOPIC_ARN  = "arn:aws:sns:us-east-1:123456789012:example";
@@ -58,121 +55,26 @@ public class TestSNSLogWriter
 //----------------------------------------------------------------------------
 
     /**
-     *  Default writer config -- very little is defaulted.
+     *  Rather than re-create each time, we initialize in setUp(), replace in
+     *  tests that need to do so.
      */
-    private SNSWriterConfig config = new SNSWriterConfig(
-        null,                   // topicName
-        null,                   // topicArn
-        false,                  // autoCreate
-        null,                   // subject
-        1000,                   // discardThreshold
-        DiscardAction.oldest,
-        null,                   // clientFactoryMethod
-        null);                  // clientEndpoint
-
-
-    /**
-     *  An appender statistics object, so that we don't have to create for
-     *  each test.
-     */
-    private SNSAppenderStatistics stats = new SNSAppenderStatistics();
-
-
-    /**
-     *  Used to accumulate logging messages from the writer.
-     */
-    private TestableInternalLogger internalLogger = new TestableInternalLogger();
-
-
-    /**
-     *  The default mock object; there's only one topic that it knows about.
-     */
-    private MockSNSClient mock = new MockSNSClient(
-                                    TEST_TOPIC_NAME,
-                                    Arrays.asList(TEST_TOPIC_NAME));
-
-
-    /**
-     *  This will be assigned by createWriter();
-     */
-    private SNSLogWriter writer;
-
-
-    /**
-     *  Extracted from the writer created by createWriter().
-     */
-    private MessageQueue messageQueue;
-
-
-    /**
-     *  This will be set by the writer thread's uncaught exception handler. It
-     *  should never happen with these tests.
-     */
-    private Throwable uncaughtException;
-
-
-    /**
-     *  Whenever we need to spin up a logging thread, use this handler.
-     */
-    private UncaughtExceptionHandler defaultUncaughtExceptionHandler
-        = new UncaughtExceptionHandler()
-        {
-            @Override
-            public void uncaughtException(Thread t, Throwable e)
-            {
-                uncaughtException = e;
-            }
-        };
-
-
-    /**
-     *  This is used whenever we explicitly create a writer (rather than use the
-     *  mock factory. It create a null client, so any attempt to use that client
-     *  will throw.
-     */
-    private ClientFactory<AmazonSNS> dummyClientFactory = new ClientFactory<AmazonSNS>()
-    {
-        @Override
-        public AmazonSNS createClient()
-        {
-            return null;
-        }
-    };
+    private MockSNSClient mock;
 
 
     /**
      *  Constructs and initializes a writer on a background thread, waiting for
      *  initialization to either complete or fail. Returns the writer.
      */
-    private SNSLogWriter createWriter()
+    private void createWriter()
     throws Exception
     {
-        writer = (SNSLogWriter)mock.newWriterFactory(internalLogger).newLogWriter(config, stats);
-        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
-
-        new DefaultThreadFactory().startLoggingThread(writer, defaultUncaughtExceptionHandler);
-
-        // we'll spin until either the writer is initialized, signals an error,
-        // or a 5-second timeout expires
-        for (int ii = 0 ; ii < 100 ; ii++)
-        {
-            if (writer.isInitializationComplete())
-                return writer;
-            if (! StringUtil.isEmpty(stats.getLastErrorMessage()))
-                return writer;
-            Thread.sleep(50);
-        }
-
-        fail("unable to initialize writer");
-
-        // compiler doesn't know this will never happen
-        return writer;
+        createWriter(mock.newWriterFactory(internalLogger));
     }
 
 
     // the following variable and function are used by testStaticClientFactory
 
-    private static MockSNSClient staticFactoryMock = null;
+    private static MockSNSClient staticFactoryMock;
 
     public static AmazonSNS createMockClient()
     {
@@ -183,6 +85,29 @@ public class TestSNSLogWriter
 //----------------------------------------------------------------------------
 //  JUnit scaffolding
 //----------------------------------------------------------------------------
+
+    @Before
+    public void setUp()
+    {
+        config = new SNSWriterConfig(
+                null,                   // topicName
+                null,                   // topicArn
+                false,                  // autoCreate
+                null,                   // subject
+                1000,                   // discardThreshold
+                DiscardAction.oldest,
+                null,                   // clientFactoryMethod
+                null);                  // clientEndpoint
+
+        stats = new SNSAppenderStatistics();
+
+        mock = new MockSNSClient(
+                TEST_TOPIC_NAME,
+                Arrays.asList(TEST_TOPIC_NAME));
+
+        staticFactoryMock = null;
+    }
+
 
     @After
     public void checkUncaughtExceptions()
@@ -677,22 +602,10 @@ public class TestSNSLogWriter
         config.topicName = TEST_TOPIC_NAME;
         config.clientFactoryMethod = getClass().getName() + ".createMockClient";
 
-        // we have to manually initialize this writer so that it won't get the default mock client
-
-        writer = new SNSLogWriter(config, stats, internalLogger, dummyClientFactory);
-        new DefaultThreadFactory().startLoggingThread(writer, defaultUncaughtExceptionHandler);
-
-        for (int ii = 0 ; ii < 100 ; ii++)
-        {
-            if (writer.isInitializationComplete())
-                break;
-            else
-                Thread.sleep(50);
-        }
+        createWriter(new SNSWriterFactory(internalLogger));
 
         assertTrue("writer successfully initialized",                                       writer.isInitializationComplete());
         assertNotNull("factory called (local flag)",                                        staticFactoryMock);
-        assertEquals("factory called (writer flag)",            config.clientFactoryMethod, writer.getClientFactoryUsed());
 
         assertEquals("invocations of listTopics",               1,                          staticFactoryMock.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",              0,                          staticFactoryMock.createTopicInvocationCount);

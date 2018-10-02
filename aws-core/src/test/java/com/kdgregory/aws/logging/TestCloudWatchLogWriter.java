@@ -14,17 +14,17 @@
 
 package com.kdgregory.aws.logging;
 
+import static net.sf.kdgcommons.test.StringAsserts.*;
 
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.List;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
-import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.*;
@@ -32,12 +32,10 @@ import com.amazonaws.services.logs.model.*;
 import com.kdgregory.aws.logging.cloudwatch.CloudWatchAppenderStatistics;
 import com.kdgregory.aws.logging.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.aws.logging.cloudwatch.CloudWatchWriterConfig;
-import com.kdgregory.aws.logging.common.ClientFactory;
-import com.kdgregory.aws.logging.common.DefaultThreadFactory;
+import com.kdgregory.aws.logging.cloudwatch.CloudWatchWriterFactory;
 import com.kdgregory.aws.logging.common.DiscardAction;
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.common.MessageQueue;
-import com.kdgregory.aws.logging.testhelpers.TestableInternalLogger;
 import com.kdgregory.aws.logging.testhelpers.TestingException;
 import com.kdgregory.aws.logging.testhelpers.cloudwatch.MockCloudWatchClient;
 
@@ -47,126 +45,31 @@ import com.kdgregory.aws.logging.testhelpers.cloudwatch.MockCloudWatchClient;
  *  TODO: add tests for size-based batching and endpoint configuration.
  */
 public class TestCloudWatchLogWriter
+extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWatchAppenderStatistics,AWSLogs>
 {
 //----------------------------------------------------------------------------
 //  Support Code
 //----------------------------------------------------------------------------
 
     /**
-     *  Default writer config, with group/stream that are considered "existing"
-     *  by the mock client. This is created anew for each test, so may be
-     *  modified as desired.
-     */
-    private CloudWatchWriterConfig config = new CloudWatchWriterConfig(
-            "argle",                // log group name
-            "bargle",               // log stream name
-            100,                    // batch delay -- short enough to keep tests fast, long enough that we can write a lot of messages
-            10000,                  // discard threshold
-            DiscardAction.oldest,   // discard action
-            null,                   // factory method
-            null);                  // endpoint
-
-
-    /**
-     *  An appender statistics object, so that we don't have to create for
-     *  each test.
-     */
-    private CloudWatchAppenderStatistics stats = new CloudWatchAppenderStatistics();
-
-
-    /**
-     *  Used to accumulate logging messages from the writer.
-     */
-    private TestableInternalLogger internalLogger = new TestableInternalLogger();
-
-
-    /**
-     *  The default mock object; can be overridden if necessary.
+     *  Rather than re-create each time, we initialize in setUp(), replace in
+     *  tests that need to do so.
      */
     private MockCloudWatchClient mock = new MockCloudWatchClient();
 
 
     /**
-     *  This will be assigned by createWriter();
+     *  Creates a writer using the current mock client, waiting for it to be initialized.
      */
-    private CloudWatchLogWriter writer;
-    
-    
-    /**
-     *  This is extracted from the writer by createWriter().
-     */
-    private MessageQueue messageQueue;
-
-
-    /**
-     *  This will be set by the writer thread's uncaught exception handler. It
-     *  should never happen with these tests.
-     */
-    private Throwable uncaughtException;
-
-
-    /**
-     *  Whenever we need to spin up a logging thread, use this handler.
-     */
-    private UncaughtExceptionHandler defaultUncaughtExceptionHandler
-        = new UncaughtExceptionHandler()
-        {
-            @Override
-            public void uncaughtException(Thread t, Throwable e)
-            {
-                uncaughtException = e;
-            }
-        };
-
-
-    /**
-     *  This is used whenever we explicitly create a writer (rather than use the
-     *  mock factory. It create a null client, so any attempt to use that client
-     *  will throw.
-     */
-    private ClientFactory<AWSLogs> dummyClientFactory = new ClientFactory<AWSLogs>()
-    {
-        @Override
-        public AWSLogs createClient()
-        {
-            return null;
-        }
-    };
-
-
-    /**
-     *  Constructs and initializes a writer on a background thread, waiting for
-     *  initialization to either complete or fail. Returns the writer.
-     */
-    private CloudWatchLogWriter createWriter()
+    private void createWriter()
     throws Exception
     {
-        writer = (CloudWatchLogWriter)mock.newWriterFactory(internalLogger).newLogWriter(config, stats);
-        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
-
-        new DefaultThreadFactory().startLoggingThread(writer, defaultUncaughtExceptionHandler);
-
-        // we'll spin until either the writer is initialized, signals an error,
-        // or a 5-second timeout expires
-        for (int ii = 0 ; ii < 100 ; ii++)
-        {
-            if (writer.isInitializationComplete())
-                return writer;
-            if (! StringUtil.isEmpty(stats.getLastErrorMessage()))
-                return writer;
-            Thread.sleep(50);
-        }
-
-        fail("unable to initialize writer");
-
-        // compiler doesn't know this will never happen
-        return writer;
+        createWriter(mock.newWriterFactory(internalLogger));
     }
-
 
     // the following variable and function are used by testStaticClientFactory
 
-    private static MockCloudWatchClient staticFactoryMock = null;
+    private static MockCloudWatchClient staticFactoryMock;
 
     public static AWSLogs createMockClient()
     {
@@ -177,6 +80,25 @@ public class TestCloudWatchLogWriter
 //----------------------------------------------------------------------------
 //  JUnit scaffolding
 //----------------------------------------------------------------------------
+
+    @Before
+    public void setUp()
+    {
+        // this is the default configuration; may be updated or replaced by test
+        config = new CloudWatchWriterConfig(
+            "argle",                // log group name
+            "bargle",               // log stream name
+            100,                    // batch delay -- short enough to keep tests fast, long enough that we can write a lot of messages
+            10000,                  // discard threshold
+            DiscardAction.oldest,   // discard action
+            null,                   // factory method
+            null);                  // endpoint
+
+        stats = new CloudWatchAppenderStatistics();
+
+        staticFactoryMock = null;
+    }
+
 
     @After
     public void checkUncaughtExceptions()
@@ -678,21 +600,10 @@ public class TestCloudWatchLogWriter
         config.logGroupName = "argle";
         config.logStreamName = "bargle";
 
-        // we have to manually initialize this writer so that it won't get a mock client
-
-        writer = new CloudWatchLogWriter(config, stats, internalLogger, dummyClientFactory);
-        new DefaultThreadFactory().startLoggingThread(writer, defaultUncaughtExceptionHandler);
-
-        for (int ii = 0 ; ii < 100 ; ii++)
-        {
-            if (writer.isInitializationComplete())
-                break;
-            Thread.sleep(50);
-        }
+        createWriter(new CloudWatchWriterFactory(internalLogger));
 
         assertTrue("writer successfully initialized",                                           writer.isInitializationComplete());
         assertNotNull("factory called (local flag)",                                            staticFactoryMock);
-        assertEquals("factory called (writer flag)",            config.clientFactoryMethod,     writer.getClientFactoryUsed());
 
         assertEquals("describeLogGroups: invocation count",     1,                              staticFactoryMock.describeLogGroupsInvocationCount);
         assertEquals("describeLogStreams: invocation count",    1,                              staticFactoryMock.describeLogStreamsInvocationCount);

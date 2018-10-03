@@ -28,7 +28,7 @@
     <dependencies>
         <dependency>
             <groupId>com.kdgregory.log4j</groupId>
-            <artifactId>aws-appenders</artifactId>
+            <artifactId>log4j1-aws-appenders</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

@@ -23,6 +23,7 @@ import java.util.Map;
 
 import java.util.regex.Matcher;
 
+import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -36,8 +37,8 @@ import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.*;
 
-import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchAppenderStatistics;
-import com.kdgregory.log4j.aws.internal.cloudwatch.CloudWatchLogWriter;
+import com.kdgregory.aws.logging.cloudwatch.CloudWatchAppenderStatistics;
+import com.kdgregory.aws.logging.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
 import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
 
@@ -49,6 +50,18 @@ public class CloudWatchAppenderIntegrationTest
 
     private Logger localLogger;
     private AWSLogs localClient;
+
+    private static boolean localFactoryUsed;
+
+//----------------------------------------------------------------------------
+//  JUnit Scaffolding
+//----------------------------------------------------------------------------
+
+    @Before
+    public void setUp()
+    {
+        localFactoryUsed = false;
+    }
 
 //----------------------------------------------------------------------------
 //  Tests
@@ -77,17 +90,17 @@ public class CloudWatchAppenderIntegrationTest
         assertMessages(logGroupName, LOGSTREAM_BASE + "3", rotationCount);
         assertMessages(logGroupName, LOGSTREAM_BASE + "4", numMessages % rotationCount);
 
-        CloudWatchLogWriter lastWriter = getWriter(appender);
-        assertEquals("number of batches for last writer", 1, lastWriter.getBatchCount());
-
-        assertEquals("client factory", "com.kdgregory.log4j.aws.CloudWatchAppenderIntegrationTest.createClient", lastWriter.getClientFactoryUsed());
-
-        // while we're here, verify some more of the plumbing
-
         CloudWatchAppenderStatistics appenderStats = appender.getAppenderStatistics();
         assertEquals("actual log group name, from statistics",  "AppenderIntegrationTest-smoketest",    appenderStats.getActualLogGroupName());
         assertEquals("actual log stream name, from statistics", LOGSTREAM_BASE + "4",                   appenderStats.getActualLogStreamName());
         assertEquals("messages written, from statistics",       numMessages,                            appenderStats.getMessagesSent());
+
+        CloudWatchLogWriter lastWriter = getWriter(appender);
+        assertEquals("number of batches for last writer", 1, lastWriter.getBatchCount());
+
+        assertTrue("client factory used", localFactoryUsed);
+
+        // while we're here, verify some more of the plumbing
 
         appender.setBatchDelay(1234L);
         assertEquals("batch delay", 1234L, lastWriter.getBatchDelay());
@@ -107,7 +120,6 @@ public class CloudWatchAppenderIntegrationTest
         localLogger.info("multi-thread/single-appender: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
-        CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test");
 
         MessageWriter[] writers = new MessageWriter[]
         {
@@ -127,7 +139,7 @@ public class CloudWatchAppenderIntegrationTest
         assertMessages(logGroupName, LOGSTREAM_BASE + "3", rotationCount);
         assertMessages(logGroupName, LOGSTREAM_BASE + "4", (messagesPerThread * writers.length) % rotationCount);
 
-        assertEquals("client factory", "com.amazonaws.services.logs.AWSLogsClientBuilder.defaultClient", getWriter(appender).getClientFactoryUsed());
+        assertFalse("client factory used", localFactoryUsed);
 
         localLogger.info("multi-thread/single-appender: finished");
     }
@@ -142,9 +154,6 @@ public class CloudWatchAppenderIntegrationTest
         setUp("CloudWatchAppenderIntegrationTest/testMultipleThreadsMultipleAppenders.properties", logGroupName);
         localLogger.info("multi-thread/multi-appender: starting");
 
-        Logger testLogger = Logger.getLogger("TestLogger1");
-        CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test1");
-
         MessageWriter.runOnThreads(
             new MessageWriter(Logger.getLogger("TestLogger1"), messagesPerThread),
             new MessageWriter(Logger.getLogger("TestLogger2"), messagesPerThread),
@@ -157,7 +166,7 @@ public class CloudWatchAppenderIntegrationTest
         assertMessages(logGroupName, LOGSTREAM_BASE + "2", messagesPerThread);
         assertMessages(logGroupName, LOGSTREAM_BASE + "3", messagesPerThread);
 
-        assertEquals("client factory", "com.amazonaws.services.logs.AWSLogsClientBuilder.defaultClient", getWriter(appender).getClientFactoryUsed());
+        assertFalse("client factory used", localFactoryUsed);
 
         localLogger.info("multi-thread/multi-appender: finished");
     }
@@ -218,6 +227,7 @@ public class CloudWatchAppenderIntegrationTest
      */
     public static AWSLogs createClient()
     {
+        localFactoryUsed = true;
         return AWSLogsClientBuilder.defaultClient();
     }
 

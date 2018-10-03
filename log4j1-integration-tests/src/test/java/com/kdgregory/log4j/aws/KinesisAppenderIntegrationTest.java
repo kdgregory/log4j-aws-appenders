@@ -14,7 +14,6 @@
 
 package com.kdgregory.log4j.aws;
 
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 
+import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -41,9 +41,8 @@ import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.kinesis.model.*;
 import com.amazonaws.util.BinaryUtils;
 
-import com.kdgregory.log4j.aws.internal.kinesis.KinesisAppenderStatistics;
-import com.kdgregory.log4j.aws.internal.kinesis.KinesisLogWriter;
-import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
+import com.kdgregory.aws.logging.kinesis.KinesisAppenderStatistics;
+import com.kdgregory.aws.logging.kinesis.KinesisLogWriter;
 import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
 
 
@@ -52,8 +51,23 @@ public class KinesisAppenderIntegrationTest
     private Logger localLogger;
     private AmazonKinesis localClient;
 
+    private static boolean localFactoryUsed;
+
+//----------------------------------------------------------------------------
+//  JUnit Scaffolding
+//----------------------------------------------------------------------------
+
+    @Before
+    public void setUp()
+    {
+        localFactoryUsed = false;
+    }
+
 //----------------------------------------------------------------------------
 //  Tests
+//
+//  Note: most tests create their streams, since we want to examine various
+//        combinations of shards and partition keys
 //----------------------------------------------------------------------------
 
     @Test
@@ -78,7 +92,7 @@ public class KinesisAppenderIntegrationTest
         assertShardCount(streamName, 3);
         assertRetentionPeriod(streamName, 48);
 
-        assertEquals("client factory called", "com.kdgregory.log4j.aws.KinesisAppenderIntegrationTest.createClient", getWriter(appender).getClientFactoryUsed());
+        assertTrue("client factory used", localFactoryUsed);
 
         KinesisAppenderStatistics appenderStats = appender.getAppenderStatistics();
         assertEquals("log stream name, from stats",     streamName,     appenderStats.getActualStreamName());
@@ -98,7 +112,6 @@ public class KinesisAppenderIntegrationTest
         localLogger.info("multi-thread/single-appender: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
-        KinesisAppender appender = (KinesisAppender)testLogger.getAppender("test");
 
         MessageWriter[] writers = new MessageWriter[]
         {
@@ -123,7 +136,7 @@ public class KinesisAppenderIntegrationTest
         assertShardCount(streamName, 2);
         assertRetentionPeriod(streamName, 24);
 
-        assertEquals("client factory called", "com.amazonaws.services.kinesis.AmazonKinesisClientBuilder.defaultClient", getWriter(appender).getClientFactoryUsed());
+        assertFalse("client factory used", localFactoryUsed);
 
         localLogger.info("multi-thread/single-appender: finished");
     }
@@ -141,8 +154,6 @@ public class KinesisAppenderIntegrationTest
         Logger testLogger1 = Logger.getLogger("TestLogger1");
         Logger testLogger2 = Logger.getLogger("TestLogger2");
         Logger testLogger3 = Logger.getLogger("TestLogger3");
-
-        KinesisAppender appender1 = (KinesisAppender)testLogger1.getAppender("test1");
 
         MessageWriter[] writers = new MessageWriter[]
         {
@@ -168,10 +179,11 @@ public class KinesisAppenderIntegrationTest
         assertShardCount(streamName, 2);
         assertRetentionPeriod(streamName, 24);
 
-        assertEquals("client factory called", "com.amazonaws.services.kinesis.AmazonKinesisClientBuilder.defaultClient", getWriter(appender1).getClientFactoryUsed());
+        assertFalse("client factory used", localFactoryUsed);
 
         localLogger.info("multi-thread/multi-appender: finished");
     }
+
 
     @Test
     public void testRandomPartitionKeys() throws Exception
@@ -247,6 +259,7 @@ public class KinesisAppenderIntegrationTest
      */
     public static AmazonKinesis createClient()
     {
+        localFactoryUsed = true;
         return AmazonKinesisClientBuilder.defaultClient();
     }
 
@@ -529,13 +542,5 @@ public class KinesisAppenderIntegrationTest
             this.partitionKey = record.getPartitionKey();
             this.message = new String(BinaryUtils.copyAllBytesFrom(record.getData()), "UTF-8").trim();
         }
-    }
-
-
-    private KinesisLogWriter getWriter(KinesisAppender appender) throws Exception
-    {
-        Field writerField = AbstractAppender.class.getDeclaredField("writer");
-        writerField.setAccessible(true);
-        return (KinesisLogWriter)writerField.get(appender);
     }
 }

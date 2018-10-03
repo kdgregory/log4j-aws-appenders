@@ -14,7 +14,6 @@
 
 package com.kdgregory.log4j.aws;
 
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,6 +25,7 @@ import java.util.TreeSet;
 
 import org.w3c.dom.Element;
 
+import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -47,9 +47,8 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.services.sqs.model.*;
 
-import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
-import com.kdgregory.log4j.aws.internal.sns.SNSAppenderStatistics;
-import com.kdgregory.log4j.aws.internal.sns.SNSLogWriter;
+import com.kdgregory.aws.logging.sns.SNSAppenderStatistics;
+import com.kdgregory.aws.logging.sns.SNSLogWriter;
 import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
 
 
@@ -65,6 +64,18 @@ public class SNSAppenderIntegrationTest
     private String topicArn;        // set after the topic has been created
     private String queueArn;        // set after the queue has been created
     private String queueUrl;        // ditto
+
+    private static boolean localFactoryUsed;
+
+//----------------------------------------------------------------------------
+//  JUnit Scaffolding
+//----------------------------------------------------------------------------
+
+    @Before
+    public void setUp()
+    {
+        localFactoryUsed = false;
+    }
 
 //----------------------------------------------------------------------------
 //  Testcases
@@ -96,8 +107,7 @@ public class SNSAppenderIntegrationTest
         assertEquals("actual topic ARN, from statistics",   topicArn,       appenderStats.getActualTopicArn());
         assertEquals("messages written, from stats",        numMessages,    appenderStats.getMessagesSent());
 
-        assertEquals("client factory called", "com.kdgregory.log4j.aws.SNSAppenderIntegrationTest.createClient",
-                                              getWriter(appender).getClientFactoryUsed());
+        assertTrue("client factory used", localFactoryUsed);
 
         localLogger.info("smoketestByArn: finished");
     }
@@ -129,8 +139,7 @@ public class SNSAppenderIntegrationTest
         assertEquals("actual topic ARN, from statistics",   topicArn,       appenderStats.getActualTopicArn());
         assertEquals("messages written, from stats",        numMessages,    appenderStats.getMessagesSent());
 
-        assertEquals("client factory called", "com.amazonaws.services.sns.AmazonSNSClientBuilder.defaultClient",
-                                              getWriter(appender).getClientFactoryUsed());
+        assertFalse("client factory used", localFactoryUsed);
 
         localLogger.info("smoketestByName: finished");
     }
@@ -314,6 +323,7 @@ public class SNSAppenderIntegrationTest
      */
     public static AmazonSNS createClient()
     {
+        localFactoryUsed = true;
         return AmazonSNSClientBuilder.defaultClient();
     }
 
@@ -560,13 +570,5 @@ public class SNSAppenderIntegrationTest
         }
 
         assertEquals("message subject(s)", expectedSubjects, actualSubjects);
-    }
-
-
-    private SNSLogWriter getWriter(SNSAppender appender) throws Exception
-    {
-        Field writerField = AbstractAppender.class.getDeclaredField("writer");
-        writerField.setAccessible(true);
-        return (SNSLogWriter)writerField.get(appender);
     }
 }

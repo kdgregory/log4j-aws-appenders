@@ -54,6 +54,13 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.kdgregory.log4j</groupId>
+            <artifactId>log4j1-aws-appenders</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-logs</artifactId>
             <version>${aws-sdk.version}</version>
@@ -83,12 +90,7 @@
             <version>${aws-sdk.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.kdgregory.log4j</groupId>
-            <artifactId>aws-appenders</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
+
         <dependency>
             <groupId>net.sf.kdgcommons</groupId>
             <artifactId>kdgcommons</artifactId>

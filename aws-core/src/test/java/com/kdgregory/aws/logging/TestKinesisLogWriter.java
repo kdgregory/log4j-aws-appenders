@@ -74,7 +74,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisAppend
     private void createWriter()
     throws Exception
     {
-        createWriter(mock.newWriterFactory(internalLogger));
+        createWriter(mock.newWriterFactory());
     }
 
 
@@ -618,7 +618,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisAppend
 
         // we don't want the default mock client
 
-        createWriter(new KinesisWriterFactory(internalLogger));
+        createWriter(new KinesisWriterFactory());
 
         assertTrue("writer successfully initialized",                                       writer.isInitializationComplete());
         assertNotNull("factory called (local flag)",                                        staticFactoryMock);

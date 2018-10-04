@@ -116,7 +116,7 @@ public class JMXManager
         List<MBeanServer> servers = knownServers.remove(bean);
         if (servers == null)
         {
-            LogLog.warn("JMXManager: attempt to remove unregistered StatisticsMBean");
+            LogLog.warn("log4j-aws-appenders JMXManager: attempt to remove unregistered StatisticsMBean");
             return;
         }
 
@@ -189,13 +189,13 @@ public class JMXManager
     {
         if (appenderName == null)
         {
-            LogLog.error("log4j-aws-appenders: attempted to register null appender");
+            LogLog.error("log4j-aws-appenders JMXManager: attempted to register null appender");
             return;
         }
 
         if (mbeanServer == null)
         {
-            LogLog.error("log4j-aws-appenders: attempted to register with null server");
+            LogLog.error("log4j-aws-appenders JMXManager: attempted to register null server");
             return;
         }
 
@@ -203,7 +203,7 @@ public class JMXManager
         Class statsBeanClass = appenderStatsBeanTypes.get(appenderName);
         if ((statsBean == null) || (statsBeanClass == null))
         {
-            LogLog.error("log4j-aws-appenders: don't know bean or class for appender: " + appenderName);
+            LogLog.error("log4j-aws-appenders JMXManager: don't know bean or class for appender: " + appenderName);
             return;
         }
 
@@ -214,7 +214,7 @@ public class JMXManager
         }
         catch (Exception ex)
         {
-            LogLog.warn("failed to register appender statistics with JMX", ex);
+            LogLog.warn("log4j-aws-appenders JMXManager: failed to register appender statistics with JMX", ex);
         }
     }
 
@@ -230,7 +230,7 @@ public class JMXManager
         }
         catch (Exception ex)
         {
-            LogLog.warn("failed to unregister appender statistics with JMX", ex);
+            LogLog.warn("log4j-aws-appenders JMXManager: failed to unregister appender statistics with JMX", ex);
         }
     }
 

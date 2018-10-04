@@ -25,7 +25,6 @@ import com.kdgregory.aws.logging.sns.SNSConstants;
 import com.kdgregory.aws.logging.sns.SNSWriterConfig;
 import com.kdgregory.aws.logging.sns.SNSWriterFactory;
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
-import com.kdgregory.log4j.aws.internal.shared.Log4JInternalLogger;
 
 
 /**
@@ -45,7 +44,7 @@ extends AbstractAppender<SNSWriterConfig,SNSAppenderStatistics,SNSAppenderStatis
     public SNSAppender()
     {
         super(new DefaultThreadFactory(),
-              new SNSWriterFactory(new Log4JInternalLogger()),
+              new SNSWriterFactory(),
               new SNSAppenderStatistics(),
               SNSAppenderStatisticsMXBean.class);
 

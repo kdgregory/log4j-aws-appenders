@@ -39,6 +39,7 @@ import com.kdgregory.aws.logging.internal.MessageQueue;
 import com.kdgregory.aws.logging.testhelpers.TestingException;
 import com.kdgregory.aws.logging.testhelpers.cloudwatch.MockCloudWatchClient;
 
+
 /**
  *  Performs mock-client testing of the CloudWatch writer.
  *
@@ -64,7 +65,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     private void createWriter()
     throws Exception
     {
-        createWriter(mock.newWriterFactory(internalLogger));
+        createWriter(mock.newWriterFactory());
     }
 
     // the following variable and function are used by testStaticClientFactory
@@ -600,7 +601,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         config.logGroupName = "argle";
         config.logStreamName = "bargle";
 
-        createWriter(new CloudWatchWriterFactory(internalLogger));
+        createWriter(new CloudWatchWriterFactory());
 
         assertTrue("writer successfully initialized",                                           writer.isInitializationComplete());
         assertNotNull("factory called (local flag)",                                            staticFactoryMock);

@@ -55,7 +55,6 @@ implements LogWriter
 
     // these can be read via accessor methods; they're intended for testing
     private volatile boolean initializationComplete;
-    private volatile String factoryMethodUsed;
     private volatile int batchCount;
 
 
@@ -99,15 +98,6 @@ implements LogWriter
     public boolean isInitializationComplete()
     {
         return initializationComplete;
-    }
-
-
-    /**
-     *  Returns the factory method used to create the client, if any. Null if
-     *  the client was created via constructor.
-     */
-    public String getClientFactoryUsed() {
-        return factoryMethodUsed;
     }
 
 //----------------------------------------------------------------------------

@@ -27,20 +27,11 @@ import com.kdgregory.aws.logging.internal.InternalLogger;
 public class SNSWriterFactory
 implements WriterFactory<SNSWriterConfig,SNSAppenderStatistics>
 {
-    private InternalLogger internalLogger;
-
-
-    public SNSWriterFactory(InternalLogger internalLogger)
-    {
-        this.internalLogger = internalLogger;
-    }
-
-
     @Override
-    public LogWriter newLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats)
+    public LogWriter newLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats, InternalLogger logger)
     {
         return new SNSLogWriter(
-                config, stats, internalLogger,
-                new DefaultClientFactory<AmazonSNS>(AmazonSNS.class, config.clientFactoryMethod, config.clientEndpoint, internalLogger));
+                config, stats, logger,
+                new DefaultClientFactory<AmazonSNS>(AmazonSNS.class, config.clientFactoryMethod, config.clientEndpoint, logger));
     }
 }

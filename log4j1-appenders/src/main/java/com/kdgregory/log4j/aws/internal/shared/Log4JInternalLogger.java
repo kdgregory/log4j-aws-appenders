@@ -23,12 +23,48 @@ import com.kdgregory.aws.logging.internal.InternalLogger;
  *  An implementation of <code>InternalLogger</code> that passes all messages
  *  to the Log4J <code>LogLog</code> object.s
  */
-public class Log4JInternalLogger implements InternalLogger
+public class Log4JInternalLogger
+implements InternalLogger
 {
+    private String appenderType;
+    private String messagePrefix;
+
+
+    /**
+     *  @param  appenderType    The classname of the appender. This is used to form a
+     *                          prefix for all logging messages.
+     */
+    public Log4JInternalLogger(String appenderType)
+    {
+        this.appenderType = appenderType;
+        this.messagePrefix = appenderType + ": ";
+    }
+
+
+    /**
+     *  Called by <code>Appender.setName()</code>, to add the appender's name into the
+     *  message prefix.
+     */
+    public void setAppenderName(String name)
+    {
+        if ((name != null) && (! name.isEmpty()))
+        {
+            messagePrefix = appenderType + "(" + name + "): ";
+        }
+    }
+
+
     @Override
     public void debug(String message)
     {
-        LogLog.debug(message);
+        LogLog.debug(messagePrefix + message);
+    }
+
+
+    @Override
+    public void warn(String message)
+    {
+        LogLog.warn(messagePrefix + message);
     }
 
 
@@ -36,9 +72,9 @@ public class Log4JInternalLogger implements InternalLogger
     public void error(String message, Throwable ex)
     {
         if (ex != null)
-            LogLog.error(message, ex);
+            LogLog.error(messagePrefix + message, ex);
         else
-            LogLog.error(message);
+            LogLog.error(messagePrefix + message);
     }
 
 }

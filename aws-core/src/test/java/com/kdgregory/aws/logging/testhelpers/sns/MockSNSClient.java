@@ -121,14 +121,14 @@ public class MockSNSClient implements InvocationHandler
     /**
      *  Returns a WriterFactory that includes our mock client.
      */
-    public WriterFactory<SNSWriterConfig,SNSAppenderStatistics> newWriterFactory(final InternalLogger internalLogger)
+    public WriterFactory<SNSWriterConfig,SNSAppenderStatistics> newWriterFactory()
     {
         return new WriterFactory<SNSWriterConfig,SNSAppenderStatistics>()
         {
             @Override
-            public LogWriter newLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats)
+            public LogWriter newLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats, InternalLogger logger)
             {
-                return new SNSLogWriter(config, stats, internalLogger, new ClientFactory<AmazonSNS>()
+                return new SNSLogWriter(config, stats, logger, new ClientFactory<AmazonSNS>()
                 {
                     @Override
                     public AmazonSNS createClient()

@@ -26,7 +26,6 @@ import com.kdgregory.aws.logging.kinesis.KinesisConstants;
 import com.kdgregory.aws.logging.kinesis.KinesisWriterConfig;
 import com.kdgregory.aws.logging.kinesis.KinesisWriterFactory;
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
-import com.kdgregory.log4j.aws.internal.shared.Log4JInternalLogger;
 
 
 /**
@@ -59,7 +58,7 @@ extends AbstractAppender<KinesisWriterConfig,KinesisAppenderStatistics,KinesisAp
     public KinesisAppender()
     {
         super(new DefaultThreadFactory(),
-              new KinesisWriterFactory(new Log4JInternalLogger()),
+              new KinesisWriterFactory(),
               new KinesisAppenderStatistics(),
               KinesisAppenderStatisticsMXBean.class);
 

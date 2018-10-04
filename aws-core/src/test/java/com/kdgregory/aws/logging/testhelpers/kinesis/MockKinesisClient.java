@@ -147,14 +147,14 @@ implements InvocationHandler
     /**
      *  Returns a Kinesis WriterFactory that includes our mock client.
      */
-    public WriterFactory<KinesisWriterConfig,KinesisAppenderStatistics> newWriterFactory(final InternalLogger internalLogger)
+    public WriterFactory<KinesisWriterConfig,KinesisAppenderStatistics> newWriterFactory()
     {
         return new WriterFactory<KinesisWriterConfig,KinesisAppenderStatistics>()
         {
             @Override
-            public LogWriter newLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats)
+            public LogWriter newLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats, InternalLogger logger)
             {
-                return new KinesisLogWriter(config, stats, internalLogger, new ClientFactory<AmazonKinesis>()
+                return new KinesisLogWriter(config, stats, logger, new ClientFactory<AmazonKinesis>()
                 {
                     @Override
                     public AmazonKinesis createClient()

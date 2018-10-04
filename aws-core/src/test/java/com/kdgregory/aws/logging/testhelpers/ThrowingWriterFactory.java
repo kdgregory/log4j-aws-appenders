@@ -20,6 +20,7 @@ import com.kdgregory.aws.logging.common.DiscardAction;
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.common.LogWriter;
 import com.kdgregory.aws.logging.common.WriterFactory;
+import com.kdgregory.aws.logging.internal.InternalLogger;
 
 
 /**
@@ -29,7 +30,7 @@ import com.kdgregory.aws.logging.common.WriterFactory;
 public class ThrowingWriterFactory<C,S> implements WriterFactory<C,S>
 {
         @Override
-        public LogWriter newLogWriter(C ignored1, S ignored2)
+        public LogWriter newLogWriter(C ignored1, S ignored2, InternalLogger ignored3)
         {
             return new LogWriter()
             {

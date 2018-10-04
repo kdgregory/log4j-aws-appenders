@@ -38,6 +38,18 @@ implements InternalLogger
         debugMessages.add(message);
     }
 
+
+
+    @Override
+    public void warn(String message)
+    {
+        // at present we don't use warning messages in this module, so will add to
+        // error messages -- this will cause tests to fail if we ever do use warns
+        errorMessages.add(message);
+    }
+
+
+
     @Override
     public void error(String message, Throwable ex)
     {

@@ -106,7 +106,7 @@ public abstract class AbstractLogWriterTest
     protected void createWriter(WriterFactory<ConfigType,StatsType> factory)
     throws Exception
     {
-        writer = (WriterType)factory.newLogWriter(config, stats);
+        writer = (WriterType)factory.newLogWriter(config, stats, internalLogger);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         new DefaultThreadFactory().startLoggingThread(writer, defaultUncaughtExceptionHandler);

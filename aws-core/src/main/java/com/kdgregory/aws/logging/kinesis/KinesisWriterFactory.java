@@ -27,20 +27,11 @@ import com.kdgregory.aws.logging.internal.InternalLogger;
  */
 public class KinesisWriterFactory implements WriterFactory<KinesisWriterConfig, KinesisAppenderStatistics>
 {
-    private InternalLogger internalLogger;
-
-
-    public KinesisWriterFactory(InternalLogger internalLogger)
-    {
-        this.internalLogger = internalLogger;
-    }
-
-
     @Override
-    public LogWriter newLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats)
+    public LogWriter newLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats, InternalLogger logger)
     {
         return new KinesisLogWriter(
-                config, stats, internalLogger,
-                new DefaultClientFactory<AmazonKinesis>(AmazonKinesis.class, config.clientFactoryMethod, config.clientEndpoint, internalLogger));
+                config, stats, logger,
+                new DefaultClientFactory<AmazonKinesis>(AmazonKinesis.class, config.clientFactoryMethod, config.clientEndpoint, logger));
     }
 }

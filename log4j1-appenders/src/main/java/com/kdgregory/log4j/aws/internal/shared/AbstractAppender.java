@@ -18,7 +18,6 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.AppenderSkeleton;
-import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
 
 import com.kdgregory.aws.logging.common.DiscardAction;
@@ -66,6 +65,10 @@ extends AppenderSkeleton
 
     protected ThreadFactory threadFactory;
     protected WriterFactory<WriterConfigType,AppenderStatsType> writerFactory;
+
+    // used for internal logging: we manage this and expose it to our subclasses
+
+    protected Log4JInternalLogger logger;
 
     // the appender stats object; we keep the reference because we call writer factory
 
@@ -123,6 +126,8 @@ extends AppenderSkeleton
         this.appenderStats = appenderStats;
         this.appenderStatsMXBeanClass = appenderStatsMXBeanClass;
 
+        this.logger = new Log4JInternalLogger(getClass().getSimpleName());
+
         batchDelay = 2000;
         discardThreshold = 10000;
         discardAction = DiscardAction.oldest;
@@ -131,6 +136,16 @@ extends AppenderSkeleton
         sequence = new AtomicInteger();
     }
 
+//----------------------------------------------------------------------------
+//  Overrides of AppenderSkeleton
+//----------------------------------------------------------------------------
+
+    @Override
+    public void setName(String name)
+    {
+        super.setName(name);
+        logger.setAppenderName(name);
+    }
 
 //----------------------------------------------------------------------------
 //  Shared Configuration Properties
@@ -156,7 +171,6 @@ extends AppenderSkeleton
             writer.setBatchDelay(value);
         }
     }
-
 
     /**
      *  Returns the maximum batch delay; see {@link #setBatchDelay}. Primarily used
@@ -383,7 +397,7 @@ extends AppenderSkeleton
         }
         catch (Exception ex)
         {
-            LogLog.warn("unable to append event", ex);
+            logger.warn("unable to append event: " + ex);
         }
     }
 
@@ -484,13 +498,13 @@ extends AppenderSkeleton
         {
             try
             {
-                writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats);
+                writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats, logger);
                 threadFactory.startLoggingThread(writer, new UncaughtExceptionHandler()
                 {
                     @Override
                     public void uncaughtException(Thread t, Throwable ex)
                     {
-                        LogLog.error("unhandled exception in writer", ex);
+                        logger.error("unhandled exception in writer", ex);
                         appenderStats.setLastError(null, ex);
                         writer = null;
                     }
@@ -506,7 +520,7 @@ extends AppenderSkeleton
             }
             catch (Exception ex)
             {
-                LogLog.error("exception while initializing writer", ex);
+                logger.error("exception while initializing writer", ex);
             }
         }
     }
@@ -533,7 +547,7 @@ extends AppenderSkeleton
             }
             catch (Exception ex)
             {
-                LogLog.error("exception while shutting down writer", ex);
+                logger.error("exception while shutting down writer", ex);
             }
             writer = null;
         }
@@ -573,7 +587,7 @@ extends AppenderSkeleton
 
         if (isMessageTooLarge(message))
         {
-            LogLog.warn("attempted to append a message > AWS batch size; ignored");
+            logger.warn("attempted to append a message > AWS batch size; ignored");
             return;
         }
 
@@ -583,7 +597,7 @@ extends AppenderSkeleton
         {
             if (writer == null)
             {
-                LogLog.warn("appender not properly configured: writer is null");
+                logger.warn("appender not properly configured: writer is null");
             }
             else
             {

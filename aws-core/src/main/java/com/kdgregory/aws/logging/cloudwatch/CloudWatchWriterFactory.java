@@ -28,20 +28,11 @@ import com.kdgregory.aws.logging.internal.InternalLogger;
 public class CloudWatchWriterFactory
 implements WriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics>
 {
-    private InternalLogger internalLogger;
-
-
-    public CloudWatchWriterFactory(InternalLogger internalLogger)
-    {
-        this.internalLogger = internalLogger;
-    }
-
-
     @Override
-    public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats)
+    public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats, InternalLogger logger)
     {
         return new CloudWatchLogWriter(
-                config, stats, internalLogger,
-                new DefaultClientFactory<AWSLogs>(AWSLogs.class, config.clientFactoryMethod, config.clientEndpoint, internalLogger));
+                config, stats, logger,
+                new DefaultClientFactory<AWSLogs>(AWSLogs.class, config.clientFactoryMethod, config.clientEndpoint, logger));
     }
 }

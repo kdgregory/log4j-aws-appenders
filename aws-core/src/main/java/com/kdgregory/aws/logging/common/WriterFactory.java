@@ -14,14 +14,18 @@
 
 package com.kdgregory.aws.logging.common;
 
+import com.kdgregory.aws.logging.internal.InternalLogger;
+
 /**
- *  Defines a function to create a {@link LogWriter}.
- *  <p>
- *  The factory is passed two appender-specific objects: the first provides
- *  configuration for the writer, the second is used by the writer to report
- *  statistics.
+ *  Defines a function to create a {@link LogWriter}. This is called by the
+ *  appender as part of its initialization.
  */
 public interface WriterFactory<C,S>
 {
-    LogWriter newLogWriter(C config, S stats);
+    /**
+     *  @param  config  A writer-specific configuration object.
+     *  @param  stats   A writer-specific statistics object.
+     *  @param  logger  Used by the writer to log its actions.
+     */
+    LogWriter newLogWriter(C config, S stats, InternalLogger logger);
 }

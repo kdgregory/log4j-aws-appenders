@@ -152,12 +152,12 @@ implements InvocationHandler
     /**
      *  Creates a new WriterFactory, with the stock CloudWatch writer.
      */
-    public WriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics> newWriterFactory(final InternalLogger internalLogger)
+    public WriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics> newWriterFactory()
     {
         return new WriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics>()
         {
             @Override
-            public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats)
+            public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats, InternalLogger internalLogger)
             {
                 return new CloudWatchLogWriter(config, stats, internalLogger, new ClientFactory<AWSLogs>()
                 {

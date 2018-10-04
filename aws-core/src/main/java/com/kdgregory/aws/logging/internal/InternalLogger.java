@@ -28,6 +28,13 @@ public interface InternalLogger
 
 
     /**
+     *  Called to log warning messages. These may be translated to either debug
+     *  or error messages if the implementation does not support warnings.
+     */
+    public void warn(String message);
+
+
+    /**
      *  Called to log error messages. Exception may be null.
      */
     public void error(String message, Throwable ex);

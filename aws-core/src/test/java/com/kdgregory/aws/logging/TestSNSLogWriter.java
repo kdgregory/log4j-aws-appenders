@@ -68,7 +68,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSAppenderStatistics
     private void createWriter()
     throws Exception
     {
-        createWriter(mock.newWriterFactory(internalLogger));
+        createWriter(mock.newWriterFactory());
     }
 
 
@@ -602,7 +602,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSAppenderStatistics
         config.topicName = TEST_TOPIC_NAME;
         config.clientFactoryMethod = getClass().getName() + ".createMockClient";
 
-        createWriter(new SNSWriterFactory(internalLogger));
+        createWriter(new SNSWriterFactory());
 
         assertTrue("writer successfully initialized",                                       writer.isInitializationComplete());
         assertNotNull("factory called (local flag)",                                        staticFactoryMock);

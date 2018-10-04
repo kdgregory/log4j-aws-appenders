@@ -25,7 +25,6 @@ import com.kdgregory.aws.logging.common.DefaultThreadFactory;
 import com.kdgregory.aws.logging.common.LogMessage;
 import com.kdgregory.aws.logging.common.Substitutions;
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
-import com.kdgregory.log4j.aws.internal.shared.Log4JInternalLogger;
 
 
 /**
@@ -36,8 +35,8 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchAppenderStatistics,Clo
 {
     // these are the only configuration vars specific to this appender
 
-    private String          logGroup;
-    private String          logStream;
+    private String  logGroup;
+    private String  logStream;
 
     // these variables hold the post-substitution log-group and log-stream names
     // (mostly useful for testing)
@@ -52,7 +51,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchAppenderStatistics,Clo
     public CloudWatchAppender()
     {
         super(new DefaultThreadFactory(),
-              new CloudWatchWriterFactory(new Log4JInternalLogger()),
+              new CloudWatchWriterFactory(),
               new CloudWatchAppenderStatistics(),
               CloudWatchAppenderStatisticsMXBean.class);
 

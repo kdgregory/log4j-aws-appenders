@@ -42,8 +42,6 @@ import com.kdgregory.aws.logging.testhelpers.cloudwatch.MockCloudWatchClient;
 
 /**
  *  Performs mock-client testing of the CloudWatch writer.
- *
- *  TODO: add tests for size-based batching and endpoint configuration.
  */
 public class TestCloudWatchLogWriter
 extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWatchAppenderStatistics,AWSLogs>
@@ -591,6 +589,117 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         assertEquals("updated discard threshold",   456,                    messageQueue.getDiscardThreshold());
         assertEquals("updated discard action",      DiscardAction.newest,   messageQueue.getDiscardAction());
+    }
+
+
+    @Test
+    public void testCountBasedBatching() throws Exception
+    {
+        // don't let discard threshold get in the way of the test
+        config.discardThreshold = Integer.MAX_VALUE;
+        config.discardAction = DiscardAction.none;
+
+        // increasing delay because it will take time to create the messages
+        config.batchDelay = 300;
+
+        final String testMessage = "test";    // this won't trigger batching based on size
+        final int numMessages = 15000;
+
+        createWriter();
+        for (int ii = 0 ; ii < numMessages ; ii++)
+        {
+            writer.addMessage(new LogMessage(System.currentTimeMillis(), testMessage));
+        }
+
+        // first batch should stop at 10,000
+
+        mock.allowWriterThread();
+
+        // will call describeLogGroups when checking group existence
+        // will call describeLogStreams when checking stream existence, as well as for each putLogEvents
+
+        assertEquals("describeLogGroups: invocation count",     1,                  mock.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",    2,                  mock.describeLogStreamsInvocationCount);
+        assertEquals("createLogGroup: invocation count",        0,                  mock.createLogGroupInvocationCount);
+        assertEquals("createLogStream: invocation count",       0,                  mock.createLogStreamInvocationCount);
+        assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",      10000,              mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",              testMessage,        mock.mostRecentEvents.get(9999).getMessage());
+
+        // second batch should get remaining 5,000
+
+        mock.allowWriterThread();
+
+        // one more call to describeLogStreams, to get sequence token
+
+        assertEquals("describeLogGroups: invocation count",     1,                  mock.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",    3,                  mock.describeLogStreamsInvocationCount);
+        assertEquals("createLogGroup: invocation count",        0,                  mock.createLogGroupInvocationCount);
+        assertEquals("createLogStream: invocation count",       0,                  mock.createLogStreamInvocationCount);
+        assertEquals("putLogEvents: invocation count",          2,                  mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",      5000,               mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",              testMessage,        mock.mostRecentEvents.get(4999).getMessage());
+
+        // this sleep is a hack to enable the writer thread to update stats
+        Thread.sleep(50);
+
+        assertEquals("total messages sent, from statistics",    numMessages,        stats.getMessagesSent());
+        assertEquals("debug message count",                     0,                  internalLogger.debugMessages.size());
+        assertEquals("error message count",                     0,                  internalLogger.errorMessages.size());
+    }
+
+
+    @Test
+    public void testSizeBasedBatching() throws Exception
+    {
+        // don't let discard threshold get in the way of the test
+        config.discardThreshold = Integer.MAX_VALUE;
+        config.discardAction = DiscardAction.none;
+
+        // increasing delay because it will take time to create the messages
+        config.batchDelay = 300;
+
+        final String testMessage = StringUtil.randomAlphaString(1024, 1024);
+        final int numMessages = 1500;
+
+        createWriter();
+        for (int ii = 0 ; ii < numMessages ; ii++)
+        {
+            writer.addMessage(new LogMessage(System.currentTimeMillis(), testMessage));
+        }
+
+        // first batch should stop just under 1 megabyte -- including record overhead
+
+        mock.allowWriterThread();
+
+        // will call describeLogGroups when checking group existence
+        // will call describeLogStreams when checking stream existence, as well as for each putLogEvents
+
+        assertEquals("describeLogGroups: invocation count",     1,                  mock.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",    2,                  mock.describeLogStreamsInvocationCount);
+        assertEquals("createLogGroup: invocation count",        0,                  mock.createLogGroupInvocationCount);
+        assertEquals("createLogStream: invocation count",       0,                  mock.createLogStreamInvocationCount);
+        assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",      998,               mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",              testMessage,        mock.mostRecentEvents.get(0).getMessage());
+
+        // second batch should get remaining records
+
+        mock.allowWriterThread();
+
+        // one more call to describeLogStreams, to get sequence token
+
+        assertEquals("describeLogGroups: invocation count",     1,                  mock.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",    3,                  mock.describeLogStreamsInvocationCount);
+        assertEquals("createLogGroup: invocation count",        0,                  mock.createLogGroupInvocationCount);
+        assertEquals("createLogStream: invocation count",       0,                  mock.createLogStreamInvocationCount);
+        assertEquals("putLogEvents: invocation count",          2,                  mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",      502,              mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",              testMessage,        mock.mostRecentEvents.get(0).getMessage());
+
+        assertEquals("total messages sent, from statistics",    numMessages,        stats.getMessagesSent());
+        assertEquals("debug message count",                     0,                  internalLogger.debugMessages.size());
+        assertEquals("error message count",                     0,                  internalLogger.errorMessages.size());
     }
 
 

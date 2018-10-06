@@ -316,7 +316,8 @@ implements LogWriter
             batchMsgs++;
 
             // if this message would exceed the batch limits, push it back onto the queue
-            // the first message must never break this rule -- and shouldn't, as appender checks size
+            // the first message must never break this rule -- and shouldn't, as long as
+            // appender checks size
             if (! withinServiceLimits(batchBytes, batchMsgs))
             {
                 messageQueue.requeue(message);

@@ -139,7 +139,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisAppenderStatistics,AmazonKi
     protected boolean withinServiceLimits(int batchBytes, int numMessages)
     {
         return (batchBytes < KinesisConstants.MAX_BATCH_BYTES)
-            && (numMessages < KinesisConstants.MAX_BATCH_COUNT);
+            && (numMessages <= KinesisConstants.MAX_BATCH_COUNT);
     }
 
 

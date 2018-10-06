@@ -48,8 +48,6 @@ import com.kdgregory.aws.logging.testhelpers.kinesis.MockKinesisClient;
 
 /**
  *  Performs mock-client testing of the Kinesis writer.
- *
- *  TODO: add tests for size-based batching and endpoint configuration.
  */
 public class TestKinesisLogWriter
 extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisAppenderStatistics,AmazonKinesis>
@@ -484,6 +482,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisAppend
         assertEquals("first batch, putRecords invocation count",        1,      mock.putRecordsInvocationCount);
         assertEquals("first batch, number of successful messages",      7,      mock.putRecordsSuccesses.size());
         assertEquals("first batch, number of failed messages",          3,      mock.putRecordsFailures.size());
+        assertEquals("first batch, messages from statistics",           7,      stats.getMessagesSent());
 
         PutRecordsRequestEntry savedFailure1 = mock.putRecordsFailures.get(0);
         PutRecordsRequestEntry savedFailure2 = mock.putRecordsFailures.get(1);
@@ -494,6 +493,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisAppend
         assertEquals("second batch, putRecords invocation count",       2,      mock.putRecordsInvocationCount);
         assertEquals("second batch, number of successful messages",     2,      mock.putRecordsSuccesses.size());
         assertEquals("second batch, number of failed messages",         1,      mock.putRecordsFailures.size());
+        assertEquals("first batch, messages from statistics",           9,      stats.getMessagesSent());
 
         assertTrue("first failure is now first success",
                    Arrays.equals(
@@ -509,6 +509,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisAppend
         assertEquals("third batch, putRecords invocation count",        3,      mock.putRecordsInvocationCount);
         assertEquals("third batch, number of successful messages",      1,      mock.putRecordsSuccesses.size());
         assertEquals("third batch, number of failed messages",          0,      mock.putRecordsFailures.size());
+        assertEquals("first batch, messages from statistics",           10,     stats.getMessagesSent());
 
         assertTrue("second original failure is now a success",
                    Arrays.equals(
@@ -608,6 +609,126 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisAppend
 
         assertEquals("updated discard threshold",   456,                    messageQueue.getDiscardThreshold());
         assertEquals("updated discard action",      DiscardAction.newest,   messageQueue.getDiscardAction());
+    }
+
+
+    @Test
+    public void testCountBasedBatching() throws Exception
+    {
+        // don't let discard threshold get in the way of the test
+        config.discardThreshold = Integer.MAX_VALUE;
+        config.discardAction = DiscardAction.none;
+
+        // increasing delay because it will take time to create the messages
+        config.batchDelay = 300;
+
+        final String testMessage = "test";    // this won't trigger batching based on size
+        final int numMessages = 750;
+
+        createWriter();
+        for (int ii = 0 ; ii < numMessages ; ii++)
+        {
+            writer.addMessage(new LogMessage(System.currentTimeMillis(), testMessage));
+        }
+
+        // first batch should stop at 500
+
+        mock.allowWriterThread();
+
+        assertEquals("describeStream: invocation count",            1,                      mock.describeStreamInvocationCount);
+        assertEquals("createStream: invocation count",              0,                      mock.createStreamInvocationCount);
+        assertEquals("increaseRetentionPeriod invocation count",    0,                      mock.increaseRetentionPeriodInvocationCount);
+        assertEquals("putRecords: invocation count",                1,                      mock.putRecordsInvocationCount);
+        assertEquals("putRecords: source record count",             500,                    mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,  mock.putRecordsSourceRecords.get(0).getPartitionKey());
+        assertEquals("putRecords: source record content",           testMessage,
+                                                                    new String(
+                                                                        BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(499).getData()),
+                                                                        "UTF-8"));
+
+        // second batch batch should pick up remaining records
+
+        mock.allowWriterThread();
+
+        assertEquals("describeStream: invocation count",            1,                      mock.describeStreamInvocationCount);
+        assertEquals("createStream: invocation count",              0,                      mock.createStreamInvocationCount);
+        assertEquals("increaseRetentionPeriod invocation count",    0,                      mock.increaseRetentionPeriodInvocationCount);
+        assertEquals("putRecords: invocation count",                2,                      mock.putRecordsInvocationCount);
+        assertEquals("putRecords: source record count",             250,                    mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,  mock.putRecordsSourceRecords.get(0).getPartitionKey());
+        assertEquals("putRecords: source record content",           testMessage,
+                                                                    new String(
+                                                                        BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(249).getData()),
+                                                                        "UTF-8"));
+
+        // this sleep is a hack to enable the writer thread to update stats
+        Thread.sleep(50);
+
+        assertEquals("total messages sent, from statistics",        numMessages,            stats.getMessagesSent());
+
+        assertEquals("debug message count",                         0,                      internalLogger.debugMessages.size());
+        assertEquals("error message count",                         0,                      internalLogger.errorMessages.size());
+    }
+
+    @Test
+    public void testSizeBasedBatching() throws Exception
+    {
+        // don't let discard threshold get in the way of the test
+        config.discardThreshold = Integer.MAX_VALUE;
+        config.discardAction = DiscardAction.none;
+
+        // increasing delay because it will take time to create the messages
+        config.batchDelay = 300;
+
+        final String testMessage = StringUtil.randomAlphaString(32768, 32768);
+        final int numMessages = 200;
+
+        final int expected1stBatchCount = (5 * 1024 * 1024) / (testMessage.length() + DEFAULT_PARTITION_KEY.length());
+        final int expected2ndBatchCount = numMessages - expected1stBatchCount;
+
+        createWriter();
+        for (int ii = 0 ; ii < numMessages ; ii++)
+        {
+            writer.addMessage(new LogMessage(System.currentTimeMillis(), testMessage));
+        }
+
+        // first batch should stop just under 5 megabytes -- including record overhead
+
+        mock.allowWriterThread();
+
+        assertEquals("describeStream: invocation count",            1,                      mock.describeStreamInvocationCount);
+        assertEquals("createStream: invocation count",              0,                      mock.createStreamInvocationCount);
+        assertEquals("increaseRetentionPeriod invocation count",    0,                      mock.increaseRetentionPeriodInvocationCount);
+        assertEquals("putRecords: invocation count",                1,                      mock.putRecordsInvocationCount);
+        assertEquals("putRecords: source record count",             expected1stBatchCount,  mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,  mock.putRecordsSourceRecords.get(0).getPartitionKey());
+        assertEquals("putRecords: source record content",           testMessage,
+                                                                    new String(
+                                                                        BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(expected1stBatchCount - 1).getData()),
+                                                                        "UTF-8"));
+
+        // second batch batch should pick up remaining records
+
+        mock.allowWriterThread();
+
+        assertEquals("describeStream: invocation count",            1,                      mock.describeStreamInvocationCount);
+        assertEquals("createStream: invocation count",              0,                      mock.createStreamInvocationCount);
+        assertEquals("increaseRetentionPeriod invocation count",    0,                      mock.increaseRetentionPeriodInvocationCount);
+        assertEquals("putRecords: invocation count",                2,                      mock.putRecordsInvocationCount);
+        assertEquals("putRecords: source record count",             expected2ndBatchCount,  mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,  mock.putRecordsSourceRecords.get(0).getPartitionKey());
+        assertEquals("putRecords: source record content",           testMessage,
+                                                                    new String(
+                                                                        BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(expected2ndBatchCount - 1).getData()),
+                                                                        "UTF-8"));
+
+        // this sleep is a hack to enable the writer thread to update stats
+        Thread.sleep(50);
+
+        assertEquals("total messages sent, from statistics",        numMessages,            stats.getMessagesSent());
+
+        assertEquals("debug message count",                         0,                      internalLogger.debugMessages.size());
+        assertEquals("error message count",                         0,                      internalLogger.errorMessages.size());
     }
 
 

@@ -41,8 +41,6 @@ import com.kdgregory.aws.logging.testhelpers.sns.MockSNSClient;
 
 /**
  *  Performs mock-client testing of the SNS writer.
- *
- *  TODO: add tests for endpoint configuration.
  */
 public class TestSNSLogWriter
 extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSAppenderStatistics,AmazonSNS>

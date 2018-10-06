@@ -102,7 +102,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchAppenderStatistics,AW
     protected boolean withinServiceLimits(int batchBytes, int numMessages)
     {
         return (batchBytes < CloudWatchConstants.MAX_BATCH_BYTES)
-            && (numMessages < CloudWatchConstants.MAX_BATCH_COUNT);
+            && (numMessages <= CloudWatchConstants.MAX_BATCH_COUNT);
     }
 
 //----------------------------------------------------------------------------

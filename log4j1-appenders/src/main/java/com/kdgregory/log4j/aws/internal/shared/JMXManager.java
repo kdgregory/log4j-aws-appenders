@@ -27,8 +27,8 @@ import javax.management.StandardMBean;
 
 import org.apache.log4j.helpers.LogLog;
 
-import com.kdgregory.aws.logging.internal.AbstractAppenderStatistics;
 import com.kdgregory.log4j.aws.StatisticsMBean;
+import com.kdgregory.logging.aws.internal.AbstractAppenderStatistics;
 
 
 /**

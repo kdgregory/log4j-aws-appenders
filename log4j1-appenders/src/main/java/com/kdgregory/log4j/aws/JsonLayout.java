@@ -22,8 +22,8 @@ import org.apache.log4j.Layout;
 import org.apache.log4j.spi.LocationInfo;
 import org.apache.log4j.spi.LoggingEvent;
 
-import com.kdgregory.aws.logging.common.JsonConverter;
-import com.kdgregory.aws.logging.common.Substitutions;
+import com.kdgregory.logging.aws.common.JsonConverter;
+import com.kdgregory.logging.aws.common.Substitutions;
 
 
 /**

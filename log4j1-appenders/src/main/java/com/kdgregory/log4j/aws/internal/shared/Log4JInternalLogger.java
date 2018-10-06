@@ -16,7 +16,7 @@ package com.kdgregory.log4j.aws.internal.shared;
 
 import org.apache.log4j.helpers.LogLog;
 
-import com.kdgregory.aws.logging.internal.InternalLogger;
+import com.kdgregory.logging.aws.internal.InternalLogger;
 
 
 /**

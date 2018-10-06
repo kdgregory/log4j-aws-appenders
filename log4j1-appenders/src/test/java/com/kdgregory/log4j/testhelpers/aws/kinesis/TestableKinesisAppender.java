@@ -14,13 +14,13 @@
 
 package com.kdgregory.log4j.testhelpers.aws.kinesis;
 
-import com.kdgregory.aws.logging.common.LogWriter;
-import com.kdgregory.aws.logging.common.ThreadFactory;
-import com.kdgregory.aws.logging.common.WriterFactory;
-import com.kdgregory.aws.logging.kinesis.KinesisAppenderStatistics;
-import com.kdgregory.aws.logging.kinesis.KinesisWriterConfig;
-import com.kdgregory.aws.logging.testhelpers.kinesis.MockKinesisWriter;
 import com.kdgregory.log4j.aws.KinesisAppender;
+import com.kdgregory.logging.aws.common.LogWriter;
+import com.kdgregory.logging.aws.common.ThreadFactory;
+import com.kdgregory.logging.aws.common.WriterFactory;
+import com.kdgregory.logging.aws.kinesis.KinesisAppenderStatistics;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
+import com.kdgregory.logging.aws.testhelpers.kinesis.MockKinesisWriter;
 
 
 /**

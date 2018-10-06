@@ -47,9 +47,9 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.services.sqs.model.*;
 
-import com.kdgregory.aws.logging.sns.SNSAppenderStatistics;
-import com.kdgregory.aws.logging.sns.SNSLogWriter;
 import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
+import com.kdgregory.logging.aws.sns.SNSAppenderStatistics;
+import com.kdgregory.logging.aws.sns.SNSLogWriter;
 
 
 public class SNSAppenderIntegrationTest

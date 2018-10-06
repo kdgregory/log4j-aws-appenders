@@ -30,17 +30,17 @@ import org.apache.log4j.helpers.LogLog;
 import net.sf.kdgcommons.lang.StringUtil;
 import net.sf.kdgcommons.test.StringAsserts;
 
-import com.kdgregory.aws.logging.common.DefaultThreadFactory;
-import com.kdgregory.aws.logging.common.LogMessage;
-import com.kdgregory.aws.logging.kinesis.KinesisAppenderStatistics;
-import com.kdgregory.aws.logging.kinesis.KinesisWriterConfig;
-import com.kdgregory.aws.logging.testhelpers.InlineThreadFactory;
-import com.kdgregory.aws.logging.testhelpers.TestingException;
-import com.kdgregory.aws.logging.testhelpers.ThrowingWriterFactory;
-import com.kdgregory.aws.logging.testhelpers.kinesis.MockKinesisWriter;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.TestableKinesisAppender;
+import com.kdgregory.logging.aws.common.DefaultThreadFactory;
+import com.kdgregory.logging.aws.common.LogMessage;
+import com.kdgregory.logging.aws.kinesis.KinesisAppenderStatistics;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
+import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
+import com.kdgregory.logging.aws.testhelpers.TestingException;
+import com.kdgregory.logging.aws.testhelpers.ThrowingWriterFactory;
+import com.kdgregory.logging.aws.testhelpers.kinesis.MockKinesisWriter;
 
 /**
  *  These tests exercise the high-level logic of the appender: configuration

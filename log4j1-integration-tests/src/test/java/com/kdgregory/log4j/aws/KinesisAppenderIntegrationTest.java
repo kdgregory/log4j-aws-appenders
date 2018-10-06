@@ -41,9 +41,9 @@ import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.kinesis.model.*;
 import com.amazonaws.util.BinaryUtils;
 
-import com.kdgregory.aws.logging.kinesis.KinesisAppenderStatistics;
-import com.kdgregory.aws.logging.kinesis.KinesisLogWriter;
 import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
+import com.kdgregory.logging.aws.kinesis.KinesisAppenderStatistics;
+import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 
 
 public class KinesisAppenderIntegrationTest

@@ -28,7 +28,10 @@ There is also an [example project](example) that exercises all of the appenders.
 ### Getting the JAR
 
 Released versions of the appenders are uploaded to Maven Central. You can find them
-[here](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.kdgregory.log4j%22%20AND%20a%3A%22aws-appenders%22).
+[here](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.kdgregory.logging%22%20AND%20a%3A%22log4j1-aws-appenders%22).
+
+**Note:** version 1.x used the Maven group ID `com.kdgregory.log4j`; if you're updating
+to 2.x you will need to change this to `com.kdgregory.logging`.
 
 
 ### Versions

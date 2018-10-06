@@ -20,7 +20,7 @@ import java.io.UnsupportedEncodingException;
 import org.apache.log4j.Layout;
 import org.apache.log4j.spi.LoggingEvent;
 
-import com.kdgregory.logging.aws.common.LogMessage;
+import com.kdgregory.logging.common.LogMessage;
 
 /**
  *  Utility classes for working with Log4J. These methods may get absorbed elsewhere.

@@ -37,14 +37,14 @@ import com.kdgregory.log4j.testhelpers.aws.cloudwatch.MockCloudWatchWriterFactor
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.TestableCloudWatchAppender;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchAppenderStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
-import com.kdgregory.logging.aws.common.DefaultThreadFactory;
-import com.kdgregory.logging.aws.common.DiscardAction;
-import com.kdgregory.logging.aws.common.LogMessage;
 import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
 import com.kdgregory.logging.aws.testhelpers.TestingException;
 import com.kdgregory.logging.aws.testhelpers.ThrowingWriterFactory;
 import com.kdgregory.logging.aws.testhelpers.cloudwatch.MockCloudWatchClient;
 import com.kdgregory.logging.aws.testhelpers.cloudwatch.MockCloudWatchWriter;
+import com.kdgregory.logging.common.LogMessage;
+import com.kdgregory.logging.common.factories.DefaultThreadFactory;
+import com.kdgregory.logging.common.util.DiscardAction;
 
 
 /**

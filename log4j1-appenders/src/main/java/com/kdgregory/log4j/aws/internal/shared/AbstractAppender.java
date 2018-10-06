@@ -20,12 +20,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.spi.LoggingEvent;
 
-import com.kdgregory.logging.aws.common.DiscardAction;
-import com.kdgregory.logging.aws.common.LogMessage;
-import com.kdgregory.logging.aws.common.LogWriter;
-import com.kdgregory.logging.aws.common.ThreadFactory;
-import com.kdgregory.logging.aws.common.WriterFactory;
 import com.kdgregory.logging.aws.internal.AbstractAppenderStatistics;
+import com.kdgregory.logging.common.LogMessage;
+import com.kdgregory.logging.common.LogWriter;
+import com.kdgregory.logging.common.factories.ThreadFactory;
+import com.kdgregory.logging.common.factories.WriterFactory;
+import com.kdgregory.logging.common.util.DiscardAction;
 
 
 /**

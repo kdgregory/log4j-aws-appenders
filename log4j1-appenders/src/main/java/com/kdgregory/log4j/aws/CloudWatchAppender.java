@@ -22,9 +22,9 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchAppenderStatisticsMXBean;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchConstants;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterFactory;
-import com.kdgregory.logging.aws.common.DefaultThreadFactory;
-import com.kdgregory.logging.aws.common.LogMessage;
 import com.kdgregory.logging.aws.common.Substitutions;
+import com.kdgregory.logging.common.LogMessage;
+import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 
 
 /**

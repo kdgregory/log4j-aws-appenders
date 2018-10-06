@@ -14,7 +14,7 @@
     </description>
 
     <modules>
-        <module>aws-core</module>
+        <module>aws-shared</module>
         <module>log4j1-appenders</module>
     </modules>
 

@@ -17,14 +17,14 @@ package com.kdgregory.log4j.aws;
 import java.util.Date;
 
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
-import com.kdgregory.logging.aws.common.DefaultThreadFactory;
-import com.kdgregory.logging.aws.common.LogMessage;
 import com.kdgregory.logging.aws.common.Substitutions;
 import com.kdgregory.logging.aws.sns.SNSAppenderStatistics;
 import com.kdgregory.logging.aws.sns.SNSAppenderStatisticsMXBean;
 import com.kdgregory.logging.aws.sns.SNSConstants;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterFactory;
+import com.kdgregory.logging.common.LogMessage;
+import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 
 
 /**

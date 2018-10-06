@@ -18,14 +18,14 @@ import java.io.UnsupportedEncodingException;
 import java.util.Date;
 
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
-import com.kdgregory.logging.aws.common.DefaultThreadFactory;
-import com.kdgregory.logging.aws.common.LogMessage;
 import com.kdgregory.logging.aws.common.Substitutions;
 import com.kdgregory.logging.aws.kinesis.KinesisAppenderStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisAppenderStatisticsMXBean;
 import com.kdgregory.logging.aws.kinesis.KinesisConstants;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterFactory;
+import com.kdgregory.logging.common.LogMessage;
+import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 
 
 /**

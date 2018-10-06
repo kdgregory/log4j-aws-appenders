@@ -33,14 +33,14 @@ import net.sf.kdgcommons.test.StringAsserts;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.TestableKinesisAppender;
-import com.kdgregory.logging.aws.common.DefaultThreadFactory;
-import com.kdgregory.logging.aws.common.LogMessage;
 import com.kdgregory.logging.aws.kinesis.KinesisAppenderStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
 import com.kdgregory.logging.aws.testhelpers.TestingException;
 import com.kdgregory.logging.aws.testhelpers.ThrowingWriterFactory;
 import com.kdgregory.logging.aws.testhelpers.kinesis.MockKinesisWriter;
+import com.kdgregory.logging.common.LogMessage;
+import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 
 /**
  *  These tests exercise the high-level logic of the appender: configuration

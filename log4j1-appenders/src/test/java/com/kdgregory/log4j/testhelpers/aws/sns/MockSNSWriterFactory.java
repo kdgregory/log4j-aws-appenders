@@ -14,12 +14,12 @@
 
 package com.kdgregory.log4j.testhelpers.aws.sns;
 
-import com.kdgregory.logging.aws.common.LogWriter;
-import com.kdgregory.logging.aws.common.WriterFactory;
-import com.kdgregory.logging.aws.internal.InternalLogger;
 import com.kdgregory.logging.aws.sns.SNSAppenderStatistics;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.testhelpers.sns.MockSNSWriter;
+import com.kdgregory.logging.common.LogWriter;
+import com.kdgregory.logging.common.factories.WriterFactory;
+import com.kdgregory.logging.common.util.InternalLogger;
 
 
 public class MockSNSWriterFactory

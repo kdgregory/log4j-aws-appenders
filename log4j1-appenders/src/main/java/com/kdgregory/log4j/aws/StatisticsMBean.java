@@ -33,9 +33,10 @@ import javax.management.ReflectionException;
 import com.kdgregory.log4j.aws.internal.shared.JMXManager;
 
 /**
- *  This class provides a bridge between an appenders and an MBeanServer. When
- *  an instance of this class has been registered, it will in turn register all
- *  appenders loaded by the same classloader hierarchy.
+ *  This class provides a bridge between the writer statistics exposed by an
+ *  appender and an MBeanServer. When an instance of this class has been
+ *  registered, it will in turn register all statistics beans loaded by the
+ *  same classloader hierarchy.
  *  <p>
  *  <h1>Example</strong>
  *  <pre>
@@ -49,7 +50,7 @@ import com.kdgregory.log4j.aws.internal.shared.JMXManager;
  *  </pre>
  *  Note that the object names for both beans can be whatever you want. The
  *  names that I show here are consistent with the hardcoded names produced
- *  by both the Log4J appender/layout beans and the appender statistics beans
+ *  by both the Log4J appender/layout beans and the writer statistics beans
  *  from this package, so if you use them you'll see everything Log4J in one
  *  place.
  *  <p>
@@ -123,7 +124,7 @@ implements DynamicMBean, MBeanRegistration
     {
         return new MBeanInfo(
             getClass().getName(),
-            "Enables reporting of appender statistics via JMX",
+            "Enables reporting of writer statistics via JMX",
             new MBeanAttributeInfo[0],
             new MBeanConstructorInfo[0],
             new MBeanOperationInfo[0],
@@ -139,7 +140,7 @@ implements DynamicMBean, MBeanRegistration
     {
         if (name == null)
         {
-            name = new ObjectName("log4j:name=AWSAppendersStats");
+            name = new ObjectName("log4j:name=AWSWriterStats");
         }
 
         myServer = server;

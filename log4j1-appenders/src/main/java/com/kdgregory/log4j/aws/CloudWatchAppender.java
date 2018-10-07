@@ -17,8 +17,8 @@ package com.kdgregory.log4j.aws;
 import java.util.Date;
 
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchAppenderStatistics;
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchAppenderStatisticsMXBean;
+import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
+import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatisticsMXBean;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchConstants;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterFactory;
@@ -31,7 +31,7 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *  Appender that writes to a CloudWatch log stream.
  */
 public class CloudWatchAppender
-extends AbstractAppender<CloudWatchWriterConfig,CloudWatchAppenderStatistics,CloudWatchAppenderStatisticsMXBean>
+extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,CloudWatchWriterStatisticsMXBean>
 {
     // these are the only configuration vars specific to this appender
 
@@ -52,8 +52,8 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchAppenderStatistics,Clo
     {
         super(new DefaultThreadFactory(),
               new CloudWatchWriterFactory(),
-              new CloudWatchAppenderStatistics(),
-              CloudWatchAppenderStatisticsMXBean.class);
+              new CloudWatchWriterStatistics(),
+              CloudWatchWriterStatisticsMXBean.class);
 
         logStream = "{startupTimestamp}";
     }

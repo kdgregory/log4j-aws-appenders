@@ -15,7 +15,7 @@
 package com.kdgregory.log4j.testhelpers.aws.kinesis;
 
 import com.kdgregory.log4j.aws.KinesisAppender;
-import com.kdgregory.logging.aws.kinesis.KinesisAppenderStatistics;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.testhelpers.kinesis.MockKinesisWriter;
 import com.kdgregory.logging.common.LogWriter;
@@ -24,7 +24,7 @@ import com.kdgregory.logging.common.util.InternalLogger;
 
 
 public class MockKinesisWriterFactory
-implements WriterFactory<KinesisWriterConfig,KinesisAppenderStatistics>
+implements WriterFactory<KinesisWriterConfig,KinesisWriterStatistics>
 {
     public KinesisAppender appender;
 
@@ -39,7 +39,7 @@ implements WriterFactory<KinesisWriterConfig,KinesisAppenderStatistics>
 
 
     @Override
-    public LogWriter newLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats, InternalLogger logger)
+    public LogWriter newLogWriter(KinesisWriterConfig config, KinesisWriterStatistics stats, InternalLogger logger)
     {
         invocationCount++;
         writer = new MockKinesisWriter(config);

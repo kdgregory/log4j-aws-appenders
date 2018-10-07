@@ -33,7 +33,7 @@ import net.sf.kdgcommons.test.StringAsserts;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.sns.TestableSNSAppender;
-import com.kdgregory.logging.aws.sns.SNSAppenderStatistics;
+import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
 import com.kdgregory.logging.aws.testhelpers.TestingException;
@@ -218,9 +218,9 @@ public class TestSNSAppender
         // note that we will be running the writer on a separate thread
 
         appender.setThreadFactory(new DefaultThreadFactory());
-        appender.setWriterFactory(new ThrowingWriterFactory<SNSWriterConfig,SNSAppenderStatistics>());
+        appender.setWriterFactory(new ThrowingWriterFactory<SNSWriterConfig,SNSWriterStatistics>());
 
-        SNSAppenderStatistics appenderStats = appender.getAppenderStatistics();
+        SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
 
         logger.debug("this should trigger writer creation");
 

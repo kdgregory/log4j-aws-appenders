@@ -32,7 +32,7 @@ import com.kdgregory.logging.common.util.InternalLogger;
 
 
 public class KinesisLogWriter
-extends AbstractLogWriter<KinesisWriterConfig,KinesisAppenderStatistics,AmazonKinesis>
+extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKinesis>
 {
     // this controls the number of times that we'll accept rate limiting on describe
     private final static int DESCRIBE_TRIES = 300;
@@ -59,7 +59,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisAppenderStatistics,AmazonKi
     private Random rnd = new Random();
 
 
-    public KinesisLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats, InternalLogger logger, ClientFactory<AmazonKinesis> clientFactory)
+    public KinesisLogWriter(KinesisWriterConfig config, KinesisWriterStatistics stats, InternalLogger logger, ClientFactory<AmazonKinesis> clientFactory)
     {
         super(config, stats, logger, clientFactory);
 

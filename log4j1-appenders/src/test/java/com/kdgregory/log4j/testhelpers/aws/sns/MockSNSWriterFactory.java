@@ -14,7 +14,7 @@
 
 package com.kdgregory.log4j.testhelpers.aws.sns;
 
-import com.kdgregory.logging.aws.sns.SNSAppenderStatistics;
+import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.testhelpers.sns.MockSNSWriter;
 import com.kdgregory.logging.common.LogWriter;
@@ -23,14 +23,14 @@ import com.kdgregory.logging.common.util.InternalLogger;
 
 
 public class MockSNSWriterFactory
-implements WriterFactory<SNSWriterConfig,SNSAppenderStatistics>
+implements WriterFactory<SNSWriterConfig,SNSWriterStatistics>
 {
     public int invocationCount = 0;
     public MockSNSWriter writer;
 
 
     @Override
-    public LogWriter newLogWriter(SNSWriterConfig config, SNSAppenderStatistics ignored1, InternalLogger ignored2)
+    public LogWriter newLogWriter(SNSWriterConfig config, SNSWriterStatistics ignored1, InternalLogger ignored2)
     {
         invocationCount++;
         writer = new MockSNSWriter(config);

@@ -21,7 +21,7 @@ import static org.junit.Assert.*;
 import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
 
-import com.kdgregory.logging.aws.internal.AbstractAppenderStatistics;
+import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 import com.kdgregory.logging.aws.internal.AbstractLogWriter;
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 import com.kdgregory.logging.common.factories.ClientFactory;
@@ -37,7 +37,7 @@ public abstract class AbstractLogWriterTest
 <
     WriterType extends AbstractLogWriter<?,?,?>,
     ConfigType extends AbstractWriterConfig,
-    StatsType extends AbstractAppenderStatistics,
+    StatsType extends AbstractWriterStatistics,
     AWSClientType
 >
 {

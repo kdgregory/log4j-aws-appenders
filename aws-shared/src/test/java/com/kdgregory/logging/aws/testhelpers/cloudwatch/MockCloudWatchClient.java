@@ -25,7 +25,7 @@ import java.util.concurrent.Semaphore;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.*;
 
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchAppenderStatistics;
+import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.common.LogWriter;
@@ -152,12 +152,12 @@ implements InvocationHandler
     /**
      *  Creates a new WriterFactory, with the stock CloudWatch writer.
      */
-    public WriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics> newWriterFactory()
+    public WriterFactory<CloudWatchWriterConfig,CloudWatchWriterStatistics> newWriterFactory()
     {
-        return new WriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics>()
+        return new WriterFactory<CloudWatchWriterConfig,CloudWatchWriterStatistics>()
         {
             @Override
-            public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats, InternalLogger internalLogger)
+            public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger internalLogger)
             {
                 return new CloudWatchLogWriter(config, stats, internalLogger, new ClientFactory<AWSLogs>()
                 {

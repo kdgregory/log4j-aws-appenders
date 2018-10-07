@@ -33,7 +33,7 @@ import net.sf.kdgcommons.test.StringAsserts;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.TestableKinesisAppender;
-import com.kdgregory.logging.aws.kinesis.KinesisAppenderStatistics;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
 import com.kdgregory.logging.aws.testhelpers.TestingException;
@@ -237,9 +237,9 @@ public class TestKinesisAppender
         // note that we will be running the writer on a separate thread
 
         appender.setThreadFactory(new DefaultThreadFactory());
-        appender.setWriterFactory(new ThrowingWriterFactory<KinesisWriterConfig,KinesisAppenderStatistics>());
+        appender.setWriterFactory(new ThrowingWriterFactory<KinesisWriterConfig,KinesisWriterStatistics>());
 
-        KinesisAppenderStatistics appenderStats = appender.getAppenderStatistics();
+        KinesisWriterStatistics appenderStats = appender.getAppenderStatistics();
 
         logger.debug("this should trigger writer creation");
 

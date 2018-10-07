@@ -25,7 +25,7 @@ import java.util.concurrent.Semaphore;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.*;
 
-import com.kdgregory.logging.aws.sns.SNSAppenderStatistics;
+import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.common.LogWriter;
@@ -121,12 +121,12 @@ public class MockSNSClient implements InvocationHandler
     /**
      *  Returns a WriterFactory that includes our mock client.
      */
-    public WriterFactory<SNSWriterConfig,SNSAppenderStatistics> newWriterFactory()
+    public WriterFactory<SNSWriterConfig,SNSWriterStatistics> newWriterFactory()
     {
-        return new WriterFactory<SNSWriterConfig,SNSAppenderStatistics>()
+        return new WriterFactory<SNSWriterConfig,SNSWriterStatistics>()
         {
             @Override
-            public LogWriter newLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats, InternalLogger logger)
+            public LogWriter newLogWriter(SNSWriterConfig config, SNSWriterStatistics stats, InternalLogger logger)
             {
                 return new SNSLogWriter(config, stats, logger, new ClientFactory<AmazonSNS>()
                 {

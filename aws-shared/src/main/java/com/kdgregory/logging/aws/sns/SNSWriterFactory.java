@@ -25,10 +25,10 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *  Factory to create <code>SNSLogWriter</code> instances.
  */
 public class SNSWriterFactory
-implements WriterFactory<SNSWriterConfig,SNSAppenderStatistics>
+implements WriterFactory<SNSWriterConfig,SNSWriterStatistics>
 {
     @Override
-    public LogWriter newLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats, InternalLogger logger)
+    public LogWriter newLogWriter(SNSWriterConfig config, SNSWriterStatistics stats, InternalLogger logger)
     {
         return new SNSLogWriter(
                 config, stats, logger,

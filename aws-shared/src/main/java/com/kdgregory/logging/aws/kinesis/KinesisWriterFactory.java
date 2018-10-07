@@ -25,10 +25,10 @@ import com.kdgregory.logging.common.util.InternalLogger;
 /**
  *  Factory to create <code>KinesisLogWriter</code> instances.
  */
-public class KinesisWriterFactory implements WriterFactory<KinesisWriterConfig, KinesisAppenderStatistics>
+public class KinesisWriterFactory implements WriterFactory<KinesisWriterConfig, KinesisWriterStatistics>
 {
     @Override
-    public LogWriter newLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats, InternalLogger logger)
+    public LogWriter newLogWriter(KinesisWriterConfig config, KinesisWriterStatistics stats, InternalLogger logger)
     {
         return new KinesisLogWriter(
                 config, stats, logger,

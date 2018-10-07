@@ -15,7 +15,7 @@
 package com.kdgregory.log4j.testhelpers.aws.sns;
 
 import com.kdgregory.log4j.aws.SNSAppender;
-import com.kdgregory.logging.aws.sns.SNSAppenderStatistics;
+import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.testhelpers.sns.MockSNSWriter;
 import com.kdgregory.logging.common.LogMessage;
@@ -38,13 +38,13 @@ extends SNSAppender
     }
 
 
-    public void setWriterFactory(WriterFactory<SNSWriterConfig,SNSAppenderStatistics> writerFactory)
+    public void setWriterFactory(WriterFactory<SNSWriterConfig,SNSWriterStatistics> writerFactory)
     {
         this.writerFactory = writerFactory;
     }
 
 
-    public WriterFactory<SNSWriterConfig,SNSAppenderStatistics> getWriterFactory()
+    public WriterFactory<SNSWriterConfig,SNSWriterStatistics> getWriterFactory()
     {
         return writerFactory;
     }

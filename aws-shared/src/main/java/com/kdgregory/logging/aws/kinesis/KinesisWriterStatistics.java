@@ -14,12 +14,12 @@
 
 package com.kdgregory.logging.aws.kinesis;
 
-import com.kdgregory.logging.aws.internal.AbstractAppenderStatistics;
+import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 
 
-public class KinesisAppenderStatistics
-extends AbstractAppenderStatistics
-implements KinesisAppenderStatisticsMXBean
+public class KinesisWriterStatistics
+extends AbstractWriterStatistics
+implements KinesisWriterStatisticsMXBean
 {
     private volatile String actualStreamName;
 

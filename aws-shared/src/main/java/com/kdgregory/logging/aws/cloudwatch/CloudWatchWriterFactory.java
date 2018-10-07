@@ -26,10 +26,10 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *  Factory to create <code>CloudWatchLogWriter</code> instances.
  */
 public class CloudWatchWriterFactory
-implements WriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics>
+implements WriterFactory<CloudWatchWriterConfig,CloudWatchWriterStatistics>
 {
     @Override
-    public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats, InternalLogger logger)
+    public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger logger)
     {
         return new CloudWatchLogWriter(
                 config, stats, logger,

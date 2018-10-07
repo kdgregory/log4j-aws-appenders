@@ -13,7 +13,7 @@
 
 package com.kdgregory.logging.aws.cloudwatch;
 
-import com.kdgregory.logging.aws.internal.AbstractAppenderStatistics;
+import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 
 /**
  *  Statistics specific to the CloudWatch appender.
@@ -23,9 +23,9 @@ import com.kdgregory.logging.aws.internal.AbstractAppenderStatistics;
  *  fine just being volatile (in general, those fields will only be set when the
  *  writer is created).
  */
-public class CloudWatchAppenderStatistics
-extends AbstractAppenderStatistics
-implements CloudWatchAppenderStatisticsMXBean
+public class CloudWatchWriterStatistics
+extends AbstractWriterStatistics
+implements CloudWatchWriterStatisticsMXBean
 {
     private volatile String  actualLogGroupName;
     private volatile String  actualLogStreamName;

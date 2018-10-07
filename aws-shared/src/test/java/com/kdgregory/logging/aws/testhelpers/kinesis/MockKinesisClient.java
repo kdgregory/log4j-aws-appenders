@@ -25,7 +25,7 @@ import java.util.concurrent.Semaphore;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
 
-import com.kdgregory.logging.aws.kinesis.KinesisAppenderStatistics;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.common.LogWriter;
@@ -147,12 +147,12 @@ implements InvocationHandler
     /**
      *  Returns a Kinesis WriterFactory that includes our mock client.
      */
-    public WriterFactory<KinesisWriterConfig,KinesisAppenderStatistics> newWriterFactory()
+    public WriterFactory<KinesisWriterConfig,KinesisWriterStatistics> newWriterFactory()
     {
-        return new WriterFactory<KinesisWriterConfig,KinesisAppenderStatistics>()
+        return new WriterFactory<KinesisWriterConfig,KinesisWriterStatistics>()
         {
             @Override
-            public LogWriter newLogWriter(KinesisWriterConfig config, KinesisAppenderStatistics stats, InternalLogger logger)
+            public LogWriter newLogWriter(KinesisWriterConfig config, KinesisWriterStatistics stats, InternalLogger logger)
             {
                 return new KinesisLogWriter(config, stats, logger, new ClientFactory<AmazonKinesis>()
                 {

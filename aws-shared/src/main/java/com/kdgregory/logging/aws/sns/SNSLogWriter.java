@@ -32,13 +32,13 @@ import com.kdgregory.logging.common.util.InternalLogger;
 
 
 public class SNSLogWriter
-extends AbstractLogWriter<SNSWriterConfig,SNSAppenderStatistics,AmazonSNS>
+extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
 {
     // this is set when configuring by name, exposed for testing
     protected String topicArn;
 
 
-    public SNSLogWriter(SNSWriterConfig config, SNSAppenderStatistics stats, InternalLogger logger, ClientFactory<AmazonSNS> clientFactory)
+    public SNSLogWriter(SNSWriterConfig config, SNSWriterStatistics stats, InternalLogger logger, ClientFactory<AmazonSNS> clientFactory)
     {
         super(config, stats, logger, clientFactory);
     }

@@ -15,7 +15,7 @@
 package com.kdgregory.log4j.testhelpers.aws.kinesis;
 
 import com.kdgregory.log4j.aws.KinesisAppender;
-import com.kdgregory.logging.aws.kinesis.KinesisAppenderStatistics;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.testhelpers.kinesis.MockKinesisWriter;
 import com.kdgregory.logging.common.LogWriter;
@@ -36,7 +36,7 @@ public class TestableKinesisAppender extends KinesisAppender
     }
 
 
-    public void setWriterFactory(WriterFactory<KinesisWriterConfig, KinesisAppenderStatistics> writerFactory)
+    public void setWriterFactory(WriterFactory<KinesisWriterConfig, KinesisWriterStatistics> writerFactory)
     {
         this.writerFactory = writerFactory;
     }

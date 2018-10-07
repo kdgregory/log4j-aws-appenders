@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.spi.LoggingEvent;
 
-import com.kdgregory.logging.aws.internal.AbstractAppenderStatistics;
+import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.ThreadFactory;
@@ -47,7 +47,7 @@ import com.kdgregory.logging.common.util.DiscardAction;
  *  so any application code that touches these variables should not be surprised if
  *  they cease to exist.
  */
-public abstract class AbstractAppender<WriterConfigType,AppenderStatsType extends AbstractAppenderStatistics,AppenderStatsMXBeanType>
+public abstract class AbstractAppender<WriterConfigType,AppenderStatsType extends AbstractWriterStatistics,AppenderStatsMXBeanType>
 extends AppenderSkeleton
 {
     // flag to indicate whether we need to run setup

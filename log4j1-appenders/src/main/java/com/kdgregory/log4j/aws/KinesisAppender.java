@@ -19,8 +19,8 @@ import java.util.Date;
 
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
 import com.kdgregory.logging.aws.common.Substitutions;
-import com.kdgregory.logging.aws.kinesis.KinesisAppenderStatistics;
-import com.kdgregory.logging.aws.kinesis.KinesisAppenderStatisticsMXBean;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterStatisticsMXBean;
 import com.kdgregory.logging.aws.kinesis.KinesisConstants;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterFactory;
@@ -32,7 +32,7 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *  Appender that writes to a Kinesis stream.
  */
 public class KinesisAppender
-extends AbstractAppender<KinesisWriterConfig,KinesisAppenderStatistics,KinesisAppenderStatisticsMXBean>
+extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWriterStatisticsMXBean>
 {
     // these are the only configuration vars specific to this appender
 
@@ -59,8 +59,8 @@ extends AbstractAppender<KinesisWriterConfig,KinesisAppenderStatistics,KinesisAp
     {
         super(new DefaultThreadFactory(),
               new KinesisWriterFactory(),
-              new KinesisAppenderStatistics(),
-              KinesisAppenderStatisticsMXBean.class);
+              new KinesisWriterStatistics(),
+              KinesisWriterStatisticsMXBean.class);
 
         partitionKey = "{startupTimestamp}";
         shardCount = 1;

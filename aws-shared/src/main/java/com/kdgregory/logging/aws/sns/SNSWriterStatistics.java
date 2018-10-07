@@ -14,12 +14,12 @@
 
 package com.kdgregory.logging.aws.sns;
 
-import com.kdgregory.logging.aws.internal.AbstractAppenderStatistics;
+import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 
 
-public class SNSAppenderStatistics
-extends AbstractAppenderStatistics
-implements SNSAppenderStatisticsMXBean
+public class SNSWriterStatistics
+extends AbstractWriterStatistics
+implements SNSWriterStatisticsMXBean
 {
     private String actualTopicName;
     private String actualTopicArn;

@@ -42,7 +42,7 @@ import com.amazonaws.services.kinesis.model.*;
 import com.amazonaws.util.BinaryUtils;
 
 import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
-import com.kdgregory.logging.aws.kinesis.KinesisAppenderStatistics;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 
 
@@ -94,7 +94,7 @@ public class KinesisAppenderIntegrationTest
 
         assertTrue("client factory used", localFactoryUsed);
 
-        KinesisAppenderStatistics appenderStats = appender.getAppenderStatistics();
+        KinesisWriterStatistics appenderStats = appender.getAppenderStatistics();
         assertEquals("log stream name, from stats",     streamName,     appenderStats.getActualStreamName());
         assertEquals("messages written, from stats",    numMessages,    appenderStats.getMessagesSent());
 

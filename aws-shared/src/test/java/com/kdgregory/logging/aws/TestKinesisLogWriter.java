@@ -35,7 +35,7 @@ import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
 import com.amazonaws.util.BinaryUtils;
 
-import com.kdgregory.logging.aws.kinesis.KinesisAppenderStatistics;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterFactory;
@@ -51,7 +51,7 @@ import com.kdgregory.logging.common.util.MessageQueue;
  *  Performs mock-client testing of the Kinesis writer.
  */
 public class TestKinesisLogWriter
-extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisAppenderStatistics,AmazonKinesis>
+extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriterStatistics,AmazonKinesis>
 {
     private final static String DEFAULT_STREAM_NAME     = "argle";
     private final static String DEFAULT_PARTITION_KEY   = "bargle";
@@ -107,7 +107,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisAppend
             0,                              // shardCount,
             null);                          // retentionPeriod
 
-        stats = new KinesisAppenderStatistics();
+        stats = new KinesisWriterStatistics();
 
         mock = new MockKinesisClient(DEFAULT_STREAM_NAME);
 

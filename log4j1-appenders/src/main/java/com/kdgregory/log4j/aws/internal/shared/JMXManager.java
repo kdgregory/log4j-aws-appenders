@@ -28,7 +28,7 @@ import javax.management.StandardMBean;
 import org.apache.log4j.helpers.LogLog;
 
 import com.kdgregory.log4j.aws.StatisticsMBean;
-import com.kdgregory.logging.aws.internal.AbstractAppenderStatistics;
+import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 
 
 /**
@@ -70,8 +70,8 @@ public class JMXManager
     protected Map<StatisticsMBean,List<MBeanServer>> knownServers
         = new IdentityHashMap<StatisticsMBean,List<MBeanServer>>();
 
-    protected Map<String,AbstractAppenderStatistics> appenderStatsBeans
-        = new HashMap<String,AbstractAppenderStatistics>();
+    protected Map<String,AbstractWriterStatistics> appenderStatsBeans
+        = new HashMap<String,AbstractWriterStatistics>();
 
     protected Map<String,Class<?>> appenderStatsBeanTypes
         = new HashMap<String,Class<?>>();
@@ -143,7 +143,7 @@ public class JMXManager
      *  different appender bean is an error. In the real world, neither of these
      *  cases should happen, because the appender is registered during initialization.
      */
-    public synchronized void addAppender(String appenderName, AbstractAppenderStatistics statsBean, Class<?> statsBeanClass)
+    public synchronized void addAppender(String appenderName, AbstractWriterStatistics statsBean, Class<?> statsBeanClass)
     {
         appenderStatsBeans.put(appenderName, statsBean);
         appenderStatsBeanTypes.put(appenderName, statsBeanClass);
@@ -244,6 +244,6 @@ public class JMXManager
     private static ObjectName toObjectName(String appenderName)
     throws MalformedObjectNameException
     {
-        return new ObjectName("log4j:appender=" + appenderName + ",statistics=statistics");
+        return new ObjectName("log4j:appender=" + appenderName + ",statistics=writer");
     }
 }

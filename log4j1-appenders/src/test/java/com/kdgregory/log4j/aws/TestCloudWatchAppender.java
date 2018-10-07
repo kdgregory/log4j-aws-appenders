@@ -35,7 +35,7 @@ import com.amazonaws.services.logs.AWSLogs;
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.MockCloudWatchWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.TestableCloudWatchAppender;
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchAppenderStatistics;
+import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
 import com.kdgregory.logging.aws.testhelpers.TestingException;
@@ -406,9 +406,9 @@ public class TestCloudWatchAppender
         // note that we will be running the writer on a separate thread
 
         appender.setThreadFactory(new DefaultThreadFactory());
-        appender.setWriterFactory(new ThrowingWriterFactory<CloudWatchWriterConfig,CloudWatchAppenderStatistics>());
+        appender.setWriterFactory(new ThrowingWriterFactory<CloudWatchWriterConfig,CloudWatchWriterStatistics>());
 
-        CloudWatchAppenderStatistics appenderStats = appender.getAppenderStatistics();
+        CloudWatchWriterStatistics appenderStats = appender.getAppenderStatistics();
 
         logger.debug("this should trigger writer creation");
 

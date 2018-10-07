@@ -48,9 +48,9 @@ import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.TestableKinesisAppender;
 import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.sns.TestableSNSAppender;
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchAppenderStatisticsMXBean;
-import com.kdgregory.logging.aws.kinesis.KinesisAppenderStatisticsMXBean;
-import com.kdgregory.logging.aws.sns.SNSAppenderStatisticsMXBean;
+import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatisticsMXBean;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterStatisticsMXBean;
+import com.kdgregory.logging.aws.sns.SNSWriterStatisticsMXBean;
 import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
 
 
@@ -244,11 +244,11 @@ public class TestJMXIntegration
         logger.info("test message");
 
         assertSame("after message, JMXManager knows about CloudWatch stats bean",   cloudwatchAppender.getAppenderStatistics(), jmxManager.appenderStatsBeans.get("cloudwatch"));
-        assertSame("after message, JMXManager knows about CloudWatch stats class",  CloudWatchAppenderStatisticsMXBean.class,   jmxManager.appenderStatsBeanTypes.get("cloudwatch"));
+        assertSame("after message, JMXManager knows about CloudWatch stats class",  CloudWatchWriterStatisticsMXBean.class,   jmxManager.appenderStatsBeanTypes.get("cloudwatch"));
         assertSame("after message, JMXManager knows about Kinesis stats bean",      kinesisAppender.getAppenderStatistics(),    jmxManager.appenderStatsBeans.get("kinesis"));
-        assertSame("after message, JMXManager knows about Kinesis stats class",     KinesisAppenderStatisticsMXBean.class,      jmxManager.appenderStatsBeanTypes.get("kinesis"));
+        assertSame("after message, JMXManager knows about Kinesis stats class",     KinesisWriterStatisticsMXBean.class,      jmxManager.appenderStatsBeanTypes.get("kinesis"));
         assertSame("after message, JMXManager knows about SNS stats bean",          snsAppender.getAppenderStatistics(),        jmxManager.appenderStatsBeans.get("sns"));
-        assertSame("after message, JMXManager knows about SNS stats class",         SNSAppenderStatisticsMXBean.class,          jmxManager.appenderStatsBeanTypes.get("sns"));
+        assertSame("after message, JMXManager knows about SNS stats class",         SNSWriterStatisticsMXBean.class,          jmxManager.appenderStatsBeanTypes.get("sns"));
 
         snsAppender.close();
 
@@ -270,7 +270,7 @@ public class TestJMXIntegration
 
         loadLoggingConfig();
         Logger logger = Logger.getLogger("cloudwatchOnly");
-        ObjectName appenderMBeanName = new ObjectName("log4j:appender=cloudwatch,statistics=statistics");
+        ObjectName appenderMBeanName = new ObjectName("log4j:appender=cloudwatch,statistics=writer");
 
         TestableCloudWatchAppender appender = (TestableCloudWatchAppender)logger.getAppender("cloudwatch");
         appender.setThreadFactory(new InlineThreadFactory());
@@ -299,7 +299,7 @@ public class TestJMXIntegration
 
         loadLoggingConfig();
         Logger logger = Logger.getLogger("cloudwatchOnly");
-        ObjectName appenderMBeanName = new ObjectName("log4j:appender=cloudwatch,statistics=statistics");
+        ObjectName appenderMBeanName = new ObjectName("log4j:appender=cloudwatch,statistics=writer");
 
         TestableCloudWatchAppender appender = (TestableCloudWatchAppender)logger.getAppender("cloudwatch");
         appender.setThreadFactory(new InlineThreadFactory());
@@ -346,7 +346,7 @@ public class TestJMXIntegration
 
         loadLoggingConfig();
         Logger logger = Logger.getLogger("cloudwatchOnly");
-        ObjectName appenderMBeanName = new ObjectName("log4j:appender=cloudwatch,statistics=statistics");
+        ObjectName appenderMBeanName = new ObjectName("log4j:appender=cloudwatch,statistics=writer");
 
         TestableCloudWatchAppender appender = (TestableCloudWatchAppender)logger.getAppender("cloudwatch");
         appender.setThreadFactory(new InlineThreadFactory());

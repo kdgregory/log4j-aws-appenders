@@ -28,7 +28,7 @@ import static net.sf.kdgcommons.test.StringAsserts.*;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.*;
 
-import com.kdgregory.logging.aws.sns.SNSAppenderStatistics;
+import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterFactory;
@@ -44,7 +44,7 @@ import com.kdgregory.logging.common.util.MessageQueue;
  *  Performs mock-client testing of the SNS writer.
  */
 public class TestSNSLogWriter
-extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSAppenderStatistics,AmazonSNS>
+extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
 {
     private final static String TEST_TOPIC_NAME = "example";
     private final static String TEST_TOPIC_ARN  = "arn:aws:sns:us-east-1:123456789012:example";
@@ -98,7 +98,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSAppenderStatistics
                 null,                   // clientFactoryMethod
                 null);                  // clientEndpoint
 
-        stats = new SNSAppenderStatistics();
+        stats = new SNSWriterStatistics();
 
         mock = new MockSNSClient(
                 TEST_TOPIC_NAME,

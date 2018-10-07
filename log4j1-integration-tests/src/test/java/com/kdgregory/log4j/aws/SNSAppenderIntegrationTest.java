@@ -48,7 +48,7 @@ import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.services.sqs.model.*;
 
 import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
-import com.kdgregory.logging.aws.sns.SNSAppenderStatistics;
+import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 
 
@@ -93,7 +93,7 @@ public class SNSAppenderIntegrationTest
 
         Logger testLogger = Logger.getLogger("TestLogger");
         SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
-        SNSAppenderStatistics appenderStats = appender.getAppenderStatistics();
+        SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
 
         (new MessageWriter(testLogger, numMessages)).run();
 
@@ -125,7 +125,7 @@ public class SNSAppenderIntegrationTest
 
         Logger testLogger = Logger.getLogger("TestLogger");
         SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
-        SNSAppenderStatistics appenderStats = appender.getAppenderStatistics();
+        SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
 
         (new MessageWriter(testLogger, numMessages)).run();
 
@@ -155,7 +155,7 @@ public class SNSAppenderIntegrationTest
 
         Logger testLogger = Logger.getLogger("TestLogger");
         SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
-        SNSAppenderStatistics appenderStats = appender.getAppenderStatistics();
+        SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
 
         (new MessageWriter(testLogger, numMessages)).run();
 
@@ -199,7 +199,7 @@ public class SNSAppenderIntegrationTest
 
         Logger testLogger = Logger.getLogger("TestLogger");
         SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
-        SNSAppenderStatistics appenderStats = appender.getAppenderStatistics();
+        SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
 
         (new MessageWriter(testLogger, numMessages)).run();
 
@@ -254,7 +254,7 @@ public class SNSAppenderIntegrationTest
 
         Logger testLogger = Logger.getLogger("TestLogger");
         SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
-        SNSAppenderStatistics appenderStats = appender.getAppenderStatistics();
+        SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
 
         for (int ii = 0 ; ii < numThreads ; ii++)
         {
@@ -290,10 +290,10 @@ public class SNSAppenderIntegrationTest
         Logger testLogger = Logger.getLogger("TestLogger");
 
         SNSAppender appender1 = (SNSAppender)testLogger.getAppender("test1");
-        SNSAppenderStatistics stats1 = appender1.getAppenderStatistics();
+        SNSWriterStatistics stats1 = appender1.getAppenderStatistics();
 
         SNSAppender appender2 = (SNSAppender)testLogger.getAppender("test2");
-        SNSAppenderStatistics stats2 = appender2.getAppenderStatistics();
+        SNSWriterStatistics stats2 = appender2.getAppenderStatistics();
 
         (new MessageWriter(testLogger, numMessages)).run();
 

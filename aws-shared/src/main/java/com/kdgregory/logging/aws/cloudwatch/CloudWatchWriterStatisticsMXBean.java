@@ -1,4 +1,3 @@
-// Copyright (c) Keith D Gregory
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,24 +11,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logging.aws.kinesis;
+package com.kdgregory.logging.aws.cloudwatch;
 
 import java.util.Date;
 import java.util.List;
 
-import javax.management.MXBean;
-
-
 /**
- *  Defines the JMX Bean interface for {@link KinesisAppenderStatistics}.
+ *  Defines the JMX Bean interface for {@link CloudWatchWriterStatistics}.
  */
-@MXBean
-public interface KinesisAppenderStatisticsMXBean
+public interface CloudWatchWriterStatisticsMXBean
 {
     /**
-     *  Returns the actual log stream name used by the writer.
+     *  Returns the actual log group name for the appender, after substitutions.
      */
-    String getActualStreamName();
+    String getActualLogGroupName();
+
+
+    /**
+     *  Returns the actual log stream name for the appender, after substitutions.
+     */
+    String getActualLogStreamName();
 
 
     /**
@@ -55,13 +56,15 @@ public interface KinesisAppenderStatisticsMXBean
 
 
     /**
-     *  Returns the number of messages successfully sent to the stream.
+     *  Returns the number of messages successfully sent to the logstream, by all
+     *  writers.
      */
     int getMessagesSent();
 
 
     /**
-     *  Returns the number of messages discarded by the message queue.
+     *  Returns the number of messages discarded by the current writer's message queue.
+     *  Note that writer rotation (which can happen due to errors) will reset this.
      */
-    int getMessagesDiscarded();
+    int getMessagesDiscardedByCurrentWriter();
 }

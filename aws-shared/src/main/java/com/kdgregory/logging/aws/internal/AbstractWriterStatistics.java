@@ -37,7 +37,7 @@ import com.kdgregory.logging.common.util.MessageQueue;
  *  any desired getters (we can't use a superinterface because JMX introspection
  *  only looks at declared methods).
  */
-public abstract class AbstractAppenderStatistics
+public abstract class AbstractWriterStatistics
 {
     private volatile MessageQueue messageQueue;
 

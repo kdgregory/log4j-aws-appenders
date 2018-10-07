@@ -39,7 +39,7 @@ import com.amazonaws.services.logs.model.*;
 
 import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
 import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchAppenderStatistics;
+import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 
 
@@ -90,7 +90,7 @@ public class CloudWatchAppenderIntegrationTest
         assertMessages(logGroupName, LOGSTREAM_BASE + "3", rotationCount);
         assertMessages(logGroupName, LOGSTREAM_BASE + "4", numMessages % rotationCount);
 
-        CloudWatchAppenderStatistics appenderStats = appender.getAppenderStatistics();
+        CloudWatchWriterStatistics appenderStats = appender.getAppenderStatistics();
         assertEquals("actual log group name, from statistics",  "AppenderIntegrationTest-smoketest",    appenderStats.getActualLogGroupName());
         assertEquals("actual log stream name, from statistics", LOGSTREAM_BASE + "4",                   appenderStats.getActualLogStreamName());
         assertEquals("messages written, from statistics",       numMessages,                            appenderStats.getMessagesSent());

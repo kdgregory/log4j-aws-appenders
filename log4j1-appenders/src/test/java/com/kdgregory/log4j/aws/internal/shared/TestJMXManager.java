@@ -27,9 +27,9 @@ import static org.junit.Assert.*;
 import net.sf.kdgcommons.test.SelfMock;
 
 import com.kdgregory.log4j.aws.StatisticsMBean;
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchAppenderStatistics;
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchAppenderStatisticsMXBean;
-import com.kdgregory.logging.aws.internal.AbstractAppenderStatistics;
+import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
+import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatisticsMXBean;
+import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 
 
 /**
@@ -141,8 +141,8 @@ public class TestJMXManager
         assertTrue("test start, JMXManager knows no stat bean types",   jmxManager.appenderStatsBeanTypes.isEmpty());
 
         String appenderName = "example";
-        AbstractAppenderStatistics appenderStats = new CloudWatchAppenderStatistics();
-        Class<?> appenderStatsType = CloudWatchAppenderStatisticsMXBean.class;
+        AbstractWriterStatistics appenderStats = new CloudWatchWriterStatistics();
+        Class<?> appenderStatsType = CloudWatchWriterStatisticsMXBean.class;
 
         JMXManager.getInstance().addAppender(appenderName, appenderStats, appenderStatsType);
 
@@ -173,8 +173,8 @@ public class TestJMXManager
         assertTrue("before adding appender, JMXManager did not register anything", jmxManager.registrations.isEmpty());
 
         String appenderName = "example";
-        AbstractAppenderStatistics appenderStats = new CloudWatchAppenderStatistics();
-        Class<?> appenderStatsType = CloudWatchAppenderStatisticsMXBean.class;
+        AbstractWriterStatistics appenderStats = new CloudWatchWriterStatistics();
+        Class<?> appenderStatsType = CloudWatchWriterStatisticsMXBean.class;
 
         JMXManager.getInstance().addAppender(appenderName, appenderStats, appenderStatsType);
 
@@ -198,8 +198,8 @@ public class TestJMXManager
         assertTrue("test start, JMXManager knows no stat bean types",   jmxManager.appenderStatsBeanTypes.isEmpty());
 
         String appenderName = "example";
-        AbstractAppenderStatistics appenderStats = new CloudWatchAppenderStatistics();
-        Class<?> appenderStatsType = CloudWatchAppenderStatisticsMXBean.class;
+        AbstractWriterStatistics appenderStats = new CloudWatchWriterStatistics();
+        Class<?> appenderStatsType = CloudWatchWriterStatisticsMXBean.class;
 
         JMXManager.getInstance().addAppender(appenderName, appenderStats, appenderStatsType);
 
@@ -241,8 +241,8 @@ public class TestJMXManager
         assertSame("JMXManager knows both servers (checking server2)",  server2, jmxManager.knownServers.get(statisticsMBean).get(1));
 
         String appenderName = "example";
-        AbstractAppenderStatistics appenderStats = new CloudWatchAppenderStatistics();
-        Class<?> appenderStatsType = CloudWatchAppenderStatisticsMXBean.class;
+        AbstractWriterStatistics appenderStats = new CloudWatchWriterStatistics();
+        Class<?> appenderStatsType = CloudWatchWriterStatisticsMXBean.class;
 
         assertEquals("before adding appender, number of registrations", 0, jmxManager.registrations.size());
 

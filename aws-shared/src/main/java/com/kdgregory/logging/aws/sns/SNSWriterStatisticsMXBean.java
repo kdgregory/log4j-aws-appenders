@@ -21,10 +21,10 @@ import javax.management.MXBean;
 
 
 /**
- *  Defines the JMX Bean interface for {@link SNSAppenderStatistics}.
+ *  Defines the JMX Bean interface for {@link SNSWriterStatistics}.
  */
 @MXBean
-public interface SNSAppenderStatisticsMXBean
+public interface SNSWriterStatisticsMXBean
 {
     /**
      *  Returns the actual topic name used by the writer (after substitutions).

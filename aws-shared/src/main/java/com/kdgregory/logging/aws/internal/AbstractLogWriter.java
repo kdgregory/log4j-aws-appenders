@@ -32,7 +32,7 @@ import com.kdgregory.logging.common.util.MessageQueue;
 public abstract class AbstractLogWriter
 <
     ConfigType extends AbstractWriterConfig,
-    StatsType extends AbstractAppenderStatistics,
+    StatsType extends AbstractWriterStatistics,
     AWSClientType
 >
 implements LogWriter

@@ -29,7 +29,7 @@ import net.sf.kdgcommons.lang.StringUtil;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.*;
 
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchAppenderStatistics;
+import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterFactory;
@@ -45,7 +45,7 @@ import com.kdgregory.logging.common.util.MessageQueue;
  *  Performs mock-client testing of the CloudWatch writer.
  */
 public class TestCloudWatchLogWriter
-extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWatchAppenderStatistics,AWSLogs>
+extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSLogs>
 {
 //----------------------------------------------------------------------------
 //  Support Code
@@ -94,7 +94,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             null,                   // factory method
             null);                  // endpoint
 
-        stats = new CloudWatchAppenderStatistics();
+        stats = new CloudWatchWriterStatistics();
 
         staticFactoryMock = null;
     }

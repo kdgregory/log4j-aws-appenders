@@ -30,9 +30,9 @@ import com.kdgregory.logging.common.util.InternalLogger;
 
 
 public class CloudWatchLogWriter
-extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchAppenderStatistics,AWSLogs>
+extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSLogs>
 {
-    public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchAppenderStatistics stats, InternalLogger logger, ClientFactory<AWSLogs> clientFactory)
+    public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger logger, ClientFactory<AWSLogs> clientFactory)
     {
         super(config, stats, logger, clientFactory);
 

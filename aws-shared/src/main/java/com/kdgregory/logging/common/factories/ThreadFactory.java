@@ -22,17 +22,19 @@ import com.kdgregory.logging.common.LogWriter;
 /**
  *  Creates and starts a new thread for running the LogWriter.
  *  <p>
- *  Appenders are constructed with an instance of {@link DefaultThreadFactory}
- *  (or  perhaps an appender-specific factory), and lazily call this factory on
- *  first append. The thread is not returned by the factory; it should exit
- *  normally when the appender calls {@link LogWriter#stop}.
+ *  Appenders expected to create a background thread (via factory) at the same time
+ *  they create the logwriter (also via factory), and pass the latter to the former.
+ *  In practice, this will happen in an abstract superclass, and the factory allows
+ *  that superclass to know nothing of the actual writer type.
  *  <p>
  *  To handle unexpected thread death, the appender must provide an uncaught
- *  exception handler. A typical handler will log the event using Log4J's internal
- *  logger, and then create a new writer.
+ *  exception handler. A typical handler will log the event using the internal
+ *  logger, and then shut itself down (the assumption is that recoverable exceptions
+ *  will be caught).
  *  <p>
- *  In the test helpers, you will find <code>MockThreadFactory</code>,  which does
- *  not actually start a thread.
+ *  <code>DefaultThreadFactory</code> provides a standard implementation of this
+ *  interface. This module also provides <code>NullThreadFactory</code> and
+ *  <code>InlineThreadFactory</code>, which are used for unit tests.
  */
 public interface ThreadFactory
 {

@@ -22,7 +22,7 @@ import com.kdgregory.logging.common.LogWriter;
 
 /**
  *  The default {@link ThreadFactory} for most appenders: creates a normal-priority
- *  thread and starts it running with the specified writer.
+ *  daemon thread and starts it running with the specified writer.
  */
 public class DefaultThreadFactory implements ThreadFactory
 {
@@ -32,7 +32,7 @@ public class DefaultThreadFactory implements ThreadFactory
     public void startLoggingThread(LogWriter writer, UncaughtExceptionHandler exceptionHandler)
     {
         Thread writerThread = new Thread(writer);
-        writerThread.setName("log4j-aws-writer-" + threadNumber.getAndIncrement());
+        writerThread.setName("com-kdgregory-aws-logwriter-" + threadNumber.getAndIncrement());
         writerThread.setPriority(Thread.NORM_PRIORITY);
         writerThread.setDaemon(true);
         writerThread.setUncaughtExceptionHandler(exceptionHandler);

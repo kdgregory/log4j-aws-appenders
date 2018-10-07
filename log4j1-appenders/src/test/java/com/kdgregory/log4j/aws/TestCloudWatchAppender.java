@@ -30,8 +30,6 @@ import org.apache.log4j.helpers.LogLog;
 import net.sf.kdgcommons.lang.StringUtil;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
-import com.amazonaws.services.logs.AWSLogs;
-
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.MockCloudWatchWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.TestableCloudWatchAppender;
@@ -40,7 +38,6 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
 import com.kdgregory.logging.aws.testhelpers.TestingException;
 import com.kdgregory.logging.aws.testhelpers.ThrowingWriterFactory;
-import com.kdgregory.logging.aws.testhelpers.cloudwatch.MockCloudWatchClient;
 import com.kdgregory.logging.aws.testhelpers.cloudwatch.MockCloudWatchWriter;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
@@ -71,17 +68,6 @@ public class TestCloudWatchAppender
 
         appender.setThreadFactory(new InlineThreadFactory());
         appender.setWriterFactory(new MockCloudWatchWriterFactory(appender));
-    }
-
-
-    // the following variable and function are used by testStaticClientFactory
-
-    private static MockCloudWatchClient staticFactoryMock = null;
-
-    public static AWSLogs createMockClient()
-    {
-        staticFactoryMock = new MockCloudWatchClient();
-        return staticFactoryMock.createClient();
     }
 
 //----------------------------------------------------------------------------

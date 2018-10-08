@@ -16,6 +16,7 @@
     <modules>
         <module>aws-shared</module>
         <module>log4j1-appenders</module>
+        <module>logback-appenders</module>
     </modules>
 
 </project>

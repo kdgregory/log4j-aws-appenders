@@ -26,13 +26,11 @@
 
 
     <dependencies>
-<!--
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
             <artifactId>logback-aws-appenders</artifactId>
             <version>${project.version}</version>
         </dependency>
--->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>

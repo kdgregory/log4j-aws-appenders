@@ -1,0 +1,186 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.kdgregory.logging</groupId>
+    <artifactId>logback-aws-appenders</artifactId>
+    <version>2.1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>Logback Appenders</name>
+
+    <description>
+        Appenders for Logback that writes log events to various AWS services
+    </description>
+
+    <url> https://github.com/kdgregory/log4j-aws-appenders </url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Keith D Gregory</name>
+            <email>kdgregory@users.noreply.github.com</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/kdgregory/log4j-aws-appenders.git</connection>
+        <developerConnection>scm:git:git@github.com:kdgregory/log4j-aws-appenders.git</developerConnection>
+        <url>https://github.com/kdgregory/log4j-aws-appenders</url>
+    </scm>
+
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <logback.version>1.2.3</logback.version>
+
+        <junit.version>4.10</junit.version>
+        <kdgcommons.version>1.0.16</kdgcommons.version>
+        <practicalxml.version>1.1.18</practicalxml.version>
+
+        <plugin.cobertura.version>2.7</plugin.cobertura.version>
+        <plugin.compiler.version>3.1</plugin.compiler.version>
+        <plugin.findbugs.version>3.0.5</plugin.findbugs.version>
+        <plugin.javadoc.version>3.0.1</plugin.javadoc.version>
+        <plugin.project-info-reports.version>2.7</plugin.project-info-reports.version>
+        <plugin.site.version>3.3</plugin.site.version>
+    </properties>
+
+
+    <dependencies>
+
+        <dependency>
+            <groupId>com.kdgregory.logging</groupId>
+            <artifactId>aws-shared</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>${logback.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.kdgregory.logging</groupId>
+            <artifactId>aws-shared</artifactId>
+            <classifier>tests</classifier>
+            <type>test-jar</type>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.sf.kdgcommons</groupId>
+            <artifactId>kdgcommons</artifactId>
+            <version>${kdgcommons.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.sf.practicalxml</groupId>
+            <artifactId>practicalxml</artifactId>
+            <version>${practicalxml.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${plugin.compiler.version}</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                    <debug>true</debug>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${plugin.javadoc.version}</version>
+                <configuration>
+                    <doclint>none</doclint>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <version>${plugin.site.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>${plugin.project-info-reports.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <version>${plugin.findbugs.version}</version>
+                <configuration>
+                    <excludeFilterFile>src/site/findbugs-filter.xml</excludeFilterFile>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>cobertura-maven-plugin</artifactId>
+                <version>${plugin.cobertura.version}</version>
+                <configuration>
+                    <instrumentation>
+                        <excludes>
+                            <exclude>**/Test*.class</exclude>
+                            <exclude>**/Abstract*.class</exclude>
+                            <exclude>**/testhelpers/**/*.class</exclude>
+                        </excludes>
+                    </instrumentation>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>clean</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
+
+
+    <!-- local distribution management so I can review before deploying to Sonatype OSSHR -->
+    <distributionManagement>
+        <repository>
+            <id>build</id>
+            <name>Local Deployment Directory</name>
+            <url>file://${project.build.directory}/deploy</url>
+        </repository>
+    </distributionManagement>
+
+</project>

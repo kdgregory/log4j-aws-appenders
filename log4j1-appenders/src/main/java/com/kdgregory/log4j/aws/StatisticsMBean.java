@@ -14,23 +14,11 @@
 
 package com.kdgregory.log4j.aws;
 
-import javax.management.Attribute;
-import javax.management.AttributeList;
-import javax.management.AttributeNotFoundException;
-import javax.management.DynamicMBean;
-import javax.management.InvalidAttributeValueException;
-import javax.management.MBeanAttributeInfo;
-import javax.management.MBeanConstructorInfo;
-import javax.management.MBeanException;
-import javax.management.MBeanInfo;
-import javax.management.MBeanNotificationInfo;
-import javax.management.MBeanOperationInfo;
-import javax.management.MBeanRegistration;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-import javax.management.ReflectionException;
 
 import com.kdgregory.log4j.aws.internal.JMXManager;
+import com.kdgregory.logging.common.jmx.AbstractMarkerBean;
 
 /**
  *  This class provides a bridge between the writer statistics exposed by an
@@ -46,7 +34,7 @@ import com.kdgregory.log4j.aws.internal.JMXManager;
  *
  *      ManagementFactory.getPlatformMBeanServer().createMBean(
  *              StatisticsMBean.class.getName(),
- *              new ObjectName("log4j:name=StatisticsEnabled"));
+ *              new ObjectName("log4j:name=Statistics"));
  *  </pre>
  *  Note that the object names for both beans can be whatever you want. The
  *  names that I show here are consistent with the hardcoded names produced
@@ -72,105 +60,19 @@ import com.kdgregory.log4j.aws.internal.JMXManager;
  *  disabled.
  */
 public class StatisticsMBean
-implements DynamicMBean, MBeanRegistration
+extends AbstractMarkerBean
 {
-    private MBeanServer myServer;
-    private ObjectName myName;
-
-//----------------------------------------------------------------------------
-//  Supported Attributes/Operations (at this time there are none)
-//----------------------------------------------------------------------------
-
-//----------------------------------------------------------------------------
-//  Implementation of DynamicMBean
-//----------------------------------------------------------------------------
 
     @Override
-    public Object getAttribute(String attribute)
-    throws AttributeNotFoundException, MBeanException, ReflectionException
+    protected void onRegister(MBeanServer server, ObjectName beanName)
     {
-        throw new UnsupportedOperationException("this bean has no attributes");
-    }
-
-    @Override
-    public void setAttribute(Attribute attribute)
-    throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException,
-    ReflectionException
-    {
-        throw new UnsupportedOperationException("this bean has no attributes");
-    }
-
-    @Override
-    public AttributeList getAttributes(String[] attributes)
-    {
-        throw new UnsupportedOperationException("this bean has no attributes");
-    }
-
-    @Override
-    public AttributeList setAttributes(AttributeList attributes)
-    {
-        throw new UnsupportedOperationException("this bean has no attributes");
-    }
-
-    @Override
-    public Object invoke(String actionName, Object[] params, String[] signature)
-    throws MBeanException, ReflectionException
-    {
-        throw new UnsupportedOperationException("this bean has no operations");
-    }
-
-    @Override
-    public MBeanInfo getMBeanInfo()
-    {
-        return new MBeanInfo(
-            getClass().getName(),
-            "Enables reporting of writer statistics via JMX",
-            new MBeanAttributeInfo[0],
-            new MBeanConstructorInfo[0],
-            new MBeanOperationInfo[0],
-            new MBeanNotificationInfo[0]);
-    }
-
-//----------------------------------------------------------------------------
-//  Implementation of MBeanRegistration
-//----------------------------------------------------------------------------
-
-    @Override
-    public ObjectName preRegister(MBeanServer server, ObjectName name) throws Exception
-    {
-        if (name == null)
-        {
-            name = new ObjectName("log4j:name=AWSWriterStats");
-        }
-
-        myServer = server;
-        myName = name;
-
-        return myName;
+        JMXManager.getInstance().addMarkerBean(this, myServer, myName);
     }
 
 
     @Override
-    public void postRegister(Boolean registrationDone)
+    protected void onDeregister(MBeanServer server, ObjectName beanName)
     {
-        if (Boolean.TRUE.equals(registrationDone))
-        {
-            JMXManager.getInstance().addStatisticsMBean(this, myServer, myName);
-        }
+        JMXManager.getInstance().removeMarkerBean(this);
     }
-
-
-    @Override
-    public void preDeregister() throws Exception
-    {
-        // we don't need to do anything
-    }
-
-
-    @Override
-    public void postDeregister()
-    {
-        JMXManager.getInstance().removeStatisticsMBean(this);
-    }
-
 }

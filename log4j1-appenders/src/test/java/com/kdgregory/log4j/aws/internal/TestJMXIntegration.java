@@ -15,17 +15,9 @@
 package com.kdgregory.log4j.aws.internal;
 
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Arrays;
 
-import javax.management.MBeanInfo;
-import javax.management.MBeanRegistration;
-import javax.management.MBeanRegistrationException;
-import javax.management.MBeanServer;
-import javax.management.ObjectInstance;
 import javax.management.ObjectName;
-import javax.management.ReflectionException;
-import javax.management.StandardMBean;
 
 import org.junit.After;
 import org.junit.Before;
@@ -37,140 +29,70 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
 
-import net.sf.kdgcommons.lang.ClassUtil;
-import net.sf.kdgcommons.test.SelfMock;
-import static net.sf.kdgcommons.test.StringAsserts.*;
-
 import com.kdgregory.log4j.aws.StatisticsMBean;
-import com.kdgregory.log4j.aws.internal.JMXManager;
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.MockCloudWatchWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.TestableCloudWatchAppender;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.TestableKinesisAppender;
 import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.sns.TestableSNSAppender;
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatisticsMXBean;
-import com.kdgregory.logging.aws.kinesis.KinesisWriterStatisticsMXBean;
-import com.kdgregory.logging.aws.sns.SNSWriterStatisticsMXBean;
 import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
+import com.kdgregory.logging.aws.testhelpers.jmx.MockMBeanServer;
 
 
 /**
- *  This set of tests uses real appenders and a semi-functional mock MBean
- *  Server to exercise the full behavior of JMX registration.
+ *  A single testcase that verifies that all appenders will register themselves
+ *  with JMXManager, and that StatisticsMBean properly interacts with an MBean
+ *  server.
  */
 public class TestJMXIntegration
 {
+    private Logger logger;
+    private TestableCloudWatchAppender cloudwatchAppender;
+    private TestableKinesisAppender kinesisAppender;
+    private TestableSNSAppender snsAppender;
 
 //----------------------------------------------------------------------------
 //  Support Code
 //----------------------------------------------------------------------------
 
-    private static class TestableJMXManager
-    extends JMXManager
+    private void initializeLogging(String resourceFileName)
     {
-        // nothing here; just used to expose protected fields
-    }
-
-
-    private static class MockMBeanServer
-    extends SelfMock<MBeanServer>
-    {
-        private MBeanServer serverInstance = null;
-
-        public Map<ObjectName,Object> registeredBeansByName = new HashMap<ObjectName,Object>();
-
-        public MockMBeanServer()
-        {
-            super(MBeanServer.class);
-        }
-
-        @Override
-        public MBeanServer getInstance()
-        {
-            serverInstance = super.getInstance();
-            return serverInstance;
-        }
-
-        @SuppressWarnings("unused")
-        public ObjectInstance createMBean(String className, ObjectName name)
-        throws ReflectionException, MBeanRegistrationException
-        {
-            Object bean = null;
-            try
-            {
-                Class<?> beanClass = Class.forName(className);
-                bean = beanClass.newInstance();
-            }
-            catch (Exception ex)
-            {
-                throw new ReflectionException(ex);
-            }
-
-            return registerMBean(bean, name);
-        }
-
-        public ObjectInstance registerMBean(Object bean, ObjectName name)
-        throws MBeanRegistrationException
-        {
-            try
-            {
-                if (bean instanceof MBeanRegistration)
-                    ((MBeanRegistration)bean).preRegister(serverInstance, name);
-
-                registeredBeansByName.put(name, bean);
-
-                if (bean instanceof MBeanRegistration)
-                    ((MBeanRegistration)bean).postRegister(Boolean.TRUE);
-            }
-            catch (Exception ex)
-            {
-                throw new MBeanRegistrationException(ex);
-            }
-
-            return new ObjectInstance(name, bean.getClass().getName());
-        }
-
-        @SuppressWarnings("unused")
-        public void unregisterMBean(ObjectName name)
-        throws MBeanRegistrationException
-        {
-            try
-            {
-                Object bean = registeredBeansByName.remove(name);
-                if (bean instanceof MBeanRegistration)
-                {
-                    ((MBeanRegistration)bean).preDeregister();
-                    ((MBeanRegistration)bean).postDeregister();
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new MBeanRegistrationException(ex);
-            }
-        }
-    }
-
-
-    private static void loadLoggingConfig()
-    {
-        URL config = ClassLoader.getSystemResource("internal/TestJMXIntegration.properties");
+        URL config = ClassLoader.getSystemResource(resourceFileName);
         assertNotNull("was able to retrieve config", config);
         PropertyConfigurator.configure(config);
+
+        logger = Logger.getLogger("allDestinations");
+        assertNotNull("configuration properly read, logger available", logger);
+
+        cloudwatchAppender = (TestableCloudWatchAppender)logger.getAppender("cloudwatch");
+        assertNotNull("could get CloudWatch appender", cloudwatchAppender);
+
+        cloudwatchAppender.setThreadFactory(new InlineThreadFactory());
+        cloudwatchAppender.setWriterFactory(new MockCloudWatchWriterFactory(cloudwatchAppender));
+
+        kinesisAppender = (TestableKinesisAppender)logger.getAppender("kinesis");
+        assertNotNull("could get CloudWatch appender", kinesisAppender);
+
+        kinesisAppender.setThreadFactory(new InlineThreadFactory());
+        kinesisAppender.setWriterFactory(new MockKinesisWriterFactory(kinesisAppender));
+
+        snsAppender = (TestableSNSAppender)logger.getAppender("sns");
+        assertNotNull("could get CloudWatch appender", snsAppender);
+
+        snsAppender.setThreadFactory(new InlineThreadFactory());
+        snsAppender.setWriterFactory(new MockSNSWriterFactory());
     }
 
 //----------------------------------------------------------------------------
-//  Setup/Teardown/state
+//  Setup/Teardown
 //----------------------------------------------------------------------------
-
-    private TestableJMXManager jmxManager;
 
     @Before
     public void setUp()
     {
-        LogManager.resetConfiguration();
-        jmxManager = new TestableJMXManager();
-        TestableJMXManager.reset(jmxManager);
+        LogLog.setQuietMode(true);
+        JMXManager.reset();
     }
 
 
@@ -185,187 +107,30 @@ public class TestJMXIntegration
 //----------------------------------------------------------------------------
 
     @Test
-    public void testStatisticsMBeanRegistration() throws Exception
+    public void testJMXIntegration() throws Exception
     {
-        ObjectName beanName = new ObjectName("Testing:name=example");
+        initializeLogging("internal/TestJMXIntegration.properties");
 
         MockMBeanServer mock = new MockMBeanServer();
-        MBeanServer server = mock.getInstance();
 
-        server.createMBean(StatisticsMBean.class.getName(), beanName);
+        mock.getInstance().createMBean(
+            StatisticsMBean.class.getName(),
+            new ObjectName("log4j:name=Statistics"));
 
-        StatisticsMBean bean = (StatisticsMBean)mock.registeredBeansByName.get(beanName);
+        assertEquals("after marker registration, number of mbeans registered", 1, mock.registeredBeansByName.size());
 
-        assertNotNull("bean exists",         bean);
-        assertSame("bean retained server",   server,    ClassUtil.getFieldValue(bean, "myServer", MBeanServer.class));
-        assertEquals("bean retained name",   beanName,  ClassUtil.getFieldValue(bean, "myName", ObjectName.class));
+        logger.debug("test message");
 
-        MBeanInfo beanInfo = bean.getMBeanInfo();
+        assertEquals("after first message, number of mbeans registered", 4, mock.registeredBeansByName.size());
 
-        assertEquals("bean info provides classname",                StatisticsMBean.class.getName(), beanInfo.getClassName());
-        assertNotEmpty("bean info provides description",            beanInfo.getDescription());
-        assertEquals("bean info does not indicate attributes",      0,  beanInfo.getAttributes().length);
-        assertEquals("bean info does not indicate operations",      0,  beanInfo.getOperations().length);
-        assertEquals("bean info does not indicate notifications",   0,  beanInfo.getNotifications().length);
-        assertEquals("bean info does not indicate constructors",    0,  beanInfo.getConstructors().length);
+        for (String appenderName : Arrays.asList("cloudwatch", "kinesis", "sns"))
+        {
+            ObjectName expectedName = new ObjectName("log4j:appender=" + appenderName + ",statistics=writer");
+            assertNotNull("able to retrieve stats bean for " + appenderName, mock.registeredBeansByName.get(expectedName));
+        }
 
-        assertSame("JMXManager associates server with bean",        server, jmxManager.knownServers.get(bean).get(0));
+        LogManager.shutdown();
 
-        server.unregisterMBean(beanName);
-
-        assertTrue("unregistering bean removes it from JMXManager", jmxManager.knownServers.isEmpty());
+        assertEquals("after shutting down logging, number of mbeans registered", 1, mock.registeredBeansByName.size());
     }
-
-
-    @Test
-    public void testAppenderRegistration() throws Exception
-    {
-        loadLoggingConfig();
-        Logger logger = Logger.getLogger("allDestinations");
-
-        TestableCloudWatchAppender cloudwatchAppender = (TestableCloudWatchAppender)logger.getAppender("cloudwatch");
-        cloudwatchAppender.setThreadFactory(new InlineThreadFactory());
-        cloudwatchAppender.setWriterFactory(new MockCloudWatchWriterFactory(cloudwatchAppender));
-
-        TestableKinesisAppender kinesisAppender = (TestableKinesisAppender)logger.getAppender("kinesis");
-        kinesisAppender.setThreadFactory(new InlineThreadFactory());
-        kinesisAppender.setWriterFactory(new MockKinesisWriterFactory(kinesisAppender));
-
-        TestableSNSAppender snsAppender = (TestableSNSAppender)logger.getAppender("sns");
-        snsAppender.setThreadFactory(new InlineThreadFactory());
-        snsAppender.setWriterFactory(new MockSNSWriterFactory());
-
-        assertNull("before first message, JMXManager doesn't know about CloudWatch stats bean",  jmxManager.appenderStatsBeans.get("cloudwatch"));
-        assertNull("before first message, JMXManager doesn't know about CloudWatch stats class", jmxManager.appenderStatsBeanTypes.get("cloudwatch"));
-        assertNull("before first message, JMXManager doesn't know about Kinesis stats bean",     jmxManager.appenderStatsBeans.get("kinesis"));
-        assertNull("before first message, JMXManager doesn't know about Kinesis stats class",    jmxManager.appenderStatsBeanTypes.get("kinesis"));
-        assertNull("before first message, JMXManager doesn't know about SNS stats bean",         jmxManager.appenderStatsBeans.get("sns"));
-        assertNull("before first message, JMXManager doesn't know about stats class",            jmxManager.appenderStatsBeanTypes.get("sns"));
-
-        logger.info("test message");
-
-        assertSame("after message, JMXManager knows about CloudWatch stats bean",   cloudwatchAppender.getAppenderStatistics(), jmxManager.appenderStatsBeans.get("cloudwatch"));
-        assertSame("after message, JMXManager knows about CloudWatch stats class",  CloudWatchWriterStatisticsMXBean.class,   jmxManager.appenderStatsBeanTypes.get("cloudwatch"));
-        assertSame("after message, JMXManager knows about Kinesis stats bean",      kinesisAppender.getAppenderStatistics(),    jmxManager.appenderStatsBeans.get("kinesis"));
-        assertSame("after message, JMXManager knows about Kinesis stats class",     KinesisWriterStatisticsMXBean.class,      jmxManager.appenderStatsBeanTypes.get("kinesis"));
-        assertSame("after message, JMXManager knows about SNS stats bean",          snsAppender.getAppenderStatistics(),        jmxManager.appenderStatsBeans.get("sns"));
-        assertSame("after message, JMXManager knows about SNS stats class",         SNSWriterStatisticsMXBean.class,          jmxManager.appenderStatsBeanTypes.get("sns"));
-
-        snsAppender.close();
-
-        assertNull("closing appender removes bean from JMXManager",                 jmxManager.appenderStatsBeans.get("sns"));
-        assertNull("closing appender removes stats class from JMXManager",          jmxManager.appenderStatsBeanTypes.get("sns"));
-    }
-
-
-    @Test
-    public void testBeanEnabledBeforeAppender() throws Exception
-    {
-        MockMBeanServer mock = new MockMBeanServer();
-        MBeanServer server = mock.getInstance();
-
-        ObjectName statisticsMBeanName = new ObjectName("Testing:name=example");
-        server.createMBean(StatisticsMBean.class.getName(), statisticsMBeanName);
-
-        assertNotNull("StatisticsMBean registered with server", mock.registeredBeansByName.get(statisticsMBeanName));
-
-        loadLoggingConfig();
-        Logger logger = Logger.getLogger("cloudwatchOnly");
-        ObjectName appenderMBeanName = new ObjectName("log4j:appender=cloudwatch,statistics=writer");
-
-        TestableCloudWatchAppender appender = (TestableCloudWatchAppender)logger.getAppender("cloudwatch");
-        appender.setThreadFactory(new InlineThreadFactory());
-        appender.setWriterFactory(new MockCloudWatchWriterFactory(appender));
-
-        assertEquals("before first message, number of registered beans", 1, mock.registeredBeansByName.size());
-
-        logger.info("some message");
-
-        assertEquals("after first message, number of registered beans",  2, mock.registeredBeansByName.size());
-
-        StandardMBean registeredAppenderBean = (StandardMBean)mock.registeredBeansByName.get(appenderMBeanName);
-        assertSame("appender bean registered with server", appender.getAppenderStatistics(), registeredAppenderBean.getImplementation());
-
-        server.unregisterMBean(statisticsMBeanName);
-
-        assertEquals("removing StatisticsMBean deregisters appender", 0, mock.registeredBeansByName.size());
-    }
-
-
-    @Test
-    public void testBeanEnabledAfterAppender() throws Exception
-    {
-        MockMBeanServer mock = new MockMBeanServer();
-        MBeanServer server = mock.getInstance();
-
-        loadLoggingConfig();
-        Logger logger = Logger.getLogger("cloudwatchOnly");
-        ObjectName appenderMBeanName = new ObjectName("log4j:appender=cloudwatch,statistics=writer");
-
-        TestableCloudWatchAppender appender = (TestableCloudWatchAppender)logger.getAppender("cloudwatch");
-        appender.setThreadFactory(new InlineThreadFactory());
-        appender.setWriterFactory(new MockCloudWatchWriterFactory(appender));
-
-        assertEquals("before first message, number of registered beans", 0, mock.registeredBeansByName.size());
-
-        logger.info("some message");
-
-        assertEquals("after first message, number of registered beans",  0, mock.registeredBeansByName.size());
-
-        ObjectName statisticsMBeanName = new ObjectName("Testing:name=example");
-        server.createMBean(StatisticsMBean.class.getName(), statisticsMBeanName);
-
-        assertNotNull("StatisticsMBean registered with server", mock.registeredBeansByName.get(statisticsMBeanName));
-        assertEquals("after registering StatisticsMBean, number of registered beans",  2, mock.registeredBeansByName.size());
-
-        StandardMBean registeredAppenderBean = (StandardMBean)mock.registeredBeansByName.get(appenderMBeanName);
-        assertSame("appender bean registered with server", appender.getAppenderStatistics(), registeredAppenderBean.getImplementation());
-
-        server.unregisterMBean(appenderMBeanName);
-
-        assertNull("unregistered appender bean",                                        mock.registeredBeansByName.get(appenderMBeanName));
-        assertNotNull("unregistering appender bean did not unregister StatisticsMBean", mock.registeredBeansByName.get(statisticsMBeanName));
-    }
-
-
-    @Test
-    public void testMultipleServers() throws Exception
-    {
-        MockMBeanServer mock1 = new MockMBeanServer();
-        MBeanServer server1 = mock1.getInstance();
-
-        MockMBeanServer mock2 = new MockMBeanServer();
-        MBeanServer server2 = mock2.getInstance();
-
-        ObjectName statisticsMBeanName = new ObjectName("Testing:name=example");
-
-        server1.createMBean(StatisticsMBean.class.getName(), statisticsMBeanName);
-        assertNotNull("StatisticsMBean registered with server 1", mock1.registeredBeansByName.get(statisticsMBeanName));
-
-        server2.createMBean(StatisticsMBean.class.getName(), statisticsMBeanName);
-        assertNotNull("StatisticsMBean registered with server 2", mock2.registeredBeansByName.get(statisticsMBeanName));
-
-        loadLoggingConfig();
-        Logger logger = Logger.getLogger("cloudwatchOnly");
-        ObjectName appenderMBeanName = new ObjectName("log4j:appender=cloudwatch,statistics=writer");
-
-        TestableCloudWatchAppender appender = (TestableCloudWatchAppender)logger.getAppender("cloudwatch");
-        appender.setThreadFactory(new InlineThreadFactory());
-        appender.setWriterFactory(new MockCloudWatchWriterFactory(appender));
-
-        assertEquals("before first message, number of registered beans in server 1", 1, mock1.registeredBeansByName.size());
-        assertEquals("before first message, number of registered beans in server 2", 1, mock2.registeredBeansByName.size());
-
-        logger.info("some message");
-
-        assertEquals("after first message, number of registered beans in server 1", 2, mock1.registeredBeansByName.size());
-        assertEquals("after first message, number of registered beans in server 2", 2, mock2.registeredBeansByName.size());
-
-        StandardMBean registeredAppenderBean1 = (StandardMBean)mock1.registeredBeansByName.get(appenderMBeanName);
-        assertSame("appender bean registered with server 1", appender.getAppenderStatistics(), registeredAppenderBean1.getImplementation());
-
-        StandardMBean registeredAppenderBean2 = (StandardMBean)mock2.registeredBeansByName.get(appenderMBeanName);
-        assertSame("appender bean registered with server 2", appender.getAppenderStatistics(), registeredAppenderBean2.getImplementation());
-    }
-
 }

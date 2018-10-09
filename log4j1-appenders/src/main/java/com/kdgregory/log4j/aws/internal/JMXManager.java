@@ -14,21 +14,10 @@
 
 package com.kdgregory.log4j.aws.internal;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
-import javax.management.StandardMBean;
 
-import org.apache.log4j.helpers.LogLog;
-
-import com.kdgregory.log4j.aws.StatisticsMBean;
-import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
+import com.kdgregory.logging.common.jmx.AbstractJMXManager;
 
 
 /**
@@ -41,207 +30,41 @@ import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
  *  race conditions between appender and StatisticsMBean registration.
  */
 public class JMXManager
+extends AbstractJMXManager
 {
-//----------------------------------------------------------------------------
-//  Singleton
-//----------------------------------------------------------------------------
-
-    private volatile static JMXManager singleton = new JMXManager();
-
-    public static JMXManager getInstance()
+    private static JMXManager singleton;
+    
+    /**
+     *  Lazily instantiates the singleton instance.
+     */
+    public static synchronized JMXManager getInstance()
     {
-        return singleton;
+        if (singleton == null)
+            singleton = new JMXManager();
+        return (JMXManager)singleton;
     }
 
 
     /**
-     *  Replaces the singleton instance with a new instance. This method is
-     *  exposed for testing; it should never be called by application code.
+     *  Resets the singleton instance. This is intended for testing.
      */
-    public static void reset(JMXManager newManager)
+    public static synchronized void reset()
     {
-        singleton = newManager;
+        singleton = null;
     }
 
-//----------------------------------------------------------------------------
-//  Data members -- all are marked protected so they can be examined by tests
-//----------------------------------------------------------------------------
 
-    protected Map<StatisticsMBean,List<MBeanServer>> knownServers
-        = new IdentityHashMap<StatisticsMBean,List<MBeanServer>>();
-
-    protected Map<String,AbstractWriterStatistics> appenderStatsBeans
-        = new HashMap<String,AbstractWriterStatistics>();
-
-    protected Map<String,Class<?>> appenderStatsBeanTypes
-        = new HashMap<String,Class<?>>();
-
-
-//----------------------------------------------------------------------------
-//  Methods called by StatisticsMBean
-//----------------------------------------------------------------------------
-
-    /**
-     *  Adds relationship between a StatisticsMBean and an MBeanServer to the
-     *  internal tables. If any appender beans are known, will register those
-     *  beans with the same server.
-     *  <p>
-     *  The StatisticsMBean table is based on object identity. Attempting to
-     *  add the same bean/server more than once is silently ignored (should
-     *  never happen in the real world).
-     */
-    public synchronized void addStatisticsMBean(StatisticsMBean bean, MBeanServer server, ObjectName name)
+    private JMXManager()
     {
-        List<MBeanServer> servers = knownServers.get(bean);
-        if (servers == null)
-        {
-            servers = new ArrayList<MBeanServer>();
-            knownServers.put(bean, servers);
-        }
-
-        servers.add(server);
-
-        for (String appenderName :  appenderStatsBeans.keySet())
-        {
-            registerAppenderBean(appenderName, server);
-        }
+        super(new Log4JInternalLogger("log4j-aws-appenders JMXManager"));
     }
 
 
     /**
-     *  Will deregister a StatisticsMBean instance from all known servers.
+     *  Returns an object name consistent with Log4J's config beans.
      */
-    public synchronized void removeStatisticsMBean(StatisticsMBean bean)
-    {
-        List<MBeanServer> servers = knownServers.remove(bean);
-        if (servers == null)
-        {
-            LogLog.warn("log4j-aws-appenders JMXManager: attempt to remove unregistered StatisticsMBean");
-            return;
-        }
-
-        for (MBeanServer server : servers)
-        {
-            for (String appenderName : appenderStatsBeans.keySet())
-            {
-                unregisterAppenderBean(appenderName, server);
-            }
-        }
-    }
-
-//----------------------------------------------------------------------------
-//  Methods called by AbstractAppender
-//----------------------------------------------------------------------------
-
-    /**
-     *  Adds an appender's statsbean and its class to the internal tracking tables.
-     *  If there are known StatisticsMBean/MBeanServer associations, the appender's
-     *  statistics bean will also be registered with those servers.
-     *  <p>
-     *  These tables are managed by appender name. Calling with the same name and
-     *  same appender bean is silently ignored. Calling with the same name but a
-     *  different appender bean is an error. In the real world, neither of these
-     *  cases should happen, because the appender is registered during initialization.
-     */
-    public synchronized void addAppender(String appenderName, AbstractWriterStatistics statsBean, Class<?> statsBeanClass)
-    {
-        appenderStatsBeans.put(appenderName, statsBean);
-        appenderStatsBeanTypes.put(appenderName, statsBeanClass);
-
-        for (List<MBeanServer> servers : knownServers.values())
-        {
-            for (MBeanServer server : servers)
-            {
-                registerAppenderBean(appenderName, server);
-            }
-        }
-    }
-
-
-    /**
-     *  Removes information about an appender from the internal tables and deregisters
-     *  it from any MBeanServers. This is normally called when the appender is closed.
-     */
-    public synchronized void removeAppender(String appenderName)
-    {
-        appenderStatsBeans.remove(appenderName);
-        appenderStatsBeanTypes.remove(appenderName);
-
-        for (List<MBeanServer> servers : knownServers.values())
-        {
-            for (MBeanServer server : servers)
-            {
-                unregisterAppenderBean(appenderName, server);
-            }
-        }
-    }
-
-
-//----------------------------------------------------------------------------
-//  Internals -- protected so they can be overridden
-//----------------------------------------------------------------------------
-
-    /**
-     *  Registers an appender's stats bean with a server.
-     */
-    @SuppressWarnings("rawtypes")
-    protected void registerAppenderBean(String appenderName, MBeanServer mbeanServer)
-    {
-        if (appenderName == null)
-        {
-            LogLog.error("log4j-aws-appenders JMXManager: attempted to register null appender");
-            return;
-        }
-
-        if (mbeanServer == null)
-        {
-            LogLog.error("log4j-aws-appenders JMXManager: attempted to register null server");
-            return;
-        }
-
-        Object statsBean = appenderStatsBeans.get(appenderName);
-        Class statsBeanClass = appenderStatsBeanTypes.get(appenderName);
-        if ((statsBean == null) || (statsBeanClass == null))
-        {
-            LogLog.error("log4j-aws-appenders JMXManager: don't know bean or class for appender: " + appenderName);
-            return;
-        }
-
-        try
-        {
-            StandardMBean mbean = new StandardMBean(statsBeanClass.cast(statsBean), statsBeanClass, false);
-            mbeanServer.registerMBean(mbean, toObjectName(appenderName));
-        }
-        catch (Exception ex)
-        {
-            LogLog.warn("log4j-aws-appenders JMXManager: failed to register appender statistics with JMX", ex);
-        }
-    }
-
-
-    /**
-     *  Deregisters an appender's stats bean from a server.
-     */
-    protected void unregisterAppenderBean(String appenderName, MBeanServer mbeanServer)
-    {
-        try
-        {
-            mbeanServer.unregisterMBean(toObjectName(appenderName));
-        }
-        catch (Exception ex)
-        {
-            LogLog.warn("log4j-aws-appenders JMXManager: failed to unregister appender statistics with JMX", ex);
-        }
-    }
-
-
-    /**
-     *  Returns a standard JMX ObjectName based on an appender name. This name
-     *  follows the format used by the Log4J <code>AppenderDynamicMBean</code>
-     *  so that the statistics will appear underneath the appender in the bean
-     *  hierarchy.
-     */
-    private static ObjectName toObjectName(String appenderName)
+    @Override
+    protected ObjectName toObjectName(String appenderName)
     throws MalformedObjectNameException
     {
         return new ObjectName("log4j:appender=" + appenderName + ",statistics=writer");

@@ -26,6 +26,7 @@ import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.ThreadFactory;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.common.util.RotationMode;
 
 
 /**
@@ -104,7 +105,7 @@ extends AppenderSkeleton
     protected long            batchDelay;
     protected int             discardThreshold;
     protected DiscardAction   discardAction;
-    protected RotationMode    rotationMode;
+    protected RotationMode    rotationMode = RotationMode.none;
     protected long            rotationInterval;
     protected AtomicInteger   sequence;
     protected String          clientFactory;
@@ -247,10 +248,7 @@ extends AppenderSkeleton
 
     /**
      *  Sets the rule for log stream rotation, for those appenders that support rotation.
-     *  See {@link com.kdgregory.log4j.aws.internal.RotationMode} for values.
-     *  <p>
-     *  Attempting to set an invalid mode is equivalent to "none", but will emit a warning
-     *  to the Log4J internal log.
+     *  See {@link com.kdgregory.logging.common.util.RotationMode} for values.
      */
     public void setRotationMode(String value)
     {

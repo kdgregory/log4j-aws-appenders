@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws.internal;
-
-import org.apache.log4j.helpers.LogLog;
+package com.kdgregory.logging.common.util;
 
 
 /**
@@ -45,14 +43,6 @@ public enum RotationMode
      */
     public static RotationMode lookup(String value)
     {
-        try
-        {
-            return RotationMode.valueOf(value.toLowerCase());
-        }
-        catch (IllegalArgumentException ex)
-        {
-            LogLog.error("invalid rotationMode: " + value);
-            return RotationMode.none;
-        }
+        return RotationMode.valueOf(value.toLowerCase());
     }
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws.internal.shared;
+package com.kdgregory.log4j.aws.internal;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -247,7 +247,7 @@ extends AppenderSkeleton
 
     /**
      *  Sets the rule for log stream rotation, for those appenders that support rotation.
-     *  See {@link com.kdgregory.log4j.aws.internal.shared.RotationMode} for values.
+     *  See {@link com.kdgregory.log4j.aws.internal.RotationMode} for values.
      *  <p>
      *  Attempting to set an invalid mode is equivalent to "none", but will emit a warning
      *  to the Log4J internal log.

@@ -16,7 +16,7 @@ package com.kdgregory.log4j.aws;
 
 import java.util.Date;
 
-import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
+import com.kdgregory.log4j.aws.internal.AbstractAppender;
 import com.kdgregory.logging.aws.common.Substitutions;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSWriterStatisticsMXBean;

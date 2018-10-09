@@ -16,9 +16,9 @@ package com.kdgregory.log4j.aws;
 
 import java.util.Date;
 
-import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatisticsMXBean;
+import com.kdgregory.log4j.aws.internal.AbstractAppender;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchConstants;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterFactory;

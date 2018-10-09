@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws.internal.shared;
+package com.kdgregory.log4j.aws.internal;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -22,6 +22,7 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.Priority;
 import org.apache.log4j.spi.LoggingEvent;
 
+import com.kdgregory.log4j.aws.internal.Utils;
 import com.kdgregory.logging.common.LogMessage;
 
 import java.io.PrintWriter;

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws.internal.shared;
+package com.kdgregory.log4j.aws.internal;
 
 import org.apache.log4j.helpers.LogLog;
 

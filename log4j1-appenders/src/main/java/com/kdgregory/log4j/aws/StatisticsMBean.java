@@ -30,7 +30,7 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
-import com.kdgregory.log4j.aws.internal.shared.JMXManager;
+import com.kdgregory.log4j.aws.internal.JMXManager;
 
 /**
  *  This class provides a bridge between the writer statistics exposed by an

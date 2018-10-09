@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws.internal.shared;
+package com.kdgregory.log4j.aws.internal;
 
 import java.net.URL;
 import java.util.HashMap;
@@ -42,6 +42,7 @@ import net.sf.kdgcommons.test.SelfMock;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.kdgregory.log4j.aws.StatisticsMBean;
+import com.kdgregory.log4j.aws.internal.JMXManager;
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.MockCloudWatchWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.TestableCloudWatchAppender;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisWriterFactory;

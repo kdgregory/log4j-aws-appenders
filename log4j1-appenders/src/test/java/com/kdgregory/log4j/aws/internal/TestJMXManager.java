@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws.internal.shared;
+package com.kdgregory.log4j.aws.internal;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +27,7 @@ import static org.junit.Assert.*;
 import net.sf.kdgcommons.test.SelfMock;
 
 import com.kdgregory.log4j.aws.StatisticsMBean;
+import com.kdgregory.log4j.aws.internal.JMXManager;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatisticsMXBean;
 import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;

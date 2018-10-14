@@ -32,7 +32,6 @@ import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterFactory;
-import com.kdgregory.logging.aws.testhelpers.AbstractLogWriterTest;
 import com.kdgregory.logging.aws.testhelpers.TestingException;
 import com.kdgregory.logging.aws.testhelpers.sns.MockSNSClient;
 import com.kdgregory.logging.common.LogMessage;

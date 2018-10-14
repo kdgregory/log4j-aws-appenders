@@ -39,7 +39,6 @@ import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterFactory;
-import com.kdgregory.logging.aws.testhelpers.AbstractLogWriterTest;
 import com.kdgregory.logging.aws.testhelpers.TestingException;
 import com.kdgregory.logging.aws.testhelpers.kinesis.MockKinesisClient;
 import com.kdgregory.logging.common.LogMessage;

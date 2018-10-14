@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logging.aws.testhelpers;
+package com.kdgregory.logging.aws;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 
@@ -22,6 +22,7 @@ import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
 
 import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
+import com.kdgregory.logging.aws.testhelpers.TestableInternalLogger;
 import com.kdgregory.logging.aws.internal.AbstractLogWriter;
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 import com.kdgregory.logging.common.factories.ClientFactory;

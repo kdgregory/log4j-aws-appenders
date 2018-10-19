@@ -23,6 +23,9 @@ import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.util.DiscardAction;
 
 
+/**
+ *  A mock equivalent of CloudWatchLogWriter, used by appender tests.
+ */
 public class MockCloudWatchWriter
 implements LogWriter
 {

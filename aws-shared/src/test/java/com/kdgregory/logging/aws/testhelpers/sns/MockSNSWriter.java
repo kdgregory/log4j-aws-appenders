@@ -23,6 +23,9 @@ import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.util.DiscardAction;
 
 
+/**
+ *  A mock equivalent of SNSLogWriter, used by appender tests.
+ */
 public class MockSNSWriter
 implements LogWriter
 {

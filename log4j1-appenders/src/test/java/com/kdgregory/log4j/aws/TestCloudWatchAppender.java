@@ -35,7 +35,6 @@ import com.kdgregory.log4j.testhelpers.aws.cloudwatch.MockCloudWatchWriterFactor
 import com.kdgregory.log4j.testhelpers.aws.cloudwatch.TestableCloudWatchAppender;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
-import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
 import com.kdgregory.logging.aws.testhelpers.TestingException;
 import com.kdgregory.logging.aws.testhelpers.ThrowingWriterFactory;
 import com.kdgregory.logging.aws.testhelpers.cloudwatch.MockCloudWatchWriter;
@@ -65,9 +64,6 @@ public class TestCloudWatchAppender
 
         Logger rootLogger = Logger.getRootLogger();
         appender = (TestableCloudWatchAppender)rootLogger.getAppender("default");
-
-        appender.setThreadFactory(new InlineThreadFactory());
-        appender.setWriterFactory(new MockCloudWatchWriterFactory(appender));
     }
 
 //----------------------------------------------------------------------------

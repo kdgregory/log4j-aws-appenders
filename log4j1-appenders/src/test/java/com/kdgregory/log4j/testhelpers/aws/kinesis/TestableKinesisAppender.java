@@ -17,6 +17,7 @@ package com.kdgregory.log4j.testhelpers.aws.kinesis;
 import com.kdgregory.log4j.aws.KinesisAppender;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
+import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
 import com.kdgregory.logging.aws.testhelpers.kinesis.MockKinesisWriter;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.ThreadFactory;
@@ -25,10 +26,18 @@ import com.kdgregory.logging.common.factories.WriterFactory;
 
 /**
  *  This class provides visibility into the protected variables held by
- *  KinesisAppender and AbstractAppender.
+ *  KinesisAppender and AbstractAppender. It also updates the factories
+ *  so that we don't get a real writer.
  */
-public class TestableKinesisAppender extends KinesisAppender
+public class TestableKinesisAppender
+extends KinesisAppender
 {
+    public TestableKinesisAppender()
+    {
+        super();
+        setThreadFactory(new InlineThreadFactory());
+        setWriterFactory(new MockKinesisWriterFactory(this));
+    }
 
     public void setThreadFactory(ThreadFactory threadFactory)
     {

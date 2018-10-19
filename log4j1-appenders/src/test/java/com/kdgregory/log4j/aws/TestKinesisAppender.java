@@ -35,7 +35,6 @@ import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.kinesis.TestableKinesisAppender;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
-import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
 import com.kdgregory.logging.aws.testhelpers.TestingException;
 import com.kdgregory.logging.aws.testhelpers.ThrowingWriterFactory;
 import com.kdgregory.logging.aws.testhelpers.kinesis.MockKinesisWriter;
@@ -43,8 +42,7 @@ import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 
 /**
- *  These tests exercise the high-level logic of the appender: configuration
- *  and interaction with the writer. To do so, it mocks the LogWriter.
+ *  These tests exercise the high-level logic of the appender.
  */
 public class TestKinesisAppender
 {
@@ -63,9 +61,6 @@ public class TestKinesisAppender
 
         Logger rootLogger = Logger.getRootLogger();
         appender = (TestableKinesisAppender)rootLogger.getAppender("default");
-
-        appender.setThreadFactory(new InlineThreadFactory());
-        appender.setWriterFactory(new MockKinesisWriterFactory(appender));
     }
 
 //----------------------------------------------------------------------------

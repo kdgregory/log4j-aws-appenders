@@ -17,6 +17,7 @@ package com.kdgregory.log4j.testhelpers.aws.sns;
 import com.kdgregory.log4j.aws.SNSAppender;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
+import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
 import com.kdgregory.logging.aws.testhelpers.sns.MockSNSWriter;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
@@ -26,11 +27,18 @@ import com.kdgregory.logging.common.factories.WriterFactory;
 
 /**
  *  This class provides visibility into the protected variables held by
- *  SNSAppender and AbstractAppender.
+ *  SNSAppender and AbstractAppender. It also updates the factories
+ *  so that we don't get a real writer.
  */
 public class TestableSNSAppender
 extends SNSAppender
 {
+    public TestableSNSAppender()
+    {
+        super();
+        setThreadFactory(new InlineThreadFactory());
+        setWriterFactory(new MockSNSWriterFactory());
+    }
 
     public void setThreadFactory(ThreadFactory threadFactory)
     {

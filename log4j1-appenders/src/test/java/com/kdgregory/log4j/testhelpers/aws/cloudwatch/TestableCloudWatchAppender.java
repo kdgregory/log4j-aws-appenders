@@ -17,6 +17,7 @@ package com.kdgregory.log4j.testhelpers.aws.cloudwatch;
 import com.kdgregory.log4j.aws.CloudWatchAppender;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
+import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
 import com.kdgregory.logging.aws.testhelpers.cloudwatch.MockCloudWatchWriter;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
@@ -26,10 +27,19 @@ import com.kdgregory.logging.common.factories.WriterFactory;
 
 /**
  *  This class provides visibility into the protected variables held by
- *  CloudWatchAppender and AbstractAppender.
+ *  CloudWatchAppender and AbstractAppender. It also updates the factories
+ *  so that we don't get a real writer.
  */
-public class TestableCloudWatchAppender extends CloudWatchAppender
+public class TestableCloudWatchAppender
+extends CloudWatchAppender
 {
+    public TestableCloudWatchAppender()
+    {
+        super();
+        setThreadFactory(new InlineThreadFactory());
+        setWriterFactory(new MockCloudWatchWriterFactory(this));
+    }
+
 
     public void setThreadFactory(ThreadFactory threadFactory)
     {

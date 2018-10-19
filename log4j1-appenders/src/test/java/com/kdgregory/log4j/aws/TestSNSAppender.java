@@ -35,7 +35,6 @@ import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSWriterFactory;
 import com.kdgregory.log4j.testhelpers.aws.sns.TestableSNSAppender;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
-import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
 import com.kdgregory.logging.aws.testhelpers.TestingException;
 import com.kdgregory.logging.aws.testhelpers.ThrowingWriterFactory;
 import com.kdgregory.logging.aws.testhelpers.sns.MockSNSWriter;
@@ -63,9 +62,6 @@ public class TestSNSAppender
 
         Logger rootLogger = Logger.getRootLogger();
         appender = (TestableSNSAppender)rootLogger.getAppender("default");
-
-        appender.setThreadFactory(new InlineThreadFactory());
-        appender.setWriterFactory(new MockSNSWriterFactory());
     }
 
 //----------------------------------------------------------------------------

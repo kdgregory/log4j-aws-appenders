@@ -14,7 +14,6 @@
 
 package com.kdgregory.log4j.aws;
 
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -32,12 +31,12 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 import net.sf.kdgcommons.collections.CollectionUtil;
+import net.sf.kdgcommons.lang.ClassUtil;
 
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.*;
 
-import com.kdgregory.log4j.aws.internal.shared.AbstractAppender;
 import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
@@ -95,7 +94,7 @@ public class CloudWatchAppenderIntegrationTest
         assertEquals("actual log stream name, from statistics", LOGSTREAM_BASE + "4",                   appenderStats.getActualLogStreamName());
         assertEquals("messages written, from statistics",       numMessages,                            appenderStats.getMessagesSent());
 
-        CloudWatchLogWriter lastWriter = getWriter(appender);
+        CloudWatchLogWriter lastWriter = ClassUtil.getFieldValue(appender, "writer", CloudWatchLogWriter.class);
         assertEquals("number of batches for last writer", 1, lastWriter.getBatchCount());
 
         assertTrue("client factory used", localFactoryUsed);
@@ -372,14 +371,5 @@ public class CloudWatchAppenderIntegrationTest
         {
             // this gets thrown if we deleted a non-existent log group; that's OK
         }
-    }
-
-
-    // this is a hack, to avoid duplicating or exposing TestableCloudWatchAppender
-    private CloudWatchLogWriter getWriter(CloudWatchAppender appender) throws Exception
-    {
-        Field writerField = AbstractAppender.class.getDeclaredField("writer");
-        writerField.setAccessible(true);
-        return (CloudWatchLogWriter)writerField.get(appender);
     }
 }

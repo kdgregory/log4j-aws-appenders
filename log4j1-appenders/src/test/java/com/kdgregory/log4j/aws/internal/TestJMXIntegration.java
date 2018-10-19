@@ -69,13 +69,13 @@ public class TestJMXIntegration
         assertNotNull("could get CloudWatch appender", cloudwatchAppender);
 
         cloudwatchAppender.setThreadFactory(new InlineThreadFactory());
-        cloudwatchAppender.setWriterFactory(new MockCloudWatchWriterFactory(cloudwatchAppender));
+        cloudwatchAppender.setWriterFactory(new MockCloudWatchWriterFactory());
 
         kinesisAppender = (TestableKinesisAppender)logger.getAppender("kinesis");
         assertNotNull("could get CloudWatch appender", kinesisAppender);
 
         kinesisAppender.setThreadFactory(new InlineThreadFactory());
-        kinesisAppender.setWriterFactory(new MockKinesisWriterFactory(kinesisAppender));
+        kinesisAppender.setWriterFactory(new MockKinesisWriterFactory());
 
         snsAppender = (TestableSNSAppender)logger.getAppender("sns");
         assertNotNull("could get CloudWatch appender", snsAppender);

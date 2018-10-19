@@ -37,7 +37,7 @@ extends CloudWatchAppender
     {
         super();
         setThreadFactory(new InlineThreadFactory());
-        setWriterFactory(new MockCloudWatchWriterFactory(this));
+        setWriterFactory(new MockCloudWatchWriterFactory());
     }
 
 

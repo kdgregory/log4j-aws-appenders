@@ -36,7 +36,7 @@ extends KinesisAppender
     {
         super();
         setThreadFactory(new InlineThreadFactory());
-        setWriterFactory(new MockKinesisWriterFactory(this));
+        setWriterFactory(new MockKinesisWriterFactory());
     }
 
     public void setThreadFactory(ThreadFactory threadFactory)

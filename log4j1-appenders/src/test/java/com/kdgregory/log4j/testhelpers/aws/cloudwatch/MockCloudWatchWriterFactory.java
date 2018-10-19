@@ -14,7 +14,6 @@
 
 package com.kdgregory.log4j.testhelpers.aws.cloudwatch;
 
-import com.kdgregory.log4j.aws.CloudWatchAppender;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.testhelpers.cloudwatch.MockCloudWatchWriter;
@@ -26,16 +25,8 @@ import com.kdgregory.logging.common.util.InternalLogger;
 public class MockCloudWatchWriterFactory
 implements WriterFactory<CloudWatchWriterConfig,CloudWatchWriterStatistics>
 {
-    public CloudWatchAppender appender;
-
     public int invocationCount = 0;
     public MockCloudWatchWriter writer;
-
-
-    public MockCloudWatchWriterFactory(CloudWatchAppender appender)
-    {
-        this.appender = appender;
-    }
 
 
     @Override

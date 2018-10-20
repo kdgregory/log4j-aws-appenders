@@ -14,6 +14,7 @@
 
 package com.kdgregory.logging.jmx;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +25,8 @@ import javax.management.ObjectName;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
+
+import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatisticsMXBean;
@@ -39,8 +42,10 @@ import com.kdgregory.logging.common.jmx.AbstractMarkerBean;
  */
 public class TestJMXManager
 {
+    private final static String MARKER_BEAN_NAME    = "Testing:name=example";
+    private final static String MARKER_BEAN_NAME_2  = "Testing:name=example2";
 
-    private final static String APPENDER_NAME_FORMAT = "Testing:appender=%s";
+    private final static List<String> EMPTY_LIST = Collections.<String>emptyList();
 
 //----------------------------------------------------------------------------
 //  Support Code
@@ -54,14 +59,8 @@ public class TestJMXManager
             super(logger);
         }
 
-        @Override
-        protected ObjectName toObjectName(String appenderName)
-        throws MalformedObjectNameException
-        {
-            return new ObjectName(String.format(APPENDER_NAME_FORMAT, appenderName));
-        }
-
-        public Map<Object,List<MBeanServer>>        getKnownServers()       { return knownServers; }
+        public Map<Object,List<MBeanServer>>        getKnownServers()       { return regisrations; }
+        public Map<MBeanServer,String>              getRegistrationNames()  { return registrationNames; }
         public Map<String,AbstractWriterStatistics> getStatsBeans()         { return statsBeans; }
         public Map<String,Class<?>>                 getStatsBeanTypes()     { return statsBeanTypes; }
     }
@@ -90,14 +89,26 @@ public class TestJMXManager
         }
     }
 
+
+    // this is an independent rewrite of AbstractJMXManager.toObjectName()
+    // changes to one or the other will cause the test to fail
+
+    private static ObjectName objectNameForAppender(ObjectName markerName, String appenderName)
+    throws MalformedObjectNameException
+    {
+        String baseName = markerName.getCanonicalName();
+        return new ObjectName(baseName + ",appender=" + appenderName);
+    }
+
 //----------------------------------------------------------------------------
 //  Setup/Teardown/state
 //----------------------------------------------------------------------------
 
-    private TestableInternalLogger logger;
+    private TestableInternalLogger internalLogger;
     private TestableJMXManager jmxManager;
     private ConcreteMarkerBean markerBean;
     private ObjectName markerBeanName;
+
     private MockMBeanServer mock;
     private MBeanServer server;
 
@@ -106,11 +117,11 @@ public class TestJMXManager
     public void setUp()
     throws Exception
     {
-        logger = new TestableInternalLogger();
-        jmxManager = new TestableJMXManager(logger);
+        internalLogger = new TestableInternalLogger();
+        jmxManager = new TestableJMXManager(internalLogger);
 
         markerBean = new ConcreteMarkerBean(jmxManager);
-        markerBeanName = new ObjectName("Testing:name=example");
+        markerBeanName = new ObjectName(MARKER_BEAN_NAME);
 
         mock = new MockMBeanServer();
         server = mock.getInstance();
@@ -124,31 +135,37 @@ public class TestJMXManager
     @Test
     public void testMarkerBeanAdditionAndRemoval() throws Exception
     {
-        assertEquals("test start, known marker associations",                   0,              jmxManager.getKnownServers().size());
-        assertEquals("test start, known stat beans",                            0,              jmxManager.getStatsBeans().size());
-        assertEquals("test start, known stat bean types",                       0,              jmxManager.getStatsBeanTypes().size());
+        assertEquals("test start, known marker associations",                   0,                  jmxManager.getKnownServers().size());
+        assertEquals("test start, known stat beans",                            0,                  jmxManager.getStatsBeans().size());
+        assertEquals("test start, known stat bean types",                       0,                  jmxManager.getStatsBeanTypes().size());
 
         server.registerMBean(markerBean, markerBeanName);
 
-        assertEquals("after registering marker, known marker associations",     1,              jmxManager.getKnownServers().size());
-        assertSame("after registering marker, known marker associations",       server,         jmxManager.getKnownServers().get(markerBean).get(0));
-        assertEquals("after registering marker, known stat beans",              0,              jmxManager.getStatsBeans().size());
-        assertEquals("after registering marker, known stat bean types",         0,              jmxManager.getStatsBeanTypes().size());
+        assertEquals("after registering marker, known marker associations",     1,                  jmxManager.getKnownServers().size());
+        assertSame("after registering marker, known marker associations",       server,             jmxManager.getKnownServers().get(markerBean).get(0));
+        assertEquals("after registering marker, known stat beans",              0,                  jmxManager.getStatsBeans().size());
+        assertEquals("after registering marker, known stat bean types",         0,                  jmxManager.getStatsBeanTypes().size());
+        assertEquals("after adding marker, number of names known",              1,                  jmxManager.getRegistrationNames().size());
+        assertEquals("after adding marker, marker name known",                  MARKER_BEAN_NAME,   jmxManager.getRegistrationNames().get(server));
 
         server.unregisterMBean(markerBeanName);
 
-        assertEquals("after unregistering marker, known marker associations",   0,              jmxManager.getKnownServers().size());
-        assertEquals("after unregistering marker, known stat beans",            0,              jmxManager.getStatsBeans().size());
-        assertEquals("after unregistering marker, known stat bean types",       0,              jmxManager.getStatsBeanTypes().size());
+        assertEquals("after unregistering marker, known marker associations",   0,                  jmxManager.getKnownServers().size());
+        assertEquals("after unregistering marker, known stat beans",            0,                  jmxManager.getStatsBeans().size());
+        assertEquals("after unregistering marker, known stat bean types",       0,                  jmxManager.getStatsBeanTypes().size());
+        assertEquals("after unregistering marker, number of names known",       0,                  jmxManager.getRegistrationNames().size());
+
+        assertEquals("internal log: errors",                                    EMPTY_LIST,         internalLogger.errorMessages);
+        assertEquals("internal log: warnings",                                  EMPTY_LIST,         internalLogger.warnMessages);
     }
 
 
     @Test
     public void testStatsBeanAdditionAndRemoval() throws Exception
     {
-        assertEquals("test start, known marker associations",                   0,              jmxManager.getKnownServers().size());
-        assertEquals("test start, known stat beans",                            0,              jmxManager.getStatsBeans().size());
-        assertEquals("test start, known stat bean types",                       0,              jmxManager.getStatsBeanTypes().size());
+        assertEquals("test start, known marker associations",                   0,                  jmxManager.getKnownServers().size());
+        assertEquals("test start, known stat beans",                            0,                  jmxManager.getStatsBeans().size());
+        assertEquals("test start, known stat bean types",                       0,                  jmxManager.getStatsBeanTypes().size());
 
         String appenderName = "example";
         AbstractWriterStatistics statsBean = new CloudWatchWriterStatistics();
@@ -156,105 +173,156 @@ public class TestJMXManager
 
         jmxManager.addStatsBean(appenderName, statsBean, statsBeanType);
 
-        assertEquals("after adding stats bean, known marker associations",      0,              jmxManager.getKnownServers().size());
-        assertEquals("after adding stats bean, known stat beans",               1,              jmxManager.getStatsBeans().size());
-        assertSame("after adding stats bean, known stat beans",                 statsBean,      jmxManager.getStatsBeans().get(appenderName));
-        assertEquals("after adding stats bean, known stat bean types",          1,              jmxManager.getStatsBeanTypes().size());
-        assertEquals("after adding stats bean, known stat bean types",          statsBeanType,  jmxManager.getStatsBeanTypes().get(appenderName));
+        assertEquals("after adding stats bean, known marker associations",      0,                  jmxManager.getKnownServers().size());
+        assertEquals("after adding stats bean, known stat beans",               1,                  jmxManager.getStatsBeans().size());
+        assertSame("after adding stats bean, known stat beans",                 statsBean,          jmxManager.getStatsBeans().get(appenderName));
+        assertEquals("after adding stats bean, known stat bean types",          1,                  jmxManager.getStatsBeanTypes().size());
+        assertEquals("after adding stats bean, known stat bean types",          statsBeanType,      jmxManager.getStatsBeanTypes().get(appenderName));
 
         jmxManager.removeStatsBean(appenderName);
 
-        assertEquals("after removing stats bean, known marker associations",    0,              jmxManager.getKnownServers().size());
-        assertEquals("after removing stats bean, known stat beans",             0,              jmxManager.getStatsBeans().size());
-        assertEquals("after removing marker, known stat bean types",            0,              jmxManager.getStatsBeanTypes().size());
+        assertEquals("after removing stats bean, known marker associations",    0,                  jmxManager.getKnownServers().size());
+        assertEquals("after removing stats bean, known stat beans",             0,                  jmxManager.getStatsBeans().size());
+        assertEquals("after removing marker, known stat bean types",            0,                  jmxManager.getStatsBeanTypes().size());
+
+        assertEquals("internal log: errors",                                    EMPTY_LIST,         internalLogger.errorMessages);
+        assertEquals("internal log: warnings",                                  EMPTY_LIST,         internalLogger.warnMessages);
     }
 
 
     @Test
     public void testMarkerBeanAddedBeforeStatsBean() throws Exception
     {
-        assertEquals("test start, known marker associations",                   0,              jmxManager.getKnownServers().size());
-        assertEquals("test start, known stat beans",                            0,              jmxManager.getStatsBeans().size());
-        assertEquals("test start, known stat bean types",                       0,              jmxManager.getStatsBeanTypes().size());
+        assertEquals("test start, known marker associations",                   0,                  jmxManager.getKnownServers().size());
+        assertEquals("test start, known stat beans",                            0,                  jmxManager.getStatsBeans().size());
+        assertEquals("test start, known stat bean types",                       0,                  jmxManager.getStatsBeanTypes().size());
 
         server.registerMBean(markerBean, markerBeanName);
 
-        assertEquals("before adding stats bean, registration count",            1,              mock.registerMBeanInvocationCount);
-        assertEquals("before adding stats bean, deregistration count",          0,              mock.unregisterMBeanInvocationCount);
-        assertEquals("before adding stats bean, number of registrations",       1,              mock.registeredBeansByName.size());
+        assertEquals("after adding marker bean, registration count",            1,                  mock.registerMBeanInvocationCount);
+        assertEquals("after adding marker bean, deregistration count",          0,                  mock.unregisterMBeanInvocationCount);
+        assertEquals("after adding marker bean, number of registrations",       1,                  mock.registeredBeansByName.size());
+        assertEquals("after adding marker bean, number of names known",         1,                  jmxManager.getRegistrationNames().size());
+        assertEquals("after adding marker bean, marker name known",             MARKER_BEAN_NAME,   jmxManager.getRegistrationNames().get(server));
 
         String appenderName = "example";
-        ObjectName expectedStatsBeanName = new ObjectName(String.format(APPENDER_NAME_FORMAT, appenderName));
+        ObjectName expectedStatsBeanName = objectNameForAppender(markerBeanName, appenderName);
         AbstractWriterStatistics statsBean = new CloudWatchWriterStatistics();
         Class<?> statsBeanType = CloudWatchWriterStatisticsMXBean.class;
 
         jmxManager.addStatsBean(appenderName, statsBean, statsBeanType);
 
-        assertEquals("after adding stats bean, registration count",             2,              mock.registerMBeanInvocationCount);
-        assertEquals("after adding stats bean, deregistration count",           0,              mock.unregisterMBeanInvocationCount);
-        assertNotNull("after adding stats bean, is registed under expected name",               mock.registeredBeansByName.get(expectedStatsBeanName));
+        assertEquals("after adding stats bean, registration count",             2,                  mock.registerMBeanInvocationCount);
+        assertEquals("after adding stats bean, deregistration count",           0,                  mock.unregisterMBeanInvocationCount);
+        assertNotNull("after adding stats bean, is registed under expected name",                   mock.registeredBeansByName.get(expectedStatsBeanName));
 
         jmxManager.removeStatsBean(appenderName);
 
-        assertEquals("after removing stats bean, registration count",           2,              mock.registerMBeanInvocationCount);
-        assertEquals("after removing stats bean, deregistration count",         1,              mock.unregisterMBeanInvocationCount);
-        assertNull("after adding stats bean, is registed under expected name",                  mock.registeredBeansByName.get(expectedStatsBeanName));
+        assertEquals("after removing stats bean, registration count",           2,                  mock.registerMBeanInvocationCount);
+        assertEquals("after removing stats bean, deregistration count",         1,                  mock.unregisterMBeanInvocationCount);
+        assertNull("after removing stats bean, not in active registrations",                        mock.registeredBeansByName.get(expectedStatsBeanName));
+
+        assertEquals("internal log: errors",                                    EMPTY_LIST,         internalLogger.errorMessages);
+        assertEquals("internal log: warnings",                                  EMPTY_LIST,         internalLogger.warnMessages);
     }
 
 
     @Test
     public void testStatsBeanAddedBeforeMarkerBean() throws Exception
     {
-        assertEquals("test start, known marker associations",                   0,              jmxManager.getKnownServers().size());
-        assertEquals("test start, known stat beans",                            0,              jmxManager.getStatsBeans().size());
-        assertEquals("test start, known stat bean types",                       0,              jmxManager.getStatsBeanTypes().size());
+        assertEquals("test start, known marker associations",                   0,                  jmxManager.getKnownServers().size());
+        assertEquals("test start, known stat beans",                            0,                  jmxManager.getStatsBeans().size());
+        assertEquals("test start, known stat bean types",                       0,                  jmxManager.getStatsBeanTypes().size());
 
         String appenderName = "example";
-        ObjectName expectedStatsBeanName = new ObjectName(String.format(APPENDER_NAME_FORMAT, appenderName));
+        ObjectName expectedStatsBeanName = objectNameForAppender(markerBeanName, appenderName);
         AbstractWriterStatistics statsBean = new CloudWatchWriterStatistics();
         Class<?> statsBeanType = CloudWatchWriterStatisticsMXBean.class;
 
         jmxManager.addStatsBean(appenderName, statsBean, statsBeanType);
 
-        assertEquals("after adding stats bean, registration count",             0,              mock.registerMBeanInvocationCount);
-        assertEquals("after adding stats bean, deregistration count",           0,              mock.unregisterMBeanInvocationCount);
+        assertEquals("after adding stats bean, registration count",             0,                  mock.registerMBeanInvocationCount);
+        assertEquals("after adding stats bean, deregistration count",           0,                  mock.unregisterMBeanInvocationCount);
 
         server.registerMBean(markerBean, markerBeanName);
 
-        assertEquals("after registering marker, registration count",           2,               mock.registerMBeanInvocationCount);
-        assertEquals("after registering marker, deregistration count",         0,               mock.unregisterMBeanInvocationCount);
-        assertNotNull("after registering marker, stats bean registered",                        mock.registeredBeansByName.get(expectedStatsBeanName));
+        assertEquals("after registering marker, registration count",           2,                   mock.registerMBeanInvocationCount);
+        assertEquals("after registering marker, deregistration count",         0,                   mock.unregisterMBeanInvocationCount);
+        assertNotNull("after registering marker, stats bean registered",                            mock.registeredBeansByName.get(expectedStatsBeanName));
 
         server.unregisterMBean(markerBeanName);
 
-        assertEquals("after unregistering marker, known marker associations",   0,              jmxManager.getKnownServers().size());
-        assertEquals("after unregistering marker, known stat beans",            1,              jmxManager.getStatsBeans().size());
-        assertEquals("after unregistering marker, known stat bean types",       1,              jmxManager.getStatsBeanTypes().size());
-        assertNull("after unregistering marker, stats bean not registered",                     mock.registeredBeansByName.get(expectedStatsBeanName));
+        assertEquals("after unregistering marker, known marker associations",   0,                  jmxManager.getKnownServers().size());
+        assertEquals("after unregistering marker, known stat beans",            1,                  jmxManager.getStatsBeans().size());
+        assertEquals("after unregistering marker, known stat bean types",       1,                  jmxManager.getStatsBeanTypes().size());
+        assertNull("after unregistering marker, stats bean not registered",                         mock.registeredBeansByName.get(expectedStatsBeanName));
+
+        assertEquals("internal log: errors",                                    EMPTY_LIST,         internalLogger.errorMessages);
+        assertEquals("internal log: warnings",                                  EMPTY_LIST,         internalLogger.warnMessages);
     }
 
 
     @Test
-    public void testMarkerBeanAddedToMultipleServers() throws Exception
+    public void testMultipleServersSameMarkerName() throws Exception
     {
+        assertEquals("test start, known marker associations",                   0,                  jmxManager.getKnownServers().size());
+        assertEquals("test start, known stat beans",                            0,                  jmxManager.getStatsBeans().size());
+        assertEquals("test start, known stat bean types",                       0,                  jmxManager.getStatsBeanTypes().size());
+
         MockMBeanServer mock2 = new MockMBeanServer();
         MBeanServer server2 = mock2.getInstance();
-
-        assertEquals("test start, known marker associations",                   0,              jmxManager.getKnownServers().size());
-        assertEquals("test start, known stat beans",                            0,              jmxManager.getStatsBeans().size());
-        assertEquals("test start, known stat bean types",                       0,              jmxManager.getStatsBeanTypes().size());
 
         server.registerMBean(markerBean, markerBeanName);
         server2.registerMBean(markerBean, markerBeanName);
 
-        assertEquals("after adding marker bean, number of associations",        2,              jmxManager.getKnownServers().get(markerBean).size());
-        assertSame("after adding marker bean, server 0 association",            server,         jmxManager.getKnownServers().get(markerBean).get(0));
-        assertSame("after adding marker bean, server 1 association",            server2,        jmxManager.getKnownServers().get(markerBean).get(1));
-        assertEquals("after adding marker bean, server 0 registration count",   1,              mock.registerMBeanInvocationCount);
-        assertEquals("after adding marker bean, server 1 registration count",   1,              mock2.registerMBeanInvocationCount);
+        assertEquals("after adding marker bean, number of associations",        2,                  jmxManager.getKnownServers().get(markerBean).size());
+        assertSame("after adding marker bean, server 0 association",            server,             jmxManager.getKnownServers().get(markerBean).get(0));
+        assertSame("after adding marker bean, server 1 association",            server2,            jmxManager.getKnownServers().get(markerBean).get(1));
+        assertEquals("after adding marker bean, server 0 registration name",    MARKER_BEAN_NAME,   jmxManager.getRegistrationNames().get(server));
+        assertEquals("after adding marker bean, server 1 registration name",    MARKER_BEAN_NAME,   jmxManager.getRegistrationNames().get(server2));
+        assertEquals("after adding marker bean, server 0 registration count",   1,                  mock.registerMBeanInvocationCount);
+        assertEquals("after adding marker bean, server 1 registration count",   1,                  mock2.registerMBeanInvocationCount);
 
         String appenderName = "example";
-        ObjectName expectedStatsBeanName = new ObjectName(String.format(APPENDER_NAME_FORMAT, appenderName));
+        ObjectName expectedStatsBeanName = objectNameForAppender(markerBeanName, appenderName);
+        AbstractWriterStatistics statsBean = new CloudWatchWriterStatistics();
+        Class<?> statsBeanType = CloudWatchWriterStatisticsMXBean.class;
+
+        jmxManager.addStatsBean(appenderName, statsBean, statsBeanType);
+
+        assertEquals("after adding stats bean, server 0 registration count",    2,                  mock.registerMBeanInvocationCount);
+        assertEquals("after adding stats bean, server 1 registration count",    2,                  mock2.registerMBeanInvocationCount);
+        assertNotNull("after adding stats bean, it's registered with server 0",                     mock.registeredBeansByName.get(expectedStatsBeanName));
+        assertNotNull("after adding stats bean, it's registered with server 1",                     mock2.registeredBeansByName.get(expectedStatsBeanName));
+
+        assertEquals("internal log: errors",                                    EMPTY_LIST,         internalLogger.errorMessages);
+        assertEquals("internal log: warnings",                                  EMPTY_LIST,         internalLogger.warnMessages);
+    }
+
+
+    @Test
+    public void testMultipleServersDifferentMarkerName() throws Exception
+    {
+        assertEquals("test start, known marker associations",                   0,                  jmxManager.getKnownServers().size());
+        assertEquals("test start, known stat beans",                            0,                  jmxManager.getStatsBeans().size());
+        assertEquals("test start, known stat bean types",                       0,                  jmxManager.getStatsBeanTypes().size());
+
+        server.registerMBean(markerBean, markerBeanName);
+
+        MockMBeanServer mock2 = new MockMBeanServer();
+        MBeanServer server2 = mock2.getInstance();
+        ObjectName markerBeanName2 = new ObjectName(MARKER_BEAN_NAME_2);
+        server2.registerMBean(markerBean, markerBeanName2);
+
+        assertEquals("after adding marker beans, number of associations",       2,                  jmxManager.getKnownServers().get(markerBean).size());
+        assertSame("after adding marker beans, server 0 association",           server,             jmxManager.getKnownServers().get(markerBean).get(0));
+        assertSame("after adding marker beans, server 1 association",           server2,            jmxManager.getKnownServers().get(markerBean).get(1));
+        assertEquals("after adding marker beans, server 0 registration name",   MARKER_BEAN_NAME,   jmxManager.getRegistrationNames().get(server));
+        assertEquals("after adding marker beans, server 1 registration name",   MARKER_BEAN_NAME_2, jmxManager.getRegistrationNames().get(server2));
+        assertEquals("after adding marker beans, server 0 registration count",  1,                  mock.registerMBeanInvocationCount);
+        assertEquals("after adding marker beans, server 1 registration count",  1,                  mock2.registerMBeanInvocationCount);
+
+        String appenderName = "example";
         AbstractWriterStatistics statsBean = new CloudWatchWriterStatistics();
         Class<?> statsBeanType = CloudWatchWriterStatisticsMXBean.class;
 
@@ -262,7 +330,90 @@ public class TestJMXManager
 
         assertEquals("after adding stats bean, server 0 registration count",    2,              mock.registerMBeanInvocationCount);
         assertEquals("after adding stats bean, server 1 registration count",    2,              mock2.registerMBeanInvocationCount);
-        assertNotNull("after adding stats bean, it's registered with server 0",                 mock.registeredBeansByName.get(expectedStatsBeanName));
-        assertNotNull("after adding stats bean, it's registered with server 1",                 mock2.registeredBeansByName.get(expectedStatsBeanName));
+        assertNotNull("after adding stats bean, it's registered with server 0",                 mock.registeredBeansByName.get(objectNameForAppender(markerBeanName, appenderName)));
+        assertNotNull("after adding stats bean, it's registered with server 1",                 mock2.registeredBeansByName.get(objectNameForAppender(markerBeanName2, appenderName)));
+
+        assertEquals("internal log: errors",                                    EMPTY_LIST,         internalLogger.errorMessages);
+        assertEquals("internal log: warnings",                                  EMPTY_LIST,         internalLogger.warnMessages);
+    }
+
+
+    @Test
+    public void testSingleServerSingleMarkerDifferentName() throws Exception
+    {
+        // this is an invalid configuration; the test verifies we can handle it
+
+        assertEquals("test start, known marker associations",                   0,                  jmxManager.getKnownServers().size());
+        assertEquals("test start, known stat beans",                            0,                  jmxManager.getStatsBeans().size());
+        assertEquals("test start, known stat bean types",                       0,                  jmxManager.getStatsBeanTypes().size());
+
+        server.registerMBean(markerBean, markerBeanName);
+
+        ObjectName markerBeanName2 = new ObjectName(MARKER_BEAN_NAME_2);
+        server.registerMBean(markerBean, markerBeanName2);
+
+        // note: we can't prevent bean registration (although server might), but we won't maintain the association
+        // therefore, the number of registrations and number of associations differ
+
+        assertEquals("after adding marker beans, number of associations",       1,                  jmxManager.getKnownServers().get(markerBean).size());
+        assertSame("after adding marker beans, server association",             server,             jmxManager.getKnownServers().get(markerBean).get(0));
+        assertEquals("after adding marker beans, registration name",            MARKER_BEAN_NAME,   jmxManager.getRegistrationNames().get(server));
+        assertEquals("after adding marker beans, registration count",           2,                  mock.registerMBeanInvocationCount);
+
+        String appenderName = "example";
+        AbstractWriterStatistics statsBean = new CloudWatchWriterStatistics();
+        ObjectName expectedStatsBeanName = objectNameForAppender(markerBeanName, appenderName);
+        Class<?> statsBeanType = CloudWatchWriterStatisticsMXBean.class;
+
+        jmxManager.addStatsBean(appenderName, statsBean, statsBeanType);
+
+        assertEquals("after adding stats bean, registration count",             3,                  mock.registerMBeanInvocationCount);
+        assertEquals("after adding stats bean, deregistration count",           0,                  mock.unregisterMBeanInvocationCount);
+        assertNotNull("after adding stats bean, is registed under expected name",                   mock.registeredBeansByName.get(expectedStatsBeanName));
+
+        assertEquals("internal log: errors",                                    EMPTY_LIST,         internalLogger.errorMessages);
+        assertEquals("internal log: warnings",                                  1,                  internalLogger.warnMessages.size());
+        assertRegex("internal log: warnings",
+                    ".*server already registered.*" + MARKER_BEAN_NAME + ".*ignoring.*" + MARKER_BEAN_NAME_2,
+                    internalLogger.warnMessages.get(0));
+    }
+
+
+    @Test
+    public void testSingleServerMultipleMarkerSameName() throws Exception
+    {
+        // this is an invalid configuration; the test verifies we can handle it
+
+        assertEquals("test start, known marker associations",                   0,                  jmxManager.getKnownServers().size());
+        assertEquals("test start, known stat beans",                            0,                  jmxManager.getStatsBeans().size());
+        assertEquals("test start, known stat bean types",                       0,                  jmxManager.getStatsBeanTypes().size());
+
+        server.registerMBean(markerBean, markerBeanName);
+
+        Object markerBean2 = new ConcreteMarkerBean(jmxManager);
+        ObjectName markerBeanName2 = new ObjectName(MARKER_BEAN_NAME);
+        server.registerMBean(markerBean2, markerBeanName2);
+
+        assertEquals("after adding marker beans, number of associations",       1,                  jmxManager.getKnownServers().get(markerBean).size());
+        assertSame("after adding marker beans, server association",             server,             jmxManager.getKnownServers().get(markerBean).get(0));
+        assertEquals("after adding marker beans, registration name",            MARKER_BEAN_NAME,   jmxManager.getRegistrationNames().get(server));
+        assertEquals("after adding marker beans, registration count",           2,                  mock.registerMBeanInvocationCount);
+
+        String appenderName = "example";
+        AbstractWriterStatistics statsBean = new CloudWatchWriterStatistics();
+        ObjectName expectedStatsBeanName = objectNameForAppender(markerBeanName, appenderName);
+        Class<?> statsBeanType = CloudWatchWriterStatisticsMXBean.class;
+
+        jmxManager.addStatsBean(appenderName, statsBean, statsBeanType);
+
+        assertEquals("after adding stats bean, registration count",             3,                  mock.registerMBeanInvocationCount);
+        assertEquals("after adding stats bean, deregistration count",           0,                  mock.unregisterMBeanInvocationCount);
+        assertNotNull("after adding stats bean, is registed under expected name",                   mock.registeredBeansByName.get(expectedStatsBeanName));
+
+        assertEquals("internal log: errors",                                    EMPTY_LIST,         internalLogger.errorMessages);
+        assertEquals("internal log: warnings",                                  1,                  internalLogger.warnMessages.size());
+        assertRegex("internal log: warnings",
+                    ".*server already registered.*" + MARKER_BEAN_NAME + ".*ignoring.*" + MARKER_BEAN_NAME,
+                    internalLogger.warnMessages.get(0));
     }
 }

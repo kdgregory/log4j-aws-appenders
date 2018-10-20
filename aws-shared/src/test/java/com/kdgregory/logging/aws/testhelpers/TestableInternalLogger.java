@@ -28,6 +28,7 @@ public class TestableInternalLogger
 implements InternalLogger
 {
     public List<String> debugMessages = new ArrayList<String>();
+    public List<String> warnMessages = new ArrayList<String>();
     public List<String> errorMessages = new ArrayList<String>();
     public List<Throwable> errorExceptions = new ArrayList<Throwable>();
 
@@ -43,9 +44,7 @@ implements InternalLogger
     @Override
     public void warn(String message)
     {
-        // at present we don't use warning messages in this module, so will add to
-        // error messages -- this will cause tests to fail if we ever do use warns
-        errorMessages.add(message);
+        warnMessages.add(message);
     }
 
 

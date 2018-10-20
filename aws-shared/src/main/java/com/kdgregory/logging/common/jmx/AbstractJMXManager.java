@@ -42,17 +42,24 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *  is a trigger to ensure that the statistics beans are registered with all
  *  known servers.
  *  <p>
- *  Subclasses are expected to manage the singleton instance, and to implement
- *  the {@link #toObjectName} method.
+ *  The object name used to register the marker bean is retained, and used as
+ *  the base for the object name(s) used to register the statistics bean(s):
+ *  the stats bean name will append ",appender=X", where X is the appender name.
+ *  <p>
+ *  Subclasses are expected to manage the singleton instance.
  */
 public abstract class AbstractJMXManager
 {
     // all members are marked protected so that they can be inspected by tests
-    
+
     protected InternalLogger logger;
 
-    protected Map<Object,List<MBeanServer>> knownServers
+    protected Map<Object,List<MBeanServer>> regisrations
         = new IdentityHashMap<Object,List<MBeanServer>>();
+
+    // note: we only allow one registration per server
+    protected Map<MBeanServer,String> registrationNames
+        = new IdentityHashMap<MBeanServer,String>();
 
     protected Map<String,AbstractWriterStatistics> statsBeans
         = new HashMap<String,AbstractWriterStatistics>();
@@ -80,15 +87,22 @@ public abstract class AbstractJMXManager
      *  ignored (it should never happen in the real world, so does not rate
      *  a check).
      */
-    public synchronized void addMarkerBean(Object bean, MBeanServer server, ObjectName name)
+    public synchronized void addMarkerBean(Object bean, MBeanServer server, ObjectName registrationName)
     {
-        List<MBeanServer> servers = knownServers.get(bean);
+        if (registrationNames.containsKey(server))
+        {
+            logger.warn("server already registered with name " + registrationNames.get(server)
+                        + " ignoring " + registrationName);
+            return;
+        }
+        registrationNames.put(server, registrationName.getCanonicalName());
+
+        List<MBeanServer> servers = regisrations.get(bean);
         if (servers == null)
         {
             servers = new ArrayList<MBeanServer>();
-            knownServers.put(bean, servers);
+            regisrations.put(bean, servers);
         }
-
         servers.add(server);
 
         for (String appenderName :  statsBeans.keySet())
@@ -103,7 +117,7 @@ public abstract class AbstractJMXManager
      */
     public synchronized void removeMarkerBean(Object bean)
     {
-        List<MBeanServer> servers = knownServers.remove(bean);
+        List<MBeanServer> servers = regisrations.remove(bean);
         if (servers == null)
         {
             logger.warn("JMXManager: attempt to remove unregistered StatisticsMBean");
@@ -116,6 +130,7 @@ public abstract class AbstractJMXManager
             {
                 unregisterAppenderBean(appenderName, server);
             }
+            registrationNames.remove(server);
         }
     }
 
@@ -138,7 +153,7 @@ public abstract class AbstractJMXManager
         statsBeans.put(appenderName, statsBean);
         statsBeanTypes.put(appenderName, statsBeanClass);
 
-        for (List<MBeanServer> servers : knownServers.values())
+        for (List<MBeanServer> servers : regisrations.values())
         {
             for (MBeanServer server : servers)
             {
@@ -157,7 +172,7 @@ public abstract class AbstractJMXManager
         statsBeans.remove(appenderName);
         statsBeanTypes.remove(appenderName);
 
-        for (List<MBeanServer> servers : knownServers.values())
+        for (List<MBeanServer> servers : regisrations.values())
         {
             for (MBeanServer server : servers)
             {
@@ -200,7 +215,7 @@ public abstract class AbstractJMXManager
         try
         {
             StandardMBean mbean = new StandardMBean(statsBeanClass.cast(statsBean), statsBeanClass, false);
-            mbeanServer.registerMBean(mbean, toObjectName(appenderName));
+            mbeanServer.registerMBean(mbean, toObjectName(mbeanServer, appenderName));
         }
         catch (Exception ex)
         {
@@ -216,7 +231,7 @@ public abstract class AbstractJMXManager
     {
         try
         {
-            mbeanServer.unregisterMBean(toObjectName(appenderName));
+            mbeanServer.unregisterMBean(toObjectName(mbeanServer, appenderName));
         }
         catch (Exception ex)
         {
@@ -225,12 +240,13 @@ public abstract class AbstractJMXManager
     }
 
 
-    /**
-     *  Returns a standard JMX ObjectName based on an appender name. This name
-     *  follows the format used by the Log4J <code>AppenderDynamicMBean</code>
-     *  so that the statistics will appear underneath the appender in the bean
-     *  hierarchy.
-     */
-    protected abstract ObjectName toObjectName(String appenderName)
-    throws MalformedObjectNameException;
+    private ObjectName toObjectName(MBeanServer mbeanServer, String appenderName)
+    throws MalformedObjectNameException
+    {
+        String nameForServer = registrationNames.get(mbeanServer);
+        if (nameForServer == null)
+            throw new IllegalStateException("attempted to register with unrecorded MBeanServer; should never happen");
+
+        return new ObjectName(nameForServer + ",appender=" + appenderName);
+    }
 }

@@ -125,7 +125,7 @@ public class TestJMXIntegration
 
         for (String appenderName : Arrays.asList("cloudwatch", "kinesis", "sns"))
         {
-            ObjectName expectedName = new ObjectName("log4j:appender=" + appenderName + ",statistics=writer");
+            ObjectName expectedName = new ObjectName("log4j:name=Statistics,appender=" + appenderName);
             assertNotNull("able to retrieve stats bean for " + appenderName, mock.registeredBeansByName.get(expectedName));
         }
 

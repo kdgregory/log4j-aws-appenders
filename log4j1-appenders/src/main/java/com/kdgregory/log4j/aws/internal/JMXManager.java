@@ -14,9 +14,6 @@
 
 package com.kdgregory.log4j.aws.internal;
 
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
-
 import com.kdgregory.logging.common.jmx.AbstractJMXManager;
 
 
@@ -57,16 +54,5 @@ extends AbstractJMXManager
     private JMXManager()
     {
         super(new Log4JInternalLogger("log4j-aws-appenders JMXManager"));
-    }
-
-
-    /**
-     *  Returns an object name consistent with Log4J's config beans.
-     */
-    @Override
-    protected ObjectName toObjectName(String appenderName)
-    throws MalformedObjectNameException
-    {
-        return new ObjectName("log4j:appender=" + appenderName + ",statistics=writer");
     }
 }

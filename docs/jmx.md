@@ -11,16 +11,10 @@ These beans provide the following information:
 
 ## Example
 
-This is a screenshot of JConsole, running the example application with just the CloudWatch appender.
+This is a screenshot of JConsole, running the example application with the CloudWatch and Kinesis
+appenders, showing an initialization error and 100% message loss for the latter.
 
 ![jconsole mbean view](jmx.png)
-
-Under the top-level `log4j` key there are sub-trees for the two registered beans (see below), along
-with the root logger and each appender (by name).
-
-Under each appender are the exposed attributes and operations for that appender (you can check your
-configuration via the attributes), as well as a bean for the appender's layout manager. For the AWS
-appenders, there is also a `statistics` bean: its attribute show the appender's reported statistics.
 
 
 ## Enabling
@@ -39,8 +33,14 @@ ManagementFactory.getPlatformMBeanServer().createMBean(
         new ObjectName("log4j:name=Statistics"));
 ```
 
-The `ObjectName` that you use to register these beans can be anything. However, the statistics beans
-and Log4J's appender and layout beans assume that the domain will be `log4j`, so that's what I use.
+The `ObjectName` that you use to register these beans can be anything. The statistics beans will
+base their own name on the object name used for `StatisticsMBean`, but the Log4J beans will always
+use the `log4j` domain. I find it easier, as here, to use the `log4j` namespace in order to keep
+the statistics and configuration together.
+
+> Note: this represents a change from version 1.0 of the appenders, which would also ignore the
+  namespace used to register `StatisticsMBean` and instead pick a name that organized the
+  statistics beans under the Log4J-managed beans.
 
 The example program, as a stand-alone application, uses the JVM's platform MBeanServer. Depending on
 the framework that your application uses, you may want to register with a framework-supplied server

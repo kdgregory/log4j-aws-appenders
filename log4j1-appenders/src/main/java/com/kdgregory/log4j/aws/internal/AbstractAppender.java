@@ -87,9 +87,9 @@ extends AppenderSkeleton
 
     protected volatile long lastRotationTimestamp;
 
-    // number of messages since we last rotated the writer
+    // number of messages since we last rotated the writer (used for count-based rotation)
 
-    protected volatile int lastRotationCount;
+    protected volatile int messagesSinceLastRotation;
 
     // this object is used for synchronization of initialization and writer change
 
@@ -509,7 +509,7 @@ extends AppenderSkeleton
                 }
 
                 lastRotationTimestamp = System.currentTimeMillis();
-                lastRotationCount = 0;
+                messagesSinceLastRotation = 0;
             }
             catch (Exception ex)
             {
@@ -593,7 +593,7 @@ extends AppenderSkeleton
         else
         {
             writer.addMessage(message);
-            lastRotationCount++;
+            messagesSinceLastRotation++;
         }
     }
 
@@ -621,7 +621,7 @@ extends AppenderSkeleton
             case none:
                 return false;
             case count:
-                return (rotationInterval > 0) && (lastRotationCount >= rotationInterval);
+                return (rotationInterval > 0) && (messagesSinceLastRotation >= rotationInterval);
             case interval:
                 return (rotationInterval > 0) && ((now - lastRotationTimestamp) > rotationInterval);
             case hourly:

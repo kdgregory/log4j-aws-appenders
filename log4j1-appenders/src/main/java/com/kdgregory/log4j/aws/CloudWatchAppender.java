@@ -44,7 +44,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
      */
     public CloudWatchAppender()
     {
-        super(new DefaultThreadFactory(),
+        super(new DefaultThreadFactory("log4j-cloudwatch"),
               new CloudWatchWriterFactory(),
               new CloudWatchWriterStatistics(),
               CloudWatchWriterStatisticsMXBean.class);

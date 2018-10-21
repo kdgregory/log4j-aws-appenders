@@ -109,7 +109,7 @@ public abstract class AbstractLogWriterTest
         writer = (WriterType)factory.newLogWriter(config, stats, internalLogger);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
-        new DefaultThreadFactory().startLoggingThread(writer, defaultUncaughtExceptionHandler);
+        new DefaultThreadFactory("test").startLoggingThread(writer, defaultUncaughtExceptionHandler);
 
         // we'll spin until either the writer is initialized, signals an error,
         // or a 5-second timeout expires

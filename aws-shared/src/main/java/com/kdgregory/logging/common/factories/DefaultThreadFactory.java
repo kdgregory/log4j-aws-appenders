@@ -26,13 +26,20 @@ import com.kdgregory.logging.common.LogWriter;
  */
 public class DefaultThreadFactory implements ThreadFactory
 {
-    private AtomicInteger threadNumber = new AtomicInteger();
+    private AtomicInteger threadNumber = new AtomicInteger(0);
+    private String appenderName;
+
+    public DefaultThreadFactory(String appenderName)
+    {
+        this.appenderName = appenderName;
+    }
+
 
     @Override
     public void startLoggingThread(LogWriter writer, UncaughtExceptionHandler exceptionHandler)
     {
         Thread writerThread = new Thread(writer);
-        writerThread.setName("com-kdgregory-aws-logwriter-" + threadNumber.getAndIncrement());
+        writerThread.setName("com-kdgregory-aws-logwriter-" + appenderName + "-" + threadNumber.getAndIncrement());
         writerThread.setPriority(Thread.NORM_PRIORITY);
         writerThread.setDaemon(true);
         writerThread.setUncaughtExceptionHandler(exceptionHandler);

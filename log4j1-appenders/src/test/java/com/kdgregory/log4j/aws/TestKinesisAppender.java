@@ -231,7 +231,7 @@ public class TestKinesisAppender
 
         // note that we will be running the writer on a separate thread
 
-        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setThreadFactory(new DefaultThreadFactory("test"));
         appender.setWriterFactory(new ThrowingWriterFactory<KinesisWriterConfig,KinesisWriterStatistics>());
 
         KinesisWriterStatistics appenderStats = appender.getAppenderStatistics();

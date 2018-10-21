@@ -57,7 +57,7 @@ extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWrit
      */
     public KinesisAppender()
     {
-        super(new DefaultThreadFactory(),
+        super(new DefaultThreadFactory("log4j-kinesis"),
               new KinesisWriterFactory(),
               new KinesisWriterStatistics(),
               KinesisWriterStatisticsMXBean.class);

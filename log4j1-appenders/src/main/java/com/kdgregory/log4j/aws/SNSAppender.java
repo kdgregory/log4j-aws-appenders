@@ -43,7 +43,7 @@ extends AbstractAppender<SNSWriterConfig,SNSWriterStatistics,SNSWriterStatistics
 
     public SNSAppender()
     {
-        super(new DefaultThreadFactory(),
+        super(new DefaultThreadFactory("log4j-sns"),
               new SNSWriterFactory(),
               new SNSWriterStatistics(),
               SNSWriterStatisticsMXBean.class);

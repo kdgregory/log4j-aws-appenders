@@ -387,7 +387,7 @@ public class TestCloudWatchAppender
 
         // note that we will be running the writer on a separate thread
 
-        appender.setThreadFactory(new DefaultThreadFactory());
+        appender.setThreadFactory(new DefaultThreadFactory("test"));
         appender.setWriterFactory(new ThrowingWriterFactory<CloudWatchWriterConfig,CloudWatchWriterStatistics>());
 
         CloudWatchWriterStatistics appenderStats = appender.getAppenderStatistics();

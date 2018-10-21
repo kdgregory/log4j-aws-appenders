@@ -95,11 +95,6 @@ extends AppenderSkeleton
 
     private Object initializationLock = new Object();
 
-    // this is used to synchronize access to the queue; queue updates are normally
-    // very fast, so plain-old-synchronization should not cause undue contention
-
-    private Object messageQueueLock = new Object();
-
     // all member vars below this point are shared configuration
 
     protected long            batchDelay;
@@ -591,17 +586,14 @@ extends AppenderSkeleton
 
         rotateIfNeeded(System.currentTimeMillis());
 
-        synchronized (messageQueueLock)
+        if (writer == null)
         {
-            if (writer == null)
-            {
-                logger.warn("appender not properly configured: writer is null");
-            }
-            else
-            {
-                writer.addMessage(message);
-                lastRotationCount++;
-            }
+            logger.warn("appender not properly configured: writer is null");
+        }
+        else
+        {
+            writer.addMessage(message);
+            lastRotationCount++;
         }
     }
 

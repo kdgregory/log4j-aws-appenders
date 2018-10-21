@@ -38,12 +38,6 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
     private String  logGroup;
     private String  logStream;
 
-    // these variables hold the post-substitution log-group and log-stream names
-    // (mostly useful for testing)
-
-    private String  actualLogGroup;
-    private String  actualLogStream;
-
 
     /**
      *  Base constructor: assigns default values to configuration properties.
@@ -132,9 +126,9 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
     @Override
     protected CloudWatchWriterConfig generateWriterConfig()
     {
-        Substitutions subs = new Substitutions(new Date(), sequence.get());
-        actualLogGroup     = subs.perform(logGroup);
-        actualLogStream    = subs.perform(logStream);
+        Substitutions subs      = new Substitutions(new Date(), sequence.get());
+        String actualLogGroup   = subs.perform(logGroup);
+        String actualLogStream  = subs.perform(logStream);
 
         return new CloudWatchWriterConfig(actualLogGroup, actualLogStream, batchDelay, discardThreshold, discardAction, clientFactory, clientEndpoint);
     }

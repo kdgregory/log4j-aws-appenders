@@ -1,9 +1,17 @@
-<configuration>
+<configuration debug="true">
 
   <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
       <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
     </encoder>
+  </appender>
+
+  <appender name="CLOUDWATCH" class="com.kdgregory.logback.aws.CloudWatchAppender">
+    <logGroup>AppenderExample</logGroup>
+    <logStream>{date}-{hostname}-{pid}</logStream>
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </layout>
   </appender>
 
   <root level="warn">
@@ -12,6 +20,7 @@
 
   <logger name="com.kdgregory.logback.aws.example.Main" level="debug">
     <appender-ref ref="CONSOLE" />
+    <appender-ref ref="CLOUDWATCH" />
   </logger>
 
 </configuration>

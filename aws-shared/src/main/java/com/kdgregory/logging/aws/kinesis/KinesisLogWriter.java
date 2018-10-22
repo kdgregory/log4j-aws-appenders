@@ -76,12 +76,14 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
     {
         if (! Pattern.matches(KinesisConstants.ALLOWED_STREAM_NAME_REGEX, config.streamName))
         {
-            return initializationFailure("invalid stream name: " + config.streamName, null);
+            reportError("invalid stream name: " + config.streamName, null);
+            return false;
         }
 
         if ((config.partitionKey == null) || (config.partitionKey.length() > 256))
         {
-            return initializationFailure("invalid partition key: length must be 1-256", null);
+            reportError("invalid partition key: length must be 1-256", null);
+            return false;
         }
 
         try
@@ -96,7 +98,10 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
                     setRetentionPeriodIfNeeded();
                 }
                 else
-                    return initializationFailure("stream \"" + config.streamName + "\" does not exist and auto-create not enabled", null);
+                {
+                    reportError("stream \"" + config.streamName + "\" does not exist and auto-create not enabled", null);
+                    return false;
+                }
             }
             else if (! StreamStatus.ACTIVE.toString().equals(streamStatus))
             {
@@ -107,7 +112,8 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
         }
         catch (Exception ex)
         {
-            return initializationFailure("unable to configure stream: " + config.streamName, ex);
+            reportError("unable to configure stream: " + config.streamName, ex);
+            return false;
         }
     }
 
@@ -294,14 +300,12 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
             }
             catch (ResourceNotFoundException ex)
             {
-                logger.error("failed to send batch: stream " + request.getStreamName() + " no longer exists", null);
-                stats.setLastError("failed to send batch: stream " + request.getStreamName() + " no longer exists", null);
+                reportError("failed to send batch: stream " + request.getStreamName() + " no longer exists", null);
                 break;
             }
             catch (Exception ex)
             {
-                logger.error("failed to send batch", ex);
-                stats.setLastError("failed to send batch", ex);
+                reportError("failed to send batch", ex);
                 Utils.sleepQuietly(250 * (attempt + 1));
             }
         }

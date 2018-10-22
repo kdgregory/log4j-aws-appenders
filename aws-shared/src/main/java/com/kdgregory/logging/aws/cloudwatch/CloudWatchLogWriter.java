@@ -49,12 +49,14 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
     {
         if (! Pattern.matches(CloudWatchConstants.ALLOWED_GROUP_NAME_REGEX, config.logGroupName))
         {
-            return initializationFailure("invalid log group name: " + config.logGroupName, null);
+            reportError("invalid log group name: " + config.logGroupName, null);
+            return false;
         }
 
         if (! Pattern.matches(CloudWatchConstants.ALLOWED_STREAM_NAME_REGEX, config.logStreamName))
         {
-            return initializationFailure("invalid log stream name: " + config.logStreamName, null);
+            reportError("invalid log stream name: " + config.logStreamName, null);
+            return false;
         }
 
         try
@@ -78,7 +80,8 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         }
         catch (Exception ex)
         {
-            return initializationFailure("unable to configure log group/stream", ex);
+            reportError("unable to configure log group/stream", ex);
+            return false;
         }
     }
 
@@ -123,8 +126,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         LogStream stream = findLogStream();
         if (stream == null)
         {
-            logger.error("log stream missing: " + config.logStreamName, null);
-            stats.setLastError("log stream missing: " + config.logStreamName, null);
+            reportError("log stream missing: " + config.logStreamName, null);
             ensureDestinationAvailable();
             return batch;
         }
@@ -141,8 +143,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         }
         catch (Exception ex)
         {
-            logger.error("failed to send batch", ex);
-            stats.setLastError(null, ex);
+            reportError("failed to send batch", ex);
             return batch;
         }
     }

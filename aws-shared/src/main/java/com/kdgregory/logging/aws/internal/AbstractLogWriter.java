@@ -201,7 +201,8 @@ implements LogWriter
         }
         catch (Exception ex)
         {
-            return initializationFailure("exception in initializer", ex);
+            reportError("exception in initializer", ex);
+            return false;
         }
     }
 
@@ -279,14 +280,13 @@ implements LogWriter
 //----------------------------------------------------------------------------
 
     /**
-     *  Records an initialization failure in the appender stats. This method returns
-     *  false so that the failure handler can return its result to the caller.
+     *  Reports an operational error to both the internal logger and the stats
+     *  bean..
      */
-    protected boolean initializationFailure(String message, Exception exception)
+    protected void reportError(String message, Exception exception)
     {
         logger.error(message, exception);
         stats.setLastError(message, exception);
-        return false;
     }
 
 

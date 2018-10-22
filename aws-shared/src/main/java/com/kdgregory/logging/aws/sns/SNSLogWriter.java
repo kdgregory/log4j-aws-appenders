@@ -67,7 +67,8 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
         }
         catch (Exception ex)
         {
-            return initializationFailure("unable to configure", ex);
+            reportError("unable to configure", ex);
+            return false;
         }
     }
 
@@ -136,7 +137,8 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
         }
         else
         {
-            return initializationFailure("topic does not exist: " + config.topicArn, null);
+            reportError("topic does not exist: " + config.topicArn, null);
+            return false;
         }
     }
 
@@ -153,7 +155,8 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
 
         if (! Pattern.matches(SNSConstants.TOPIC_NAME_REGEX, config.topicName))
         {
-            return initializationFailure("invalid topic name: " + topicName, null);
+            reportError("invalid topic name: " + topicName, null);
+            return false;
         }
 
         topicArn = retrieveAllTopicsByName().get(config.topicName);
@@ -170,8 +173,7 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
         }
         else
         {
-            logger.error("topic does not exist and auto-create not enabled: " + topicName, null);
-            stats.setLastError("topic does not exist: " + topicName, null);
+            reportError("topic does not exist and auto-create not enabled: " + topicName, null);
             return false;
         }
     }

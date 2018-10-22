@@ -292,6 +292,12 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
                 stats.updateMessagesSent(request.getRecords().size() - failures.size());
                 return failures;
             }
+            catch (ResourceNotFoundException ex)
+            {
+                logger.error("failed to send batch: stream " + request.getStreamName() + " no longer exists", null);
+                stats.setLastError("failed to send batch: stream " + request.getStreamName() + " no longer exists", null);
+                break;
+            }
             catch (Exception ex)
             {
                 logger.error("failed to send batch", ex);
@@ -300,7 +306,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
             }
         }
 
-        logger.error("failed to send batch after " + SEND_RETRY_LIMIT + " retries", stats.getLastError());
+        // after an uncorrected exception requeing might seem pointless, but we'll do it anyway
         for (int ii = 0 ; ii < request.getRecords().size() ; ii++)
         {
             failures.add(Integer.valueOf(ii));

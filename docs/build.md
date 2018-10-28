@@ -1,8 +1,8 @@
 There are three projects in this repository:
 
-* [aws-core](../aws-core): the AWS log-writers and supporting code that would be used
-  by any appender implementation.
-* [log4j1-appenders](../log4j1-appenders): the Log4J 1.x compatible appenders.
+* [aws-shared](../aws-shared): the AWS log-writers and supporting code that would be
+  used by any appender implementation.
+* [log4j1-appenders](../log4j1-appenders): the Log4J 1.x appenders.
 * [log4j1-integration-tests](../log4j1-integration-tests): a set of integration tests
   for the Log4J 1.x appenders. These are in a separate project so that they can be
   can be run as desired, rather than as part of every build.
@@ -47,8 +47,8 @@ Each "release" version is tagged with `release-MAJOR.MINOR.PATCH`.
 
 ## Interface Stability
 
-Classes in the top-level `com.kdgregory.log4j.aws` package are expected to remain backwards
-compatible.
+Classes in top-level mainline packages (eg, `com.kdgregory.log4j.aws`) are expected to remain
+backwards compatible.
 
 Any other classes, particularly those under packages named `internal`, may change arbitrarily
 and should not be relied-upon by user code. This caveat also applies to all test classes and

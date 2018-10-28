@@ -50,29 +50,10 @@ The generated JSON object will have the following properties, some of which are 
 ## Metadata
 
 The `tags` property is intended to provide metadata for search-based log analysis. It is specified using
-a comma-separated list of `NAME=VALUE` pairs, and results in the creation of a sub-object in the log
-message that contains those pairs. Values may include [substitutions](substitutions.md), which are
-evaluated when the layout is instantiated.
+a comma-separated list of `NAME=VALUE` pairs, and results in the creation of a `tags` sub-object in the log
+message (see example below). Values may include [substitutions](substitutions.md), which are evaluated when
+the layout is instantiated.
 
-Example: given a specification like this:
-
-```
-log4j.appender.kinesis.layout.tags=applicationName=Example,deployedTo={env:ENVIRONMENT},runDate={date}
-```
-
-and assuming that there's an environment variable named `ENVIRONMENT` that is set to `prod`, the logging
-message will contain the following element:
-
-```
-{
-    ...
-    "tags": {
-        "applicationName": "Example",
-        "deployedTo": "prod",
-        "runDate": "20180609"
-    }
-}
-```
 
 ## Example
 

@@ -81,7 +81,7 @@ Things to know:
 Things to know:
 
 * The SNS topic is created with an email subscription. You will be able to change the email
-  address during stack creation; by default it's [logging-example@mailinator.com](https://www.mailinator.com/v2/inbox.jsp?zone=public&query=logging-example).
+  address during stack creation; by default it's [logging-example@mailinator.com](https://www.mailinator.com/v3/index.jsp?zone=public&query=logging-example#/#inboxpane).
   Messages sent to this address are deleted within a few hours, but are publicly available
   to anyone with the link.
 * You must explicit confirm this subscription to receive messages. SNS sends a confirmation
@@ -98,7 +98,7 @@ To build the example program, use Maven:
 This will produce an executable JAR, which you can run from the command-line (the wildcard
 works with Linux; if you're running elsewhere you might need to specify the exact name):
 
-    java -jar target/aws-appenders-example-*.jar
+    java -jar target/log4j1-aws-appenders-example-*.jar
 
 This program will spawn two threads, each of which writes a log message at one-second intervals.
 Log levels are randomly assigned: 65% DEBUG, 20% INFO, 10% WARN, and 5% ERROR.

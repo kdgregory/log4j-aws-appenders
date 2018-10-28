@@ -1,5 +1,14 @@
 # Change History
 
+## 2.0.0 (2018-10-28)
+
+* Split the library into front-end and back-end components, in preparation for
+  adding additional logging frameworks. Included general cleanup and refactoring.
+* Changed the Maven group ID from `com.kdgregory.log4j` to `com.kdgregory.logging`.
+* JMX integration now uses the "marker bean" name as a base name for statistics
+  beans (was formerly tied to Log4J's naming convention).
+  ([#53](https://github.com/kdgregory/log4j-aws-appenders/issues/53))
+
 ## 1.3.0 (2018-09-09)
 
 * Added [JMX integration](docs/jmx.md): appenders/writers now report
@@ -10,12 +19,12 @@
   if is set, create the stream/topic.
   ([#37](https://github.com/kdgregory/log4j-aws-appenders/issues/37),
    [#45](https://github.com/kdgregory/log4j-aws-appenders/issues/45))
-* `JSONLayout` will optionally add newlines to the end of each record.
-  This is useful when processing logs that don't go to ElasticSearch.
-  ([#42](https://github.com/kdgregory/log4j-aws-appenders/issues/42))
 * `CloudWatchAppender` will now re-create logstream if it's deleted after
   appender initializes.
   ([#46](https://github.com/kdgregory/log4j-aws-appenders/issues/46))
+* `JSONLayout` will optionally add newlines to the end of each record.
+  This is useful when processing logs that don't go to ElasticSearch.
+  ([#42](https://github.com/kdgregory/log4j-aws-appenders/issues/42))
 
 
 ## 1.2.2 (2018-05-16)

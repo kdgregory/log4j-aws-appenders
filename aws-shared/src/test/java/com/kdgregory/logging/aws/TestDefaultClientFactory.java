@@ -78,13 +78,13 @@ public class TestDefaultClientFactory
         String regionEnvar = System.getenv("AWS_REGION");
         if (StringUtil.isEmpty(regionEnvar))
         {
-            // we don't emit debug messages when using constructor unless we try to configure it
-            assertEquals("no debug messages", 0, logger.debugMessages.size());
+            logger.assertInternalDebugLog();
+            logger.assertInternalErrorLog();
         }
         else
         {
-            assertEquals("attempted to configure region", 1, logger.debugMessages.size());
-            assertTrue("attempted to configure region",      logger.debugMessages.get(0).contains(regionEnvar));
+            logger.assertInternalDebugLog(".*" + regionEnvar + ".*");
+            logger.assertInternalErrorLog();
         }
     }
 
@@ -99,6 +99,8 @@ public class TestDefaultClientFactory
         factory.createClient();
 
         assertNull("client not created via local factory method",   clientFromFactory);
-        assertTrue("attempted to configure endpoint",               logger.debugMessages.get(0).contains(endpoint));
+
+        logger.assertInternalDebugLog(".*" + endpoint + ".*");
+        logger.assertInternalErrorLog();
     }
 }

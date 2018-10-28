@@ -30,7 +30,7 @@ public class JMXManager
 extends AbstractJMXManager
 {
     private static JMXManager singleton;
-    
+
     /**
      *  Lazily instantiates the singleton instance.
      */

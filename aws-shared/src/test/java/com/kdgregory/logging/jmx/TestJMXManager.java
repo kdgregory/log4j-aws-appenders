@@ -14,7 +14,6 @@
 
 package com.kdgregory.logging.jmx;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -25,8 +24,6 @@ import javax.management.ObjectName;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
-
-import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatisticsMXBean;
@@ -44,8 +41,6 @@ public class TestJMXManager
 {
     private final static String MARKER_BEAN_NAME    = "Testing:name=example";
     private final static String MARKER_BEAN_NAME_2  = "Testing:name=example2";
-
-    private final static List<String> EMPTY_LIST = Collections.<String>emptyList();
 
 //----------------------------------------------------------------------------
 //  Support Code
@@ -155,8 +150,9 @@ public class TestJMXManager
         assertEquals("after unregistering marker, known stat bean types",       0,                  jmxManager.getStatsBeanTypes().size());
         assertEquals("after unregistering marker, number of names known",       0,                  jmxManager.getRegistrationNames().size());
 
-        assertEquals("internal log: errors",                                    EMPTY_LIST,         internalLogger.errorMessages);
-        assertEquals("internal log: warnings",                                  EMPTY_LIST,         internalLogger.warnMessages);
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
     }
 
 
@@ -185,8 +181,9 @@ public class TestJMXManager
         assertEquals("after removing stats bean, known stat beans",             0,                  jmxManager.getStatsBeans().size());
         assertEquals("after removing marker, known stat bean types",            0,                  jmxManager.getStatsBeanTypes().size());
 
-        assertEquals("internal log: errors",                                    EMPTY_LIST,         internalLogger.errorMessages);
-        assertEquals("internal log: warnings",                                  EMPTY_LIST,         internalLogger.warnMessages);
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
     }
 
 
@@ -222,8 +219,9 @@ public class TestJMXManager
         assertEquals("after removing stats bean, deregistration count",         1,                  mock.unregisterMBeanInvocationCount);
         assertNull("after removing stats bean, not in active registrations",                        mock.registeredBeansByName.get(expectedStatsBeanName));
 
-        assertEquals("internal log: errors",                                    EMPTY_LIST,         internalLogger.errorMessages);
-        assertEquals("internal log: warnings",                                  EMPTY_LIST,         internalLogger.warnMessages);
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
     }
 
 
@@ -257,8 +255,9 @@ public class TestJMXManager
         assertEquals("after unregistering marker, known stat bean types",       1,                  jmxManager.getStatsBeanTypes().size());
         assertNull("after unregistering marker, stats bean not registered",                         mock.registeredBeansByName.get(expectedStatsBeanName));
 
-        assertEquals("internal log: errors",                                    EMPTY_LIST,         internalLogger.errorMessages);
-        assertEquals("internal log: warnings",                                  EMPTY_LIST,         internalLogger.warnMessages);
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
     }
 
 
@@ -295,8 +294,9 @@ public class TestJMXManager
         assertNotNull("after adding stats bean, it's registered with server 0",                     mock.registeredBeansByName.get(expectedStatsBeanName));
         assertNotNull("after adding stats bean, it's registered with server 1",                     mock2.registeredBeansByName.get(expectedStatsBeanName));
 
-        assertEquals("internal log: errors",                                    EMPTY_LIST,         internalLogger.errorMessages);
-        assertEquals("internal log: warnings",                                  EMPTY_LIST,         internalLogger.warnMessages);
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
     }
 
 
@@ -333,8 +333,9 @@ public class TestJMXManager
         assertNotNull("after adding stats bean, it's registered with server 0",                 mock.registeredBeansByName.get(objectNameForAppender(markerBeanName, appenderName)));
         assertNotNull("after adding stats bean, it's registered with server 1",                 mock2.registeredBeansByName.get(objectNameForAppender(markerBeanName2, appenderName)));
 
-        assertEquals("internal log: errors",                                    EMPTY_LIST,         internalLogger.errorMessages);
-        assertEquals("internal log: warnings",                                  EMPTY_LIST,         internalLogger.warnMessages);
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
     }
 
 
@@ -371,11 +372,9 @@ public class TestJMXManager
         assertEquals("after adding stats bean, deregistration count",           0,                  mock.unregisterMBeanInvocationCount);
         assertNotNull("after adding stats bean, is registed under expected name",                   mock.registeredBeansByName.get(expectedStatsBeanName));
 
-        assertEquals("internal log: errors",                                    EMPTY_LIST,         internalLogger.errorMessages);
-        assertEquals("internal log: warnings",                                  1,                  internalLogger.warnMessages.size());
-        assertRegex("internal log: warnings",
-                    ".*server already registered.*" + MARKER_BEAN_NAME + ".*ignoring.*" + MARKER_BEAN_NAME_2,
-                    internalLogger.warnMessages.get(0));
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalWarningLog(".*server already registered.*" + MARKER_BEAN_NAME + ".*ignoring.*" + MARKER_BEAN_NAME_2);
+        internalLogger.assertInternalErrorLog();
     }
 
 
@@ -410,10 +409,8 @@ public class TestJMXManager
         assertEquals("after adding stats bean, deregistration count",           0,                  mock.unregisterMBeanInvocationCount);
         assertNotNull("after adding stats bean, is registed under expected name",                   mock.registeredBeansByName.get(expectedStatsBeanName));
 
-        assertEquals("internal log: errors",                                    EMPTY_LIST,         internalLogger.errorMessages);
-        assertEquals("internal log: warnings",                                  1,                  internalLogger.warnMessages.size());
-        assertRegex("internal log: warnings",
-                    ".*server already registered.*" + MARKER_BEAN_NAME + ".*ignoring.*" + MARKER_BEAN_NAME,
-                    internalLogger.warnMessages.get(0));
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalWarningLog(".*server already registered.*" + MARKER_BEAN_NAME + ".*ignoring.*" + MARKER_BEAN_NAME);
+        internalLogger.assertInternalErrorLog();
     }
 }

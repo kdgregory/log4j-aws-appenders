@@ -14,8 +14,6 @@
 
 package com.kdgregory.logging.aws;
 
-import static net.sf.kdgcommons.test.StringAsserts.*;
-
 import java.util.List;
 
 import org.junit.After;
@@ -119,11 +117,11 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         writer = new CloudWatchLogWriter(config, stats, internalLogger, dummyClientFactory);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
-        assertEquals("writer batch delay",              123L,                   writer.getBatchDelay());
-        assertEquals("message queue discard policy",    DiscardAction.newest,   messageQueue.getDiscardAction());
-        assertEquals("message queue discard threshold", 456,                    messageQueue.getDiscardThreshold());
-        assertEquals("stats actual log group name",     "foo",                  stats.getActualLogGroupName());
-        assertEquals("stats actual log stream name",    "bar",                  stats.getActualLogStreamName());
+        assertEquals("writer batch delay",                      123L,                   writer.getBatchDelay());
+        assertEquals("message queue discard policy",            DiscardAction.newest,   messageQueue.getDiscardAction());
+        assertEquals("message queue discard threshold",         456,                    messageQueue.getDiscardThreshold());
+        assertEquals("stats: actual log group name",            "foo",                  stats.getActualLogGroupName());
+        assertEquals("stats: actual log stream name",           "bar",                  stats.getActualLogStreamName());
     }
 
 
@@ -146,9 +144,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",              "message one",      mock.mostRecentEvents.get(0).getMessage());
 
-        assertEquals("messages sent, from statistics",          1,                  stats.getMessagesSent());
-        assertEquals("actual log group name, from statistics",  "argle",            stats.getActualLogGroupName());
-        assertEquals("actual log stream name, from statistics", "bargle",           stats.getActualLogStreamName());
+        assertEquals("stats: actual log group name",            "argle",            stats.getActualLogGroupName());
+        assertEquals("stats: actual log stream name",           "bargle",           stats.getActualLogStreamName());
+
+        assertStatisticsMessagesSent(1);
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message three"));
@@ -165,10 +164,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: last message (0)",          "message two",      mock.mostRecentEvents.get(0).getMessage());
         assertEquals("putLogEvents: last message (1)",          "message three",    mock.mostRecentEvents.get(1).getMessage());
 
-        assertEquals("messages sent, from statistics",          3,                  stats.getMessagesSent());
+        assertStatisticsMessagesSent(3);
 
-        assertEquals("debug message count",                     0,                  internalLogger.debugMessages.size());
-        assertEquals("error message count",                     0,                  internalLogger.errorMessages.size());
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog();
     }
 
 
@@ -195,9 +194,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",              "message one",      mock.mostRecentEvents.get(0).getMessage());
 
-        assertEquals("messages sent, from statistics",          1,                  stats.getMessagesSent());
-        assertEquals("actual log group name, from statistics",  "argle",            stats.getActualLogGroupName());
-        assertEquals("actual log stream name, from statistics", "zippy",            stats.getActualLogStreamName());
+        assertEquals("stats: actual log group name",            "argle",            stats.getActualLogGroupName());
+        assertEquals("stats: actual log stream name",           "zippy",            stats.getActualLogStreamName());
+
+        assertStatisticsMessagesSent(1);
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message three"));
@@ -214,11 +214,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: last message (0)",          "message two",      mock.mostRecentEvents.get(0).getMessage());
         assertEquals("putLogEvents: last message (1)",          "message three",    mock.mostRecentEvents.get(1).getMessage());
 
-        assertEquals("messages sent, from statistics",          3,                  stats.getMessagesSent());
+        assertStatisticsMessagesSent(3);
 
-        assertEquals("debug message count",                     1,                  internalLogger.debugMessages.size());
-        assertEquals("error message count",                     0,                  internalLogger.errorMessages.size());
-        assertRegex("debug messages indicates stream creation", "creat.*stream.*",  internalLogger.debugMessages.get(0));
+        internalLogger.assertInternalDebugLog("creat.*stream.*");
+        internalLogger.assertInternalErrorLog();
     }
 
 
@@ -247,9 +246,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",              "message one",      mock.mostRecentEvents.get(0).getMessage());
 
-        assertEquals("messages sent, from statistics",          1,                  stats.getMessagesSent());
-        assertEquals("actual log group name, from statistics",  "griffy",            stats.getActualLogGroupName());
-        assertEquals("actual log stream name, from statistics", "zippy",            stats.getActualLogStreamName());
+        assertEquals("stats: actual log group name",            "griffy",           stats.getActualLogGroupName());
+        assertEquals("stats: actual log stream name",           "zippy",            stats.getActualLogStreamName());
+
+        assertStatisticsMessagesSent(1);
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message three"));
@@ -266,12 +266,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: last message (0)",          "message two",      mock.mostRecentEvents.get(0).getMessage());
         assertEquals("putLogEvents: last message (1)",          "message three",    mock.mostRecentEvents.get(1).getMessage());
 
-        assertEquals("messages sent, from statistics",          3,                  stats.getMessagesSent());
+        assertStatisticsMessagesSent(3);
 
-        assertEquals("debug message count",                     2,                  internalLogger.debugMessages.size());
-        assertEquals("error message count",                     0,                  internalLogger.errorMessages.size());
-        assertRegex("debug messages indicates group creation",  "creat.*group.*",   internalLogger.debugMessages.get(0));
-        assertRegex("debug messages indicates stream creation", "creat.*stream.*",  internalLogger.debugMessages.get(1));
+        internalLogger.assertInternalDebugLog("creat.*group.*", "creat.*stream.*");
+        internalLogger.assertInternalErrorLog();
     }
 
 
@@ -298,9 +296,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",              "message one",      mock.mostRecentEvents.get(0).getMessage());
 
-        assertEquals("messages sent, from statistics",          1,                  stats.getMessagesSent());
-        assertEquals("actual log group name, from statistics",  "argle",            stats.getActualLogGroupName());
-        assertEquals("actual log stream name, from statistics", "fribble",          stats.getActualLogStreamName());
+        assertEquals("stats: actual log group name",            "argle",            stats.getActualLogGroupName());
+        assertEquals("stats: actual log stream name",           "fribble",          stats.getActualLogStreamName());
+
+        assertStatisticsMessagesSent(1);
     }
 
 
@@ -314,17 +313,13 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         // we don't need to write any messages; writer should fail to initialize
 
-        String errorMessage = stats.getLastErrorMessage();
-        assertRegex("error message indicates failure, with group name (was: " + errorMessage + ")",
-                    ".*log group.*" + config.logGroupName + "$",
-                    errorMessage);
+        assertStatisticsErrorMessage("invalid log group name: " + config.logGroupName + "$");
 
         assertEquals("describeLogGroups: invocation count",     0,                      mock.describeLogGroupsInvocationCount);
         assertEquals("describeLogStreams: invocation count",    0,                      mock.describeLogStreamsInvocationCount);
 
-        assertEquals("debug message count",                     0,                      internalLogger.debugMessages.size());
-        assertEquals("error message count",                     1,                      internalLogger.errorMessages.size());
-        assertRegex("error message",                            ".*invalid.*group.*",   internalLogger.errorMessages.get(0));
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog(".*invalid.*group.*");
     }
 
 
@@ -338,17 +333,13 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         // we don't need to write any messages; writer should fail to initialize
 
-        String errorMessage = stats.getLastErrorMessage();
-        assertRegex("error message indicates failure, with stream name (was: " + errorMessage + ")",
-                    ".*log stream.*" + config.logStreamName + "$",
-                    errorMessage);
+        assertStatisticsErrorMessage("invalid log stream name: " + config.logStreamName + "$");
 
         assertEquals("describeLogGroups: invocation count",     0,                      mock.describeLogGroupsInvocationCount);
         assertEquals("describeLogStreams: invocation count",    0,                      mock.describeLogStreamsInvocationCount);
 
-        assertEquals("debug message count",                     0,                      internalLogger.debugMessages.size());
-        assertEquals("error message count",                     1,                      internalLogger.errorMessages.size());
-        assertRegex("error message",                            ".*invalid.*stream.*",  internalLogger.errorMessages.get(0));
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog(".*invalid.*stream.*");
     }
 
 
@@ -374,15 +365,12 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("message queue set to discard all",                0,                          messageQueue.getDiscardThreshold());
         assertEquals("message queue set to discard all",                DiscardAction.oldest,       messageQueue.getDiscardAction());
 
-        assertRegex("log: error message",                               "unable to configure.*",    stats.getLastErrorMessage());
-        assertEquals("stats: exception class",                          TestingException.class,     stats.getLastError().getClass());
-        assertEquals("stats: exception message",                        "not now, not ever",        stats.getLastError().getMessage());
-        assertTrue("stats: exception trace",                                                        stats.getLastErrorStacktrace().size() > 0);
-        assertNotNull("stats: exception timestamp",                                                 stats.getLastErrorTimestamp());
+        assertStatisticsErrorMessage("unable to configure.*");
+        assertStatisticsException(TestingException.class, "not now, not ever");
 
-        assertEquals("log: debug message count",                        0,                          internalLogger.debugMessages.size());
-        assertEquals("log: error message count",                        1,                          internalLogger.errorMessages.size());
-        assertRegex("log: error message",                               "unable to configure.*",    internalLogger.errorMessages.get(0));
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog("unable to configure.*");
+        internalLogger.assertInternalErrorLogExceptionTypes(TestingException.class);
     }
 
 
@@ -395,7 +383,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             @Override
             protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
             {
-                throw new TestingException("can't send it");
+                throw new TestingException("I don't wanna do the work");
             }
         };
 
@@ -412,21 +400,14 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: last call #/messages",              1,                      mock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",                      "message one",          mock.mostRecentEvents.get(0).getMessage());
 
-        assertEquals("stats: messages sent",                            0,                      stats.getMessagesSent());
-        assertFalse("stats: error message non-blank",                                           StringUtil.isBlank(stats.getLastErrorMessage()));
-        assertEquals("stats: exception class",                          TestingException.class, stats.getLastError().getClass());
-        assertEquals("stats: exception message",                        "can't send it",        stats.getLastError().getMessage());
-        assertTrue("stats: exception trace",                                                    stats.getLastErrorStacktrace().size() > 0);
-        assertNotNull("stats: exception timestamp",                                             stats.getLastErrorTimestamp());
-
-        assertEquals("log: debug message count",                        0,                      internalLogger.debugMessages.size());
-        assertEquals("log: error message count",                        2,                      internalLogger.errorMessages.size());
-        assertRegex("log: error message (0)",                           "failed to send.*",     internalLogger.errorMessages.get(0));
-        assertEquals("log: exception (0)",                              TestingException.class, internalLogger.errorExceptions.get(0).getClass());
-        assertRegex("log: error message (1)",                           "failed to send.*",     internalLogger.errorMessages.get(1));
-        assertEquals("log: exception (1)",                              TestingException.class, internalLogger.errorExceptions.get(1).getClass());
+        assertStatisticsErrorMessage("failed to send batch");
+        assertStatisticsException(TestingException.class, "I don't wanna do the work");
 
         assertTrue("message queue still accepts messages",                                      messageQueue.getDiscardThreshold() > 0);
+
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog("failed to send.*", "failed to send.*");
+        internalLogger.assertInternalErrorLogExceptionTypes(TestingException.class, TestingException.class);
     }
 
 
@@ -470,18 +451,13 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",              "message two",      mock.mostRecentEvents.get(0).getMessage());
 
-        assertEquals("stats: messages sent",                    2,                  stats.getMessagesSent());
-        assertFalse("stats: error message non-blank",                               StringUtil.isBlank(stats.getLastErrorMessage()));
-        assertNull("stats: no exception",                                           stats.getLastError());
-        assertNull("stats: no exception trace",                                     stats.getLastErrorStacktrace());
-        assertNotNull("stats: exception timestamp",                                 stats.getLastErrorTimestamp());
+        assertStatisticsMessagesSent(2);
+        assertStatisticsErrorMessage("log stream missing: " + config.logStreamName);
 
         // will get an error message when stream goes missing, debug when it's recreated
 
-        assertEquals("log: debug message count",                1,                      internalLogger.debugMessages.size());
-        assertRegex("log: debug message content",               "creat.*stream.*",      internalLogger.debugMessages.get(0));
-        assertEquals("log: error message count",                1,                      internalLogger.errorMessages.size());
-        assertRegex("log: error message content",               ".*stream.*missing.*",  internalLogger.errorMessages.get(0));
+        internalLogger.assertInternalDebugLog("creat.*stream.*");
+        internalLogger.assertInternalErrorLog(".*stream.*missing.*");
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message three"));
         mock.allowWriterThread();
@@ -640,12 +616,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: last call #/messages",      5000,               mock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",              testMessage,        mock.mostRecentEvents.get(4999).getMessage());
 
-        // this sleep is a hack to enable the writer thread to update stats
-        Thread.sleep(50);
+        assertStatisticsMessagesSent(numMessages);
 
-        assertEquals("total messages sent, from statistics",    numMessages,        stats.getMessagesSent());
-        assertEquals("debug message count",                     0,                  internalLogger.debugMessages.size());
-        assertEquals("error message count",                     0,                  internalLogger.errorMessages.size());
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog();
     }
 
 
@@ -697,9 +671,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: last call #/messages",      502,              mock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",              testMessage,        mock.mostRecentEvents.get(0).getMessage());
 
-        assertEquals("total messages sent, from statistics",    numMessages,        stats.getMessagesSent());
-        assertEquals("debug message count",                     0,                  internalLogger.debugMessages.size());
-        assertEquals("error message count",                     0,                  internalLogger.errorMessages.size());
+        assertStatisticsMessagesSent(numMessages);
+
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog();
     }
 
 
@@ -725,7 +700,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("stats: actual log group name",            "argle",                        stats.getActualLogGroupName());
         assertEquals("stats: actual log stream name",           "bargle",                       stats.getActualLogStreamName());
 
-        assertRegex("log: debug message indicating factory",    ".*created client from factory.*" + getClass().getName() + ".*",
-                                                                internalLogger.debugMessages.get(0));
+        internalLogger.assertInternalDebugLog( ".*created client from factory.*" + getClass().getName() + ".*");
+        internalLogger.assertInternalErrorLog();
     }
 }

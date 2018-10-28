@@ -148,10 +148,10 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         // the writer uses the config object for most of its configuration,
         // so we just look for the pieces that it exposes or passes on
 
-        assertEquals("writer batch delay",                  123L,                       writer.getBatchDelay());
-        assertEquals("message queue discard policy",        DiscardAction.newest,       messageQueue.getDiscardAction());
-        assertEquals("message queue discard threshold",     456,                        messageQueue.getDiscardThreshold());
-        assertEquals("stats: actual stream name",           DEFAULT_STREAM_NAME,        stats.getActualStreamName());
+        assertEquals("writer batch delay",                          123L,                       writer.getBatchDelay());
+        assertEquals("message queue discard policy",                DiscardAction.newest,       messageQueue.getDiscardAction());
+        assertEquals("message queue discard threshold",             456,                        messageQueue.getDiscardThreshold());
+        assertEquals("stats: actual stream name",                   DEFAULT_STREAM_NAME,        stats.getActualStreamName());
     }
 
 
@@ -163,23 +163,23 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
         mock.allowWriterThread();
 
-        assertEquals("describeStream: invocation count",            1,                      mock.describeStreamInvocationCount);
-        assertEquals("describeStream: stream name",                 DEFAULT_STREAM_NAME,    mock.describeStreamStreamName);
-        assertEquals("createStream: invocation count",              0,                      mock.createStreamInvocationCount);
-        assertEquals("increaseRetentionPeriod invocation count",    0,                      mock.increaseRetentionPeriodInvocationCount);
-        assertEquals("putRecords: invocation count",                1,                      mock.putRecordsInvocationCount);
-        assertEquals("putRecords: source record count",             1,                      mock.putRecordsSourceRecords.size());
-        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,  mock.putRecordsSourceRecords.get(0).getPartitionKey());
+        assertEquals("describeStream: invocation count",            1,                          mock.describeStreamInvocationCount);
+        assertEquals("describeStream: stream name",                 DEFAULT_STREAM_NAME,        mock.describeStreamStreamName);
+        assertEquals("createStream: invocation count",              0,                          mock.createStreamInvocationCount);
+        assertEquals("increaseRetentionPeriod invocation count",    0,                          mock.increaseRetentionPeriodInvocationCount);
+        assertEquals("putRecords: invocation count",                1,                          mock.putRecordsInvocationCount);
+        assertEquals("putRecords: source record count",             1,                          mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,      mock.putRecordsSourceRecords.get(0).getPartitionKey());
         assertEquals("putRecords: source record content",           "message one",
                                                                     new String(
                                                                         BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(0).getData()),
                                                                         "UTF-8"));
 
-        assertEquals("stats: actual stream name",                   DEFAULT_STREAM_NAME,    stats.getActualStreamName());
-        assertEquals("stats: sent message count",                   1,                      stats.getMessagesSent());
+        assertEquals("stats: actual stream name",                   DEFAULT_STREAM_NAME,        stats.getActualStreamName());
+        assertStatisticsMessagesSent(1);
 
-        assertEquals("debug message count",                         0,                      internalLogger.debugMessages.size());
-        assertEquals("error message count",                         0,                      internalLogger.errorMessages.size());
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog();
     }
 
 
@@ -200,28 +200,27 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         // writer calls describeStream once to see if stream exists, twice while waiting
         // for it to become active, then once more before calling putRecords
 
-        assertEquals("describeStream: invocation count",            4,                      mock.describeStreamInvocationCount);
-        assertEquals("describeStream: stream name",                 DEFAULT_STREAM_NAME,    mock.describeStreamStreamName);
-        assertEquals("createStream: invocation count",              1,                      mock.createStreamInvocationCount);
-        assertEquals("createStream: stream name",                   DEFAULT_STREAM_NAME,    mock.createStreamStreamName);
-        assertEquals("createStream: shard count",                   Integer.valueOf(3),     mock.createStreamShardCount);
-        assertEquals("increaseRetentionPeriod invocation count",    1,                      mock.increaseRetentionPeriodInvocationCount);
-        assertEquals("increaseRetentionPeriod stream name",         DEFAULT_STREAM_NAME,    mock.increaseRetentionPeriodStreamName);
-        assertEquals("increaseRetentionPeriod hours",               Integer.valueOf(48),    mock.increaseRetentionPeriodHours);
-        assertEquals("putRecords: invocation count",                1,                      mock.putRecordsInvocationCount);
-        assertEquals("putRecords: source record count",             1,                      mock.putRecordsSourceRecords.size());
-        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY, mock.putRecordsSourceRecords.get(0).getPartitionKey());
+        assertEquals("describeStream: invocation count",            4,                          mock.describeStreamInvocationCount);
+        assertEquals("describeStream: stream name",                 DEFAULT_STREAM_NAME,        mock.describeStreamStreamName);
+        assertEquals("createStream: invocation count",              1,                          mock.createStreamInvocationCount);
+        assertEquals("createStream: stream name",                   DEFAULT_STREAM_NAME,        mock.createStreamStreamName);
+        assertEquals("createStream: shard count",                   Integer.valueOf(3),         mock.createStreamShardCount);
+        assertEquals("increaseRetentionPeriod invocation count",    1,                          mock.increaseRetentionPeriodInvocationCount);
+        assertEquals("increaseRetentionPeriod stream name",         DEFAULT_STREAM_NAME,        mock.increaseRetentionPeriodStreamName);
+        assertEquals("increaseRetentionPeriod hours",               Integer.valueOf(48),        mock.increaseRetentionPeriodHours);
+        assertEquals("putRecords: invocation count",                1,                          mock.putRecordsInvocationCount);
+        assertEquals("putRecords: source record count",             1,                          mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,      mock.putRecordsSourceRecords.get(0).getPartitionKey());
         assertEquals("putRecords: source record content",           "message one",
                                                                     new String(
                                                                         BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(0).getData()),
                                                                         "UTF-8"));
 
-        assertEquals("actual stream name, from statistics",         DEFAULT_STREAM_NAME,    stats.getActualStreamName());
-        assertEquals("sent message count, from statistics",         1,                      stats.getMessagesSent());
+        assertEquals("actual stream name, from statistics",         DEFAULT_STREAM_NAME,        stats.getActualStreamName());
+        assertStatisticsMessagesSent(1);
 
-        assertEquals("debug message count",                         1,                      internalLogger.debugMessages.size());
-        assertRegex("debug message indicates creating stream",      ".*creat.*stream.*",    internalLogger.debugMessages.get(0));
-        assertEquals("error message count",                         0,                      internalLogger.errorMessages.size());
+        internalLogger.assertInternalDebugLog(".*creat.*stream.*");
+        internalLogger.assertInternalErrorLog();
     }
 
 
@@ -232,22 +231,15 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         createWriter();
 
-        assertEquals("describeStream: invocation count",            1,                      mock.describeStreamInvocationCount);
-        assertEquals("describeStream: stream name",                 DEFAULT_STREAM_NAME,    mock.describeStreamStreamName);
-        assertEquals("createStream: invocation count",              0,                      mock.createStreamInvocationCount);
-        assertEquals("putRecords: invocation count",                0,                      mock.putRecordsInvocationCount);
+        assertEquals("describeStream: invocation count",            1,                          mock.describeStreamInvocationCount);
+        assertEquals("describeStream: stream name",                 DEFAULT_STREAM_NAME,        mock.describeStreamStreamName);
+        assertEquals("createStream: invocation count",              0,                          mock.createStreamInvocationCount);
+        assertEquals("putRecords: invocation count",                0,                          mock.putRecordsInvocationCount);
 
-        String initializationMessage = stats.getLastErrorMessage();
+        assertStatisticsErrorMessage(".*" + DEFAULT_STREAM_NAME + ".*does not exist.*");
 
-        assertTrue("initialization message indicates invalid stream name (was: " + initializationMessage + ")",
-                   initializationMessage.contains("does not exist"));
-        assertTrue("initialization message contains stream name (was: " + initializationMessage + ")",
-                   initializationMessage.contains(DEFAULT_STREAM_NAME));
-
-        assertEquals("debug message count",                         0,                      internalLogger.debugMessages.size());
-        assertEquals("error message count",                         1,                      internalLogger.errorMessages.size());
-        assertRegex("error message indicates problem",              ".*auto-create not enabled",
-                                                                    internalLogger.errorMessages.get(0));
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog(".*auto-create not enabled");
     }
 
 
@@ -262,16 +254,10 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("createStream: invocation count",              0,                      mock.createStreamInvocationCount);
         assertEquals("putRecords: invocation count",                0,                      mock.putRecordsInvocationCount);
 
-        String initializationMessage = stats.getLastErrorMessage();
+        assertStatisticsErrorMessage("invalid stream name.*" + config.streamName);
 
-        assertTrue("initialization message indicates invalid stream name (was: " + initializationMessage + ")",
-                   initializationMessage.contains("invalid stream name"));
-        assertTrue("initialization message contains invalid name (was: " + initializationMessage + ")",
-                   initializationMessage.contains(config.streamName));
-
-        assertEquals("debug message count",                         0,                      internalLogger.debugMessages.size());
-        assertEquals("error message count",                         1,                      internalLogger.errorMessages.size());
-        assertRegex("error message",                                ".*invalid.*stream.*",  internalLogger.errorMessages.get(0));
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog(".*invalid.*stream.*");
     }
 
 
@@ -286,14 +272,10 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("createStream: invocation count",              0,                      mock.createStreamInvocationCount);
         assertEquals("putRecords: invocation count",                0,                      mock.putRecordsInvocationCount);
 
-        String initializationMessage = stats.getLastErrorMessage();
+        assertStatisticsErrorMessage("invalid partition key.*");
 
-        assertTrue("initialization message indicates invalid partition key (was: " + initializationMessage + ")",
-                   initializationMessage.contains("invalid partition key"));
-
-        assertEquals("debug message count",                         0,                      internalLogger.debugMessages.size());
-        assertEquals("error message count",                         1,                      internalLogger.errorMessages.size());
-        assertRegex("error message",                                ".*invalid.*key.*",     internalLogger.errorMessages.get(0));
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog(".*invalid.*key.*");
     }
 
 
@@ -381,15 +363,11 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("message queue set to discard all",            0,                          messageQueue.getDiscardThreshold());
         assertEquals("message queue set to discard all",            DiscardAction.oldest,       messageQueue.getDiscardAction());
 
-        assertRegex("stats: error message",                         "unable to configure.*",    stats.getLastErrorMessage());
-        assertEquals("stats: exception",                            TestingException.class,     stats.getLastError().getClass());
-        assertEquals("stats: exception message",                    "not now, not ever",        stats.getLastError().getMessage());
-        assertTrue("stats: exception trace",                                                    stats.getLastErrorStacktrace().size() > 0);
-        assertNotNull("stats: exception timestamp",                                             stats.getLastErrorTimestamp());
+        assertStatisticsErrorMessage("unable to configure.*");
+        assertStatisticsException(TestingException.class, "not now, not ever");
 
-        assertEquals("log: debug message count",                    0,                          internalLogger.debugMessages.size());
-        assertEquals("log: error message count",                    1,                          internalLogger.errorMessages.size());
-        assertRegex("log: error message",                           "unable to configure.*",    internalLogger.errorMessages.get(0));
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog("unable to configure.*");
     }
 
 
@@ -418,20 +396,14 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: invocation count",            2,                              mock.putRecordsInvocationCount);
         assertEquals("putRecords: number of messages",          1,                              mock.putRecordsSourceRecords.size());
 
-        assertEquals("stats: number of messages sent",          0,                              stats.getMessagesSent());
-        assertRegex("stats: error message",                    "failed to send.*",                                    stats.getLastErrorMessage());
-        assertNotNull("stats: error timestamp",                                                 stats.getLastErrorTimestamp());
-        assertEquals("stats: exception retained",               TestingException.class,         stats.getLastError().getClass());
-        assertEquals("stats: exception message",                "I don't wanna do the work",    stats.getLastError().getMessage());
-        assertTrue("stats: error stacktrace",                                                   stats.getLastErrorStacktrace().size() > 0);
+        assertStatisticsErrorMessage("failed to send batch");
+        assertStatisticsException(TestingException.class, "I don't wanna do the work");
+
         assertTrue("message queue still accepts messages",                                      messageQueue.getDiscardThreshold() > 0);
 
-        assertEquals("log: debug message count",                0,                              internalLogger.debugMessages.size());
-        assertEquals("log: error message count",                2,                              internalLogger.errorMessages.size());
-        assertRegex("log: error message (0)",                   "failed to send.*",             internalLogger.errorMessages.get(0));
-        assertEquals("log: exception (0)",                      TestingException.class,         internalLogger.errorExceptions.get(0).getClass());
-        assertRegex("log: error message (1)",                   "failed to send.*",             internalLogger.errorMessages.get(1));
-        assertEquals("log: exception (1)",                      TestingException.class,         internalLogger.errorExceptions.get(1).getClass());
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog("failed to send.*", "failed to send.*");
+        internalLogger.assertInternalErrorLogExceptionTypes(TestingException.class, TestingException.class);
 
         // the background thread will try to assemble another batch right away, so we can't examine
         // the message queue; instead we'll wait for the writer to call PutRecords again
@@ -479,10 +451,10 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         mock.allowWriterThread();
 
-        assertEquals("first batch, putRecords invocation count",        1,      mock.putRecordsInvocationCount);
-        assertEquals("first batch, number of successful messages",      7,      mock.putRecordsSuccesses.size());
-        assertEquals("first batch, number of failed messages",          3,      mock.putRecordsFailures.size());
-        assertEquals("first batch, messages from statistics",           7,      stats.getMessagesSent());
+        assertEquals("first batch, putRecords invocation count",                1,      mock.putRecordsInvocationCount);
+        assertEquals("first batch, number of successful messages",              7,      mock.putRecordsSuccesses.size());
+        assertEquals("first batch, number of failed messages",                  3,      mock.putRecordsFailures.size());
+        assertStatisticsMessagesSent("first batch, messages sent per stats",    7);
 
         PutRecordsRequestEntry savedFailure1 = mock.putRecordsFailures.get(0);
         PutRecordsRequestEntry savedFailure2 = mock.putRecordsFailures.get(1);
@@ -490,10 +462,10 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         mock.allowWriterThread();
 
-        assertEquals("second batch, putRecords invocation count",       2,      mock.putRecordsInvocationCount);
-        assertEquals("second batch, number of successful messages",     2,      mock.putRecordsSuccesses.size());
-        assertEquals("second batch, number of failed messages",         1,      mock.putRecordsFailures.size());
-        assertEquals("first batch, messages from statistics",           9,      stats.getMessagesSent());
+        assertEquals("second batch, putRecords invocation count",               2,      mock.putRecordsInvocationCount);
+        assertEquals("second batch, number of successful messages",             2,      mock.putRecordsSuccesses.size());
+        assertEquals("second batch, number of failed messages",                 1,      mock.putRecordsFailures.size());
+        assertStatisticsMessagesSent("second batch, messages sent per stats",   9);
 
         assertTrue("first failure is now first success",
                    Arrays.equals(
@@ -506,10 +478,10 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         mock.allowWriterThread();
 
-        assertEquals("third batch, putRecords invocation count",        3,      mock.putRecordsInvocationCount);
-        assertEquals("third batch, number of successful messages",      1,      mock.putRecordsSuccesses.size());
-        assertEquals("third batch, number of failed messages",          0,      mock.putRecordsFailures.size());
-        assertEquals("first batch, messages from statistics",           10,     stats.getMessagesSent());
+        assertEquals("third batch, putRecords invocation count",                3,      mock.putRecordsInvocationCount);
+        assertEquals("third batch, number of successful messages",              1,      mock.putRecordsSuccesses.size());
+        assertEquals("third batch, number of failed messages",                  0,      mock.putRecordsFailures.size());
+        assertStatisticsMessagesSent("third batch, messages sent per stats",    10);
 
         assertTrue("second original failure is now a success",
                    Arrays.equals(
@@ -661,13 +633,10 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
                                                                         BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(249).getData()),
                                                                         "UTF-8"));
 
-        // this sleep is a hack to enable the writer thread to update stats
-        Thread.sleep(50);
+        assertStatisticsMessagesSent(numMessages);
 
-        assertEquals("total messages sent, from statistics",        numMessages,            stats.getMessagesSent());
-
-        assertEquals("debug message count",                         0,                      internalLogger.debugMessages.size());
-        assertEquals("error message count",                         0,                      internalLogger.errorMessages.size());
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog();
     }
 
     @Test
@@ -722,13 +691,10 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
                                                                         BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(expected2ndBatchCount - 1).getData()),
                                                                         "UTF-8"));
 
-        // this sleep is a hack to enable the writer thread to update stats
-        Thread.sleep(50);
+        assertStatisticsMessagesSent(numMessages);
 
-        assertEquals("total messages sent, from statistics",        numMessages,            stats.getMessagesSent());
-
-        assertEquals("debug message count",                         0,                      internalLogger.debugMessages.size());
-        assertEquals("error message count",                         0,                      internalLogger.errorMessages.size());
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog();
     }
 
 
@@ -752,7 +718,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertNull("stats: no initialization error",                                        stats.getLastError());
         assertEquals("stats: actual stream name",               DEFAULT_STREAM_NAME,        stats.getActualStreamName());
 
-        assertRegex("log: debug message indicating factory",    ".*created client from factory.*" + getClass().getName() + ".*",
-                                                                internalLogger.debugMessages.get(0));
+        internalLogger.assertInternalDebugLog(".*created client from factory.*");
+        internalLogger.assertInternalErrorLog();
     }
 }

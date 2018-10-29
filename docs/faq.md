@@ -1,10 +1,19 @@
+## What's the difference between version 1 and version 2
+
+  Version 1 was a single JAR that supported only Log4J 1.2. Version 2 split the library
+  into two parts: a "core" JAR contains all code that interacts with AWS, and a "framework"
+  JAR that supports a particular logging framework. Version 2.0.0 provides the same
+  functionality as version 1.3.0, but makes a slight change to JMX integration.
+
 ## Isn't Log4J 1.x at end of life?
 
-  Yes. Have you updated all of your applications yet? If you have, congratulations. I
-  haven't, nor have a lot of people that I know. Log4J 1.x may be old but it's stable
-  and does the job (especially when combined with SLF4J). Replacing a stable framework
-  is pretty low on the priority list for most development organizations, so I expect it
-  to be around for many more years.
+  Yes, but it's a stable logging package that's still in use at most of the places I
+  have worked. Together with SLF4J, it provides most of the features that you might
+  want from a logger. Since replacing a stable framework is pretty low on the priority
+  list for most development organizations, I expect it to be around for many more years.
+
+  That said, version 2 exists so that I can support other logging frameworks. I plan to
+  start with Logback, since that's used by Spring.
 
 ## There are other appender libraries, why did you write this?
 
@@ -22,9 +31,12 @@
   region `us-east-1`, while the client builders use a region provider chain.
 
   If you're using a version of the SDK that supports client builders, the appenders will
-  use them. If you're not, or want more control over the client configuration (such as
-  running in `us-east-2` but writing logs to `us-east-1`), you have the option to provide
-  a client factory. For more information, read [this](design.md#service-client).
+  invoke them rather than the client constructor. If you're not, or want more control over
+  the client configuration (such as running in `us-east-2` but writing logs to `us-east-1`),
+  you have the option to provide an application-specific client factory. Alternatively, you
+  can specify an explicit service endpoint, or use the `AWS_REGION` environment variable.
+
+  For more information, read [this](service-client.md).
 
 ## What happens when the appender has an error?
 

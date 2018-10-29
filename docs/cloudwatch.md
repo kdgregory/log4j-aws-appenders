@@ -1,42 +1,43 @@
+# CloudWatch
+
 The CloudWatch implementation provides the following features:
 
 * User-specified log-group and log-stream names.
 * Substitution variables to customize log-group and log-stream names.
-* Auto-rotation of log streams, based either on a time delay (explicity, hourly, or daily) or number of messages.
+* Auto-rotation of log streams, based either on a time delay (specified interval, hourly, daily) or number of messages.
 * Configurable discard in case of network connectivity issues.
 
 
 ## Configuration
-
-Your Log4J configuration will look something like this:
-
-```
-log4j.rootLogger=DEBUG, cloudwatch
-
-log4j.appender.cloudwatch=com.kdgregory.log4j.aws.CloudWatchAppender
-log4j.appender.cloudwatch.logGroup={env:APP_NAME}
-log4j.appender.cloudwatch.logStream={hostname}-{pid}
-log4j.appender.cloudwatch.batchDelay=1000
-log4j.appender.cloudwatch.rotationMode=daily
-
-log4j.appender.cloudwatch.layout=org.apache.log4j.PatternLayout
-log4j.appender.cloudwatch.layout.ConversionPattern=%d [%t] %-5p %c %x - %m%n
-```
 
 The appender provides the following properties (also described in the JavaDoc):
 
 Name                | Description
 --------------------|----------------------------------------------------------------
 `logGroup`          | Name of the CloudWatch log group where messages are sent; may use [substitutions](substitutions.md). If this group doesn't exist it will be created. No default.
-`logStream`         | Name of the CloudWatch log stream where messages are sent; may use [substitutions](substitutions.md). If this stream doesn't exist it will be created. Defaults to `{startTimestamp}`.
+`logStream`         | Name of the CloudWatch log stream where messages are sent; may use [substitutions](substitutions.md). If this stream doesn't exist it will be created. Defaults to `{startupTimestamp}`.
 `rotationMode`      | Controls whether auto-rotation is enabled. Values are `none`, `count`, `interval`, `hourly`, and `daily`; default is `none`. See below for more information.
-`rotationInterval`  | Used only for `count` and `interval` rotation modes: for the former, the maximum number of messages, and for the latter, the number of milliseconds between automatic rotations.
+`rotationInterval`  | Used only for `count` and `interval` rotation modes: for the former, the number of messages, and for the latter, the number of milliseconds between rotations.
 `sequence`          | A value that is incremented each time the stream is rotated. Defaults to 0.
 `batchDelay`        | The time, in milliseconds, that the writer will wait to accumulate messages for a batch. See the [design doc](design.md#message-batches) for more information.
 `discardThreshold`  | The threshold count for discarding messages; default is 10,000. See [design doc](design.md#message-discard) for more information.
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
-`clientFactory`     | Specifies the fully-qualified name of a static method that will be used to create the AWS service client via reflection. See [design doc](design.md#service-client) for more information.
-`clientEndpoint`    | Specifies a non-default endpoint for the client (eg, "logs.us-west-2.amazonaws.com")
+`clientFactory`     | Specifies the fully-qualified name of a static method that will be used to create the AWS service client via reflection. See [service client doc](service-client.md) for more information.
+`clientEndpoint`    | Specifies a non-default endpoint for the client (eg, "logs.us-west-2.amazonaws.com"). See [service client doc](service-client.md) for more information.
+
+
+### Example
+
+```
+log4j.rootLogger=DEBUG, cloudwatch
+
+log4j.appender.cloudwatch=com.kdgregory.log4j.aws.CloudWatchAppender
+log4j.appender.cloudwatch.logGroup={env:APP_NAME}-{sysprop:deployment}
+log4j.appender.cloudwatch.logStream={hostname}-{startupTimestamp}
+log4j.appender.cloudwatch.rotationMode=daily
+log4j.appender.cloudwatch.layout=org.apache.log4j.PatternLayout
+log4j.appender.cloudwatch.layout.ConversionPattern=%d [%t] %-5p %c %x - %m%n
+```
 
 
 ## Permissions
@@ -50,17 +51,17 @@ To use this appender you will need to grant the following IAM permissions:
 * `logs:PutLogEvents`
 
 
-## LogStream and LogGroup management
+## LogGroup and LogStream management
 
-You will normally use stream names that are tied to an application. If you have a lot of applications,
-manually creating these streams would be onerous. Similarly, you will probably want group names that
+You will normally use group names that are tied to an application. If you have a lot of applications,
+manually creating these groups would be onerous. Similarly, you will probably want stream names that
 are based on some runtime-specific parameter, such as the EC2 instance ID or date.
 
-To support this use case, the appender will automatically create streams and groups as needed. It will
+To support this use case, the appender will automatically create groups and streams as needed. It will
 additionally re-create the stream or group if it is deleted while the appender is running.
 
 
-## Logstream rotation
+## LogStream rotation
 
 While CloudWatch allows you to select arbitrary date ranges when viewing log messages, it's often easier
 to drill down to events if there's a separate log stream organized by time range. The `rotationMode`
@@ -79,9 +80,8 @@ parameter, in concert with `rotationInterval`, controls how the appender switche
   use this mode, you should use a `timestamp` substitution in the log stream name.
 * `hourly`  
   The log is rotated at the top of each hour. It is possible that some log messages will be written to
-  the next hour's log, due to the time delay between generating the message timestamp and testing for
-  log rotation. If you use this mode, you should use the `hourlyTimestamp` substitution in your stream
-  name.
+  the next hour's log, due message batching. If you use this mode, you should use the `hourlyTimestamp`
+  substitution in your stream name.
 * `daily`  
   The log is rotated at midnight UTC. As with hourly rotation, it is possible that some log messages
   will be written to the next day's log. If you use this mode, you should use the `date` or `timestamp`

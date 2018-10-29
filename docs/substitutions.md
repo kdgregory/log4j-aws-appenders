@@ -10,9 +10,9 @@ Variable            | Description
 `timestamp`         | Current UTC timestamp: `YYYYMMDDHHMMSS`
 `hourlyTimestamp`   | Current UTC timestamp, with minutes and seconds truncated: `YYYYMMDDHH0000`
 `startupTimestamp`  | UTC timestamp of JVM startup as returned by `RuntimeMxBean`: `YYYYMMDDHHMMSS`
-`sequence`          | A sequence number that's incremented each time a log is rotated (only useful for loggers that rotate logs)
+`sequence`          | A sequence number that's incremented each time a log is rotated (only useful with appenders that rotate logs)
 `pid`               | Process ID (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms)
-`hostname`          | Hostname (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms)
+`hostname`          | Hostname (this is parsed from `RuntimeMxBean.getName()` and may not be available on all platforms; if running in a Docker container, it will be the container ID)
 `instanceId`        | _Deprecated_: use `ec2:instanceId`
 `aws:accountId`     | AWS account ID. This exists to support SNS topic ARNs, probably not useful elsewhere.
 `ec2:instanceId`    | EC2 instance ID; see below.

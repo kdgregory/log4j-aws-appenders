@@ -1,6 +1,6 @@
 # Change History
 
-## 2.0.0 (2018-10-28)
+## 2.0.0 (2018-10-29)
 
 * Split the library into front-end and back-end components, in preparation for
   adding additional logging frameworks. Included general cleanup and refactoring.

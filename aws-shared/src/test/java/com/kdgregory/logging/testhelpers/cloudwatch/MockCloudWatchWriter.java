@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logging.aws.testhelpers.sns;
+package com.kdgregory.logging.testhelpers.cloudwatch;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kdgregory.logging.aws.sns.SNSWriterConfig;
+import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.util.DiscardAction;
 
 
 /**
- *  A mock equivalent of SNSLogWriter, used by appender tests.
+ *  A mock equivalent of CloudWatchLogWriter, used by appender tests.
  */
-public class MockSNSWriter
+public class MockCloudWatchWriter
 implements LogWriter
 {
     public List<LogMessage> messages = new ArrayList<LogMessage>();
@@ -34,12 +34,20 @@ implements LogWriter
 
     public boolean stopped;
 
-    public SNSWriterConfig config;
+    public String logGroup;
+    public String logStream;
+    public long batchDelay;
+    public int discardThreshold;
+    public DiscardAction discardAction;
 
 
-    public MockSNSWriter(SNSWriterConfig config)
+    public MockCloudWatchWriter(CloudWatchWriterConfig config)
     {
-        this.config = config;
+        this.logGroup = config.logGroupName;
+        this.logStream = config.logStreamName;
+        this.batchDelay = config.batchDelay;
+        this.discardThreshold = config.discardThreshold;
+        this.discardAction = config.discardAction;
     }
 
 //----------------------------------------------------------------------------
@@ -64,20 +72,20 @@ implements LogWriter
     @Override
     public void setBatchDelay(long value)
     {
-        throw new IllegalStateException("this function should never be called");
+        this.batchDelay = value;
     }
 
 
     @Override
     public void setDiscardThreshold(int value)
     {
-        // ignored for now
+        this.discardThreshold = value;
     }
 
     @Override
     public void setDiscardAction(DiscardAction value)
     {
-        // ignored for now
+        this.discardAction = value;
     }
 
 //----------------------------------------------------------------------------

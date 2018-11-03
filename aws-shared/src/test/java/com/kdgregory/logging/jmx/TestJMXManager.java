@@ -28,10 +28,10 @@ import static org.junit.Assert.*;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatisticsMXBean;
 import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
-import com.kdgregory.logging.aws.testhelpers.TestableInternalLogger;
-import com.kdgregory.logging.aws.testhelpers.jmx.MockMBeanServer;
 import com.kdgregory.logging.common.jmx.AbstractJMXManager;
 import com.kdgregory.logging.common.jmx.AbstractMarkerBean;
+import com.kdgregory.logging.testhelpers.TestableInternalLogger;
+import com.kdgregory.logging.testhelpers.jmx.MockMBeanServer;
 
 
 /**

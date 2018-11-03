@@ -31,16 +31,16 @@ import net.sf.kdgcommons.lang.StringUtil;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
-import com.kdgregory.log4j.testhelpers.aws.cloudwatch.MockCloudWatchWriterFactory;
-import com.kdgregory.log4j.testhelpers.aws.cloudwatch.TestableCloudWatchAppender;
+import com.kdgregory.log4j.testhelpers.cloudwatch.TestableCloudWatchAppender;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
-import com.kdgregory.logging.aws.testhelpers.TestingException;
-import com.kdgregory.logging.aws.testhelpers.ThrowingWriterFactory;
-import com.kdgregory.logging.aws.testhelpers.cloudwatch.MockCloudWatchWriter;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.testhelpers.TestingException;
+import com.kdgregory.logging.testhelpers.ThrowingWriterFactory;
+import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
+import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriterFactory;
 
 
 /**
@@ -93,9 +93,9 @@ public class TestCloudWatchAppender
     {
         initialize("TestCloudWatchAppender/testConfiguration.properties");
 
-        assertEquals("log group name",      "argle",                appender.getLogGroup());
-        assertEquals("log stream name",     "bargle",               appender.getLogStream());
-        assertEquals("max delay",           1234L,                  appender.getBatchDelay());
+        assertEquals("log group name",      "argle",                        appender.getLogGroup());
+        assertEquals("log stream name",     "bargle",                       appender.getLogStream());
+        assertEquals("max delay",           1234L,                          appender.getBatchDelay());
         assertEquals("sequence",            2,                              appender.getSequence());
         assertEquals("rotation mode",       "interval",                     appender.getRotationMode());
         assertEquals("rotation interval",   86400000L,                      appender.getRotationInterval());

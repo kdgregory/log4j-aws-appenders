@@ -31,15 +31,15 @@ import net.sf.kdgcommons.lang.StringUtil;
 import net.sf.kdgcommons.test.StringAsserts;
 
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
-import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisWriterFactory;
-import com.kdgregory.log4j.testhelpers.aws.kinesis.TestableKinesisAppender;
+import com.kdgregory.log4j.testhelpers.kinesis.TestableKinesisAppender;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
-import com.kdgregory.logging.aws.testhelpers.TestingException;
-import com.kdgregory.logging.aws.testhelpers.ThrowingWriterFactory;
-import com.kdgregory.logging.aws.testhelpers.kinesis.MockKinesisWriter;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
+import com.kdgregory.logging.testhelpers.TestingException;
+import com.kdgregory.logging.testhelpers.ThrowingWriterFactory;
+import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriter;
+import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriterFactory;
 
 /**
  *  These tests exercise the high-level logic of the appender.

@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.testhelpers.aws.sns;
+package com.kdgregory.log4j.testhelpers.sns;
 
 import com.kdgregory.log4j.aws.SNSAppender;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
-import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
-import com.kdgregory.logging.aws.testhelpers.sns.MockSNSWriter;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.ThreadFactory;
 import com.kdgregory.logging.common.factories.WriterFactory;
+import com.kdgregory.logging.testhelpers.InlineThreadFactory;
+import com.kdgregory.logging.testhelpers.sns.MockSNSWriter;
+import com.kdgregory.logging.testhelpers.sns.MockSNSWriterFactory;
 
 
 /**

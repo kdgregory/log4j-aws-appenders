@@ -31,15 +31,15 @@ import net.sf.kdgcommons.lang.StringUtil;
 import net.sf.kdgcommons.test.StringAsserts;
 
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
-import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSWriterFactory;
-import com.kdgregory.log4j.testhelpers.aws.sns.TestableSNSAppender;
+import com.kdgregory.log4j.testhelpers.sns.TestableSNSAppender;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
-import com.kdgregory.logging.aws.testhelpers.TestingException;
-import com.kdgregory.logging.aws.testhelpers.ThrowingWriterFactory;
-import com.kdgregory.logging.aws.testhelpers.sns.MockSNSWriter;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
+import com.kdgregory.logging.testhelpers.TestingException;
+import com.kdgregory.logging.testhelpers.ThrowingWriterFactory;
+import com.kdgregory.logging.testhelpers.sns.MockSNSWriter;
+import com.kdgregory.logging.testhelpers.sns.MockSNSWriterFactory;
 
 /**
  *  These tests exercise the high-level logic of the appender: configuration

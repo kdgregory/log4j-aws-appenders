@@ -12,42 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logging.aws.testhelpers.cloudwatch;
+package com.kdgregory.logging.testhelpers.kinesis;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.util.DiscardAction;
 
 
 /**
- *  A mock equivalent of CloudWatchLogWriter, used by appender tests.
+ *  A mock equivalent of KinesisLogWriter, used by appender tests.
  */
-public class MockCloudWatchWriter
+public class MockKinesisWriter
 implements LogWriter
 {
     public List<LogMessage> messages = new ArrayList<LogMessage>();
     public LogMessage lastMessage;
-
     public boolean stopped;
 
-    public String logGroup;
-    public String logStream;
+    public String streamName;
+    public String partitionKey;
     public long batchDelay;
-    public int discardThreshold;
-    public DiscardAction discardAction;
 
 
-    public MockCloudWatchWriter(CloudWatchWriterConfig config)
+    public MockKinesisWriter(KinesisWriterConfig config)
     {
-        this.logGroup = config.logGroupName;
-        this.logStream = config.logStreamName;
+        this.streamName = config.streamName;
+        this.partitionKey = config.partitionKey;
         this.batchDelay = config.batchDelay;
-        this.discardThreshold = config.discardThreshold;
-        this.discardAction = config.discardAction;
     }
 
 //----------------------------------------------------------------------------
@@ -79,13 +74,13 @@ implements LogWriter
     @Override
     public void setDiscardThreshold(int value)
     {
-        this.discardThreshold = value;
+        // ignored for now
     }
 
     @Override
     public void setDiscardAction(DiscardAction value)
     {
-        this.discardAction = value;
+        // ignored for now
     }
 
 //----------------------------------------------------------------------------

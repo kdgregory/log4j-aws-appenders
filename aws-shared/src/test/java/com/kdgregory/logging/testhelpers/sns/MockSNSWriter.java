@@ -12,37 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logging.aws.testhelpers.kinesis;
+package com.kdgregory.logging.testhelpers.sns;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
+import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.util.DiscardAction;
 
 
 /**
- *  A mock equivalent of KinesisLogWriter, used by appender tests.
+ *  A mock equivalent of SNSLogWriter, used by appender tests.
  */
-public class MockKinesisWriter
+public class MockSNSWriter
 implements LogWriter
 {
     public List<LogMessage> messages = new ArrayList<LogMessage>();
     public LogMessage lastMessage;
+
     public boolean stopped;
 
-    public String streamName;
-    public String partitionKey;
-    public long batchDelay;
+    public SNSWriterConfig config;
 
 
-    public MockKinesisWriter(KinesisWriterConfig config)
+    public MockSNSWriter(SNSWriterConfig config)
     {
-        this.streamName = config.streamName;
-        this.partitionKey = config.partitionKey;
-        this.batchDelay = config.batchDelay;
+        this.config = config;
     }
 
 //----------------------------------------------------------------------------
@@ -67,7 +64,7 @@ implements LogWriter
     @Override
     public void setBatchDelay(long value)
     {
-        this.batchDelay = value;
+        throw new IllegalStateException("this function should never be called");
     }
 
 

@@ -1,6 +1,6 @@
 <configuration debug="false">
 
-  <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.aws.TestableCloudWatchAppender">
+  <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
     <logGroup>argle</logGroup>
     <discardThreshold>12345</discardThreshold>
     <discardAction>newest</discardAction>

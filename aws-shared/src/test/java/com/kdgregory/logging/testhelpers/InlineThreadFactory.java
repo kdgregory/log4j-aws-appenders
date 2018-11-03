@@ -12,20 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logging.aws.testhelpers;
+package com.kdgregory.logging.testhelpers;
+
+import java.lang.Thread.UncaughtExceptionHandler;
+
+import com.kdgregory.logging.common.LogWriter;
+import com.kdgregory.logging.common.factories.ThreadFactory;
 
 
 /**
- *  A test-specific exception class: we can assert on class and be confident that
- *  we're not getting some unexpected exception.
+ *  A {@link ThreadFactory} used for testing: it executes the writer in the current
+ *  thread. The writer's run() method should return immediately to avoid deadlock.
  */
-public class TestingException
-extends RuntimeException
+public class InlineThreadFactory implements ThreadFactory
 {
-    private static final long serialVersionUID = 1L;
-
-    public TestingException(String message)
+    @Override
+    public void startLoggingThread(LogWriter writer, UncaughtExceptionHandler exceptionHandler)
     {
-        super(message);
+        writer.run();
     }
 }

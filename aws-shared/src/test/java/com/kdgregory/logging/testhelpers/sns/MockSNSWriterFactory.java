@@ -12,28 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.testhelpers.aws.kinesis;
+package com.kdgregory.logging.testhelpers.sns;
 
-import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
-import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
-import com.kdgregory.logging.aws.testhelpers.kinesis.MockKinesisWriter;
+import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
+import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
 
 
-public class MockKinesisWriterFactory
-implements WriterFactory<KinesisWriterConfig,KinesisWriterStatistics>
+public class MockSNSWriterFactory
+implements WriterFactory<SNSWriterConfig,SNSWriterStatistics>
 {
     public int invocationCount = 0;
-    public MockKinesisWriter writer;
+    public MockSNSWriter writer;
 
 
     @Override
-    public LogWriter newLogWriter(KinesisWriterConfig config, KinesisWriterStatistics stats, InternalLogger logger)
+    public LogWriter newLogWriter(SNSWriterConfig config, SNSWriterStatistics ignored1, InternalLogger ignored2)
     {
         invocationCount++;
-        writer = new MockKinesisWriter(config);
+        writer = new MockSNSWriter(config);
         return writer;
     }
 }

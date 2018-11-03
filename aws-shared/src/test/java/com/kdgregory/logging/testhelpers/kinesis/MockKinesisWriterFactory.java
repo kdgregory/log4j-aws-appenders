@@ -12,28 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logback.testhelpers.aws;
+package com.kdgregory.logging.testhelpers.kinesis;
 
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
-import com.kdgregory.logging.aws.testhelpers.cloudwatch.MockCloudWatchWriter;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
 
 
-public class MockCloudWatchWriterFactory
-implements WriterFactory<CloudWatchWriterConfig,CloudWatchWriterStatistics>
+public class MockKinesisWriterFactory
+implements WriterFactory<KinesisWriterConfig,KinesisWriterStatistics>
 {
     public int invocationCount = 0;
-    public MockCloudWatchWriter writer;
+    public MockKinesisWriter writer;
 
 
     @Override
-    public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger ignored)
+    public LogWriter newLogWriter(KinesisWriterConfig config, KinesisWriterStatistics stats, InternalLogger logger)
     {
         invocationCount++;
-        writer = new MockCloudWatchWriter(config);
+        writer = new MockKinesisWriter(config);
         return writer;
     }
 }

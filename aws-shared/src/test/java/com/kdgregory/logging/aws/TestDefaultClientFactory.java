@@ -22,8 +22,8 @@ import net.sf.kdgcommons.lang.StringUtil;
 import com.amazonaws.services.logs.AWSLogs;
 
 import com.kdgregory.logging.aws.common.DefaultClientFactory;
-import com.kdgregory.logging.aws.testhelpers.TestableInternalLogger;
-import com.kdgregory.logging.aws.testhelpers.cloudwatch.MockCloudWatchClient;
+import com.kdgregory.logging.testhelpers.TestableInternalLogger;
+import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchClient;
 
 
 /**

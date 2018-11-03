@@ -38,11 +38,11 @@ import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterFactory;
-import com.kdgregory.logging.aws.testhelpers.TestingException;
-import com.kdgregory.logging.aws.testhelpers.kinesis.MockKinesisClient;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.common.util.MessageQueue;
+import com.kdgregory.logging.testhelpers.TestingException;
+import com.kdgregory.logging.testhelpers.kinesis.MockKinesisClient;
 
 
 /**

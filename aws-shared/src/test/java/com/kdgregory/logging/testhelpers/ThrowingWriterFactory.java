@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logging.aws.testhelpers;
+package com.kdgregory.logging.testhelpers;
 
 import java.util.concurrent.CountDownLatch;
 

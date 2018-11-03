@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logback.testhelpers.aws;
+package com.kdgregory.logback.testhelpers.cloudwatch;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
-import com.kdgregory.logging.aws.testhelpers.ThrowingWriterFactory;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
+import com.kdgregory.logging.testhelpers.ThrowingWriterFactory;
 
 
 /**

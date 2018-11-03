@@ -26,13 +26,13 @@ import net.sf.kdgcommons.lang.ThreadUtil;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
-import com.kdgregory.logging.aws.testhelpers.TestableInternalLogger;
 import com.kdgregory.logging.aws.internal.AbstractLogWriter;
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.MessageQueue;
+import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 
 /**
  *  Base class for the writer tests. Defines utility methods and variables

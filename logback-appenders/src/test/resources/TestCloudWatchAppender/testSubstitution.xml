@@ -1,6 +1,6 @@
 <configuration debug="false">
 
-  <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.aws.TestableCloudWatchAppender">
+  <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
     <logGroup>MyLog-{sysprop:TestCloudWatchAppender.testSubstitution}</logGroup>
     <logStream>MyStream-{timestamp}-{bogus}</logStream>
     <layout class="ch.qos.logback.classic.PatternLayout">

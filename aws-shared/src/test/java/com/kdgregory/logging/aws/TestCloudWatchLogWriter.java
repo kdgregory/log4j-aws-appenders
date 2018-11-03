@@ -32,11 +32,11 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterFactory;
-import com.kdgregory.logging.aws.testhelpers.TestingException;
-import com.kdgregory.logging.aws.testhelpers.cloudwatch.MockCloudWatchClient;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.common.util.MessageQueue;
+import com.kdgregory.logging.testhelpers.TestingException;
+import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchClient;
 
 
 /**

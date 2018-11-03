@@ -29,13 +29,13 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 
-import com.kdgregory.logback.testhelpers.aws.MockCloudWatchWriterFactory;
-import com.kdgregory.logback.testhelpers.aws.TestableCloudWatchAppender;
+import com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
-import com.kdgregory.logging.aws.testhelpers.TestingException;
-import com.kdgregory.logging.aws.testhelpers.cloudwatch.MockCloudWatchWriter;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.testhelpers.TestingException;
+import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
+import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriterFactory;
 
 
 /**

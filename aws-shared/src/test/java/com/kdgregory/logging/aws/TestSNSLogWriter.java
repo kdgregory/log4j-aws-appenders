@@ -31,11 +31,11 @@ import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterFactory;
-import com.kdgregory.logging.aws.testhelpers.TestingException;
-import com.kdgregory.logging.aws.testhelpers.sns.MockSNSClient;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.common.util.MessageQueue;
+import com.kdgregory.logging.testhelpers.TestingException;
+import com.kdgregory.logging.testhelpers.sns.MockSNSClient;
 
 
 /**

@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logback.testhelpers.aws;
+package com.kdgregory.logback.testhelpers.cloudwatch;
 
 import com.kdgregory.logback.aws.CloudWatchAppender;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
-import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
-import com.kdgregory.logging.aws.testhelpers.cloudwatch.MockCloudWatchWriter;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.ThreadFactory;
 import com.kdgregory.logging.common.factories.WriterFactory;
+import com.kdgregory.logging.testhelpers.InlineThreadFactory;
+import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
+import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriterFactory;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 

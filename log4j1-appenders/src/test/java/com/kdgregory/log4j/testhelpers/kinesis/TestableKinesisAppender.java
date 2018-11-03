@@ -12,16 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.testhelpers.aws.kinesis;
+package com.kdgregory.log4j.testhelpers.kinesis;
 
 import com.kdgregory.log4j.aws.KinesisAppender;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
-import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
-import com.kdgregory.logging.aws.testhelpers.kinesis.MockKinesisWriter;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.ThreadFactory;
 import com.kdgregory.logging.common.factories.WriterFactory;
+import com.kdgregory.logging.testhelpers.InlineThreadFactory;
+import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriter;
+import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriterFactory;
 
 
 /**

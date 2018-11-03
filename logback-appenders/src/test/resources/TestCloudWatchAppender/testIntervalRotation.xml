@@ -1,0 +1,21 @@
+<configuration debug="false">
+
+  <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.aws.TestableCloudWatchAppender">
+    <logGroup>argle</logGroup>
+    <logStream>bargle-{sequence}</logStream>
+    <rotationMode>interval</rotationMode>
+    <rotationInterval>10000</rotationInterval>
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <pattern>%msg</pattern>
+    </layout>
+  </appender>
+
+  <root level="off">
+    <appender-ref ref="ch.qos.logback.core.helpers.NOPAppender" />
+  </root>
+
+  <logger name="com.kdgregory.logback.aws.TestCloudWatchAppender" level="debug">
+    <appender-ref ref="CLOUDWATCH" />
+  </logger>
+
+</configuration>

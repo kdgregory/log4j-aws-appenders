@@ -12,34 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws;
+package com.kdgregory.logback.aws;
 
 
 import java.net.URL;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
-
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
-import org.apache.log4j.helpers.LogLog;
 
 import net.sf.kdgcommons.lang.StringUtil;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
-import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
-import com.kdgregory.log4j.testhelpers.aws.cloudwatch.MockCloudWatchWriterFactory;
-import com.kdgregory.log4j.testhelpers.aws.cloudwatch.TestableCloudWatchAppender;
+import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
+
+import com.kdgregory.logback.testhelpers.aws.MockCloudWatchWriterFactory;
+import com.kdgregory.logback.testhelpers.aws.TestableCloudWatchAppender;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.testhelpers.TestingException;
-import com.kdgregory.logging.aws.testhelpers.ThrowingWriterFactory;
 import com.kdgregory.logging.aws.testhelpers.cloudwatch.MockCloudWatchWriter;
 import com.kdgregory.logging.common.LogMessage;
-import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.DiscardAction;
 
 
@@ -52,36 +47,20 @@ public class TestCloudWatchAppender
     private Logger logger;
     private TestableCloudWatchAppender appender;
 
-
     private void initialize(String propsName)
     throws Exception
     {
         URL config = ClassLoader.getSystemResource(propsName);
         assertNotNull("was able to retrieve config", config);
-        PropertyConfigurator.configure(config);
 
-        logger = Logger.getLogger(getClass());
+        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
+        context.reset();
+        JoranConfigurator configurator = new JoranConfigurator();
+        configurator.setContext(context);
+        configurator.doConfigure(config);
 
-        Logger rootLogger = Logger.getRootLogger();
-        appender = (TestableCloudWatchAppender)rootLogger.getAppender("default");
-    }
-
-//----------------------------------------------------------------------------
-//  JUnit stuff
-//----------------------------------------------------------------------------
-
-    @Before
-    public void setUp()
-    {
-        LogManager.resetConfiguration();
-        LogLog.setQuietMode(true);
-    }
-
-
-    @After
-    public void tearDown()
-    {
-        LogLog.setQuietMode(false);
+        logger = context.getLogger(getClass());
+        appender = (TestableCloudWatchAppender)logger.getAppender("CLOUDWATCH");
     }
 
 //----------------------------------------------------------------------------
@@ -91,11 +70,11 @@ public class TestCloudWatchAppender
     @Test
     public void testConfiguration() throws Exception
     {
-        initialize("TestCloudWatchAppender/testConfiguration.properties");
+        initialize("TestCloudWatchAppender/testConfiguration.xml");
 
-        assertEquals("log group name",      "argle",                appender.getLogGroup());
-        assertEquals("log stream name",     "bargle",               appender.getLogStream());
-        assertEquals("max delay",           1234L,                  appender.getBatchDelay());
+        assertEquals("log group name",      "argle",                        appender.getLogGroup());
+        assertEquals("log stream name",     "bargle",                       appender.getLogStream());
+        assertEquals("max delay",           1234L,                          appender.getBatchDelay());
         assertEquals("sequence",            2,                              appender.getSequence());
         assertEquals("rotation mode",       "interval",                     appender.getRotationMode());
         assertEquals("rotation interval",   86400000L,                      appender.getRotationInterval());
@@ -109,7 +88,7 @@ public class TestCloudWatchAppender
     @Test
     public void testDefaultConfiguration() throws Exception
     {
-        initialize("TestCloudWatchAppender/testDefaultConfiguration.properties");
+        initialize("TestCloudWatchAppender/testDefaultConfiguration.xml");
 
         // note: this is allowed at time of configuration, would disable logger if we try to append
         assertNull("log group name",                                        appender.getLogGroup());
@@ -127,24 +106,20 @@ public class TestCloudWatchAppender
 
 
     @Test
-    public void testLifecycle() throws Exception
+    public void testAppend() throws Exception
     {
-        initialize("TestCloudWatchAppender/testLifecycle.properties");
+        initialize("TestCloudWatchAppender/testAppend.xml");
+
         MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
-
-        long initialTimestamp = System.currentTimeMillis();
-
-        assertNull("before messages, writer is null",                   appender.getWriter());
-
-        logger.debug("first message");
-
         MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
 
-        assertNotNull("after message 1, writer is initialized",         writer);
-        assertEquals("after message 1, calls to writer factory",        1,              writerFactory.invocationCount);
-        assertEquals("actual log-group name",                           "argle",        writer.logGroup);
-        assertRegex("actual log-stream name",                           "20\\d{12}",    writer.logStream);
+        assertEquals("writer is initialized: calls to writer factory",  1,              writerFactory.invocationCount);
+        assertNotNull("writer is initialized: writer created",          writer);
+        assertEquals("writer is initialized: actual log-group name",    "argle",        writer.logGroup);
+        assertRegex("writer is initialized: actual log-stream name",    "20\\d{12}",    writer.logStream);
 
+        long initialTimestamp = System.currentTimeMillis();
+        logger.debug("first message");
 
         assertEquals("after message 1, number of messages in writer",   1,          writer.messages.size());
 
@@ -161,7 +136,7 @@ public class TestCloudWatchAppender
         LogMessage message1 = writer.messages.get(0);
         assertTrue("message 1 timestamp >= initial timestamp", message1.getTimestamp() >= initialTimestamp);
         assertTrue("message 1 timestamp <= batch timestamp",   message1.getTimestamp() <= finalTimestamp);
-        assertEquals("message 1 content", "first message", message1.getMessage().trim());
+        assertEquals("message 1 content",                      "first message", message1.getMessage());
 
         LogMessage message2 = writer.messages.get(1);
         assertTrue("message 2 includes exception",
@@ -173,51 +148,41 @@ public class TestCloudWatchAppender
 
         appender.setBatchDelay(1234567);
         assertEquals("writer batch delay propagated", 1234567, writer.batchDelay);
-
-        // finish off the life-cycle
-
-        assertFalse("appender not closed before shutdown", appender.isClosed());
-        assertFalse("writer still running before shutdown", writer.stopped);
-
-        LogManager.shutdown();
-
-        assertTrue("appender closed after shutdown", appender.isClosed());
-        assertTrue("writer stopped after shutdown", writer.stopped);
     }
 
 
-    @Test(expected=IllegalStateException.class)
-    public void testThrowsIfAppenderClosed() throws Exception
+    @Test
+    public void testStopAppender() throws Exception
     {
-        initialize("TestCloudWatchAppender/testLifecycle.properties");
+        initialize("TestCloudWatchAppender/testAppend.xml");
 
-        // write the first message to initialize the appender
-        logger.debug("should not throw");
+        MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
 
-        // we close the appender explicitly because Log4J won't pass on messages
-        // after LogManager.shutdown()
-        appender.close();
+        appender.stop();
 
-        // second message should throw
         logger.error("blah blah blah");
+
+        assertEquals("nothing was written", 0, writer.messages.size());
+
+        // TODO - once the InternalLogger is implemented, verify that this caused a warning
     }
 
 
     @Test
     public void testWriteHeaderAndFooter() throws Exception
     {
-        initialize("TestCloudWatchAppender/testWriteHeaderAndFooter.properties");
+        initialize("TestCloudWatchAppender/testWriteHeaderAndFooter.xml");
+
+        MockCloudWatchWriter mockWriter = appender.getMockWriter();
 
         logger.debug("blah blah blah");
 
-        // must retrieve writer before we shut down
-        MockCloudWatchWriter mockWriter = appender.getMockWriter();
-        LogManager.shutdown();
+        appender.stop();
 
-        assertEquals("number of messages",  3,                          mockWriter.messages.size());
-        assertEquals("header is first",     HeaderFooterLayout.HEADER,  mockWriter.getMessage(0));
-        assertEquals("message is middle",   "blah blah blah",           mockWriter.getMessage(1));
-        assertEquals("footer is last",      HeaderFooterLayout.FOOTER,  mockWriter.getMessage(2));
+        assertEquals("number of messages",  3,                  mockWriter.messages.size());
+        assertEquals("header is first",     "File Header",      mockWriter.getMessage(0));
+        assertEquals("message is middle",   "blah blah blah",   mockWriter.getMessage(1));
+        assertEquals("footer is last",      "File Footer",      mockWriter.getMessage(2));
     }
 
 
@@ -227,24 +192,22 @@ public class TestCloudWatchAppender
         // note that the property value includes invalid characters
         System.setProperty("TestCloudWatchAppender.testSubstitution", "foo/bar");
 
-        initialize("TestCloudWatchAppender/testSubstitution.properties");
-
-        assertEquals("appender's log group name",   "MyLog-{sysprop:TestCloudWatchAppender.testSubstitution}", appender.getLogGroup());
-        assertEquals("appender's log stream name",  "MyStream-{timestamp}-{bogus}",                            appender.getLogStream());
-
-        logger.debug("this triggers writer creation");
+        initialize("TestCloudWatchAppender/testSubstitution.xml");
 
         MockCloudWatchWriter writer = appender.getMockWriter();
 
-        assertEquals("writers log group name",      "MyLog-foo/bar",                writer.logGroup);
-        assertRegex("writers log stream name",      "MyStream-20\\d{12}-\\{bogus}", writer.logStream);
+        assertEquals("appender's log group name",   "MyLog-{sysprop:TestCloudWatchAppender.testSubstitution}",  appender.getLogGroup());
+        assertEquals("appender's log stream name",  "MyStream-{timestamp}-{bogus}",                             appender.getLogStream());
+        assertEquals("writers log group name",      "MyLog-foo/bar",                                            writer.logGroup);
+        assertRegex("writers log stream name",      "MyStream-20\\d{12}-\\{bogus}",                             writer.logStream);
     }
 
 
     @Test
     public void testExplicitRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender/testExplicitRotation.properties");
+        initialize("TestCloudWatchAppender/testExplicitRotation.xml");
+
         MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
 
         logger.debug("first message");
@@ -261,6 +224,7 @@ public class TestCloudWatchAppender
         assertEquals("post-rotate, writer factory calls",           2,          writerFactory.invocationCount);
         assertNotSame("post-rotate, writer has been replaced",      writer0,    writer1);
         assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.logStream);
+
         assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
         assertEquals("post-rotate, messages passed to new writer",  0,          writer1.messages.size());
     }
@@ -269,16 +233,15 @@ public class TestCloudWatchAppender
     @Test
     public void testCountedRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender/testCountedRotation.properties");
+        initialize("TestCloudWatchAppender/testCountedRotation.xml");
 
-        logger.debug("message 1");
-
-        // writer gets created on first append; we want to hold onto it
         MockCloudWatchWriter writer0 = appender.getMockWriter();
 
         assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.logStream);
 
         // these messages should trigger rotation
+
+        logger.debug("message 1");
         logger.debug("message 2");
         logger.debug("message 3");
         logger.debug("message 4");
@@ -294,11 +257,11 @@ public class TestCloudWatchAppender
     @Test
     public void testIntervalRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender/testIntervalRotation.properties");
-
-        logger.debug("first message");
+        initialize("TestCloudWatchAppender/testIntervalRotation.xml");
 
         MockCloudWatchWriter writer0 = appender.getMockWriter();
+
+        logger.debug("first message");
 
         assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.logStream);
 
@@ -318,11 +281,11 @@ public class TestCloudWatchAppender
     @Test
     public void testHourlyRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender/testHourlyRotation.properties");
-
-        logger.debug("first message");
+        initialize("TestCloudWatchAppender/testHourlyRotation.xml");
 
         MockCloudWatchWriter writer0 = appender.getMockWriter();
+
+        logger.debug("first message");
 
         assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.logStream);
 
@@ -342,11 +305,11 @@ public class TestCloudWatchAppender
     @Test
     public void testDailyRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender/testDailyRotation.properties");
-
-        logger.debug("first message");
+        initialize("TestCloudWatchAppender/testDailyRotation.xml");
 
         MockCloudWatchWriter writer0 = appender.getMockWriter();
+
+        logger.debug("first message");
 
         assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.logStream);
 
@@ -366,10 +329,10 @@ public class TestCloudWatchAppender
     @Test
     public void testInvalidRotationMode() throws Exception
     {
-        initialize("TestCloudWatchAppender/testInvalidRotationMode.properties");
+        initialize("TestCloudWatchAppender/testInvalidRotationMode.xml");
         assertEquals("rotation mode", "none", appender.getRotationMode());
 
-        // TODO - check internal logger
+        // TODO - check InternalLogger once implemented
     }
 
 
@@ -383,8 +346,7 @@ public class TestCloudWatchAppender
         final int maxMessageSize                =  cloudwatchMaximumBatchSize - (layoutOverhead + cloudwatchOverhead);
         final String bigMessage                 =  StringUtil.repeat('A', maxMessageSize);
 
-        initialize("TestCloudWatchAppender/testMaximumMessageSize.properties");
-        // no need to create a writer; cloudwatch messages not dependent on any names
+        initialize("TestCloudWatchAppender/testMaximumMessageSize.xml");
 
         assertFalse("max message size",             appender.isMessageTooLarge(new LogMessage(System.currentTimeMillis(), bigMessage)));
         assertTrue("bigger than max message size",  appender.isMessageTooLarge(new LogMessage(System.currentTimeMillis(), bigMessage + "1")));
@@ -394,19 +356,12 @@ public class TestCloudWatchAppender
     @Test
     public void testUncaughtExceptionHandling() throws Exception
     {
-        initialize("TestCloudWatchAppender/testUncaughtExceptionHandling.properties");
-
-        // note that we will be running the writer on a separate thread
-
-        appender.setThreadFactory(new DefaultThreadFactory("test"));
-        appender.setWriterFactory(new ThrowingWriterFactory<CloudWatchWriterConfig,CloudWatchWriterStatistics>());
+        initialize("TestCloudWatchAppender/testUncaughtExceptionHandling.xml");
 
         CloudWatchWriterStatistics appenderStats = appender.getAppenderStatistics();
-
-        logger.debug("this should trigger writer creation");
-
         assertNull("writer has not yet thrown", appenderStats.getLastError());
 
+        logger.debug("first message should be processed");
         logger.debug("this should trigger writer throwage");
 
         // spin-wait for error to appear
@@ -423,9 +378,7 @@ public class TestCloudWatchAppender
     @Test
     public void testReconfigureDiscardProperties() throws Exception
     {
-        initialize("TestCloudWatchAppender/testReconfigureDiscardProperties.properties");
-
-        logger.debug("a message to trigger writer creation");
+        initialize("TestCloudWatchAppender/testReconfigureDiscardProperties.xml");
 
         MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
 

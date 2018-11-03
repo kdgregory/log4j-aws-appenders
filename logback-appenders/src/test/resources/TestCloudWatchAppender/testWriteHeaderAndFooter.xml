@@ -1,0 +1,20 @@
+<configuration debug="false">
+
+  <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.aws.TestableCloudWatchAppender">
+    <logGroup>argle</logGroup>
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <pattern>%msg</pattern>
+      <fileHeader>File Header</fileHeader>
+      <fileFooter>File Footer</fileFooter>
+    </layout>
+  </appender>
+
+  <root level="off">
+    <appender-ref ref="ch.qos.logback.core.helpers.NOPAppender" />
+  </root>
+
+  <logger name="com.kdgregory.logback.aws.TestCloudWatchAppender" level="debug">
+    <appender-ref ref="CLOUDWATCH" />
+  </logger>
+
+</configuration>

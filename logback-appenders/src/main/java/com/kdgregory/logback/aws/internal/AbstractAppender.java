@@ -94,7 +94,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
         this.appenderStats = appenderStats;
         this.appenderStatsMXBeanClass = appenderStatsMXBeanClass;
 
-        this.logger = new LogbackInternalLogger(getClass().getSimpleName());
+        this.logger = new LogbackInternalLogger(this);
 
         batchDelay = 2000;
         discardThreshold = 10000;
@@ -112,7 +112,6 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     public void setName(String name)
     {
         super.setName(name);
-        logger.setAppenderName(name);
     }
 
 

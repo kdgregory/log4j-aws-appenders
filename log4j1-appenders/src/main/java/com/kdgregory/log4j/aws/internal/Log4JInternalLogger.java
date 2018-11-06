@@ -21,7 +21,12 @@ import com.kdgregory.logging.common.util.InternalLogger;
 
 /**
  *  An implementation of <code>InternalLogger</code> that passes all messages
- *  to the Log4J <code>LogLog</code> object.s
+ *  to the Log4J <code>LogLog</code> object.
+ *  <p>
+ *  All log messages are prefixed with a combination of appender type (eg,
+ *  "cloudwatch") and appender name. The former is provided during construction
+ *  (and may not be an actual appender, see JMXManager); the latter whenever the
+ *  appender's name is changed (which should only happen during initialization).
  */
 public class Log4JInternalLogger
 implements InternalLogger
@@ -30,10 +35,6 @@ implements InternalLogger
     private String messagePrefix;
 
 
-    /**
-     *  @param  appenderType    The classname of the appender. This is used to form a
-     *                          prefix for all logging messages.
-     */
     public Log4JInternalLogger(String appenderType)
     {
         this.appenderType = appenderType;

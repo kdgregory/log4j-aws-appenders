@@ -16,40 +16,50 @@ package com.kdgregory.logback.aws.internal;
 
 import com.kdgregory.logging.common.util.InternalLogger;
 
+import ch.qos.logback.core.spi.ContextAware;
+
+
 /**
- *  TODO - implement
+ *  An implementation of <code>InternalLogger</code> that passes all messages
+ *  to the Logback status buffer.
+ *  <p>
+ *  Instances are provided with the destination for log messages. This is normally
+ *  the appender itself, and the status buffer will use the appender's class and
+ *  name in all logging messages. For non-appender use (eg, JMXManager), you will
+ *  need to provide a destination.
  */
 public class LogbackInternalLogger
 implements InternalLogger
 {
-    private String appenderName;
-    
-    public LogbackInternalLogger(String appenderName)
+    private ContextAware destination;
+
+
+    public LogbackInternalLogger(ContextAware destination)
     {
-        this.appenderName = appenderName;
+        this.destination = destination;
     }
-    
-    public void setAppenderName(String loggerName)
-    {
-        this.appenderName = loggerName;
-    }
-    
-    
+
+
     @Override
     public void debug(String message)
     {
-        // TODO - implement
+        destination.addInfo(message);
     }
+
 
     @Override
     public void warn(String message)
     {
-        // TODO - implement
+        destination.addWarn(message);
     }
+
 
     @Override
     public void error(String message, Throwable ex)
     {
-        // TODO - implement
+        if (ex != null)
+            destination.addError(message, ex);
+        else
+            destination.addError(message);
     }
 }

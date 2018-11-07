@@ -171,7 +171,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("second publish, body",                                    "message two",      mock.lastPublishMessage);
         assertStatisticsMessagesSent("second publish, messages sent per stats", 2);
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -202,7 +203,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         assertStatisticsMessagesSent(1);
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -224,7 +226,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertNull("stats: topic name",                     stats.getActualTopicName());
         assertNull("stats: topic ARN",                      stats.getActualTopicArn());
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*");
         internalLogger.assertInternalErrorLog(".*not exist.*" + TEST_TOPIC_NAME + ".*");
     }
 
@@ -259,7 +261,9 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         assertStatisticsMessagesSent(1);
 
-        internalLogger.assertInternalDebugLog(".*creat.*" + TEST_TOPIC_NAME + ".*");
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              ".*creat.*" + TEST_TOPIC_NAME + ".*",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -300,7 +304,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("second publish, body",                                    "message two",          mock.lastPublishMessage);
         assertStatisticsMessagesSent("second publish, messages sent per stats", 2);
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -331,7 +336,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         assertStatisticsMessagesSent(1);
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -353,7 +359,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertNull("stats: topic name",                     stats.getActualTopicName());
         assertNull("stats: topic ARN",                      stats.getActualTopicArn());
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*");
         internalLogger.assertInternalErrorLog(".*not exist.*" + TEST_TOPIC_ARN + ".*");
     }
 
@@ -382,7 +388,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("after publish, body",                     "message one",          mock.lastPublishMessage);
         assertStatisticsMessagesSent("after publish, messages sent", 1);
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -402,7 +409,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("message queue set to discard all",        0,                      messageQueue.getDiscardThreshold());
         assertEquals("message queue set to discard all",        DiscardAction.oldest,   messageQueue.getDiscardAction());
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*");
         internalLogger.assertInternalErrorLog(".*invalid.*topic.*");
     }
 
@@ -427,7 +434,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertStatisticsErrorMessage("unable to configure.*");
         assertStatisticsException(TestingException.class, "arbitrary failure");
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*");
         internalLogger.assertInternalErrorLog("unable to configure.*");
     }
 
@@ -479,7 +486,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertStatisticsErrorMessage(".*no notifications for you");
         assertStatisticsException(TestingException.class, "no notifications for you");
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -598,7 +606,9 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("stats: topic name",                       TEST_TOPIC_NAME,            stats.getActualTopicName());
         assertEquals("stats: topic ARN",                        TEST_TOPIC_ARN,             stats.getActualTopicArn());
 
-        internalLogger.assertInternalDebugLog(".*created client from factory.*");
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              ".*created client from factory.*",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 

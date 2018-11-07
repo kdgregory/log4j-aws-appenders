@@ -67,6 +67,10 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
                 logger.debug("creating CloudWatch log group: " + config.logGroupName);
                 createLogGroup();
             }
+            else
+            {
+                logger.debug("using existing CloudWatch log group: " + config.logGroupName);
+            }
 
 
             LogStream logStream = findLogStream();
@@ -74,6 +78,10 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             {
                 logger.debug("creating CloudWatch log stream: " + config.logStreamName);
                 createLogStream();
+            }
+            else
+            {
+                logger.debug("using existing CloudWatch log stream: " + config.logStreamName);
             }
 
             return true;

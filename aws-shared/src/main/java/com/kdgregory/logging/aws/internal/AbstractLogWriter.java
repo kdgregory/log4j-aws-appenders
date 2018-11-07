@@ -151,6 +151,8 @@ implements LogWriter
     @Override
     public void run()
     {
+        logger.debug("log writer starting on thread " + Thread.currentThread().getName());
+
         if (! initialize())
         {
             messageQueue.setDiscardThreshold(0);
@@ -170,6 +172,8 @@ implements LogWriter
         // the writer is started and immediately stopped; that's not likely to happen in the
         // real world, but was causing problems with the smoketest (which is configured to
         // quickly transition writers)
+
+        logger.debug("log writer initialization complete (thread " + Thread.currentThread().getName() + ")");
 
         do
         {

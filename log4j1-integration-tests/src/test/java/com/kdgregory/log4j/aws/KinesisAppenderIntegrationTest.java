@@ -41,7 +41,6 @@ import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.kinesis.model.*;
 import com.amazonaws.util.BinaryUtils;
 
-import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 
@@ -76,7 +75,7 @@ public class KinesisAppenderIntegrationTest
         final String streamName = "AppenderIntegrationTest-smoketest";
         final int numMessages = 1001;
 
-        setUp("KinesisAppenderIntegrationTest/smoketest.properties", streamName);
+        init("KinesisAppenderIntegrationTest/smoketest.properties", streamName);
         localLogger.info("smoketest: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
@@ -108,7 +107,7 @@ public class KinesisAppenderIntegrationTest
         final String streamName = "AppenderIntegrationTest-testMultipleThreadsSingleAppender";
         int messagesPerThread = 500;
 
-        setUp("KinesisAppenderIntegrationTest/testMultipleThreadsSingleAppender.properties", streamName);
+        init("KinesisAppenderIntegrationTest/testMultipleThreadsSingleAppender.properties", streamName);
         localLogger.info("multi-thread/single-appender: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
@@ -148,7 +147,7 @@ public class KinesisAppenderIntegrationTest
         final String streamName = "AppenderIntegrationTest-testMultipleThreadsMultipleAppenders";
         int messagesPerThread = 500;
 
-        setUp("KinesisAppenderIntegrationTest/testMultipleThreadsMultipleAppendersMultiplePartitions.properties", streamName);
+        init("KinesisAppenderIntegrationTest/testMultipleThreadsMultipleAppendersMultiplePartitions.properties", streamName);
         localLogger.info("multi-thread/multi-appender: starting");
 
         Logger testLogger1 = Logger.getLogger("TestLogger1");
@@ -191,7 +190,7 @@ public class KinesisAppenderIntegrationTest
         final String streamName = "AppenderIntegrationTest-randomPartitionKeys";
         final int numMessages = 250;
 
-        setUp("KinesisAppenderIntegrationTest/randomPartitionKeys.properties", streamName);
+        init("KinesisAppenderIntegrationTest/randomPartitionKeys.properties", streamName);
         localLogger.info("testRandomPartitionKeys: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
@@ -229,7 +228,7 @@ public class KinesisAppenderIntegrationTest
         final String streamName = "AppenderIntegrationTest-testFailsIfNoStreamPresent";
         final int numMessages = 1001;
 
-        setUp("KinesisAppenderIntegrationTest/testFailsIfNoStreamPresent.properties", streamName);
+        init("KinesisAppenderIntegrationTest/testFailsIfNoStreamPresent.properties", streamName);
         localLogger.info("testFailsIfNoStreamPresent: starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
@@ -267,7 +266,7 @@ public class KinesisAppenderIntegrationTest
     /**
      *  Loads the test-specific Log4J configuration and resets the environment.
      */
-    public void setUp(String propertiesName, String streamName) throws Exception
+    public void init(String propertiesName, String streamName) throws Exception
     {
         URL config = ClassLoader.getSystemResource(propertiesName);
         assertNotNull("missing configuration: " + propertiesName, config);
@@ -541,6 +540,25 @@ public class KinesisAppenderIntegrationTest
             this.shardId = shardId;
             this.partitionKey = record.getPartitionKey();
             this.message = new String(BinaryUtils.copyAllBytesFrom(record.getData()), "UTF-8").trim();
+        }
+    }
+    
+    
+    private static class MessageWriter
+    extends com.kdgregory.logging.testhelpers.MessageWriter
+    {
+        private Logger logger;
+        
+        public MessageWriter(Logger logger, int numMessages)
+        {
+            super(numMessages);
+            this.logger = logger;
+        }
+
+        @Override
+        protected void writeLogMessage(String message)
+        {
+            logger.debug(message);
         }
     }
 }

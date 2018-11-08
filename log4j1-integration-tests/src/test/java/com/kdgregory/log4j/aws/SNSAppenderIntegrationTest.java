@@ -47,7 +47,6 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.services.sqs.model.*;
 
-import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 
@@ -84,7 +83,7 @@ public class SNSAppenderIntegrationTest
     @Test
     public void smoketestByArn() throws Exception
     {
-        setUp("SNSAppenderIntegrationTest/smoketestByArn.properties");
+        init("SNSAppenderIntegrationTest/smoketestByArn.properties");
         localLogger.info("smoketestByArn: starting");
 
         createTopicAndQueue();
@@ -116,7 +115,7 @@ public class SNSAppenderIntegrationTest
     @Test
     public void smoketestByName() throws Exception
     {
-        setUp("SNSAppenderIntegrationTest/smoketestByName.properties");
+        init("SNSAppenderIntegrationTest/smoketestByName.properties");
         localLogger.info("smoketestByName: starting");
 
         createTopicAndQueue();
@@ -148,7 +147,7 @@ public class SNSAppenderIntegrationTest
     @Test
     public void testTopicMissingAutoCreate() throws Exception
     {
-        setUp("SNSAppenderIntegrationTest/testTopicMissingAutoCreate.properties");
+        init("SNSAppenderIntegrationTest/testTopicMissingAutoCreate.properties");
         localLogger.info("testAutoCreate: starting");
 
         final int numMessages = 11;
@@ -192,7 +191,7 @@ public class SNSAppenderIntegrationTest
     @Test
     public void testTopicMissingNoAutoCreate() throws Exception
     {
-        setUp("SNSAppenderIntegrationTest/testTopicMissingNoAutoCreate.properties");
+        init("SNSAppenderIntegrationTest/testTopicMissingNoAutoCreate.properties");
         localLogger.info("testTopicMissingNoAutoCreate: starting");
 
         final int numMessages = 11;
@@ -243,7 +242,7 @@ public class SNSAppenderIntegrationTest
     @Test
     public void testMultiThread() throws Exception
     {
-        setUp("SNSAppenderIntegrationTest/testMultiThread.properties");
+        init("SNSAppenderIntegrationTest/testMultiThread.properties");
         localLogger.info("testMultiThread: starting");
 
         createTopicAndQueue();
@@ -278,7 +277,7 @@ public class SNSAppenderIntegrationTest
     @Test
     public void testMultiAppender() throws Exception
     {
-        setUp("SNSAppenderIntegrationTest/testMultiAppender.properties");
+        init("SNSAppenderIntegrationTest/testMultiAppender.properties");
         localLogger.info("testMultiAppender: starting");
 
         createTopicAndQueue();
@@ -331,7 +330,7 @@ public class SNSAppenderIntegrationTest
     /**
      *  Loads the test-specific Log4J configuration and resets the environment.
      */
-    public void setUp(String propertiesName)
+    public void init(String propertiesName)
     throws Exception
     {
         URL config = ClassLoader.getSystemResource(propertiesName);
@@ -570,5 +569,24 @@ public class SNSAppenderIntegrationTest
         }
 
         assertEquals("message subject(s)", expectedSubjects, actualSubjects);
+    }
+    
+    
+    private static class MessageWriter
+    extends com.kdgregory.logging.testhelpers.MessageWriter
+    {
+        private Logger logger;
+        
+        public MessageWriter(Logger logger, int numMessages)
+        {
+            super(numMessages);
+            this.logger = logger;
+        }
+
+        @Override
+        protected void writeLogMessage(String message)
+        {
+            logger.debug(message);
+        }
     }
 }

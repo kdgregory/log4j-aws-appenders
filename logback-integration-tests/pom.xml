@@ -3,15 +3,15 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.kdgregory.logging</groupId>
-    <artifactId>log4j1-aws-appenders-test</artifactId>
+    <artifactId>logback-aws-appenders-test</artifactId>
     <version>2.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>Log4J 1.x Integration Tests</name>
+    <name>Logback Integration Tests</name>
 
     <description>
-        Integration tests for the Log4J 1.x appenders. These tests create resources on
-        AWS and don't delete them.
+        Integration tests for the Logback appenders.
+        Warning: These tests create resources on AWS and don't delete them.
     </description>
 
     <url> https://github.com/kdgregory/log4j-aws-appenders </url>
@@ -42,7 +42,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <log4j.version>1.2.17</log4j.version>
+        <logback.version>1.2.3</logback.version>
         <aws-sdk.version>1.11.405</aws-sdk.version>
 
         <junit.version>4.10</junit.version>
@@ -57,15 +57,27 @@
     <dependencies>
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
-            <artifactId>log4j1-aws-appenders</artifactId>
+            <artifactId>logback-aws-appenders</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>${log4j.version}</version>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-access</artifactId>
+            <version>${logback.version}</version>
             <scope>test</scope>
         </dependency>
 

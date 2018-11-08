@@ -3,15 +3,16 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.kdgregory.logging</groupId>
-    <artifactId>log4j1-aws-appenders-test</artifactId>
+    <artifactId>aws-testhelpers</artifactId>
     <version>2.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>Log4J 1.x Integration Tests</name>
+    <name>AWS Integration Test Helpers</name>
 
     <description>
-        Integration tests for the Log4J 1.x appenders. These tests create resources on
-        AWS and don't delete them.
+        Utility methods for configuring and retrieving AWS services.
+        Supports integration tests for the AWS log library. Not intended
+        for independent production use.
     </description>
 
     <url> https://github.com/kdgregory/log4j-aws-appenders </url>
@@ -38,91 +39,66 @@
 
 
     <properties>
-        <!-- build configuration props, because Maven can't pick a sensible default -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <log4j.version>1.2.17</log4j.version>
-        <aws-sdk.version>1.11.405</aws-sdk.version>
+        <!-- note: do not update this lest we accidentally use newer APIs -->
+        <aws-sdk.version>1.11.0</aws-sdk.version>
 
         <junit.version>4.10</junit.version>
         <kdgcommons.version>1.0.16</kdgcommons.version>
-        <practicalxml.version>1.1.19</practicalxml.version>
+        <practicalxml.version>1.1.18</practicalxml.version>
 
+        <plugin.cobertura.version>2.7</plugin.cobertura.version>
         <plugin.compiler.version>3.1</plugin.compiler.version>
-        <plugin.surefire.version>2.12.4</plugin.surefire.version>
+        <plugin.findbugs.version>3.0.5</plugin.findbugs.version>
+        <plugin.javadoc.version>3.0.1</plugin.javadoc.version>
+        <plugin.jar.version>3.1.0</plugin.jar.version>
+        <plugin.project-info-reports.version>2.7</plugin.project-info-reports.version>
+        <plugin.site.version>3.3</plugin.site.version>
     </properties>
 
 
     <dependencies>
         <dependency>
-            <groupId>com.kdgregory.logging</groupId>
-            <artifactId>log4j1-aws-appenders</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>${log4j.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-logs</artifactId>
             <version>${aws-sdk.version}</version>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-kinesis</artifactId>
             <version>${aws-sdk.version}</version>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sns</artifactId>
             <version>${aws-sdk.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-sqs</artifactId>
-            <version>${aws-sdk.version}</version>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sts</artifactId>
             <version>${aws-sdk.version}</version>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
-
-        <dependency>
-            <groupId>com.kdgregory.logging</groupId>
-            <artifactId>aws-testhelpers</artifactId>
-            <version>2.1.0-SNAPSHOT</version>
-            <scope>test</scope>
-        </dependency>
+        
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>net.sf.kdgcommons</groupId>
             <artifactId>kdgcommons</artifactId>
             <version>${kdgcommons.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>net.sf.practicalxml</groupId>
             <artifactId>practicalxml</artifactId>
             <version>${practicalxml.version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -141,16 +117,25 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${plugin.surefire.version}</version>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${plugin.jar.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${plugin.javadoc.version}</version>
                 <configuration>
-                    <includes>
-                        <include>**/*IntegrationTest.java</include>
-                    </includes>
+                    <doclint>none</doclint>
                 </configuration>
             </plugin>
         </plugins>
     </build>
 
 </project>
-

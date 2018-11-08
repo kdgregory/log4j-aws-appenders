@@ -12,33 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws.testhelpers;
+package com.kdgregory.logging.testhelpers;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.log4j.Logger;
-
 
 /**
  *  Writes a sequence of messages to the log. Will be invoked either inline
  *  (for smoketest) or on a thread (for concurrency tests).
  */
-public class MessageWriter implements Runnable
+public abstract class MessageWriter implements Runnable
 {
     // these are useful
     public final static String  REGEX   = ".*message on thread (\\d+): (\\d+)";
     public final static Pattern PATTERN = Pattern.compile(REGEX);
 
 
-    private Logger logger;
     private int numMessages;
 
-    public MessageWriter(Logger logger, int numMessages)
+    public MessageWriter(int numMessages)
     {
-        this.logger = logger;
         this.numMessages = numMessages;
     }
 
@@ -48,9 +44,15 @@ public class MessageWriter implements Runnable
     {
         for (int ii = 0 ; ii < numMessages ; ii++)
         {
-            logger.debug("message on thread " + Thread.currentThread().getId() + ": " + ii);
+            writeLogMessage("message on thread " + Thread.currentThread().getId() + ": " + ii);
         }
     }
+    
+    
+    /**
+     *  Subclasses override this method to write to the module-specific logger.
+     */
+    protected abstract void writeLogMessage(String message);
 
 
     /**

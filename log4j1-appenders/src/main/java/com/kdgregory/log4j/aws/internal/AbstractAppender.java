@@ -36,17 +36,20 @@ import com.kdgregory.logging.common.util.RotationMode;
  *  log messages, and shut down. Most of the code to do that lives here, with a few
  *  hooks that are implemented in the appender proper.
  *  <p>
- *  Note that some behaviors, such as log rotation, are implemented here even if they
- *  are not supported by all appenders. The appenders that do not support those
- *  behaviors are responsible for disabling them. For example, an appender that does
- *  not support log rotation should throw if {@link #setRotationMode} is called.
+ *  Some behaviors, such as log rotation, are implemented here even if they are not
+ *  supported by all appenders. The appenders that do not support those behaviors are
+ *  responsible for disabling them. For example, an appender that does not support log
+ *  rotation should throw if {@link #setRotationMode} is called.
  *  <p>
- *  Note that most of the member variables defined by this class are protected. This
- *  is primarily to support testing, but also follows my philosophy of related classes:
- *  there is no logical difference between direct access properties; in both cases
- *  you're defining an API. Of course, this is a public API for an internal class,
- *  so any application code that touches these variables should not be surprised if
- *  they cease to exist.
+ *  Most of the member variables defined by this class are protected. This is intended
+ *  to support testing. If you decide to subclass and access those variables, well,
+ *  this is an internal class: they may go away.
+ *  <p>
+ *  Note: Log4J synchronizes calls to appenders by logger. In typical usage, this means
+ *  that all calls will be synchronized and we shouldn't synchronize outself. However,
+ *  it appears that there's no synchronization for loggers that use the same appender
+ *  but do not share an appender list. For that reason, we use internal synchronization
+ *  of critical sections.
  */
 public abstract class AbstractAppender<WriterConfigType,AppenderStatsType extends AbstractWriterStatistics,AppenderStatsMXBeanType>
 extends AppenderSkeleton
@@ -518,6 +521,8 @@ extends AppenderSkeleton
                 {
                     internalAppend(new LogMessage(System.currentTimeMillis(), layout.getHeader()));
                 }
+
+                // note the header doesn't contribute to the message count
 
                 lastRotationTimestamp = System.currentTimeMillis();
                 messagesSinceLastRotation = 0;

@@ -32,6 +32,27 @@ import ch.qos.logback.core.Layout;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 
 
+/**
+ *  Common implementation code that's shared between appenders.
+ *  <p>
+ *  For the most part, appenders have the same behavior: they initialize, transform
+ *  log messages, and shut down. Most of the code to do that lives here, with a few
+ *  hooks that are implemented in the appender proper.
+ *  <p>
+ *  Some behaviors, such as log rotation, are implemented here even if they are not
+ *  supported by all appenders. The appenders that do not support those behaviors are
+ *  responsible for disabling them. For example, an appender that does not support log
+ *  rotation should throw if {@link #setRotationMode} is called.
+ *  <p>
+ *  Most of the member variables defined by this class are protected. This is intended
+ *  to support testing. If you decide to subclass and access those variables, well,
+ *  this is an internal class: they may go away.
+ *  <p>
+ *  Note: this appender is built on <code>UnsynchronizedAppenderBase</code>, which is
+ *  perhaps unnecessary (if you're worried about contention you shouldn't be doing a
+ *  lot of logging). However, there are some critical sections within {@link #append},
+ *  and these are protected by internal lock objects.
+ */
 public abstract class AbstractAppender<WriterConfigType,AppenderStatsType extends AbstractWriterStatistics,AppenderStatsMXBeanType,LogbackEventType>
 extends UnsynchronizedAppenderBase<LogbackEventType>
 {
@@ -69,6 +90,10 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     // this object is used for synchronization of initialization and writer change
 
     private Object initializationLock = new Object();
+
+    // this object is used to synchronize the critical section in append()
+
+    private Object appendLock = new Object();
 
     // all member vars below this point are shared configuration
 
@@ -478,6 +503,8 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
                     internalAppend(new LogMessage(System.currentTimeMillis(), layout.getFileHeader()));
                 }
 
+                // note the header doesn't contribute to the message count
+
                 lastRotationTimestamp = System.currentTimeMillis();
                 messagesSinceLastRotation = 0;
             }
@@ -556,33 +583,24 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
             return;
         }
 
-        rotateIfNeeded(System.currentTimeMillis());
-
-        if (writer == null)
+        synchronized (appendLock)
         {
-            logger.warn("appender not properly configured: writer is null");
-        }
-        else
-        {
-            writer.addMessage(message);
-            messagesSinceLastRotation++;
-        }
-    }
-
-
-    private void rotateIfNeeded(long now)
-    {
-        // double-checked locking: avoid contention for first check, but make sure we don't do things twice
-        if (shouldRotate(now))
-        {
-            synchronized (initializationLock)
+            long now = System.currentTimeMillis();
+            if (shouldRotate(now))
             {
-                if (shouldRotate(now))
-                {
-                    long secondsSinceLastRotation = (now - lastRotationTimestamp) / 1000;
-                    logger.debug("rotating: messagesSinceLastRotation = " + messagesSinceLastRotation + ", secondsSinceLastRotation = " + secondsSinceLastRotation);
-                    rotate();
-                }
+                long secondsSinceLastRotation = (now - lastRotationTimestamp) / 1000;
+                logger.debug("rotating: messagesSinceLastRotation = " + messagesSinceLastRotation + ", secondsSinceLastRotation = " + secondsSinceLastRotation);
+                rotate();
+            }
+
+            if (writer == null)
+            {
+                logger.error("appender not properly configured: writer is null", null);
+            }
+            else
+            {
+                writer.addMessage(message);
+                messagesSinceLastRotation++;
             }
         }
     }

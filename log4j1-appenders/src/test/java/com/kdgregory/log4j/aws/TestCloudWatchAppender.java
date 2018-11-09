@@ -28,6 +28,8 @@ import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
 
 import net.sf.kdgcommons.lang.StringUtil;
+import net.sf.kdgcommons.test.StringAsserts;
+
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
@@ -161,7 +163,11 @@ public class TestCloudWatchAppender
         LogMessage message1 = writer.messages.get(0);
         assertTrue("message 1 timestamp >= initial timestamp", message1.getTimestamp() >= initialTimestamp);
         assertTrue("message 1 timestamp <= batch timestamp",   message1.getTimestamp() <= finalTimestamp);
-        assertEquals("message 1 content", "first message", message1.getMessage().trim());
+
+        StringAsserts.assertRegex(
+                "message 1 follows layout: " + message1.getMessage(),
+                "20[12][0-9] TestCloudWatchAppender first message",
+                message1.getMessage());
 
         LogMessage message2 = writer.messages.get(1);
         assertTrue("message 2 includes exception",

@@ -1,0 +1,18 @@
+<configuration debug="false">
+
+  <appender name="KINESIS" class="com.kdgregory.logback.testhelpers.kinesis.TestableKinesisAppender">
+    <streamName>NoDefault</streamName>
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <pattern>%msg</pattern>
+    </layout>
+  </appender>
+
+  <root level="off">
+    <appender-ref ref="ch.qos.logback.core.helpers.NOPAppender" />
+  </root>
+
+  <logger name="com.kdgregory.logback.aws.TestKinesisAppender" level="debug">
+    <appender-ref ref="KINESIS" />
+  </logger>
+
+</configuration>

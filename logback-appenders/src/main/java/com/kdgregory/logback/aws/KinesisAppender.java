@@ -12,29 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws;
+package com.kdgregory.logback.aws;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 
-import com.kdgregory.log4j.aws.internal.AbstractAppender;
+import com.kdgregory.logback.aws.internal.AbstractAppender;
 import com.kdgregory.logging.aws.common.Substitutions;
-import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
-import com.kdgregory.logging.aws.kinesis.KinesisWriterStatisticsMXBean;
 import com.kdgregory.logging.aws.kinesis.KinesisConstants;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterFactory;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterStatisticsMXBean;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 
 
 /**
- *  Appender that writes to a Kinesis stream.
+ *  Appender that writes to a CloudWatch log stream.
  */
-public class KinesisAppender
-extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWriterStatisticsMXBean>
+public class KinesisAppender<LogbackEventType>
+extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWriterStatisticsMXBean,LogbackEventType>
 {
-    // these are the only configuration vars specific to this appender
+    // appender-specific configuration variables
 
     private String          streamName;
     private String          partitionKey;
@@ -50,16 +50,14 @@ extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWrit
 
     // the length of the actual partition key, after being converted to UTF-8
     // (doesn't apply to random partition keys)
-    
+
     private int             partitionKeyLength;
 
 
-    /**
-     *  Base constructor: assigns default values to configuration properties.
-     */
+
     public KinesisAppender()
     {
-        super(new DefaultThreadFactory("log4j-kinesis"),
+        super(new DefaultThreadFactory("logback-kinesis"),
               new KinesisWriterFactory(),
               new KinesisWriterStatistics(),
               KinesisWriterStatisticsMXBean.class);

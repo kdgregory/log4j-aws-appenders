@@ -1,7 +1,7 @@
 <configuration debug="false">
 
-  <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
-    <logGroup>argle</logGroup>
+  <appender name="KINESIS" class="com.kdgregory.logback.testhelpers.kinesis.TestableKinesisAppender">
+    <streamName>argle-{pid}</streamName>
     <layout class="ch.qos.logback.classic.PatternLayout">
       <pattern>%date{yyyy} %logger{0} %msg</pattern>
     </layout>
@@ -11,8 +11,8 @@
     <appender-ref ref="ch.qos.logback.core.helpers.NOPAppender" />
   </root>
 
-  <logger name="com.kdgregory.logback.aws.TestCloudWatchAppender" level="debug">
-    <appender-ref ref="CLOUDWATCH" />
+  <logger name="com.kdgregory.logback.aws.TestKinesisAppender" level="debug">
+    <appender-ref ref="KINESIS" />
   </logger>
 
 </configuration>

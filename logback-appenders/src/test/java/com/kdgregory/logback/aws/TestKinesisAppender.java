@@ -12,27 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws;
-
+package com.kdgregory.logback.aws;
 
 import java.net.URL;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
-import org.apache.log4j.helpers.LogLog;
+import org.slf4j.LoggerFactory;
 
 import net.sf.kdgcommons.lang.StringUtil;
 import net.sf.kdgcommons.test.StringAsserts;
 
-import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
-import com.kdgregory.log4j.testhelpers.kinesis.TestableKinesisAppender;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
+import com.kdgregory.logback.testhelpers.kinesis.TestableKinesisAppender;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
@@ -41,6 +34,11 @@ import com.kdgregory.logging.testhelpers.TestingException;
 import com.kdgregory.logging.testhelpers.ThrowingWriterFactory;
 import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriter;
 import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriterFactory;
+
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
+
 
 /**
  *  These tests exercise the high-level logic of the appender.
@@ -56,31 +54,15 @@ public class TestKinesisAppender
     {
         URL config = ClassLoader.getSystemResource(propsName);
         assertNotNull("was able to retrieve config", config);
-        PropertyConfigurator.configure(config);
 
-        logger = Logger.getLogger(getClass());
+        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
+        context.reset();
+        JoranConfigurator configurator = new JoranConfigurator();
+        configurator.setContext(context);
+        configurator.doConfigure(config);
 
-        Logger rootLogger = Logger.getRootLogger();
-        appender = (TestableKinesisAppender)rootLogger.getAppender("default");
-    }
-
-//----------------------------------------------------------------------------
-//  JUnit stuff
-//----------------------------------------------------------------------------
-
-    @Before
-    public void setUp()
-    {
-        LogManager.resetConfiguration();
-        LogLog.setQuietMode(true);
-    }
-
-
-    @After
-    public void tearDown()
-    {
-        appender.close();
-        LogLog.setQuietMode(false);
+        logger = context.getLogger(getClass());
+        appender = (TestableKinesisAppender)logger.getAppender("KINESIS");
     }
 
 //----------------------------------------------------------------------------
@@ -90,7 +72,7 @@ public class TestKinesisAppender
     @Test
     public void testConfiguration() throws Exception
     {
-        initialize("TestKinesisAppender/testConfiguration.properties");
+        initialize("TestKinesisAppender/testConfiguration.xml");
 
         assertEquals("stream name",         "argle-{bargle}",                   appender.getStreamName());
         assertEquals("partition key",       "foo-{date}",                       appender.getPartitionKey());
@@ -108,7 +90,7 @@ public class TestKinesisAppender
     @Test
     public void testDefaultConfiguration() throws Exception
     {
-        initialize("TestKinesisAppender/testDefaultConfiguration.properties");
+        initialize("TestKinesisAppender/testDefaultConfiguration.xml");
 
         // don't test stream name because there's no default
         assertEquals("partition key",       "{startupTimestamp}",               appender.getPartitionKey());
@@ -117,7 +99,7 @@ public class TestKinesisAppender
         assertEquals("discard action",      "oldest",                           appender.getDiscardAction());
         assertEquals("client factory",      null,                               appender.getClientFactory());
         assertEquals("client endpoint",     null,                               appender.getClientEndpoint());
-        assertFalse("autoCreate",                                                appender.isAutoCreate());
+        assertFalse("autoCreate",                                               appender.isAutoCreate());
         assertEquals("shard count",         1,                                  appender.getShardCount());
         assertEquals("retention period",    24,                                 appender.getRetentionPeriod());
     }
@@ -126,30 +108,27 @@ public class TestKinesisAppender
     @Test
     public void testAppend() throws Exception
     {
-        initialize("TestKinesisAppender/testLifecycle.properties");
+        initialize("TestKinesisAppender/testAppend.xml");
+
         MockKinesisWriterFactory writerFactory = appender.getWriterFactory();
+        MockKinesisWriter writer = appender.getMockWriter();
+
+        assertNotNull("after initializaton, writer exists",                     writer);
+        StringAsserts.assertRegex("stream name, with substitutions",            "argle-\\d+",   writer.streamName);
+        StringAsserts.assertRegex("default partition key, after substitutions", "20\\d{12}",    writer.partitionKey);
+        assertEquals("calls to writer factory",                                 1,              writerFactory.invocationCount);
 
         long initialTimestamp = System.currentTimeMillis();
 
         // this sleep is to make timestamps discernable
         Thread.sleep(100);
 
-        assertNull("before messages, writer is null",                           appender.getMockWriter());
-
         logger.debug("first message");
 
-        MockKinesisWriter writer = appender.getMockWriter();
-
-        assertNotNull("after message 1, writer is initialized",                 writer);
-        assertEquals("after message 1, calls to writer factory",                1,              writerFactory.invocationCount);
-
-        StringAsserts.assertRegex("stream name, with substitutions",            "argle-\\d+",   writer.streamName);
-        StringAsserts.assertRegex("default partition key, after substitutions", "20\\d{12}",    writer.partitionKey);
         assertEquals("after message 1, number of messages in writer",           1,              writer.messages.size());
 
         logger.error("test with exception", new Exception("this is a test"));
 
-        assertEquals("after message 2, calls to writer factory",                1,          writerFactory.invocationCount);
         assertEquals("after message 2, number of messages in writer",           2,          writer.messages.size());
 
         long finalTimestamp = System.currentTimeMillis();
@@ -173,50 +152,41 @@ public class TestKinesisAppender
 
         appender.setBatchDelay(1234567);
         assertEquals("writer batch delay propagated", 1234567, writer.batchDelay);
-
-        // finish off the life-cycle
-
-        assertFalse("appender not closed before shutdown", appender.isClosed());
-        assertFalse("writer still running before shutdown", writer.stopped);
-
-        LogManager.shutdown();
-
-        assertTrue("appender closed after shutdown", appender.isClosed());
-        assertTrue("writer stopped after shutdown", writer.stopped);
     }
 
 
-    @Test(expected=IllegalStateException.class)
-    public void testThrowsIfAppenderClosed() throws Exception
+    @Test
+    public void testStopAppender() throws Exception
     {
-        initialize("TestKinesisAppender/testLifecycle.properties");
+        initialize("TestKinesisAppender/testAppend.xml");
 
-        // write the first message to initialize the appender
-        logger.debug("should not throw");
+        MockKinesisWriter writer = appender.getMockWriter();
 
-        // we close the appender explicitly because Log4J won't pass on messages
-        // after LogManager.shutdown()
-        appender.close();
+        appender.stop();
 
-        // second message should throw
         logger.error("blah blah blah");
+
+        assertEquals("nothing was written", 0, writer.messages.size());
+
+        // TODO - once the InternalLogger is implemented, verify that this caused a warning
     }
 
 
     @Test
     public void testWriteHeaderAndFooter() throws Exception
     {
-        initialize("TestKinesisAppender/testWriteHeaderAndFooter.properties");
+        initialize("TestKinesisAppender/testWriteHeaderAndFooter.xml");
+
+        MockKinesisWriter mockWriter = appender.getMockWriter();
 
         logger.debug("blah blah blah");
 
-        // must retrieve writer before we shut down
-        MockKinesisWriter writer = appender.getMockWriter();
-        LogManager.shutdown();
+        appender.stop();
 
-        assertEquals("number of messages written to log", 3, writer.messages.size());
-        assertEquals("header is first", HeaderFooterLayout.HEADER, writer.getMessage(0));
-        assertEquals("footer is last",  HeaderFooterLayout.FOOTER, writer.getMessage(2));
+        assertEquals("number of messages",  3,                  mockWriter.messages.size());
+        assertEquals("header is first",     "File Header",      mockWriter.getMessage(0));
+        assertEquals("message is middle",   "blah blah blah",   mockWriter.getMessage(1));
+        assertEquals("footer is last",      "File Footer",      mockWriter.getMessage(2));
     }
 
 
@@ -230,8 +200,7 @@ public class TestKinesisAppender
         final int maxMessageSize            =  kinesisMaximumMessageSize - (layoutOverhead + partitionKeySize);
         final String bigMessage             =  StringUtil.repeat('A', maxMessageSize);
 
-        initialize("TestKinesisAppender/testMaximumMessageSize.properties");
-        logger.debug("this message triggers writer configuration");
+        initialize("TestKinesisAppender/testMaximumMessageSize.xml");
 
         assertFalse("max message size",             appender.isMessageTooLarge(new LogMessage(System.currentTimeMillis(), bigMessage)));
         assertTrue("bigger than max message size",  appender.isMessageTooLarge(new LogMessage(System.currentTimeMillis(), bigMessage + "1")));
@@ -241,7 +210,7 @@ public class TestKinesisAppender
     @Test
     public void testUncaughtExceptionHandling() throws Exception
     {
-        initialize("TestKinesisAppender/testUncaughtExceptionHandling.properties");
+        initialize("TestKinesisAppender/testUncaughtExceptionHandling.xml");
 
         // note that we will be running the writer on a separate thread
 
@@ -270,9 +239,7 @@ public class TestKinesisAppender
     @Test
     public void testReconfigureDiscardProperties() throws Exception
     {
-        initialize("TestKinesisAppender/testReconfigureDiscardProperties.properties");
-
-        logger.debug("a message to trigger writer creation");
+        initialize("TestKinesisAppender/testReconfigureDiscardProperties.xml");
 
         MockKinesisWriter writer = appender.getMockWriter();
 

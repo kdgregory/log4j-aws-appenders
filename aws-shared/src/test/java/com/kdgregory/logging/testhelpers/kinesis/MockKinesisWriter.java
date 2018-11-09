@@ -36,6 +36,8 @@ implements LogWriter
     public String streamName;
     public String partitionKey;
     public long batchDelay;
+    public int discardThreshold;
+    public DiscardAction discardAction;
 
 
     public MockKinesisWriter(KinesisWriterConfig config)
@@ -43,6 +45,8 @@ implements LogWriter
         this.streamName = config.streamName;
         this.partitionKey = config.partitionKey;
         this.batchDelay = config.batchDelay;
+        this.discardThreshold = config.discardThreshold;
+        this.discardAction = config.discardAction;
     }
 
 //----------------------------------------------------------------------------
@@ -74,13 +78,14 @@ implements LogWriter
     @Override
     public void setDiscardThreshold(int value)
     {
-        // ignored for now
+        this.discardThreshold = value;
     }
+
 
     @Override
     public void setDiscardAction(DiscardAction value)
     {
-        // ignored for now
+        this.discardAction = value;
     }
 
 //----------------------------------------------------------------------------

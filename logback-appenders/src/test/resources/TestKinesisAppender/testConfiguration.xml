@@ -1,0 +1,27 @@
+<configuration debug="false">
+
+  <appender name="KINESIS" class="com.kdgregory.logback.testhelpers.kinesis.TestableKinesisAppender">
+    <streamName>argle-{bargle}</streamName>
+    <partitionKey>foo-{date}</partitionKey>
+    <autoCreate>true</autoCreate>
+    <shardCount>7</shardCount>
+    <retentionPeriod>48</retentionPeriod>
+    <batchDelay>1234</batchDelay>
+    <discardThreshold>54321</discardThreshold>
+    <discardAction>newest</discardAction>
+    <clientFactory>com.example.Foo.bar</clientFactory>
+    <clientEndpoint>kinesis.us-west-1.amazonaws.com</clientEndpoint>
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <pattern>%msg</pattern>
+    </layout>
+  </appender>
+
+  <root level="off">
+    <appender-ref ref="ch.qos.logback.core.helpers.NOPAppender" />
+  </root>
+
+  <logger name="com.kdgregory.logback.aws.TestKinesisAppender" level="debug">
+    <appender-ref ref="KINESIS" />
+  </logger>
+
+</configuration>

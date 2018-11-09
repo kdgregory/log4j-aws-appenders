@@ -82,6 +82,7 @@ implements LogWriter
         this.discardThreshold = value;
     }
 
+
     @Override
     public void setDiscardAction(DiscardAction value)
     {

@@ -140,16 +140,23 @@ public class TestSNSAppender
         assertEquals("after message 1, calls to writer factory",        1,                  writerFactory.invocationCount);
         StringAsserts.assertRegex("topic name",                         "name-[0-9]{8}",    writer.config.topicName);
         StringAsserts.assertRegex("topic ARN",                          "arn-[0-9]{8}",     writer.config.topicArn);
-        assertEquals("last message appended",                           "first message",    writer.lastMessage.getMessage());
         assertEquals("number of messages in writer queue",              1,                  writer.messages.size());
-        assertEquals("first message in queue",                          "first message",    writer.messages.get(0).getMessage());
+
+        String message1 = writer.lastMessage.getMessage();
+        StringAsserts.assertRegex(
+                "message 1 follows layout: " + message1,
+                "20[12][0-9] TestSNSAppender first message",
+                message1);
 
         logger.debug("second message");
 
-        assertEquals("last message appended",                           "second message",   writer.lastMessage.getMessage());
         assertEquals("number of messages in writer queue",              2,                  writer.messages.size());
-        assertEquals("first message in queue",                          "first message",    writer.messages.get(0).getMessage());
-        assertEquals("second message in queue",                         "second message",   writer.messages.get(1).getMessage());
+
+        String message2 = writer.lastMessage.getMessage();
+        StringAsserts.assertRegex(
+                "message 1 follows layout: " + message2,
+                "20[12][0-9] TestSNSAppender second message",
+                message2);
 
         // finish off the life-cycle
 

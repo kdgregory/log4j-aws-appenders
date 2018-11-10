@@ -60,6 +60,13 @@
 
 
     <dependencies>
+
+        <dependency>
+            <groupId>com.kdgregory.logging</groupId>
+            <artifactId>aws-shared</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-logs</artifactId>

@@ -34,7 +34,7 @@ import net.sf.kdgcommons.lang.ClassUtil;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
-import com.kdgregory.logging.testhelpers.cloudwatch.CloudWatchTestHelper;
+import com.kdgregory.logging.testhelpers.CloudWatchTestHelper;
 
 
 public class CloudWatchAppenderIntegrationTest

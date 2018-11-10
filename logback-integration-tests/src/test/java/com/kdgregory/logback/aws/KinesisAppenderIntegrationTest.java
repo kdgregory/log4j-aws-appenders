@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws;
+package com.kdgregory.logback.aws;
 
 import java.net.URL;
 import java.util.HashSet;
@@ -21,15 +21,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
-
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
-
-import net.sf.kdgcommons.lang.ClassUtil;
-import net.sf.kdgcommons.test.StringAsserts;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
@@ -38,12 +32,25 @@ import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.testhelpers.KinesisTestHelper;
 import com.kdgregory.logging.testhelpers.KinesisTestHelper.RetrievedRecord;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.sf.kdgcommons.lang.ClassUtil;
+import net.sf.kdgcommons.test.StringAsserts;
+
 
 public class KinesisAppenderIntegrationTest
 {
-    private Logger localLogger;
-    KinesisTestHelper testHelper;
+    private KinesisTestHelper testHelper;
 
+    // this gets set by init() after the logging framework has been initialized
+    private Logger localLogger;
+
+    // this is only set by smoketest
     private static boolean localFactoryUsed;
 
 //----------------------------------------------------------------------------
@@ -58,9 +65,6 @@ public class KinesisAppenderIntegrationTest
 
 //----------------------------------------------------------------------------
 //  Tests
-//
-//  Note: most tests create their streams, since we want to examine various
-//        combinations of shards and partition keys
 //----------------------------------------------------------------------------
 
     @Test
@@ -71,8 +75,8 @@ public class KinesisAppenderIntegrationTest
         init("smoketest");
         localLogger.info("smoketest: starting");
 
-        Logger testLogger = Logger.getLogger("TestLogger");
-        KinesisAppender appender = (KinesisAppender)testLogger.getAppender("test");
+        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
+        KinesisAppender<ILoggingEvent> appender = (KinesisAppender<ILoggingEvent>)testLogger.getAppender("test");
 
         (new MessageWriter(testLogger, numMessages)).run();
 
@@ -99,7 +103,7 @@ public class KinesisAppenderIntegrationTest
         init("testMultipleThreadsSingleAppender");
         localLogger.info("multi-thread/single-appender: starting");
 
-        Logger testLogger = Logger.getLogger("TestLogger");
+        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
 
         MessageWriter[] writers = new MessageWriter[]
         {
@@ -138,9 +142,9 @@ public class KinesisAppenderIntegrationTest
         init("testMultipleThreadsMultipleAppendersDistinctPartitions");
         localLogger.info("multi-thread/multi-appender: starting");
 
-        Logger testLogger1 = Logger.getLogger("TestLogger1");
-        Logger testLogger2 = Logger.getLogger("TestLogger2");
-        Logger testLogger3 = Logger.getLogger("TestLogger3");
+        Logger testLogger1 = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger1");
+        Logger testLogger2 = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger2");
+        Logger testLogger3 = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger3");
 
         MessageWriter[] writers = new MessageWriter[]
         {
@@ -173,6 +177,7 @@ public class KinesisAppenderIntegrationTest
 
 
     @Test
+    @Ignore("Logback does not support configuration with empty strings")
     public void testRandomPartitionKeys() throws Exception
     {
         final int numMessages = 250;
@@ -180,7 +185,7 @@ public class KinesisAppenderIntegrationTest
         init("testRandomPartitionKeys");
         localLogger.info("testRandomPartitionKeys: starting");
 
-        Logger testLogger = Logger.getLogger("TestLogger");
+        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
 
         (new MessageWriter(testLogger, numMessages)).run();
 
@@ -218,8 +223,8 @@ public class KinesisAppenderIntegrationTest
         init("testFailsIfNoStreamPresent");
         localLogger.info("testFailsIfNoStreamPresent: starting");
 
-        Logger testLogger = Logger.getLogger("TestLogger");
-        KinesisAppender appender = (KinesisAppender)testLogger.getAppender("test");
+        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
+        KinesisAppender<ILoggingEvent> appender = (KinesisAppender<ILoggingEvent>)testLogger.getAppender("test");
 
         (new MessageWriter(testLogger, numMessages)).run();
 
@@ -275,22 +280,25 @@ public class KinesisAppenderIntegrationTest
     /**
      *  Loads the test-specific Log4J configuration and resets the environment.
      */
-    public void init(String testName)
-    throws Exception
+    public void init(String testName) throws Exception
     {
-        String propertiesName = "KinesisAppenderIntegrationTest/" + testName + ".properties";
-        URL config = ClassLoader.getSystemResource(propertiesName);
-        assertNotNull("missing configuration: " + propertiesName, config);
-
-        LogManager.resetConfiguration();
-        PropertyConfigurator.configure(config);
-
-        localLogger = Logger.getLogger(getClass());
-
         String streamName = "AppenderIntegrationTest-" + testName;
         testHelper = new KinesisTestHelper(AmazonKinesisClientBuilder.defaultClient(), streamName);
 
+        // this has to happen before the logger is initialized or we have a race condition
         testHelper.deleteStreamIfExists();
+
+        String propertiesName = "KinesisAppenderIntegrationTest/" + testName + ".xml";
+        URL config = ClassLoader.getSystemResource(propertiesName);
+        assertNotNull("missing configuration: " + propertiesName, config);
+
+        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
+        context.reset();
+        JoranConfigurator configurator = new JoranConfigurator();
+        configurator.setContext(context);
+        configurator.doConfigure(config);
+
+        localLogger = LoggerFactory.getLogger(getClass());
     }
 
 
@@ -300,7 +308,7 @@ public class KinesisAppenderIntegrationTest
      *
      *  @return The writer's initialization message (null means successful init).
      */
-    private void waitForWriterInitialization(KinesisAppender appender, int timeoutInSeconds)
+    private void waitForWriterInitialization(KinesisAppender<ILoggingEvent> appender, int timeoutInSeconds)
     throws Exception
     {
         long timeoutAt = System.currentTimeMillis() + 1000 * timeoutInSeconds;

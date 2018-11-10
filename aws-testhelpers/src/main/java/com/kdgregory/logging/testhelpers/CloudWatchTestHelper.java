@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logging.testhelpers.cloudwatch;
+package com.kdgregory.logging.testhelpers;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -26,8 +26,6 @@ import net.sf.kdgcommons.collections.CollectionUtil;
 
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.*;
-
-import com.kdgregory.logging.testhelpers.MessageWriter;
 
 
 /**

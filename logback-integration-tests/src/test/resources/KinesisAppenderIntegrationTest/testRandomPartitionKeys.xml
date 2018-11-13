@@ -8,9 +8,7 @@
 
     <appender name="test" class="com.kdgregory.logback.aws.KinesisAppender">
         <streamName>AppenderIntegrationTest-testRandomPartitionKeys</streamName>
-        <!-- Logback ignores blank configuration values
-        <partitionKey></partitionKey>
-         -->
+        <partitionKey>{random}</partitionKey>
         <batchDelay>500</batchDelay>
         <autoCreate>true</autoCreate>
         <shardCount>2</shardCount>

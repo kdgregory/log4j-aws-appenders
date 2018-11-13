@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -177,7 +176,6 @@ public class KinesisAppenderIntegrationTest
 
 
     @Test
-    @Ignore("Logback does not support configuration with empty strings")
     public void testRandomPartitionKeys() throws Exception
     {
         final int numMessages = 250;

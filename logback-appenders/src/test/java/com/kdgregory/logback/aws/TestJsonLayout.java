@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws;
+package com.kdgregory.logback.aws;
 
-import java.io.StringWriter;
+import java.io.ByteArrayOutputStream;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -23,18 +23,12 @@ import java.util.TimeZone;
 
 import org.w3c.dom.Document;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import org.apache.log4j.Logger;
-import org.apache.log4j.MDC;
-import org.apache.log4j.NDC;
-import org.apache.log4j.PropertyConfigurator;
-import org.apache.log4j.WriterAppender;
-import org.apache.log4j.helpers.LogLog;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 // I know of a nice library for making XPath-based assertions against a DOM, so convert
 // the generated JSON into XML ... sue me
@@ -42,14 +36,20 @@ import net.sf.practicalxml.converter.JsonConverter;
 import net.sf.practicalxml.junit.DomAsserts;
 import net.sf.practicalxml.xpath.XPathWrapper;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.ConsoleAppender;
+
 
 public class TestJsonLayout
 {
     private final static String TEST_MESSAGE = "test message";
 
     private Logger logger;
-    private WriterAppender appender;
-    private StringWriter writer;
+    private ConsoleAppender<ILoggingEvent> appender;
+    private ByteArrayOutputStream out;
 
     private String rawJson;
     private Document dom;
@@ -58,30 +58,39 @@ public class TestJsonLayout
 //  Support functions
 //----------------------------------------------------------------------------
 
+    /**
+     *  Loads the configuration for a single test. Note that the appender is
+     *  a ConsoleAppender; to capture output we change its output stream.
+     */
     private void initialize(String propsName)
     throws Exception
     {
         URL config = ClassLoader.getSystemResource(propsName);
-        PropertyConfigurator.configure(config);
+        assertNotNull("was able to retrieve config", config);
 
-        logger = Logger.getLogger(getClass());
+        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
+        context.reset();
+        JoranConfigurator configurator = new JoranConfigurator();
+        configurator.setContext(context);
+        configurator.doConfigure(config);
 
-        Logger rootLogger = Logger.getRootLogger();
-        appender = (WriterAppender)rootLogger.getAppender("default");
+        logger = context.getLogger(getClass());
+        appender = (ConsoleAppender<ILoggingEvent>)logger.getAppender("test");
 
-        writer = new StringWriter();
-        appender.setWriter(writer);
+        out = new ByteArrayOutputStream();
+        appender.setOutputStream(out);
     }
 
-
     private void captureLoggingOutput()
+    throws Exception
     {
-        appender.close();
-        rawJson = writer.toString();
+        appender.stop();
+        rawJson = new String(out.toByteArray(), "UTF-8");
     }
 
 
     private void captureLoggingOutputAndParse()
+    throws Exception
     {
         captureLoggingOutput();
         dom = JsonConverter.convertToXml(rawJson, "");
@@ -92,7 +101,7 @@ public class TestJsonLayout
     throws Exception
     {
         DomAsserts.assertEquals("thread",  Thread.currentThread().getName(),            dom, "/data/thread");
-        DomAsserts.assertEquals("logger",  "com.kdgregory.log4j.aws.TestJsonLayout",    dom, "/data/logger");
+        DomAsserts.assertEquals("logger",  "com.kdgregory.logback.aws.TestJsonLayout",  dom, "/data/logger");
         DomAsserts.assertEquals("level",   "DEBUG",                                     dom, "/data/level");
         DomAsserts.assertEquals("message", message,                                     dom, "/data/message");
 
@@ -116,22 +125,6 @@ public class TestJsonLayout
         }
     }
 
-//----------------------------------------------------------------------------
-//  Setup/teardown
-//----------------------------------------------------------------------------
-
-    @Before
-    public void setUp()
-    {
-        LogLog.setQuietMode(true);
-    }
-
-
-    @After
-    public void tearDown()
-    {
-        LogLog.setQuietMode(false);
-    }
 
 //----------------------------------------------------------------------------
 //  Test cases
@@ -140,7 +133,7 @@ public class TestJsonLayout
     @Test
     public void testSimpleMessage() throws Exception
     {
-        initialize("TestJsonLayout/default.properties");
+        initialize("TestJsonLayout/default.xml");
 
         logger.debug(TEST_MESSAGE);
 
@@ -160,7 +153,7 @@ public class TestJsonLayout
     @Test
     public void testException() throws Exception
     {
-        initialize("TestJsonLayout/default.properties");
+        initialize("TestJsonLayout/default.xml");
 
         String innerMessage = "I'm not worthy";
         String outerMessage = "throw it out";
@@ -190,27 +183,9 @@ public class TestJsonLayout
 
 
     @Test
-    public void testNDC() throws Exception
-    {
-        initialize("TestJsonLayout/default.properties");
-
-        NDC.push("frist");  // misspelling intentional
-        NDC.push("second");
-
-        logger.debug(TEST_MESSAGE);
-
-        NDC.clear();
-
-        captureLoggingOutputAndParse();
-        assertCommonElements(TEST_MESSAGE);
-        DomAsserts.assertEquals("ndc", "frist second", dom, "/data/ndc");
-    }
-
-
-    @Test
     public void testMDC() throws Exception
     {
-        initialize("TestJsonLayout/default.properties");
+        initialize("TestJsonLayout/default.xml");
 
         MDC.put("foo", "bar");
         MDC.put("argle", "bargle");
@@ -231,7 +206,7 @@ public class TestJsonLayout
     @Test
     public void testLocation() throws Exception
     {
-        initialize("TestJsonLayout/testLocation.properties");
+        initialize("TestJsonLayout/testLocation.xml");
 
         logger.debug(TEST_MESSAGE);
 
@@ -239,7 +214,7 @@ public class TestJsonLayout
         assertCommonElements(TEST_MESSAGE);
 
         DomAsserts.assertCount("location present",  1,                                          dom, "/data/locationInfo");
-        DomAsserts.assertEquals("className",        "com.kdgregory.log4j.aws.TestJsonLayout",   dom, "/data/locationInfo/className");
+        DomAsserts.assertEquals("className",        "com.kdgregory.logback.aws.TestJsonLayout", dom, "/data/locationInfo/className");
         DomAsserts.assertEquals("methodName",       "testLocation",                             dom, "/data/locationInfo/methodName");
         DomAsserts.assertEquals("fileName",         "TestJsonLayout.java",                      dom, "/data/locationInfo/fileName");
 
@@ -251,7 +226,7 @@ public class TestJsonLayout
     @Test
     public void testHostname() throws Exception
     {
-        initialize("TestJsonLayout/testHostname.properties");
+        initialize("TestJsonLayout/testHostname.xml");
 
         logger.debug(TEST_MESSAGE);
 
@@ -267,7 +242,7 @@ public class TestJsonLayout
     @Ignore("this test should only be run on an EC2 instance")
     public void testInstanceId() throws Exception
     {
-        initialize("TestJsonLayout/testInstanceId.properties");
+        initialize("TestJsonLayout/testInstanceId.xml");
 
         logger.debug(TEST_MESSAGE);
 
@@ -283,7 +258,7 @@ public class TestJsonLayout
     @Test
     public void testTags() throws Exception
     {
-        initialize("TestJsonLayout/testTags.properties");
+        initialize("TestJsonLayout/testTags.xml");
 
         logger.debug(TEST_MESSAGE);
 
@@ -301,21 +276,24 @@ public class TestJsonLayout
     @Test
     public void testEmptyTags() throws Exception
     {
-        initialize("TestJsonLayout/testEmptyTags.properties");
+        // this is a somewhat bogus test, because Logback completely ignores an empty property,
+        // but it's useful to ensure that nothing breaks
+
+        initialize("TestJsonLayout/testEmptyTags.xml");
 
         logger.debug(TEST_MESSAGE);
 
         captureLoggingOutputAndParse();
         assertCommonElements(TEST_MESSAGE);
 
-        DomAsserts.assertCount("tags not present",  0, dom, "/data/tags/*");
+        DomAsserts.assertCount("tags not present",  0, dom, "/data/tag");
     }
 
 
     @Test
     public void testNoAppendNewlines() throws Exception
     {
-        initialize("TestJsonLayout/default.properties");
+        initialize("TestJsonLayout/default.xml");
 
         logger.debug(TEST_MESSAGE);
         logger.debug(TEST_MESSAGE);
@@ -329,7 +307,7 @@ public class TestJsonLayout
     @Test
     public void testAppendNewlines() throws Exception
     {
-        initialize("TestJsonLayout/testAppendNewlines.properties");
+        initialize("TestJsonLayout/testAppendNewlines.xml");
 
         logger.debug(TEST_MESSAGE);
         logger.debug(TEST_MESSAGE);

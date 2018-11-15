@@ -1,0 +1,21 @@
+<configuration debug="false">
+
+    <appender name="root" class="ch.qos.logback.core.helpers.NOPAppender">
+    </appender>
+
+    <appender name="test" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="com.kdgregory.logback.aws.JsonLayout">
+            </layout>
+        </encoder>
+    </appender>
+
+    <root level="off">
+        <appender-ref ref="root" />
+    </root>
+
+    <logger name="com.kdgregory.logback.aws.TestJsonLayout" level="debug">
+        <appender-ref ref="test" />
+    </logger>
+
+</configuration>

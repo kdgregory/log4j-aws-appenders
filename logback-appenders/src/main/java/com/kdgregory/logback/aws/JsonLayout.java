@@ -12,26 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws;
+package com.kdgregory.logback.aws;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import org.apache.log4j.Layout;
-import org.apache.log4j.spi.LocationInfo;
-import org.apache.log4j.spi.LoggingEvent;
 
 import com.kdgregory.logging.aws.common.Substitutions;
 import com.kdgregory.logging.common.util.JsonConverter;
 
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.IThrowableProxy;
+import ch.qos.logback.classic.spi.StackTraceElementProxy;
+import ch.qos.logback.core.LayoutBase;
+
 
 /**
- *  Formats a <code>LogMessage</code> as a JSON string. This supports Elasticsearch
+ *  Formats an <code>ILoggingEvent</code> as a JSON string. This supports Elasticsearch
  *  without the need for Logstash (as well as any other JSON-consuming endpoint).
  *  <p>
- *  The JSON object will always contain the following properties, most of which
- *  are extracted from the Log4J <code>LoggingEvent</code>
+ *  The JSON object will always contain the following properties:
  *  <ul>
  *  <li> <code>timestamp</code>:    the date/time that the message was logged.
  *  <li> <code>thread</code>:       the name of the thread where the message was logged.
@@ -49,9 +51,6 @@ import com.kdgregory.logging.common.util.JsonConverter;
  *                                  first element identifying the exception and message, and
  *                                  subsequent elements identifying the stack trace.
  *  <li> <code>mdc</code>:          the mapped diagnostic context. This is a child map.
- *  <li> <code>ndc</code>:          the nested diagnostic context. This is a single
- *                                  string that contains each of the pushed entries
- *                                  separated by spaces (yes, that's how Log4J does it).
  *  </ul>
  *  <p>
  *  The following properties are potentially expensive to compute, so will only
@@ -84,13 +83,22 @@ import com.kdgregory.logging.common.util.JsonConverter;
  *  ordering is an implementation artifact and subject to change without notice.
  */
 public class JsonLayout
-extends Layout
+extends LayoutBase<ILoggingEvent>
 {
     // if enabled and supported, these will be not-null
     private String processId;
     private String hostname;
     private String instanceId;
     private Map<String,String> tags;
+
+    private ThreadLocal<JsonConverter> converterTL = new ThreadLocal<JsonConverter>()
+    {
+        @Override
+        protected JsonConverter initialValue()
+        {
+            return new JsonConverter();
+        }
+    };
 
 //----------------------------------------------------------------------------
 //  Configuration
@@ -166,7 +174,7 @@ extends Layout
 //----------------------------------------------------------------------------
 
     @Override
-    public void activateOptions()
+    public void start()
     {
         Substitutions subs = new Substitutions(new Date(), 0);
 
@@ -204,45 +212,53 @@ extends Layout
                 }
             }
         }
+        super.start();
     }
 
 
     @Override
-    public String format(LoggingEvent event)
+    public String doLayout(ILoggingEvent event)
     {
         Map<String,Object> map = new TreeMap<String,Object>();
         map.put("timestamp",    new Date(event.getTimeStamp()));
         map.put("thread",       event.getThreadName());
-        map.put("logger",       event.getLogger().getName());
+        map.put("logger",       event.getLoggerName());
         map.put("level",        event.getLevel().toString());
-        map.put("message",      event.getRenderedMessage());
+        map.put("message",      event.getFormattedMessage());
 
-        if (event.getThrowableStrRep() != null) map.put("exception",    event.getThrowableStrRep());
-        if (event.getNDC() != null)             map.put("ndc",          event.getNDC());
-        if (tags != null)                       map.put("tags",         tags);
-
-        if ((event.getProperties() != null) && ! event.getProperties().isEmpty())
+        List<String> exceptionInfo = extractExceptionInfo(event);
+        if (exceptionInfo != null)
         {
-            map.put("mdc", event.getProperties());
+            map.put("exception", exceptionInfo);
         }
 
+        if ((event.getMDCPropertyMap() != null) && ! event.getMDCPropertyMap().isEmpty())
+        {
+            map.put("mdc", event.getMDCPropertyMap());
+        }
+
+        if (enableLocation)
+        {
+            StackTraceElement[] callerData = event.getCallerData();
+            if ((callerData != null) && (event.getCallerData().length > 0))
+            {
+                StackTraceElement info = callerData[0];
+                Map<String,Object> location = new TreeMap<String,Object>();
+                location.put("className",  info.getClassName());
+                location.put("methodName", info.getMethodName());
+                location.put("fileName",   info.getFileName());
+                location.put("lineNumber", info.getLineNumber());
+                map.put("locationInfo", location);
+            }
+        }
 
         if (processId != null)  map.put("processId", processId);
         if (hostname != null)   map.put("hostname", hostname);
         if (instanceId != null) map.put("instanceId", instanceId);
 
-        if (enableLocation)
-        {
-            LocationInfo info = event.getLocationInformation();
-            Map<String,Object> location = new TreeMap<String,Object>();
-            location.put("className",  info.getClassName());
-            location.put("methodName", info.getMethodName());
-            location.put("fileName",   info.getFileName());
-            location.put("lineNumber", info.getLineNumber());
-            map.put("locationInfo", location);
-        }
+        if (tags != null)       map.put("tags",         tags);
 
-        String json = (new JsonConverter()).convert(map);
+        String json = converterTL.get().convert(map);
         if (getAppendNewlines())
         {
             json += "\n";
@@ -252,9 +268,35 @@ extends Layout
     }
 
 
-    @Override
-    public boolean ignoresThrowable()
+    /**
+     *  Extracts the exception information from an event, returning either null
+     *  or a list of strings.
+     */
+    private static List<String> extractExceptionInfo(ILoggingEvent event)
     {
-        return false;
+        return (event.getThrowableProxy() == null)
+             ? null
+             : appendThrowable(new ArrayList<String>(), event.getThrowableProxy());
+    }
+
+
+    /**
+     *  Appends exception info from the current throwable to the passed list,
+     *  including its cause.
+     */
+    private static List<String> appendThrowable(List<String> entries, IThrowableProxy throwable)
+    {
+        String optCausedBy = entries.isEmpty() ? "" : "Caused by: ";
+        String initialLine = optCausedBy + throwable.getClassName() + ": " + throwable.getMessage();
+        entries.add(initialLine);
+
+        for (StackTraceElementProxy ste : throwable.getStackTraceElementProxyArray())
+        {
+            entries.add(ste.getSTEAsString());
+        }
+
+        return (throwable.getCause() == null)
+             ? entries
+             : appendThrowable(entries, throwable.getCause());
     }
 }

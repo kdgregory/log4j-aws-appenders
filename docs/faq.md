@@ -74,6 +74,13 @@
   may include third-party libraries), and use the built-in `ConsoleAppender` as the root
   logger.
 
+## When I undeploy my application from Tomcat I see error messages about threads that have failed to stop. Why does this happen and how do I fix it?
+
+   The AWS appenders use a background thread to perform their AWS calls, and this thread
+   will remain running until the Log4J framework is explicitly shut down. To make this
+   happen, you will need to add a context listener to your web-app, as described
+   [here](tomcat.md).
+
 ## Can I contribute?
 
   At this point I haven't thought through the issues with having other contributors (and,

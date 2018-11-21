@@ -121,17 +121,6 @@ implements LogWriter
 
 
     @Override
-    public void stop()
-    {
-        shutdownTime = System.currentTimeMillis() + config.batchDelay;
-        if (dispatchThread != null)
-        {
-            dispatchThread.interrupt();
-        }
-    }
-
-
-    @Override
     public void setDiscardThreshold(int value)
     {
         messageQueue.setDiscardThreshold(value);
@@ -142,6 +131,17 @@ implements LogWriter
     public void setDiscardAction(DiscardAction value)
     {
         messageQueue.setDiscardAction(value);
+    }
+
+
+    @Override
+    public void stop()
+    {
+        shutdownTime = System.currentTimeMillis() + config.batchDelay;
+        if (dispatchThread != null)
+        {
+            dispatchThread.interrupt();
+        }
     }
 
 //----------------------------------------------------------------------------
@@ -219,6 +219,50 @@ implements LogWriter
 
 
     /**
+     *  Attempts to read a list of messages from the queue. Will wait "forever"
+     *  (or until shutdown) for the first message, then read as many messages
+     *  as possible within the batch delay.
+     *  <p>
+     *  For each message, the subclass is called to determine the effective size
+     *  of the message, and whether the aggregate batch size is within the range
+     *  accepted by the service.
+     */
+    protected List<LogMessage> buildBatch()
+    {
+        // presizing to a small-but-possible size to avoid repeated resizes
+        List<LogMessage> batch = new ArrayList<LogMessage>(512);
+
+        // we'll wait "forever" unless there's a shutdown timestamp in effect
+        LogMessage message = waitForMessage(shutdownTime);
+        if (message == null)
+            return batch;
+
+        long batchTimeout = System.currentTimeMillis() + config.batchDelay;
+        int batchBytes = 0;
+        int batchMsgs = 0;
+        while (message != null)
+        {
+            batchBytes += effectiveSize(message);
+            batchMsgs++;
+
+            // if this message would exceed the batch limits, push it back onto the queue
+            // the first message must never break this rule -- and shouldn't, as long as
+            // appender checks size
+            if (! withinServiceLimits(batchBytes, batchMsgs))
+            {
+                messageQueue.requeue(message);
+                break;
+            }
+
+            batch.add(message);
+            message = waitForMessage(batchTimeout);
+        }
+
+        return batch;
+    }
+
+
+    /**
      *  Attempts to read the message queue, waiting until the specified timestamp
      *  (not elapsed time!).
      */
@@ -287,49 +331,5 @@ implements LogWriter
     {
         logger.error(message, exception);
         stats.setLastError(message, exception);
-    }
-
-
-    /**
-     *  Attempts to read a list of messages from the queue. Will wait "forever"
-     *  (or until shutdown) for the first message, then read as many messages
-     *  as possible within the batch delay.
-     *  <p>
-     *  For each message, the subclass is called to determine the effective size
-     *  of the message, and whether the aggregate batch size is within the range
-     *  accepted by the service.
-     */
-    protected List<LogMessage> buildBatch()
-    {
-        // presizing to a small-but-possible size to avoid repeated resizes
-        List<LogMessage> batch = new ArrayList<LogMessage>(512);
-
-        // we'll wait "forever" unless there's a shutdown timestamp in effect
-        LogMessage message = waitForMessage(shutdownTime);
-        if (message == null)
-            return batch;
-
-        long batchTimeout = System.currentTimeMillis() + config.batchDelay;
-        int batchBytes = 0;
-        int batchMsgs = 0;
-        while (message != null)
-        {
-            batchBytes += effectiveSize(message);
-            batchMsgs++;
-
-            // if this message would exceed the batch limits, push it back onto the queue
-            // the first message must never break this rule -- and shouldn't, as long as
-            // appender checks size
-            if (! withinServiceLimits(batchBytes, batchMsgs))
-            {
-                messageQueue.requeue(message);
-                break;
-            }
-
-            batch.add(message);
-            message = waitForMessage(batchTimeout);
-        }
-
-        return batch;
     }
 }

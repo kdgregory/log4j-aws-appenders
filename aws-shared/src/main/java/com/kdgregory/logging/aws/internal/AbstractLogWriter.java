@@ -305,7 +305,7 @@ implements LogWriter
         List<LogMessage> batch = new ArrayList<LogMessage>(512);
 
         // we'll wait "forever" unless there's a shutdown timestamp in effect
-        LogMessage message = messageQueue.dequeue(shutdownTime);
+        LogMessage message = waitForMessage(shutdownTime);
         if (message == null)
             return batch;
 

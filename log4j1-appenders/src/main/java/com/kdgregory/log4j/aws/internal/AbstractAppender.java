@@ -367,6 +367,15 @@ extends AppenderSkeleton
     }
 
 
+    /**
+     *  Returns whether or not the appender has been closed.
+     */
+    public boolean isClosed()
+    {
+        return closed;
+    }
+
+
 //----------------------------------------------------------------------------
 //  Appender overrides
 //----------------------------------------------------------------------------

@@ -149,6 +149,12 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
     }
 
 
+    @Override
+    protected void stopAWSClient()
+    {
+        client.shutdown();
+    }
+
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------

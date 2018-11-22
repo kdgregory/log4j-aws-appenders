@@ -70,6 +70,7 @@ public class MockSNSClient implements InvocationHandler
     public volatile int listTopicsInvocationCount;
     public volatile int createTopicInvocationCount;
     public volatile int publishInvocationCount;
+    public volatile int shutdownInvocationCount;
 
     public volatile String lastPublishArn;
     public volatile String lastPublishSubject;
@@ -192,7 +193,14 @@ public class MockSNSClient implements InvocationHandler
                 allowMainThread.release();
             }
         }
+        else if (methodName.equals("shutdown"))
+        {
+            shutdownInvocationCount++;
+            return null;
+        }
 
+        // if nothing matches, fall through to here
+        System.err.println("invocation handler called unexpectedly: " + methodName);
         throw new IllegalStateException("unexpected method called: " + methodName);
     }
 

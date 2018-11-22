@@ -90,6 +90,7 @@ implements InvocationHandler
     public volatile int createLogGroupInvocationCount;
     public volatile int createLogStreamInvocationCount;
     public volatile int putLogEventsInvocationCount;
+    public volatile int shutdownInvocationCount;
 
     // the name passed to the last createLogGroup request
     public volatile String createLogGroupGroupName;
@@ -236,11 +237,15 @@ implements InvocationHandler
                 allowMainThread.release();
             }
         }
-        else
+        else if (methodName.equals("shutdown"))
         {
-            System.err.println("invocation handler called unexpectedly: " + methodName);
-            throw new IllegalArgumentException("unexpected client call: " + methodName);
+            shutdownInvocationCount++;
+            return null;
         }
+
+        // if nothing matches, fall through to here
+        System.err.println("invocation handler called unexpectedly: " + methodName);
+        throw new IllegalArgumentException("unexpected client call: " + methodName);
     }
 
 //----------------------------------------------------------------------------

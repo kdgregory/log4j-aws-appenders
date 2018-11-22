@@ -14,8 +14,6 @@
 
 package com.kdgregory.logging.aws;
 
-import static net.sf.kdgcommons.test.StringAsserts.*;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -27,6 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
+import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
@@ -719,6 +718,34 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("stats: actual stream name",               DEFAULT_STREAM_NAME,        stats.getActualStreamName());
 
         internalLogger.assertInternalDebugLog(".*created client from factory.*");
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testShutdown() throws Exception
+    {
+        // this test is the only place that we expicitly test shutdown logic, to avoid cluttering
+        // the "operation" tests; it's otherwise identical to the "existing stream" test
+
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+
+        // the immediate stop should interrupt waitForMessage, but there's no guarantee
+        writer.stop();
+
+        // the batch should still be processed
+        mock.allowWriterThread();
+
+        assertEquals("putRecords: invocation count",        1,                          mock.putRecordsInvocationCount);
+        assertEquals("putRecords: source record count",     1,                          mock.putRecordsSourceRecords.size());
+
+        joinWriterThread();
+
+        assertEquals("shutdown: invocation count",          1,                  mock.shutdownInvocationCount);
+
+        internalLogger.assertInternalDebugLog("stopping log.writer.*");
         internalLogger.assertInternalErrorLog();
     }
 }

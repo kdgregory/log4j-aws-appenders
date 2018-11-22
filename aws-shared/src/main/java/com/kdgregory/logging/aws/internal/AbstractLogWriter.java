@@ -181,6 +181,10 @@ implements LogWriter
                 requeueMessages(failures);
             }
         } while (keepRunning());
+
+        stopAWSClient();
+        logger.debug("stopping log-writer on thread " + Thread.currentThread().getName() 
+                     + " (#" + Thread.currentThread().getId() + ")");
     }
 
 //----------------------------------------------------------------------------
@@ -318,6 +322,14 @@ implements LogWriter
      *  exceed the service's limits.
      */
     protected abstract boolean withinServiceLimits(int batchBytes, int numMessages);
+
+
+    /**
+     *  This is called when the logwriter is stopped, to explicitly close the
+     *  AWS service client. It must be implemented by the subclass because we
+     *  don't know the actual type and there's no abstract super-interface.
+     */
+    protected abstract void stopAWSClient();
 
 //----------------------------------------------------------------------------
 //  Subclass helpers

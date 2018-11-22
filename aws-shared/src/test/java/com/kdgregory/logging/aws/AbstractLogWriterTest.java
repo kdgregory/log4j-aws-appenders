@@ -129,6 +129,23 @@ public abstract class AbstractLogWriterTest
         fail("unable to initialize writer");
     }
 
+
+//----------------------------------------------------------------------------
+//  Utility methods to synchronize main and writer threads.
+//----------------------------------------------------------------------------
+
+    /**
+     *  Joins to the writer's dispatch thread. This should only be called when
+     *  the writer is explicitly stopped.
+     */
+    protected void joinWriterThread()
+    throws Exception
+    {
+        Thread writerThread = ClassUtil.getFieldValue(writer, "dispatchThread", Thread.class);
+        assertNotNull("expeted to retrieve writer thread", writerThread);
+        writerThread.join();
+    }
+
 //----------------------------------------------------------------------------
 //  The following methods are work-arounds for a race condition in which the
 //  main thread is allowed to continue immediately after the mock client call,

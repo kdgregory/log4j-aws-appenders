@@ -30,7 +30,7 @@ from Maven Central; you can find the latest version
 Next, configure the desired appender in your Log4J properties. Each appender's documentation
 describes the complete set of configuration properties and shows a typical configuration.
 
-There is also an [example project](example) that exercises all of the appenders.
+There are also [example projects](examples) that exercise all of the appenders.
 
 
 ### Versions

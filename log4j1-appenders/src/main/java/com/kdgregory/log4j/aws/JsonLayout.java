@@ -93,15 +93,6 @@ extends Layout
     private String instanceId;
     private Map<String,String> tags;
 
-    private ThreadLocal<JsonConverter> converterTL = new ThreadLocal<JsonConverter>()
-    {
-        @Override
-        protected JsonConverter initialValue()
-        {
-            return new JsonConverter();
-        }
-    };
-
 //----------------------------------------------------------------------------
 //  Configuration
 //----------------------------------------------------------------------------
@@ -252,7 +243,7 @@ extends Layout
             map.put("locationInfo", location);
         }
 
-        String json = converterTL.get().convert(map);
+        String json = (new JsonConverter()).convert(map);
         if (getAppendNewlines())
         {
             json += "\n";

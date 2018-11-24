@@ -1,5 +1,16 @@
 # Change History
 
+## 2.0.1 (TBD)
+
+* Bugfix: was not limiting wait at shutdown, leaving writer thread dangling
+  after app-server redeploy.
+  ([#56](https://github.com/kdgregory/log4j-aws-appenders/issues/56))
+* Eliminate use of ThreadLocal in JSON conversion.
+  (also [#56](https://github.com/kdgregory/log4j-aws-appenders/issues/56))
+* Add a web-app example, to demonstrate configuring and shutting down Log4J
+  via `ContextListener` along with adding unique request IDs to the mapped
+  diagnostic context.
+
 ## 2.0.0 (2018-10-29)
 
 * Split the library into front-end and back-end components, in preparation for

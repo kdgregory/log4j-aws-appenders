@@ -125,9 +125,9 @@ public class TestSNSAppender
 
 
     @Test
-    public void testAppend() throws Exception
+    public void testLifecycle() throws Exception
     {
-        initialize("TestSNSAppender/testAppend.properties");
+        initialize("TestSNSAppender/testLifecycle.properties");
         MockSNSWriterFactory writerFactory = (MockSNSWriterFactory)appender.getWriterFactory();
 
         assertNull("before messages, writer is null",                   appender.getMockWriter());
@@ -150,17 +150,29 @@ public class TestSNSAppender
         assertEquals("number of messages in writer queue",              2,                  writer.messages.size());
         assertEquals("first message in queue",                          "first message",    writer.messages.get(0).getMessage());
         assertEquals("second message in queue",                         "second message",   writer.messages.get(1).getMessage());
+
+        // finish off the life-cycle
+
+        assertFalse("appender not closed before shutdown", appender.isClosed());
+        assertFalse("writer still running before shutdown", writer.stopped);
+
+        LogManager.shutdown();
+
+        assertTrue("appender closed after shutdown", appender.isClosed());
+        assertTrue("writer stopped after shutdown", writer.stopped);
     }
 
 
     @Test(expected=IllegalStateException.class)
     public void testThrowsIfAppenderClosed() throws Exception
     {
-        initialize("TestSNSAppender/testAppend.properties");
+        initialize("TestSNSAppender/testLifecycle.properties");
 
         // write the first message to initialize the appender
         logger.debug("should not throw");
 
+        // we close the appender explicitly because Log4J won't pass on messages
+        // after LogManager.shutdown()
         appender.close();
 
         // second message should throw
@@ -196,7 +208,7 @@ public class TestSNSAppender
         final String okMessage              = undersizeMessage + "A";
         final String oversizeMessage        = undersizeMessage + "\u00A1";
 
-        initialize("TestSNSAppender/testAppend.properties");
+        initialize("TestSNSAppender/testLifecycle.properties");
 
         logger.debug("this message triggers writer configuration");
 

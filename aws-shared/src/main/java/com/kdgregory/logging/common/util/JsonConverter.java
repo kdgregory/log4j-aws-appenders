@@ -30,15 +30,6 @@ import java.util.TimeZone;
  */
 public class JsonConverter
 {
-    private SimpleDateFormat dateFormatter;
-
-    public JsonConverter()
-    {
-        dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-        dateFormatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-    }
-
-
     public String convert(Map<String,Object> map)
     {
         StringBuilder builder = new StringBuilder(1024);
@@ -115,6 +106,16 @@ public class JsonConverter
 
     private void appendDate(StringBuilder builder, Date value)
     {
+        // Note: in my benchmarks, creating a new SimpleDateFormat for each invocation
+        //       takes about 2.4 microseconds, versus 1.4 microseconds for reusing a
+        //       static instance; given that the static instance must be wrapped in a
+        //       ThreadLocal, it makes more sense to create each time
+        //       (for what it's worth, using a Calendar and some ugly formatting code,
+        //       I managed 1 microsecond per invocation; but the testing for that would
+        //       drive me crazy, so I'm not going down that path)
+
+        SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        dateFormatter.setTimeZone(TimeZone.getTimeZone("UTC"));
 
         appendString(builder, dateFormatter.format(value));
     }

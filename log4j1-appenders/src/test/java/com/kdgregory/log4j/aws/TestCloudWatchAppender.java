@@ -127,9 +127,9 @@ public class TestCloudWatchAppender
 
 
     @Test
-    public void testAppend() throws Exception
+    public void testLifecycle() throws Exception
     {
-        initialize("TestCloudWatchAppender/testAppend.properties");
+        initialize("TestCloudWatchAppender/testLifecycle.properties");
         MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
 
         long initialTimestamp = System.currentTimeMillis();
@@ -176,17 +176,29 @@ public class TestCloudWatchAppender
 
         appender.setBatchDelay(1234567);
         assertEquals("writer batch delay propagated", 1234567, writer.batchDelay);
+
+        // finish off the life-cycle
+
+        assertFalse("appender not closed before shutdown", appender.isClosed());
+        assertFalse("writer still running before shutdown", writer.stopped);
+
+        LogManager.shutdown();
+
+        assertTrue("appender closed after shutdown", appender.isClosed());
+        assertTrue("writer stopped after shutdown", writer.stopped);
     }
 
 
     @Test(expected=IllegalStateException.class)
     public void testThrowsIfAppenderClosed() throws Exception
     {
-        initialize("TestCloudWatchAppender/testAppend.properties");
+        initialize("TestCloudWatchAppender/testLifecycle.properties");
 
         // write the first message to initialize the appender
         logger.debug("should not throw");
 
+        // we close the appender explicitly because Log4J won't pass on messages
+        // after LogManager.shutdown()
         appender.close();
 
         // second message should throw

@@ -95,6 +95,9 @@ extends AppenderSkeleton
 
     private Object initializationLock = new Object();
 
+    // this object is used to synchronize the critical section in append()
+    private Object appendLock = new Object();
+
     // all member vars below this point are shared configuration
 
     protected long            batchDelay;
@@ -367,6 +370,15 @@ extends AppenderSkeleton
     }
 
 
+    /**
+     *  Returns whether or not the appender has been closed.
+     */
+    public boolean isClosed()
+    {
+        return closed;
+    }
+
+
 //----------------------------------------------------------------------------
 //  Appender overrides
 //----------------------------------------------------------------------------
@@ -584,31 +596,24 @@ extends AppenderSkeleton
             return;
         }
 
-        rotateIfNeeded(System.currentTimeMillis());
-
-        if (writer == null)
+        synchronized (appendLock)
         {
-            logger.warn("appender not properly configured: writer is null");
-        }
-        else
-        {
-            writer.addMessage(message);
-            messagesSinceLastRotation++;
-        }
-    }
-
-
-    private void rotateIfNeeded(long now)
-    {
-        // double-checked locking: avoid contention for first check, but make sure we don't do things twice
-        if (shouldRotate(now))
-        {
-            synchronized (initializationLock)
+            long now = System.currentTimeMillis();
+            if (shouldRotate(now))
             {
-                if (shouldRotate(now))
-                {
-                    rotate();
-                }
+                long secondsSinceLastRotation = (now - lastRotationTimestamp) / 1000;
+                logger.debug("rotating: messagesSinceLastRotation = " + messagesSinceLastRotation + ", secondsSinceLastRotation = " + secondsSinceLastRotation);
+                rotate();
+            }
+
+            if (writer == null)
+            {
+                logger.error("appender not properly configured: writer is null", null);
+            }
+            else
+            {
+                writer.addMessage(message);
+                messagesSinceLastRotation++;
             }
         }
     }

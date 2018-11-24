@@ -601,4 +601,35 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         internalLogger.assertInternalDebugLog(".*created client from factory.*");
         internalLogger.assertInternalErrorLog();
     }
+
+
+    @Test
+    public void testShutdown() throws Exception
+    {
+        // this test is the only place that we expicitly test shutdown logic, to avoid cluttering
+        // the "operation" tests; it's otherwise identical to the "by name" test
+
+        config.topicName = TEST_TOPIC_NAME;
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+
+        // the immediate stop should interrupt waitForMessage, but there's no guarantee
+        writer.stop();
+
+        // the batch should still be processed
+        mock.allowWriterThread();
+
+        assertEquals("publish: invocation count",   1,                  mock.publishInvocationCount);
+        assertEquals("publish: arn",                TEST_TOPIC_ARN,     mock.lastPublishArn);
+        assertEquals("publish: subject",            null,               mock.lastPublishSubject);
+        assertEquals("publish: body",               "message one",      mock.lastPublishMessage);
+
+        joinWriterThread();
+
+        assertEquals("shutdown: invocation count",  1,                  mock.shutdownInvocationCount);
+
+        internalLogger.assertInternalDebugLog("stopping log.writer.*");
+        internalLogger.assertInternalErrorLog();
+    }
 }

@@ -116,6 +116,12 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
     }
 
 
+    @Override
+    protected void stopAWSClient()
+    {
+        client.shutdown();
+    }
+
 //----------------------------------------------------------------------------
 //  Internal
 //----------------------------------------------------------------------------

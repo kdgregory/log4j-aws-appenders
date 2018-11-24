@@ -108,6 +108,13 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             && (numMessages <= CloudWatchConstants.MAX_BATCH_COUNT);
     }
 
+
+    @Override
+    protected void stopAWSClient()
+    {
+        client.shutdown();
+    }
+
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------

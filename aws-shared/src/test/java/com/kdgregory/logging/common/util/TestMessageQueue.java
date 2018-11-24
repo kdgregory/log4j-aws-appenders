@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -160,6 +161,47 @@ public class TestMessageQueue
 
 
     @Test
+    public void testInterruptDuringDequeue() throws Exception
+    {
+        final MessageQueue queue = new MessageQueue(1000, DiscardAction.oldest);
+        final AtomicReference<Object> lastDequeue = new AtomicReference<Object>();
+
+        Thread readerThread = new Thread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                for (int attempt = 0 ; attempt < 3 ; attempt++)
+                {
+                    lastDequeue.set(queue.dequeue(Long.MAX_VALUE));
+                }
+            }
+        });
+        readerThread.start();
+
+        // this step ensures that the reader thread is active
+        queue.enqueue(m1);
+        waitForReference(lastDequeue, m1, 2);
+        assertSame("after first enqueue, was able to retrieve", m1, lastDequeue.get());
+
+        // once we interrupt, dequeue() should return null
+        waitForReaderToBlock(readerThread, 2);
+        readerThread.interrupt();
+        waitForReference(lastDequeue, null, 2);
+        assertNull("after interrupt, retrieved null", lastDequeue.get());
+        assertFalse("interrupt status reset", readerThread.isInterrupted());
+
+        // this last enqueue ensures that the queue is still functional
+        queue.enqueue(m2);
+        waitForReference(lastDequeue, m2, 2);
+        assertSame("after second enqueue, was able to retrieve", m2, lastDequeue.get());
+
+        // this will hang if the reader hasn't processed 3 dequeues
+        readerThread.join();
+    }
+
+
+    @Test
     public void testDiscardNone() throws Exception
     {
         final int discardThreshold = 10;
@@ -251,5 +293,47 @@ public class TestMessageQueue
         assertEquals("queue size changed after next enqueue",   newDiscardThreshold,    queue.size());
         assertEquals("messages were deleted after enqueue",     newDiscardThreshold,    queue.toList().size());
         assertNotSame("oldest message was discarded",           originalOldestMessage,  queue.toList().get(0));
+    }
+
+//----------------------------------------------------------------------------
+//  Support code
+//----------------------------------------------------------------------------
+
+    /**
+     *  Waits until the queue is blocked inside the poll() function. It does
+     *  this by looking at the thread's stack trace. Note: this will break if
+     *  we switch to a different underlying queue type.
+     */
+    private static void waitForReaderToBlock(Thread thread, int secondsToWait)
+    throws Exception
+    {
+        for (int attempt = 0 ; attempt < (secondsToWait * 10) ; attempt++)
+        {
+            StackTraceElement[] stackTrace = thread.getStackTrace();
+            // we use indexed access to verify that poll() is not the bottom of the call chain (it should be position 4)
+            for (int ii = 1 ; ii < stackTrace.length ; ii++)
+            {
+                StackTraceElement elem = stackTrace[ii];
+                if (elem.getClassName().equals("java.util.concurrent.LinkedBlockingDeque") && elem.getMethodName().equals("poll"))
+                    return;
+                Thread.sleep(100);
+            }
+        }
+    }
+
+
+    /**
+     *  Waits for the passed AtomicReference to contain the desired value, checking
+     *  evey 100 milliseconds.
+     */
+    private static void waitForReference(AtomicReference<Object> reference, Object desiredValue, int secondsToWait)
+    throws Exception
+    {
+        for (int attempt = 0 ; attempt < (secondsToWait * 10) ; attempt++)
+        {
+            if (reference.get() == desiredValue)
+                return;
+            Thread.sleep(100);
+        }
     }
 }

@@ -19,6 +19,7 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.ClassUtil;
@@ -701,6 +702,34 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("stats: actual log stream name",           "bargle",                       stats.getActualLogStreamName());
 
         internalLogger.assertInternalDebugLog( ".*created client from factory.*" + getClass().getName() + ".*");
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testShutdown() throws Exception
+    {
+        // this test is the only place that we expicitly test shutdown logic, to avoid cluttering
+        // the "operation" tests; it's otherwise identical to the "existing group/stream" test
+
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+
+        // the immediate stop should interrupt waitForMessage, but there's no guarantee
+        writer.stop();
+
+        // the batch should still be processed
+        mock.allowWriterThread();
+
+        assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
+
+        joinWriterThread();
+
+        assertEquals("shutdown: invocation count",              1,                  mock.shutdownInvocationCount);
+
+        internalLogger.assertInternalDebugLog("stopping log.writer.*");
         internalLogger.assertInternalErrorLog();
     }
 }

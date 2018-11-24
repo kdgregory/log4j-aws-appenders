@@ -73,6 +73,7 @@ implements InvocationHandler
     public volatile int createStreamInvocationCount;
     public volatile int putRecordsInvocationCount;
     public volatile int increaseRetentionPeriodInvocationCount;
+    public volatile int shutdownInvocationCount;
 
     // arguments passed to the last describeStream call
     public volatile String describeStreamStreamName;
@@ -173,14 +174,15 @@ implements InvocationHandler
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
     {
-        if (method.getName().equals("describeStream"))
+        String methodName = method.getName();
+        if (methodName.equals("describeStream"))
         {
             describeStreamInvocationCount++;
             DescribeStreamRequest request = (DescribeStreamRequest)args[0];
             describeStreamStreamName = request.getStreamName();
             return describeStream(request);
         }
-        else if (method.getName().equals("createStream"))
+        else if (methodName.equals("createStream"))
         {
             createStreamInvocationCount++;
             CreateStreamRequest request = (CreateStreamRequest)args[0];
@@ -188,7 +190,7 @@ implements InvocationHandler
             createStreamShardCount = request.getShardCount();
             return createStream(request);
         }
-        else if (method.getName().equals("increaseStreamRetentionPeriod"))
+        else if (methodName.equals("increaseStreamRetentionPeriod"))
         {
             increaseRetentionPeriodInvocationCount++;
             IncreaseStreamRetentionPeriodRequest request = (IncreaseStreamRetentionPeriodRequest)args[0];
@@ -196,7 +198,7 @@ implements InvocationHandler
             increaseRetentionPeriodHours = request.getRetentionPeriodHours();
             return increaseStreamRetentionPeriod(request);
         }
-        else if (method.getName().equals("putRecords"))
+        else if (methodName.equals("putRecords"))
         {
             putRecordsInvocationCount++;
             allowWriterThread.acquire();
@@ -223,9 +225,15 @@ implements InvocationHandler
                 allowMainThread.release();
             }
         }
+        else if (methodName.equals("shutdown"))
+        {
+            shutdownInvocationCount++;
+            return null;
+        }
 
-        System.err.println("invocation handler called unexpectedly: " + method.getName());
-        throw new IllegalArgumentException("unexpected client call: " + method.getName());
+        // if nothing matches, fall through to here
+        System.err.println("invocation handler called unexpectedly: " + methodName);
+        throw new IllegalArgumentException("unexpected client call: " + methodName);
     }
 
 //----------------------------------------------------------------------------

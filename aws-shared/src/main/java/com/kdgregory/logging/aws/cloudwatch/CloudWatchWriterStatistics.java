@@ -13,6 +13,8 @@
 
 package com.kdgregory.logging.aws.cloudwatch;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 
 /**
@@ -29,6 +31,7 @@ implements CloudWatchWriterStatisticsMXBean
 {
     private volatile String  actualLogGroupName;
     private volatile String  actualLogStreamName;
+    private volatile AtomicInteger writerRaceRetries = new AtomicInteger(0);
 
 
     @Override
@@ -36,6 +39,7 @@ implements CloudWatchWriterStatisticsMXBean
     {
         return actualLogGroupName;
     }
+
 
     public void setActualLogGroupName(String actualLogGroupName)
     {
@@ -49,6 +53,7 @@ implements CloudWatchWriterStatisticsMXBean
         return actualLogStreamName;
     }
 
+
     public void setActualLogStreamName(String actualLogStreamName)
     {
         this.actualLogStreamName = actualLogStreamName;
@@ -59,5 +64,18 @@ implements CloudWatchWriterStatisticsMXBean
     public int getMessagesDiscardedByCurrentWriter()
     {
         return super.getMessagesDiscarded();
+    }
+
+
+    @Override
+    public int getWriterRaceRetries()
+    {
+        return writerRaceRetries.get();
+    }
+
+
+    public void updateWriterRaceRetries()
+    {
+        writerRaceRetries.incrementAndGet();
     }
 }

@@ -67,4 +67,14 @@ public interface CloudWatchWriterStatisticsMXBean
      *  Note that writer rotation (which can happen due to errors) will reset this.
      */
     int getMessagesDiscardedByCurrentWriter();
+
+
+    /**
+     *  Returns the number of retries due to <code>InvalidSequenceTokenException</code>
+     *  response from <code>PutLogEvents</code>. This exception will be thrown when
+     *  there is a race between two writers: both get the same sequence token but only
+     *  once can use it. This may happen when there are many instances that are started
+     *  at the same time or have a low batch delay.
+     */
+    int getWriterRaceRetries();
 }

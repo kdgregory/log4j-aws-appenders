@@ -445,6 +445,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         assertNull("statistics error message not set", stats.getLastErrorMessage());
 
+        assertEquals("stats: writer race retries",                      2,                      stats.getWriterRaceRetries());
+
         internalLogger.assertInternalDebugLog();
         internalLogger.assertInternalErrorLog();
         internalLogger.assertInternalErrorLogExceptionTypes();

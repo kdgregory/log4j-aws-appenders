@@ -144,7 +144,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         // times with a sleep before giving up (we could try forever but I want to
         // get back to the main loop in case there's a shutdown)
 
-        for (int ii = 0 ; ii < 4 ; ii++)
+        for (int ii = 0 ; ii < 10 ; ii++)
         {
             try
             {
@@ -155,8 +155,8 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             }
             catch (InvalidSequenceTokenException ex)
             {
-                // TODO - record this in stats
-                Utils.sleepQuietly(250);
+                stats.updateWriterRaceRetries();
+                Utils.sleepQuietly(100);
             }
             catch (Exception ex)
             {

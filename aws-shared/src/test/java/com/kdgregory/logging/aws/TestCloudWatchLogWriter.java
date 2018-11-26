@@ -375,7 +375,6 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     }
 
 
-
     @Test
     public void testBatchExceptionHandling() throws Exception
     {
@@ -409,6 +408,46 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         internalLogger.assertInternalDebugLog();
         internalLogger.assertInternalErrorLog("failed to send.*", "failed to send.*");
         internalLogger.assertInternalErrorLogExceptionTypes(TestingException.class, TestingException.class);
+    }
+
+
+
+    @Test
+    public void testInvalidSequenceTokenException() throws Exception
+    {
+        mock = new MockCloudWatchClient()
+        {
+            @Override
+            protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
+            {
+                if (putLogEventsInvocationCount < 3)
+                    throw new InvalidSequenceTokenException("race condition!");
+                else
+                    return super.putLogEvents(request);
+            }
+        };
+
+        createWriter();
+
+        // we need two trips to putLogEvents because the first actual write won't happen
+        // until the second
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        mock.allowWriterThread();
+        mock.allowWriterThread();
+        mock.allowWriterThread();
+
+        assertEquals("putLogEvents: invocation count",                  3,                      mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",              1,                      mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",                      "message one",          mock.mostRecentEvents.get(0).getMessage());
+
+        // no message should be recorded in stats or reported to logs
+
+        assertNull("statistics error message not set", stats.getLastErrorMessage());
+
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog();
+        internalLogger.assertInternalErrorLogExceptionTypes();
     }
 
 

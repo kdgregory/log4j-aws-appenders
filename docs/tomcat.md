@@ -22,21 +22,21 @@ the AWS appenders:
 When Tomcat undeploys an application, it essentially releases all references to that
 application's classes and data, and relies on the JVM garbage collector to remove the
 application from memory. However, threads started by the application can interfere with
-this process because they hold references to application objects, which in turn hold
-references to the application's class(es). For this reason, when Tomcat undeployes a 
-web application it examines each running thread to determine whether it was started
-by that application, and warns you if it finds any.
+this process: they hold references to application objects, which in turn hold references
+to the application's class(es), which prevent the JVM from collecting those classes. For
+this reason, when Tomcat undeploys a web application it examines each running thread to
+determine whether it was started by that application, and warns you if it finds any.
 
-If you use Log4J with a `FileAppender` or `ConsoleAppender`, there are no threads to
-shut down, so you don't need to take any explicit action when undeploying an application
-that uses logging. However, the AWS appenders use a background thread to communicate
-with AWS, and this background thread runs as long as the appender is alive. To stop it
-you need to explicitly shut down the Log4J framework.
+If you just use Log4J with a `FileAppender` or `ConsoleAppender`, there are no threads to
+shut down, so you don't need to take any explicit action when undeploying an application.
+However, the AWS appenders use a background thread to communicate with AWS, and this
+background thread runs as long as the appender is alive. To stop it you need to explicitly
+shut down the Log4J framework.
 
 
-## Solution #1: Use a `ContextListener`
+## Solution #1: Use a Context Listener
 
-[ContextListeners](https://docs.oracle.com/javaee/6/api/javax/servlet/ServletContextListener.html)
+[Context listeners](https://docs.oracle.com/javaee/6/api/javax/servlet/ServletContextListener.html)
 are classes that are invoked when an application is deployed or undeployed. To shut
 down Log4J requires a single line in the listener's `contextDestroyed()` method:
 

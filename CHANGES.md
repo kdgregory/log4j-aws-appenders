@@ -8,7 +8,9 @@
 * Eliminate use of ThreadLocal in JSON conversion.
   (also [#56](https://github.com/kdgregory/log4j-aws-appenders/issues/56))
 * CloudWatchLogWriter silently retries on `InvalidSequenceTokenException`,
-  which indicates a non-serious race condition between writers.
+  which indicates a non-serious race condition between writers. See
+  [this](docs/cloudwatch.md#invalidsequencetokenexception-and-logstream-throttling)
+  for more information.
   ([#59](https://github.com/kdgregory/log4j-aws-appenders/issues/59))
 * Add a web-app example, to demonstrate configuring and shutting down Log4J
   via `ContextListener` along with adding unique request IDs to the mapped

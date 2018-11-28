@@ -86,3 +86,43 @@ parameter, in concert with `rotationInterval`, controls how the appender switche
   The log is rotated at midnight UTC. As with hourly rotation, it is possible that some log messages
   will be written to the next day's log. If you use this mode, you should use the `date` or `timestamp`
   substitutions in your log stream name.
+
+
+## `InvalidSequenceTokenException` and Logstream Throttling
+
+Writing to CloudWatch Logs is a two step process: first you retrieve a sequence token, which identifies
+the spot to insert new entries, and then you call `PutLogEvents` with this token. These are separate
+API calls, which means that there's a race condition: two processes can get the same sequence token and
+attempt to write. If this happens, only one succeeds; the other receives `InvalidSequenceTokenException`.
+
+This can happen in any deployment, but is more likely if large numbers of applications are writing to
+the same logstream. In the case of the appenders library, it is extremely likely if you start multiple
+writers at the same time, with the same batch delay (ie, with the same logging config). Which happens
+in Hadoop or Spark clusters.
+
+As with any batch-level error, the appender will try again; there will be no message loss unless the
+error happens so frequently that the appender consumes its entire message queue (which is extremely
+unlikely, as any given process is likely to win the race). However, prior to release 2.0.1, the
+appender would report this exception as an error, which would be distracting.
+
+In the 2.0.1 release, this exception is handled by retrying the batch after a short delay, without
+requeueing the messages. It does not report an error, although it does track the number of retries
+and reports that statistic via [JMX](jmx.md). The retry process also reduces the likelihood of the
+exception, as the retry delays will change the times that the appenders attempt to write to
+CloudWatch (ie, instead of all appenders writing at start + 2000 milliseconds, one will write at
+start + 2000, another will write at start + 2100, and so on).
+
+That said, having a large number of writers feeding data to the same logstream is not a good idea,
+because each stream is limited to 5 writes per second. Again, the appenders will retry, so you
+won't lose log messages, but it would be better to avoid the collisions entirely.
+
+One approach is to use separate logstream names. The CloudWatch Logs console allows you to search
+across all streams within a log group, so there is little benefit to combining logs from multiple
+processes. To make this happen, use a [substitution](substitutions.md) in the stream name. For
+example, `mystream-{pid}` will include the process ID. If you have multiple independent runs of
+your application, `mystream-{startupTimestamp}-{pid}` will order them in the console list. 
+
+Another alternative, and one that I think is better (albeit more expensive), is to use the Kinesis
+appender, which feeds a [logging pipeline](https://www.kdgregory.com/index.php?page=aws.loggingPipeline)
+that ends up in Elasticsearch. You can scale each part of that pipeline to match your needs, and
+attach arbitrary tags to the log entries using [JsonLayout](jsonlayout.md).

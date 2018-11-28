@@ -1,4 +1,6 @@
-There are three projects in this repository:
+# Building It Yourself
+
+There are multiple projects in this repository:
 
 * [aws-shared](../aws-shared): the AWS log-writers and supporting code that would be
   used by any appender implementation.
@@ -6,30 +8,25 @@ There are three projects in this repository:
 * [log4j1-integration-tests](../log4j1-integration-tests): a set of integration tests
   for the Log4J 1.x appenders. These are in a separate project so that they can be
   can be run as desired, rather than as part of every build.
-* [log4j1-example](../log4j1-example): an example program using all of the Log4J 1.x
-  appenders. It includes CloudFormation templates to create destinations.
-
-
-## Building
+* [examples](../examples): example programs that demonstrate using the appenders.
 
 All sub-projects are built using [Apache Maven](http://maven.apache.org/). The build commands
 differ depending on project:
 
-* appenders: `mvn clean install`
-* tests: `mvn clean test`
-* example: `mvn clean package`
+* appenders (including aws-shared): `mvn clean install` run from the project root
+* integration tests: `mvn clean test`
+* examples: `mvn clean package` (but see individual documentation)
 
-**Beware:** the `tests` project creates AWS resources and does not delete them. You will
-be charged for those resources, including a per-hour charge for the Kinesis streams. The
-`example` project also incurs AWS charges while running, and for any resources that you
-do not delete.
+**Beware:** the integration tests and examples create resources and does not delete them.
+You will be charged for those resources, including a per-hour charge for the Kinesis streams.
+To avoid charges, be sure to delete all resources when they're no longer needed.
 
 
 ## Source Control
 
 The `master` branch is intended for "potentially releasable" versions. Commits on master
 are functional, but may not be "complete" (for some definition of that word). They may be
-snapshot or release builds. Master will never be rebased; once a commit is made there it's
+snapshot or release builds. Master will never be rebased: once a commit is made there it's
 part of history for better or worse.
 
 All development takes place on a branch. Branches are either feature branches, in which
@@ -39,8 +36,10 @@ I often make "checkpoint" commits to save my work and then rebase them into a si
 Once a development branch is merged it is deleted.
 
 Features are merged into either a release-prep branch or master, using a pull request and
-squash merge. If you want to see the individual commits that went into a branch, you can
-look at the closed PR.
+squash merge. If multiple independent features are combined into a release, each feature
+commit is preserved in master (note that major functionality, such as a new logging framework,
+may be considered a single feature). If you want to see the individual commits that went into
+a branch, you can look at the closed PR.
 
 Each "release" version is tagged with `release-MAJOR.MINOR.PATCH`.
 

@@ -1,6 +1,6 @@
 # Change History
 
-## 2.0.1 (TBD)
+## 2.0.1 (2018-11-28)
 
 * Bugfix: was not limiting wait at shutdown, leaving writer thread dangling
   after app-server redeploy.

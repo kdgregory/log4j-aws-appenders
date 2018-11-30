@@ -276,7 +276,7 @@ public class KinesisAppenderIntegrationTest
 
 
     /**
-     *  Loads the test-specific Log4J configuration and resets the environment.
+     *  Loads the test-specific Logback configuration and resets the environment.
      */
     public void init(String testName) throws Exception
     {

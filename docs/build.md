@@ -17,8 +17,8 @@ differ depending on project:
 * integration tests: `mvn clean test`
 * examples: `mvn clean package` (but see individual documentation)
 
-**Beware:** the integration tests and examples create resources and does not delete them.
-You will be charged for those resources, including a per-hour charge for the Kinesis streams.
+**Beware:** the integration tests and examples create resources and do not delete them. You
+will be charged for those resources, including a per-hour charge for the Kinesis streams.
 To avoid charges, be sure to delete all resources when they're no longer needed.
 
 

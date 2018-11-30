@@ -754,7 +754,10 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         assertEquals("shutdown: invocation count",          1,                  mock.shutdownInvocationCount);
 
-        internalLogger.assertInternalDebugLog("stopping log.writer.*");
+        internalLogger.assertInternalDebugLog(
+            "log writer starting.*",
+            "log writer initialization complete.*",
+            "stopping log.writer.*");
         internalLogger.assertInternalErrorLog();
     }
 }

@@ -459,7 +459,11 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         assertEquals("stats: writer race retries",                      2,                      stats.getWriterRaceRetries());
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog(
+            "log writer starting.*",
+            "using existing.*log group.*",
+            "using existing.*log stream.*",
+            "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
         internalLogger.assertInternalErrorLogExceptionTypes();
     }
@@ -797,7 +801,12 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         assertEquals("shutdown: invocation count",              1,                  mock.shutdownInvocationCount);
 
-        internalLogger.assertInternalDebugLog("stopping log.writer.*");
+        internalLogger.assertInternalDebugLog(
+            "log writer starting.*",
+            "using existing.*log group.*",
+            "using existing.*log stream.*",
+            "log writer initialization complete.*",
+            "stopping log.writer.*");
         internalLogger.assertInternalErrorLog();
     }
 }

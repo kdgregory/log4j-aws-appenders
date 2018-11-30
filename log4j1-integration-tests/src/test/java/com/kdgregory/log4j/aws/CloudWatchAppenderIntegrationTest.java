@@ -78,10 +78,10 @@ public class CloudWatchAppenderIntegrationTest
         localLogger.info("smoketest: all messages written; sleeping to give writers chance to run");
         Thread.sleep(5000);
 
-        assertMessages(logGroupName, LOGSTREAM_BASE + "-1", rotationCount);
-        assertMessages(logGroupName, LOGSTREAM_BASE + "-2", rotationCount);
-        assertMessages(logGroupName, LOGSTREAM_BASE + "-3", rotationCount);
-        assertMessages(logGroupName, LOGSTREAM_BASE + "-4", numMessages % rotationCount);
+        testHelper.assertMessages(LOGSTREAM_BASE + "-1", rotationCount);
+        testHelper.assertMessages(LOGSTREAM_BASE + "-2", rotationCount);
+        testHelper.assertMessages(LOGSTREAM_BASE + "-3", rotationCount);
+        testHelper.assertMessages(LOGSTREAM_BASE + "-4", numMessages % rotationCount);
 
         CloudWatchWriterStatistics appenderStats = appender.getAppenderStatistics();
         assertEquals("actual log group name, from statistics",  "AppenderIntegrationTest-smoketest",    appenderStats.getActualLogGroupName());
@@ -126,10 +126,10 @@ public class CloudWatchAppenderIntegrationTest
         localLogger.info("multi-thread/single-appender: all threads started; sleeping to give writer chance to run");
         Thread.sleep(3000);
 
-        assertMessages(logGroupName, LOGSTREAM_BASE + "-1", rotationCount);
-        assertMessages(logGroupName, LOGSTREAM_BASE + "-2", rotationCount);
-        assertMessages(logGroupName, LOGSTREAM_BASE + "-3", rotationCount);
-        assertMessages(logGroupName, LOGSTREAM_BASE + "-4", (messagesPerThread * writers.length) % rotationCount);
+        testHelper.assertMessages(LOGSTREAM_BASE + "-1", rotationCount);
+        testHelper.assertMessages(LOGSTREAM_BASE + "-2", rotationCount);
+        testHelper.assertMessages(LOGSTREAM_BASE + "-3", rotationCount);
+        testHelper.assertMessages(LOGSTREAM_BASE + "-4", (messagesPerThread * writers.length) % rotationCount);
 
         assertFalse("client factory used", localFactoryUsed);
 
@@ -153,9 +153,9 @@ public class CloudWatchAppenderIntegrationTest
         localLogger.info("multi-thread/multi-appender/same destination: all threads started; sleeping to give writer chance to run");
         Thread.sleep(3000);
 
-        assertMessages(logGroupName, LOGSTREAM_BASE + "-1", messagesPerThread);
-        assertMessages(logGroupName, LOGSTREAM_BASE + "-2", messagesPerThread);
-        assertMessages(logGroupName, LOGSTREAM_BASE + "-3", messagesPerThread);
+        testHelper.assertMessages(LOGSTREAM_BASE + "-1", messagesPerThread);
+        testHelper.assertMessages(LOGSTREAM_BASE + "-2", messagesPerThread);
+        testHelper.assertMessages(LOGSTREAM_BASE + "-3", messagesPerThread);
 
         assertFalse("client factory used", localFactoryUsed);
 
@@ -186,7 +186,7 @@ public class CloudWatchAppenderIntegrationTest
         localLogger.info("multi-thread/multi-appender/different destination: all threads started; sleeping to give writer chance to run");
         Thread.sleep(20000);    // this sleep assumes that each batch will be retried once
 
-        assertMessages(logGroupName, LOGSTREAM_BASE, messagesPerThread * 10);
+        testHelper.assertMessages(LOGSTREAM_BASE, messagesPerThread * 10);
 
         int messageCountFromStats = 0;
         int messagesDiscardedFromStats = 0;
@@ -230,7 +230,6 @@ public class CloudWatchAppenderIntegrationTest
     @Test
     public void testLogstreamDeletionAndRecreation() throws Exception
     {
-        final String logStreamName = LOGSTREAM_BASE + "1";
         final int numMessages      = 100;
 
         init("testLogstreamDeletionAndRecreation");
@@ -244,10 +243,10 @@ public class CloudWatchAppenderIntegrationTest
         localLogger.info("testLogstreamDeletionAndRecreation: first batch of messages written; sleeping to give writer chance to run");
         Thread.sleep(1000);
 
-        testHelper.assertMessages(logStreamName, numMessages);
+        testHelper.assertMessages(LOGSTREAM_BASE, numMessages);
 
         localLogger.info("testLogstreamDeletionAndRecreation: deleting stream");
-        testHelper.deleteLogStream(logStreamName);
+        testHelper.deleteLogStream(LOGSTREAM_BASE);
 
         (new MessageWriter(testLogger, numMessages)).run();
 
@@ -255,7 +254,7 @@ public class CloudWatchAppenderIntegrationTest
         Thread.sleep(2000);
 
         // the original batch of messages will be gone, so we can assert the new batch was written
-        testHelper.assertMessages(logStreamName, numMessages);
+        testHelper.assertMessages(LOGSTREAM_BASE, numMessages);
 
         assertTrue("statistics has error message", appender.getAppenderStatistics().getLastErrorMessage().contains("log stream missing"));
 

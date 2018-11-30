@@ -21,8 +21,6 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.StringUtil;
-import net.sf.kdgcommons.test.StringAsserts;
-
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import org.slf4j.LoggerFactory;
@@ -108,9 +106,9 @@ public class TestCloudWatchAppender
 
 
     @Test
-    public void testAppend() throws Exception
+    public void testLifecycle() throws Exception
     {
-        initialize("TestCloudWatchAppender/testAppend.xml");
+        initialize("TestCloudWatchAppender/testLifecycle.xml");
 
         MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
         MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
@@ -139,7 +137,7 @@ public class TestCloudWatchAppender
         assertTrue("message 1 timestamp >= initial timestamp", message1.getTimestamp() >= initialTimestamp);
         assertTrue("message 1 timestamp <= batch timestamp",   message1.getTimestamp() <= finalTimestamp);
 
-        StringAsserts.assertRegex(
+        assertRegex(
                 "message 1 follows layout: " + message1.getMessage(),
                 "20[12][0-9] TestCloudWatchAppender first message",
                 message1.getMessage());
@@ -154,13 +152,24 @@ public class TestCloudWatchAppender
 
         appender.setBatchDelay(1234567);
         assertEquals("writer batch delay propagated", 1234567, writer.batchDelay);
+
+        // finish off the life-cycle
+
+        assertTrue("appender not closed before shutdown", appender.isStarted());
+        assertFalse("writer still running before shutdown", writer.stopped);
+
+        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
+        context.stop();
+
+        assertFalse("appender closed after shutdown", appender.isStarted());
+        assertTrue("writer stopped after shutdown", writer.stopped);
     }
 
 
     @Test
     public void testStopAppender() throws Exception
     {
-        initialize("TestCloudWatchAppender/testAppend.xml");
+        initialize("TestCloudWatchAppender/testLifecycle.xml");
 
         MockCloudWatchWriter writer = appender.getMockWriter();
 

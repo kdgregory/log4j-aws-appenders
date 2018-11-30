@@ -22,15 +22,13 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import net.sf.kdgcommons.lang.StringUtil;
+import static net.sf.kdgcommons.test.StringAsserts.*;
+
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
-
-import net.sf.kdgcommons.lang.StringUtil;
-import net.sf.kdgcommons.test.StringAsserts;
-
-import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.cloudwatch.TestableCloudWatchAppender;
@@ -164,7 +162,7 @@ public class TestCloudWatchAppender
         assertTrue("message 1 timestamp >= initial timestamp", message1.getTimestamp() >= initialTimestamp);
         assertTrue("message 1 timestamp <= batch timestamp",   message1.getTimestamp() <= finalTimestamp);
 
-        StringAsserts.assertRegex(
+        assertRegex(
                 "message 1 follows layout: " + message1.getMessage(),
                 "20[12][0-9] TestCloudWatchAppender first message",
                 message1.getMessage());

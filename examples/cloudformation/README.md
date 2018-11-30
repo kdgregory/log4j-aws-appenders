@@ -5,7 +5,7 @@ along with their permissions. All of the examples write to the same destinations
   sure to delete the stacks when you are done.
 
 
-## CloudWatch
+## CloudWatch Logs
 
 [This template](cloudwatch.json) creates the following resources:
 

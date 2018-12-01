@@ -1,0 +1,19 @@
+<configuration debug="false">
+
+  <appender name="SNS" class="com.kdgregory.logback.testhelpers.sns.ThrowingSNSAppender">
+    <!-- tests default properties as well; note that ARN is invalid -->
+    <topicArn>arn-example</topicArn>
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <pattern>%msg</pattern>
+    </layout>
+  </appender>
+
+  <root level="off">
+    <appender-ref ref="ch.qos.logback.core.helpers.NOPAppender" />
+  </root>
+
+  <logger name="com.kdgregory.logback.aws.TestSNSAppender" level="debug">
+    <appender-ref ref="SNS" />
+  </logger>
+
+</configuration>

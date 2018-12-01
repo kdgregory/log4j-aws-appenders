@@ -1,0 +1,19 @@
+<configuration debug="false">
+
+  <appender name="SNS" class="com.kdgregory.logback.testhelpers.sns.TestableSNSAppender">
+    <topicName>name-{date}</topicName>
+    <topicArn>arn-{date}</topicArn>
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <pattern>%date{yyyy} %logger{0} %msg</pattern>
+    </layout>
+  </appender>
+
+  <root level="off">
+    <appender-ref ref="ch.qos.logback.core.helpers.NOPAppender" />
+  </root>
+
+  <logger name="com.kdgregory.logback.aws.TestSNSAppender" level="debug">
+    <appender-ref ref="SNS" />
+  </logger>
+
+</configuration>

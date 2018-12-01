@@ -1,11 +1,11 @@
-<configuration debug="false">
+<configuration debug="true">
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-    
+
     <appender name="CLOUDWATCH" class="com.kdgregory.logback.aws.CloudWatchAppender">
         <logGroup>AppenderExample</logGroup>
         <logStream>{date}-{hostname}-{pid}</logStream>
@@ -14,7 +14,6 @@
         </layout>
     </appender>
 
-<!--
     <appender name="KINESIS" class="com.kdgregory.logback.aws.KinesisAppender">
         <streamName>AppenderExample</streamName>
         <layout class="com.kdgregory.logback.aws.JsonLayout">
@@ -23,7 +22,19 @@
             <tags>applicationName=Example,runDate={date}</tags>
         </layout>
     </appender>
--->
+
+    <appender name="SNS" class="com.kdgregory.logback.aws.SNSAppender">
+        <topicName>AppenderExample</topicName>
+        <subject>Error from logging example</subject>
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%d{HH:mm:ss.SSS} %logger{36} - %msg%n</pattern>
+        </layout>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
 
     <root level="warn">
         <appender-ref ref="CONSOLE" />
@@ -31,9 +42,8 @@
 
     <logger name="com.kdgregory.logback.aws.example" level="debug">
         <appender-ref ref="CLOUDWATCH" />
-<!--
         <appender-ref ref="KINESIS" />
--->
+        <appender-ref ref="SNS" />
     </logger>
 
 </configuration>

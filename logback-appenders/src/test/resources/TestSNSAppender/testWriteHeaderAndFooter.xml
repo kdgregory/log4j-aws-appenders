@@ -1,0 +1,20 @@
+<configuration debug="false">
+
+  <appender name="SNS" class="com.kdgregory.logback.testhelpers.sns.TestableSNSAppender">
+    <topicName>example</topicName>
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <pattern>%msg</pattern>
+      <fileHeader>File Header</fileHeader>
+      <fileFooter>File Footer</fileFooter>
+    </layout>
+  </appender>
+
+  <root level="off">
+    <appender-ref ref="ch.qos.logback.core.helpers.NOPAppender" />
+  </root>
+
+  <logger name="com.kdgregory.logback.aws.TestSNSAppender" level="debug">
+    <appender-ref ref="SNS" />
+  </logger>
+
+</configuration>

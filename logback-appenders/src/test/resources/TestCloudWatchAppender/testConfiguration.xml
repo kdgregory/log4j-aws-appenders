@@ -1,5 +1,7 @@
 <configuration debug="false">
 
+  <root level="off"/>
+
   <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
     <logGroup>argle</logGroup>
     <logStream>bargle</logStream>
@@ -15,10 +17,6 @@
       <pattern>%msg</pattern>
     </layout>
   </appender>
-
-  <root level="off">
-    <appender-ref ref="ch.qos.logback.core.helpers.NOPAppender" />
-  </root>
 
   <logger name="com.kdgregory.logback.aws.TestCloudWatchAppender" level="debug">
     <appender-ref ref="CLOUDWATCH" />

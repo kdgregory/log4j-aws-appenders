@@ -1,15 +1,13 @@
 <configuration debug="false">
 
+  <root level="off"/>
+
   <appender name="KINESIS" class="com.kdgregory.logback.testhelpers.kinesis.TestableKinesisAppender">
     <streamName>argle-{pid}</streamName>
     <layout class="ch.qos.logback.classic.PatternLayout">
       <pattern>%date{yyyy} %logger{0} %msg</pattern>
     </layout>
   </appender>
-
-  <root level="off">
-    <appender-ref ref="ch.qos.logback.core.helpers.NOPAppender" />
-  </root>
 
   <logger name="com.kdgregory.logback.aws.TestKinesisAppender" level="debug">
     <appender-ref ref="KINESIS" />

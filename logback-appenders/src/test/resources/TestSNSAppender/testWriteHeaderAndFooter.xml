@@ -1,5 +1,7 @@
 <configuration debug="false">
 
+  <root level="off"/>
+
   <appender name="SNS" class="com.kdgregory.logback.testhelpers.sns.TestableSNSAppender">
     <topicName>example</topicName>
     <layout class="ch.qos.logback.classic.PatternLayout">
@@ -8,10 +10,6 @@
       <fileFooter>File Footer</fileFooter>
     </layout>
   </appender>
-
-  <root level="off">
-    <appender-ref ref="ch.qos.logback.core.helpers.NOPAppender" />
-  </root>
 
   <logger name="com.kdgregory.logback.aws.TestSNSAppender" level="debug">
     <appender-ref ref="SNS" />

@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws;
+package com.kdgregory.logback.aws;
+
+import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import java.net.URL;
 import java.util.List;
@@ -22,18 +24,20 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
-
-import net.sf.kdgcommons.lang.ClassUtil;
-import net.sf.kdgcommons.lang.StringUtil;
-import static net.sf.kdgcommons.test.StringAsserts.*;
-
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.sf.kdgcommons.lang.ClassUtil;
+import net.sf.kdgcommons.lang.StringUtil;
 
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
@@ -70,7 +74,7 @@ public class SNSAppenderIntegrationTest
     }
 
 //----------------------------------------------------------------------------
-//  Testcases
+//  Tests
 //----------------------------------------------------------------------------
 
     @Test
@@ -81,8 +85,8 @@ public class SNSAppenderIntegrationTest
         init("smoketestByArn", true);
         localLogger.info("smoketestByArn: starting");
 
-        Logger testLogger = Logger.getLogger("TestLogger");
-        SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
+        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
+        SNSAppender<ILoggingEvent> appender = (SNSAppender<ILoggingEvent>)testLogger.getAppender("test");
         SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
 
         (new MessageWriter(testLogger, numMessages)).run();
@@ -93,7 +97,7 @@ public class SNSAppenderIntegrationTest
         assertEquals("number of messages", numMessages, messages.size());
         testHelper.assertMessageContent(messages);
 
-        assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),      appenderStats.getActualTopicName());
+        assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),   appenderStats.getActualTopicName());
         assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       appenderStats.getActualTopicArn());
         assertEquals("messages written, from stats",        numMessages,                    appenderStats.getMessagesSent());
 
@@ -111,8 +115,10 @@ public class SNSAppenderIntegrationTest
         init("smoketestByName", true);
         localLogger.info("smoketestByName: starting");
 
-        Logger testLogger = Logger.getLogger("TestLogger");
-        SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
+        testHelper.createTopicAndQueue();
+
+        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
+        SNSAppender<ILoggingEvent> appender = (SNSAppender<ILoggingEvent>)testLogger.getAppender("test");
         SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
 
         (new MessageWriter(testLogger, numMessages)).run();
@@ -136,19 +142,15 @@ public class SNSAppenderIntegrationTest
     @Test
     public void testTopicMissingAutoCreate() throws Exception
     {
-        final int numMessages = 11;
-
         init("testTopicMissingAutoCreate", false);
         localLogger.info("testAutoCreate: starting");
 
-        Logger testLogger = Logger.getLogger("TestLogger");
-        SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
+        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
+        SNSAppender<ILoggingEvent> appender = (SNSAppender<ILoggingEvent>)testLogger.getAppender("test");
         SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
 
-        (new MessageWriter(testLogger, numMessages)).run();
-
-        // we need to spin until both the appender and writer are initialized, both
-        // triggered by writing messages
+        // writer initialization is happening in a background thread; we need to spin until
+        // it's done
 
         SNSLogWriter writer = null;
         for (int ii = 0 ; ii < 60 ; ii++)
@@ -172,7 +174,6 @@ public class SNSAppenderIntegrationTest
 
         assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),      appenderStats.getActualTopicName());
         assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       appenderStats.getActualTopicArn());
-        assertEquals("messages written, from stats",        numMessages,                    appenderStats.getMessagesSent());
 
         localLogger.info("testAutoCreate: finished");
     }
@@ -181,29 +182,12 @@ public class SNSAppenderIntegrationTest
     @Test
     public void testTopicMissingNoAutoCreate() throws Exception
     {
-        final int numMessages = 11;
-
         init("testTopicMissingNoAutoCreate", false);
         localLogger.info("testTopicMissingNoAutoCreate: starting");
 
-        Logger testLogger = Logger.getLogger("TestLogger");
-        SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
+        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
+        SNSAppender<ILoggingEvent> appender = (SNSAppender<ILoggingEvent>)testLogger.getAppender("test");
         SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
-
-        (new MessageWriter(testLogger, numMessages)).run();
-
-        // since we didn't hook a queue up to the topic we can't actually look at the messages
-        // we also have to spin-loop on the appender to determine when it's been initialized
-
-        SNSLogWriter writer = null;
-        for (int ii = 0 ; ii < 60 ; ii++)
-        {
-            writer = ClassUtil.getFieldValue(appender, "writer", SNSLogWriter.class);
-            if (writer != null)
-                break;
-            Thread.sleep(1000);
-        }
-        assertNotNull("writer was created", writer);
 
         // if we can't create the topic then initialization fails, so we'll spin looking for
         // an error to be reported via statistics
@@ -224,7 +208,6 @@ public class SNSAppenderIntegrationTest
         // note: if we don't initialize, we don't update name/ARN in statistics
         assertEquals("actual topic name, from statistics",  null,           appenderStats.getActualTopicName());
         assertEquals("actual topic ARN, from statistics",   null,           appenderStats.getActualTopicArn());
-        assertEquals("messages written, from stats",        0,              appenderStats.getMessagesSent());
 
         localLogger.info("testTopicMissingNoAutoCreate: finished");
     }
@@ -240,8 +223,8 @@ public class SNSAppenderIntegrationTest
         init("testMultiThread", true);
         localLogger.info("testMultiThread: starting");
 
-        Logger testLogger = Logger.getLogger("TestLogger");
-        SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
+        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
+        SNSAppender<ILoggingEvent> appender = (SNSAppender<ILoggingEvent>)testLogger.getAppender("test");
         SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
 
         for (int ii = 0 ; ii < numThreads ; ii++)
@@ -255,7 +238,7 @@ public class SNSAppenderIntegrationTest
         assertEquals("number of messages", totalMessages, messages.size());
         testHelper.assertMessageContent(messages, "Example");
 
-        assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),   appenderStats.getActualTopicName());
+        assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),      appenderStats.getActualTopicName());
         assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       appenderStats.getActualTopicArn());
         assertEquals("messages written, from stats",        totalMessages,                  appenderStats.getMessagesSent());
 
@@ -273,12 +256,12 @@ public class SNSAppenderIntegrationTest
         init("testMultiAppender", true);
         localLogger.info("testMultiAppender: starting");
 
-        Logger testLogger = Logger.getLogger("TestLogger");
+        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
 
-        SNSAppender appender1 = (SNSAppender)testLogger.getAppender("test1");
+        SNSAppender<ILoggingEvent> appender1 = (SNSAppender<ILoggingEvent>)testLogger.getAppender("test1");
         SNSWriterStatistics stats1 = appender1.getAppenderStatistics();
 
-        SNSAppender appender2 = (SNSAppender)testLogger.getAppender("test2");
+        SNSAppender<ILoggingEvent> appender2 = (SNSAppender<ILoggingEvent>)testLogger.getAppender("test2");
         SNSWriterStatistics stats2 = appender2.getAppenderStatistics();
 
         (new MessageWriter(testLogger, numMessages)).run();
@@ -327,7 +310,7 @@ public class SNSAppenderIntegrationTest
 
 
     /**
-     *  The static client factory used by smoketestByArn()
+     *  This function is used as a client factory by the smoketest.
      */
     public static AmazonSNS createClient()
     {
@@ -339,27 +322,26 @@ public class SNSAppenderIntegrationTest
     /**
      *  Loads the test-specific Log4J configuration and resets the environment.
      */
-    public void init(String testName, boolean createTopic)
-    throws Exception
+    public void init(String testName, boolean createTopic) throws Exception
     {
-        // TODO - this currently causes Log4J to complain because it's not yet configured
-        //        but the AWS client is writing logs; perhaps use a bogus logger config?
-
         testHelper = new SNSTestHelper(snsClient, sqsClient);
 
-        // we'll create the topic here for consistency with other frameworks
+        // if we're going to create the topic we must do it before initializing the logging system
         if (createTopic)
         {
             testHelper.createTopicAndQueue();
         }
 
-        String propertiesName = "SNSAppenderIntegrationTest/" + testName + ".properties";
+        String propertiesName = "SNSAppenderIntegrationTest/" + testName + ".xml";
         URL config = ClassLoader.getSystemResource(propertiesName);
         assertNotNull("missing configuration: " + propertiesName, config);
 
-        LogManager.resetConfiguration();
-        PropertyConfigurator.configure(config);
+        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
+        context.reset();
+        JoranConfigurator configurator = new JoranConfigurator();
+        configurator.setContext(context);
+        configurator.doConfigure(config);
 
-        localLogger = Logger.getLogger(getClass());
+        localLogger = LoggerFactory.getLogger(getClass());
     }
 }

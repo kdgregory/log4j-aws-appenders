@@ -21,11 +21,13 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.apache.log4j.MDC;
 import org.apache.log4j.PropertyConfigurator;
 
 import net.sf.kdgcommons.lang.ClassUtil;
@@ -41,18 +43,32 @@ import com.kdgregory.logging.testhelpers.KinesisTestHelper.RetrievedRecord;
 
 public class KinesisAppenderIntegrationTest
 {
-    private Logger localLogger;
+    // single client is shared by all tests
+    private static AmazonKinesis kinesisClient;
+
     KinesisTestHelper testHelper;
 
+    // this will be set by init() after the logging framework has been initialized
+    private Logger localLogger;
+
+    // this is only set by smoketest
     private static boolean localFactoryUsed;
 
 //----------------------------------------------------------------------------
 //  JUnit Scaffolding
 //----------------------------------------------------------------------------
 
+    @BeforeClass
+    public static void beforeClass()
+    {
+        kinesisClient = AmazonKinesisClientBuilder.defaultClient();
+    }
+
+
     @Before
     public void setUp()
     {
+        MDC.clear();
         localFactoryUsed = false;
     }
 
@@ -69,14 +85,14 @@ public class KinesisAppenderIntegrationTest
         final int numMessages = 1001;
 
         init("smoketest");
-        localLogger.info("smoketest: starting");
+        localLogger.info("starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
         KinesisAppender appender = (KinesisAppender)testLogger.getAppender("test");
 
         (new MessageWriter(testLogger, numMessages)).run();
 
-        localLogger.info("smoketest: reading messages");
+        localLogger.info("reading messages");
         List<RetrievedRecord> messages = testHelper.retrieveAllMessages(numMessages);
 
         testHelper.assertMessages(messages, 1, numMessages, "test");
@@ -84,10 +100,11 @@ public class KinesisAppenderIntegrationTest
         testHelper.assertShardCount(3);
         testHelper.assertRetentionPeriod(48);
 
-        assertTrue("client factory used", localFactoryUsed);
+        assertTrue("client factory should have been invoked", localFactoryUsed);
+
         testHelper.assertStats(appender.getAppenderStatistics(), numMessages);
 
-        localLogger.info("smoketest: finished");
+        localLogger.info("finished");
     }
 
 
@@ -97,7 +114,7 @@ public class KinesisAppenderIntegrationTest
         int messagesPerThread = 500;
 
         init("testMultipleThreadsSingleAppender");
-        localLogger.info("multi-thread/single-appender: starting");
+        localLogger.info("starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
 
@@ -113,7 +130,7 @@ public class KinesisAppenderIntegrationTest
         MessageWriter.runOnThreads(writers);
         int expectedMessages = writers.length * messagesPerThread;
 
-        localLogger.info("multi-thread/single-appender: reading messages");
+        localLogger.info("reading messages");
         List<RetrievedRecord> messages = testHelper.retrieveAllMessages(expectedMessages);
 
         testHelper.assertMessages(messages, writers.length, messagesPerThread * writers.length, "test");
@@ -124,9 +141,9 @@ public class KinesisAppenderIntegrationTest
         testHelper.assertShardCount(2);
         testHelper.assertRetentionPeriod(24);
 
-        assertFalse("client factory used", localFactoryUsed);
+        assertFalse("client factory should not have been invoked", localFactoryUsed);
 
-        localLogger.info("multi-thread/single-appender: finished");
+        localLogger.info("finished");
     }
 
 
@@ -136,7 +153,7 @@ public class KinesisAppenderIntegrationTest
         int messagesPerThread = 500;
 
         init("testMultipleThreadsMultipleAppendersDistinctPartitions");
-        localLogger.info("multi-thread/multi-appender: starting");
+        localLogger.info("starting");
 
         Logger testLogger1 = Logger.getLogger("TestLogger1");
         Logger testLogger2 = Logger.getLogger("TestLogger2");
@@ -155,7 +172,7 @@ public class KinesisAppenderIntegrationTest
         MessageWriter.runOnThreads(writers);
         int expectedMessages = writers.length * messagesPerThread;
 
-        localLogger.info("multi-thread/multi-appender: reading messages");
+        localLogger.info("reading messages");
         List<RetrievedRecord> messages = testHelper.retrieveAllMessages(expectedMessages);
 
         testHelper.assertMessages(messages, writers.length, messagesPerThread * 2, "test1", "test2", "test3");
@@ -166,9 +183,9 @@ public class KinesisAppenderIntegrationTest
         testHelper.assertShardCount(2);
         testHelper.assertRetentionPeriod(24);
 
-        assertFalse("client factory used", localFactoryUsed);
+        assertFalse("client factory should not have been invoked", localFactoryUsed);
 
-        localLogger.info("multi-thread/multi-appender: finished");
+        localLogger.info("finished");
     }
 
 
@@ -178,13 +195,13 @@ public class KinesisAppenderIntegrationTest
         final int numMessages = 250;
 
         init("testRandomPartitionKeys");
-        localLogger.info("testRandomPartitionKeys: starting");
+        localLogger.info("starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
 
         (new MessageWriter(testLogger, numMessages)).run();
 
-        localLogger.info("testRandomPartitionKeys: reading messages");
+        localLogger.info("reading messages");
         List<RetrievedRecord> messages = testHelper.retrieveAllMessages(numMessages);
 
         testHelper.assertShardCount(2);
@@ -205,7 +222,7 @@ public class KinesisAppenderIntegrationTest
         assertTrue("expected roughly " + numMessages + " partition keys (was: " + partitionKeys.size() + ")",
                    (partitionKeys.size() > numMessages - 20) && (partitionKeys.size() < numMessages + 20));
 
-        localLogger.info("testRandomPartitionKeys: finished");
+        localLogger.info("finished");
     }
 
 
@@ -216,14 +233,14 @@ public class KinesisAppenderIntegrationTest
         final int numMessages = 1001;
 
         init("testFailsIfNoStreamPresent");
-        localLogger.info("testFailsIfNoStreamPresent: starting");
+        localLogger.info("starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
         KinesisAppender appender = (KinesisAppender)testLogger.getAppender("test");
 
         (new MessageWriter(testLogger, numMessages)).run();
 
-        localLogger.info("testFailsIfNoStreamPresent: waiting for writer initialization to finish");
+        localLogger.info("waiting for writer initialization to finish");
 
         waitForWriterInitialization(appender, 10);
         String initializationMessage = appender.getAppenderStatistics().getLastErrorMessage();
@@ -233,7 +250,7 @@ public class KinesisAppenderIntegrationTest
             ".*stream.*" + streamName + ".* not exist .*",
             initializationMessage);
 
-        localLogger.info("testFailsIfNoStreamPresent: finished");
+        localLogger.info("finished");
     }
 
 //----------------------------------------------------------------------------
@@ -278,6 +295,9 @@ public class KinesisAppenderIntegrationTest
     public void init(String testName)
     throws Exception
     {
+        testHelper = new KinesisTestHelper(kinesisClient, testName);
+        testHelper.deleteStreamIfExists();
+
         String propertiesName = "KinesisAppenderIntegrationTest/" + testName + ".properties";
         URL config = ClassLoader.getSystemResource(propertiesName);
         assertNotNull("missing configuration: " + propertiesName, config);
@@ -285,12 +305,9 @@ public class KinesisAppenderIntegrationTest
         LogManager.resetConfiguration();
         PropertyConfigurator.configure(config);
 
+        MDC.put("testName", testName);
+
         localLogger = Logger.getLogger(getClass());
-
-        String streamName = "AppenderIntegrationTest-" + testName;
-        testHelper = new KinesisTestHelper(AmazonKinesisClientBuilder.defaultClient(), streamName);
-
-        testHelper.deleteStreamIfExists();
     }
 
 

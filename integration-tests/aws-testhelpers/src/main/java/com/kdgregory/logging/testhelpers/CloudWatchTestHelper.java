@@ -22,6 +22,9 @@ import java.util.regex.Matcher;
 
 import static org.junit.Assert.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.sf.kdgcommons.collections.CollectionUtil;
 
 import com.amazonaws.services.logs.AWSLogs;
@@ -36,6 +39,8 @@ import com.amazonaws.services.logs.model.*;
  */
 public class CloudWatchTestHelper
 {
+    private Logger localLogger = LoggerFactory.getLogger(getClass());
+
     private AWSLogs client;
     private String logGroupName;
 
@@ -87,6 +92,8 @@ public class CloudWatchTestHelper
     {
         LinkedHashSet<OutputLogEvent> result = new LinkedHashSet<OutputLogEvent>();
 
+        localLogger.debug("retrieving messages from {}", logStreamName);
+
         ensureLogStreamAvailable(logStreamName);
         GetLogEventsRequest request = new GetLogEventsRequest()
                               .withLogGroupName(logGroupName)
@@ -108,6 +115,8 @@ public class CloudWatchTestHelper
             Thread.sleep(500);
         } while (! prevToken.equals(nextToken));
 
+        localLogger.debug("retrieved {} messages from {}", result.size(), logStreamName);
+
         return result;
     }
 
@@ -120,6 +129,8 @@ public class CloudWatchTestHelper
     public void ensureLogStreamAvailable(String logStreamName)
     throws Exception
     {
+        localLogger.debug("waiting for stream {} to be available", logStreamName);
+
         for (int ii = 0 ; ii < 60 ; ii++)
         {
             try
@@ -151,6 +162,8 @@ public class CloudWatchTestHelper
     public void deleteLogGroupIfExists()
     throws Exception
     {
+        localLogger.debug("deleting log group {}", logGroupName);
+
         try
         {
             client.deleteLogGroup(new DeleteLogGroupRequest().withLogGroupName(logGroupName));
@@ -181,6 +194,8 @@ public class CloudWatchTestHelper
     public void deleteLogStream(String logStreamName)
     throws Exception
     {
+        localLogger.debug("deleting log stream {}", logStreamName);
+
         client.deleteLogStream(new DeleteLogStreamRequest().withLogGroupName(logGroupName).withLogStreamName(logStreamName));
         boolean stillExists = true;
         for (int ii = 0 ; ii < 60 && stillExists ; ii++)

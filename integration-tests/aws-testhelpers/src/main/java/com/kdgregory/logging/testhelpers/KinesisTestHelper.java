@@ -24,6 +24,9 @@ import java.util.regex.Matcher;
 
 import static org.junit.Assert.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.sf.kdgcommons.collections.DefaultMap;
 import net.sf.kdgcommons.lang.ThreadUtil;
 
@@ -42,14 +45,16 @@ import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
  */
 public class KinesisTestHelper
 {
+    private Logger localLogger = LoggerFactory.getLogger(getClass());
+
     private AmazonKinesis client;
     private String streamName;
 
 
-    public KinesisTestHelper(AmazonKinesis client, String streamName)
+    public KinesisTestHelper(AmazonKinesis client, String testName)
     {
         this.client = client;
-        this.streamName = streamName;
+        this.streamName = "AppenderIntegrationTest-" + testName;
     }
 
 
@@ -79,6 +84,7 @@ public class KinesisTestHelper
 
     public StreamDescription waitForStreamToBeReady() throws Exception
     {
+        localLogger.debug("waiting for stream {} to become ready", streamName);
         for (int ii = 0 ; ii < 60 ; ii++)
         {
             Thread.sleep(1000);
@@ -94,14 +100,18 @@ public class KinesisTestHelper
 
     public void deleteStreamIfExists() throws Exception
     {
+        localLogger.debug("deleting stream {}", streamName);
         if (describeStream() != null)
         {
             client.deleteStream(new DeleteStreamRequest().withStreamName(streamName));
-//            localLogger.info("deleted stream; waiting for it to be gone");
-            while (describeStream() != null)
+            localLogger.debug("deleted stream {}, waiting for it to go away", streamName);
+            for (int ii = 0 ; ii < 60 ; ii++)
             {
                 Thread.sleep(1000);
+                if (describeStream() == null)
+                    return;
             }
+            throw new RuntimeException("stream \"" + streamName + "\" wasn't gone within 60 seconds");
         }
     }
 
@@ -149,6 +159,8 @@ public class KinesisTestHelper
     {
         waitForStreamToBeReady();
 
+        localLogger.debug("retrieving messages from stream {}", streamName);
+
         List<RetrievedRecord> result = new ArrayList<RetrievedRecord>();
 
         Map<String,String> shardItxs = getInitialShardIterators();
@@ -172,6 +184,7 @@ public class KinesisTestHelper
             Thread.sleep(1000);
         }
 
+        localLogger.debug("retrieved {} messages from stream {}", result.size(), streamName);
         return result;
     }
 

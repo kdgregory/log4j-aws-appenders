@@ -45,6 +45,9 @@
         <!-- note: do not update this lest we accidentally use newer APIs -->
         <aws-sdk.version>1.11.0</aws-sdk.version>
 
+        <!-- classes may need to log, so we'll provide the SLF4J API and expect consumers to configure -->
+        <slf4j.version>1.7.25</slf4j.version>
+
         <junit.version>4.10</junit.version>
         <kdgcommons.version>1.0.16</kdgcommons.version>
         <practicalxml.version>1.1.18</practicalxml.version>
@@ -107,6 +110,11 @@
             <groupId>net.sf.practicalxml</groupId>
             <artifactId>practicalxml</artifactId>
             <version>${practicalxml.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
         </dependency>
     </dependencies>
 

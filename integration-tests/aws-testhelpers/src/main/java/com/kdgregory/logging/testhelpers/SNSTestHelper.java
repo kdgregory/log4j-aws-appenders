@@ -28,6 +28,9 @@ import org.w3c.dom.Element;
 
 import static org.junit.Assert.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.sf.kdgcommons.lang.StringUtil;
 import net.sf.practicalxml.converter.json.Json2XmlConverter;
 import net.sf.practicalxml.xpath.XPathWrapper;
@@ -47,6 +50,8 @@ import com.amazonaws.services.sqs.model.*;
  */
 public class SNSTestHelper
 {
+    private Logger localLogger = LoggerFactory.getLogger(getClass());
+
     private AmazonSNS snsClient;
     private AmazonSQS sqsClient;
 
@@ -110,6 +115,8 @@ public class SNSTestHelper
      */
     public String lookupTopic()
     {
+        localLogger.debug("looking for topic {}", resourceName);
+
         ListTopicsRequest request = new ListTopicsRequest();
         ListTopicsResult response;
         do
@@ -138,6 +145,8 @@ public class SNSTestHelper
     public List<String> retrieveMessages(int expectedMessageCount)
     throws Exception
     {
+        localLogger.debug("retrieving messages from queue {}", queueUrl);
+
         List<String> result = new ArrayList<String>();
         int emptyBatchCount = 0;
         while ((expectedMessageCount > 0) && (emptyBatchCount < 3))
@@ -205,6 +214,8 @@ public class SNSTestHelper
     private void createTopic()
     throws Exception
     {
+        localLogger.debug("creating topic {}", resourceName);
+
         CreateTopicRequest createTopicRequest = new CreateTopicRequest().withName(resourceName);
         CreateTopicResult createTopicResponse = snsClient.createTopic(createTopicRequest);
         topicArn = createTopicResponse.getTopicArn();
@@ -238,6 +249,8 @@ public class SNSTestHelper
     private void createQueue()
     throws Exception
     {
+        localLogger.debug("creating queue {}", resourceName);
+
         CreateQueueRequest createRequest = new CreateQueueRequest().withQueueName(resourceName);
         CreateQueueResult createResponse = sqsClient.createQueue(createRequest);
         queueUrl = createResponse.getQueueUrl();
@@ -252,6 +265,8 @@ public class SNSTestHelper
     private void subscribeQueueToTopic()
     throws Exception
     {
+        localLogger.debug("subscribing queue to topic {}", resourceName);
+
         String queueAccessPolicy
                 = "{"
                 + "  \"Version\": \"2012-10-17\","
@@ -298,6 +313,7 @@ public class SNSTestHelper
     private String retrieveQueueAttribute(String attributeName)
     throws Exception
     {
+        localLogger.debug("retrieving attribute \"{}\" for queue {}", attributeName, queueUrl);
 
         for (int ii = 0 ; ii < 60 ; ii++)
         {

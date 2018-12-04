@@ -17,6 +17,7 @@ package com.kdgregory.logback.aws;
 import java.net.URL;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -29,6 +30,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import net.sf.kdgcommons.lang.ClassUtil;
 
@@ -39,6 +41,9 @@ import com.kdgregory.logging.testhelpers.CloudWatchTestHelper;
 
 public class CloudWatchAppenderIntegrationTest
 {
+    // single client is shared by all tests
+    private static AWSLogs cloudwatchClient;
+
     // CHANGE THESE IF YOU CHANGE THE CONFIG
     private final static String LOGSTREAM_BASE  = "AppenderTest";
 
@@ -54,9 +59,17 @@ public class CloudWatchAppenderIntegrationTest
 //  JUnit Scaffolding
 //----------------------------------------------------------------------------
 
+    @BeforeClass
+    public static void beforeClass()
+    {
+        cloudwatchClient = AWSLogsClientBuilder.defaultClient();
+    }
+
+
     @Before
     public void setUp()
     {
+        MDC.clear();
         localFactoryUsed = false;
     }
 
@@ -71,14 +84,14 @@ public class CloudWatchAppenderIntegrationTest
         final int rotationCount   = 333;
 
         init("smoketest");
-        localLogger.info("smoketest: starting");
+        localLogger.info("starting");
 
         ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
         CloudWatchAppender<ILoggingEvent> appender = (CloudWatchAppender<ILoggingEvent>)testLogger.getAppender("test");
 
         (new MessageWriter(testLogger, numMessages)).run();
 
-        localLogger.info("smoketest: all messages written; sleeping to give writers chance to run");
+        localLogger.info("all messages written; sleeping to give writers chance to run");
         Thread.sleep(5000);
 
         testHelper.assertMessages(LOGSTREAM_BASE + "-1", rotationCount);
@@ -94,14 +107,14 @@ public class CloudWatchAppenderIntegrationTest
         CloudWatchLogWriter lastWriter = ClassUtil.getFieldValue(appender, "writer", CloudWatchLogWriter.class);
         assertEquals("number of batches for last writer", 1, lastWriter.getBatchCount());
 
-        assertTrue("client factory used", localFactoryUsed);
+        assertTrue("client factory should have been invoked", localFactoryUsed);
 
         // while we're here, verify some more of the plumbing
 
         appender.setBatchDelay(1234L);
         assertEquals("batch delay", 1234L, lastWriter.getBatchDelay());
 
-        localLogger.info("smoketest: finished");
+        localLogger.info("finished");
     }
 
 
@@ -112,7 +125,7 @@ public class CloudWatchAppenderIntegrationTest
         final int rotationCount     = 333;
 
         init("testMultipleThreadsSingleAppender");
-        localLogger.info("multi-thread/single-appender: starting");
+        localLogger.info("starting");
 
         ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
 
@@ -126,7 +139,7 @@ public class CloudWatchAppenderIntegrationTest
         };
         MessageWriter.runOnThreads(writers);
 
-        localLogger.info("multi-thread/single-appender: all threads started; sleeping to give writer chance to run");
+        localLogger.info("all threads started; sleeping to give writer chance to run");
         Thread.sleep(3000);
 
         testHelper.assertMessages(LOGSTREAM_BASE + "-1", rotationCount);
@@ -134,9 +147,9 @@ public class CloudWatchAppenderIntegrationTest
         testHelper.assertMessages(LOGSTREAM_BASE + "-3", rotationCount);
         testHelper.assertMessages(LOGSTREAM_BASE + "-4", (messagesPerThread * writers.length) % rotationCount);
 
-        assertFalse("client factory used", localFactoryUsed);
+        assertFalse("client factory should not have been invoked", localFactoryUsed);
 
-        localLogger.info("multi-thread/single-appender: finished");
+        localLogger.info("finished");
     }
 
 
@@ -146,23 +159,23 @@ public class CloudWatchAppenderIntegrationTest
         final int messagesPerThread = 300;
 
         init("testMultipleThreadsMultipleAppendersDifferentDestinations");
-        localLogger.info("multi-thread/multi-appender/different destination: starting");
+        localLogger.info("starting");
 
         MessageWriter.runOnThreads(
             new MessageWriter(LoggerFactory.getLogger("TestLogger1"), messagesPerThread),
             new MessageWriter(LoggerFactory.getLogger("TestLogger2"), messagesPerThread),
             new MessageWriter(LoggerFactory.getLogger("TestLogger3"), messagesPerThread));
 
-        localLogger.info("multi-thread/multi-appender/different destination: all threads started; sleeping to give writer chance to run");
+        localLogger.info("all threads started; sleeping to give writer chance to run");
         Thread.sleep(3000);
 
         testHelper.assertMessages(LOGSTREAM_BASE + "-1", messagesPerThread);
         testHelper.assertMessages(LOGSTREAM_BASE + "-2", messagesPerThread);
         testHelper.assertMessages(LOGSTREAM_BASE + "-3", messagesPerThread);
 
-        assertFalse("client factory used", localFactoryUsed);
+        assertFalse("client factory should not have been invoked", localFactoryUsed);
 
-        localLogger.info("multi-thread/multi-appender/different destination: finished");
+        localLogger.info("finished");
     }
 
 
@@ -172,7 +185,7 @@ public class CloudWatchAppenderIntegrationTest
         final int messagesPerThread = 1000;
 
         init("testMultipleThreadsMultipleAppendersSameDestination");
-        localLogger.info("multi-thread/multi-appender/different destination: starting");
+        localLogger.info("starting");
 
         MessageWriter.runOnThreads(
             new MessageWriter(LoggerFactory.getLogger("TestLogger1"), messagesPerThread),
@@ -186,7 +199,7 @@ public class CloudWatchAppenderIntegrationTest
             new MessageWriter(LoggerFactory.getLogger("TestLogger4"), messagesPerThread),
             new MessageWriter(LoggerFactory.getLogger("TestLogger5"), messagesPerThread));
 
-        localLogger.info("multi-thread/multi-appender/different destination: all threads started; sleeping to give writer chance to run");
+        localLogger.info("all threads started; sleeping to give writer chance to run");
         Thread.sleep(20000);    // this sleep assumes that each batch will be retried once
 
         testHelper.assertMessages(LOGSTREAM_BASE, messagesPerThread * 10);
@@ -227,7 +240,7 @@ public class CloudWatchAppenderIntegrationTest
         // but we shouldn't be getting any
         assertNull("stats: last error (was: " + lastNonRaceErrorFromStats + ")", lastNonRaceErrorFromStats);
 
-        localLogger.info("multi-thread/multi-appender/different destination: finished");
+        localLogger.info("finished");
     }
 
 
@@ -238,24 +251,24 @@ public class CloudWatchAppenderIntegrationTest
         final int numMessages      = 100;
 
         init("testLogstreamDeletionAndRecreation");
-        localLogger.info("testLogstreamDeletionAndRecreation: starting");
+        localLogger.info("starting");
 
         ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
         CloudWatchAppender<ILoggingEvent> appender = (CloudWatchAppender<ILoggingEvent>)testLogger.getAppender("test");
 
         (new MessageWriter(testLogger, numMessages)).run();
 
-        localLogger.info("testLogstreamDeletionAndRecreation: first batch of messages written; sleeping to give writer chance to run");
+        localLogger.info("first batch of messages written; sleeping to give writer chance to run");
         Thread.sleep(1000);
 
         testHelper.assertMessages(logStreamName, numMessages);
 
-        localLogger.info("testLogstreamDeletionAndRecreation: deleting stream");
+        localLogger.info("deleting stream");
         testHelper.deleteLogStream(logStreamName);
 
         (new MessageWriter(testLogger, numMessages)).run();
 
-        localLogger.info("testLogstreamDeletionAndRecreation: second batch of messages written; sleeping to give writer chance to run");
+        localLogger.info("second batch of messages written; sleeping to give writer chance to run");
         Thread.sleep(2000);
 
         // the original batch of messages will be gone, so we can assert the new batch was written
@@ -263,7 +276,7 @@ public class CloudWatchAppenderIntegrationTest
 
         assertTrue("statistics has error message", appender.getAppenderStatistics().getLastErrorMessage().contains("log stream missing"));
 
-        localLogger.info("testLogstreamDeletionAndRecreation: finished");
+        localLogger.info("finished");
     }
 
 //----------------------------------------------------------------------------
@@ -307,7 +320,7 @@ public class CloudWatchAppenderIntegrationTest
      */
     public void init(String testName) throws Exception
     {
-        testHelper = new CloudWatchTestHelper(AWSLogsClientBuilder.defaultClient(), "AppenderIntegrationTest-" + testName);
+        testHelper = new CloudWatchTestHelper(cloudwatchClient, "AppenderIntegrationTest-" + testName);
 
         // this has to happen before the logger is initialized or we have a race condition
         testHelper.deleteLogGroupIfExists();
@@ -321,6 +334,8 @@ public class CloudWatchAppenderIntegrationTest
         JoranConfigurator configurator = new JoranConfigurator();
         configurator.setContext(context);
         configurator.doConfigure(config);
+
+        MDC.put("testName", testName);
 
         localLogger = LoggerFactory.getLogger(getClass());
     }

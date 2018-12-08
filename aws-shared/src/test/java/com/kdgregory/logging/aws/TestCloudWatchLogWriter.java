@@ -491,6 +491,57 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
 
     @Test
+    public void testDataAlreadyAcceptedException() throws Exception
+    {
+        // to ensure that the batch is discarded without looking too deeply into
+        // implementation details, we'll send two batches: only the second should
+        // succeed
+
+        mock = new MockCloudWatchClient()
+        {
+            @Override
+            protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
+            {
+                if (putLogEventsInvocationCount == 1)
+                    throw new DataAlreadyAcceptedException("blah blah blah");
+                else
+                    return super.putLogEvents(request);
+            }
+        };
+
+        createWriter();
+
+        // this first message should be rejected
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        mock.allowWriterThread();
+
+        assertEquals("putLogEvents: invocation count",                  1,                      mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",              1,                      mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",                      "message one",          mock.mostRecentEvents.get(0).getMessage());
+
+        assertStatisticsErrorMessage("received DataAlreadyAcceptedException.*");
+        assertStatisticsException(DataAlreadyAcceptedException.class,   "blah blah blah.*");
+
+        assertEquals("stats: no messages written",                      0,                      stats.getMessagesSent());
+        assertTrue("message queue still accepts messages",                                      messageQueue.getDiscardThreshold() > 0);
+
+        // this message should be accepted
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+        mock.allowWriterThread();
+
+        assertEquals("putLogEvents: invocation count",                  2,                      mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",              1,                      mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",                      "message two",          mock.mostRecentEvents.get(0).getMessage());
+
+        assertStatisticsMessagesSent(1);
+
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog("received DataAlreadyAcceptedException.*");
+        internalLogger.assertInternalErrorLogExceptionTypes(DataAlreadyAcceptedException.class);
+    }
+
+
+    @Test
     public void testRecoveryFromLogStreamDeletion() throws Exception
     {
         // this starts off with the default (existing) group and stream

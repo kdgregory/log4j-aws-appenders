@@ -156,6 +156,12 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             {
                 stats.updateWriterRaceRetries();
                 Utils.sleepQuietly(100);
+                // continue retry loop
+            }
+            catch (DataAlreadyAcceptedException ex)
+            {
+                reportError("received DataAlreadyAcceptedException, dropping batch", ex);
+                return Collections.emptyList();
             }
             catch (Exception ex)
             {

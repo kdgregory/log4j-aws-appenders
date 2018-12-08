@@ -25,6 +25,8 @@ import static org.junit.Assert.*;
 import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
 
+import static net.sf.kdgcommons.test.StringAsserts.*;
+
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.*;
 
@@ -423,7 +425,6 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     }
 
 
-
     @Test
     public void testInvalidSequenceTokenException() throws Exception
     {
@@ -441,10 +442,9 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         createWriter();
 
-        // we need two trips to putLogEvents because the first actual write won't happen
-        // until the second
-
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+
+        // we need three trips to putLogEvents because the first two will have exceptions
         mock.allowWriterThread();
         mock.allowWriterThread();
         mock.allowWriterThread();
@@ -458,6 +458,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertNull("statistics error message not set", stats.getLastErrorMessage());
 
         assertEquals("stats: writer race retries",                      2,                      stats.getWriterRaceRetries());
+        assertEquals("stats: unrecovered writer race retries",          0,                      stats.getUnrecoveredWriterRaceRetries());
 
         internalLogger.assertInternalDebugLog(
             "log writer starting.*",
@@ -466,6 +467,101 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
         internalLogger.assertInternalErrorLogExceptionTypes();
+    }
+
+
+    @Test
+    public void testUnrecoveredInvalidSequenceTokenException() throws Exception
+    {
+        mock = new MockCloudWatchClient()
+        {
+            @Override
+            protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
+            {
+                throw new InvalidSequenceTokenException("I'll never complete!");
+            }
+        };
+
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+
+        // I know that there will be 5 retry attempts before giving up, so will wait +1 times
+        for (int ii = 0 ; ii < 6 ; ii++)
+            mock.allowWriterThread();
+
+        assertEquals("putLogEvents: invocation count",                  6,                      mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",              1,                      mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",                      "message one",          mock.mostRecentEvents.get(0).getMessage());
+
+        assertRegex("statistics: error message",                        ".*repeated InvalidSequenceTokenException.*",
+                                                                        stats.getLastErrorMessage());
+
+        assertEquals("stats: writer race retries",                      6,                      stats.getWriterRaceRetries());
+        assertEquals("stats: unrecovered writer race retries",          1,                      stats.getUnrecoveredWriterRaceRetries());
+
+        internalLogger.assertInternalDebugLog(
+            "log writer starting.*",
+            "using existing.*log group.*",
+            "using existing.*log stream.*",
+            "log writer initialization complete.*");
+        internalLogger.assertInternalErrorLog(".*InvalidSequenceTokenException.*");
+        internalLogger.assertInternalErrorLogExceptionTypes();
+    }
+
+
+    @Test
+    public void testDataAlreadyAcceptedException() throws Exception
+    {
+        // to ensure that the batch is discarded without looking too deeply into
+        // implementation details, we'll send two batches: only the second should
+        // succeed
+
+        mock = new MockCloudWatchClient()
+        {
+            @Override
+            protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
+            {
+                if (putLogEventsInvocationCount == 1)
+                    throw new DataAlreadyAcceptedException("blah blah blah");
+                else
+                    return super.putLogEvents(request);
+            }
+        };
+
+        createWriter();
+
+        // this first message should be rejected
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        mock.allowWriterThread();
+
+        assertEquals("putLogEvents: invocation count",                  1,                      mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",              1,                      mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",                      "message one",          mock.mostRecentEvents.get(0).getMessage());
+
+        assertStatisticsErrorMessage("received DataAlreadyAcceptedException.*");
+        assertStatisticsException(DataAlreadyAcceptedException.class,   "blah blah blah.*");
+
+        assertEquals("stats: no messages written",                      0,                      stats.getMessagesSent());
+        assertTrue("message queue still accepts messages",                                      messageQueue.getDiscardThreshold() > 0);
+
+        // this message should be accepted
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+        mock.allowWriterThread();
+
+        assertEquals("putLogEvents: invocation count",                  2,                      mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",              1,                      mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",                      "message two",          mock.mostRecentEvents.get(0).getMessage());
+
+        assertStatisticsMessagesSent(1);
+
+        internalLogger.assertInternalDebugLog(
+            "log writer starting.*",
+            "using existing.*log group.*",
+            "using existing.*log stream.*",
+            "log writer initialization complete.*");
+        internalLogger.assertInternalErrorLog("received DataAlreadyAcceptedException.*");
+        internalLogger.assertInternalErrorLogExceptionTypes(DataAlreadyAcceptedException.class);
     }
 
 

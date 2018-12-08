@@ -1,5 +1,19 @@
 # Change History
 
+## 2.1.0 (TBD)
+
+* Support for [Logback](https://logback.qos.ch/) logging framework.
+* KinesisAppender now uses `{random}` to configure random partition keys, with
+  empty string still supported for Log4J 1.x.
+
+## 2.0.2 (2018-12-08)
+
+* Bugfix: was not correctly handling `InvalidSequenceTokenException` retries,
+  potentially causing a `DataAlreadyAcceptedException` and duplicate log
+  entries.
+  ([#63](https://github.com/kdgregory/log4j-aws-appenders/issues/63), also
+   [#59](https://github.com/kdgregory/log4j-aws-appenders/issues/59))
+
 ## 2.0.1 (2018-11-28)
 
 * Bugfix: was not limiting wait at shutdown, leaving writer thread dangling

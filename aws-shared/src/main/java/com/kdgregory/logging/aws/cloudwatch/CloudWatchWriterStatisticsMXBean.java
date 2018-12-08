@@ -77,4 +77,15 @@ public interface CloudWatchWriterStatisticsMXBean
      *  at the same time or have a low batch delay.
      */
     int getWriterRaceRetries();
+
+
+    /**
+     *  Returns the times that the writer had to requeue a batch after receiving and
+     *  repeated <code>InvalidSequenceTokenException</code> errors. This number should
+     *  remain 0; if it is non-zero, and particularly if it is a noticeable percentage
+     *  of <code>WriterRaceRetries</code>, it indicates that you have too many writers
+     *  concurrently accessing the same stream. Either increase batch delay or (better)
+     *  direct output to different streams.
+     */
+    int getUnrecoveredWriterRaceRetries();
 }

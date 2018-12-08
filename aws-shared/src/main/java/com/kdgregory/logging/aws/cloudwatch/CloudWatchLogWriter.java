@@ -129,23 +129,22 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
                                       .withLogStreamName(config.logStreamName)
                                       .withLogEvents(constructLogEvents(batch));
 
-        // if we can't find the stream we'll try to re-create it
-        LogStream stream = findLogStream();
-        if (stream == null)
-        {
-            reportError("log stream missing: " + config.logStreamName, null);
-            ensureDestinationAvailable();
-            return batch;
-        }
-
-        // sending is all-or-nothing with CloudWatch; we return the entire batch
-        // if there's an exception; a race condition between retrieving sequence
-        // token and sending batch will eventually resolve, so we'll retry several
-        // times with a sleep before giving up (we could try forever but I want to
-        // get back to the main loop in case there's a shutdown)
+        // sending is all-or-nothing with CloudWatch: if we receive any error
+        // we'll return the entire batch -- the one exception being a writer race,
+        // which we'll retry a few times before giving up because it should resolve
+        // itself
 
         for (int ii = 0 ; ii < 5 ; ii++)
         {
+            // if we can't find the stream we'll try to re-create it
+            LogStream stream = findLogStream();
+            if (stream == null)
+            {
+                reportError("log stream missing: " + config.logStreamName, null);
+                ensureDestinationAvailable();
+                return batch;
+            }
+
             try
             {
                 request.setSequenceToken(stream.getUploadSequenceToken());

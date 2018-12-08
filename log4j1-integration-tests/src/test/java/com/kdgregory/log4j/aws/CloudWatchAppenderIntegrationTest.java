@@ -32,6 +32,7 @@ import org.apache.log4j.PropertyConfigurator;
 
 import net.sf.kdgcommons.collections.CollectionUtil;
 import net.sf.kdgcommons.lang.ClassUtil;
+import net.sf.kdgcommons.lang.ObjectUtil;
 
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
@@ -201,8 +202,7 @@ public class CloudWatchAppenderIntegrationTest
         int messagesDiscardedFromStats = 0;
         int raceRetriesFromStats = 0;
         int unrecoveredRaceRetriesFromStats = 0;
-        boolean raceReportedInStats = false;
-        String lastNonRaceErrorFromStats = null;
+        String lastErrorMessage = null;
         for (int appenderNumber = 1 ; appenderNumber <= 5 ; appenderNumber++)
         {
             Logger testLogger = Logger.getLogger("TestLogger" + appenderNumber);
@@ -212,15 +212,7 @@ public class CloudWatchAppenderIntegrationTest
             messagesDiscardedFromStats += stats.getMessagesDiscarded();
             raceRetriesFromStats += stats.getWriterRaceRetries();
             unrecoveredRaceRetriesFromStats += stats.getUnrecoveredWriterRaceRetries();
-
-            String lastErrorMessage = stats.getLastErrorMessage();
-            if (lastErrorMessage != null)
-            {
-                if (lastErrorMessage.contains("InvalidSequenceTokenException"))
-                    raceReportedInStats = true;
-                else
-                    lastNonRaceErrorFromStats = lastErrorMessage;
-            }
+            lastErrorMessage = ObjectUtil.defaultValue(stats.getLastErrorMessage(), lastErrorMessage);
         }
 
         assertEquals("stats: message count",        messagesPerThread * 10, messageCountFromStats);
@@ -228,12 +220,10 @@ public class CloudWatchAppenderIntegrationTest
 
         // for the test to be valid, we want to see that there was at least one retry
         assertTrue("stats: race retries",                       raceRetriesFromStats > 0);
-        assertTrue("stats: race retry reported",                raceReportedInStats);
         assertEquals("stats: all race retries recovered",   0,  unrecoveredRaceRetriesFromStats);
 
-        // perhaps we shouldn't fail the test if we received a different error (because it was retried),
-        // but we shouldn't be getting any
-        assertNull("stats: last error (was: " + lastNonRaceErrorFromStats + ")", lastNonRaceErrorFromStats);
+        // we shouldn't be seeing any other errors, so fail the test if we do
+        assertNull("stats: last error (was: " + lastErrorMessage + ")", lastErrorMessage);
 
         localLogger.info("multi-thread/multi-appender/different destination: finished");
     }

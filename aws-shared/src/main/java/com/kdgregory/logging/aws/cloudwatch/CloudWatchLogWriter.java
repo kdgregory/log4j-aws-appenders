@@ -144,7 +144,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         // times with a sleep before giving up (we could try forever but I want to
         // get back to the main loop in case there's a shutdown)
 
-        for (int ii = 0 ; ii < 10 ; ii++)
+        for (int ii = 0 ; ii < 5 ; ii++)
         {
             try
             {
@@ -166,6 +166,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         }
 
         reportError("received repeated InvalidSequenceTokenException responses -- increase batch delay?", null);
+        stats.updateUnrecoveredWriterRaceRetries();
         return batch;
     }
 

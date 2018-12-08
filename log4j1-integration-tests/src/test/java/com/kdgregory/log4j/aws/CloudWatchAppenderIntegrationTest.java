@@ -200,6 +200,7 @@ public class CloudWatchAppenderIntegrationTest
         int messageCountFromStats = 0;
         int messagesDiscardedFromStats = 0;
         int raceRetriesFromStats = 0;
+        int unrecoveredRaceRetriesFromStats = 0;
         boolean raceReportedInStats = false;
         String lastNonRaceErrorFromStats = null;
         for (int appenderNumber = 1 ; appenderNumber <= 5 ; appenderNumber++)
@@ -210,6 +211,7 @@ public class CloudWatchAppenderIntegrationTest
             messageCountFromStats += stats.getMessagesSent();
             messagesDiscardedFromStats += stats.getMessagesDiscarded();
             raceRetriesFromStats += stats.getWriterRaceRetries();
+            unrecoveredRaceRetriesFromStats += stats.getUnrecoveredWriterRaceRetries();
 
             String lastErrorMessage = stats.getLastErrorMessage();
             if (lastErrorMessage != null)
@@ -224,9 +226,10 @@ public class CloudWatchAppenderIntegrationTest
         assertEquals("stats: message count",        messagesPerThread * 10, messageCountFromStats);
         assertEquals("stats: messages discarded",   0,                      messagesDiscardedFromStats);
 
-        // for the test to be valid, we want to see that there was at least one retry due to race
-        assertTrue("stats: race retries",           raceRetriesFromStats > 0);
-        assertTrue("stats: race retry reported",    raceReportedInStats);
+        // for the test to be valid, we want to see that there was at least one retry
+        assertTrue("stats: race retries",                       raceRetriesFromStats > 0);
+        assertTrue("stats: race retry reported",                raceReportedInStats);
+        assertEquals("stats: all race retries recovered",   0,  unrecoveredRaceRetriesFromStats);
 
         // perhaps we shouldn't fail the test if we received a different error (because it was retried),
         // but we shouldn't be getting any

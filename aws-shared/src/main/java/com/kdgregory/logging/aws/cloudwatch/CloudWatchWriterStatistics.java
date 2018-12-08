@@ -32,6 +32,7 @@ implements CloudWatchWriterStatisticsMXBean
     private volatile String  actualLogGroupName;
     private volatile String  actualLogStreamName;
     private volatile AtomicInteger writerRaceRetries = new AtomicInteger(0);
+    private volatile AtomicInteger unrecoveredWriterRaceRetries = new AtomicInteger(0);
 
 
     @Override
@@ -77,5 +78,18 @@ implements CloudWatchWriterStatisticsMXBean
     public void updateWriterRaceRetries()
     {
         writerRaceRetries.incrementAndGet();
+    }
+
+
+    @Override
+    public int getUnrecoveredWriterRaceRetries()
+    {
+        return unrecoveredWriterRaceRetries.get();
+    }
+
+
+    public void updateUnrecoveredWriterRaceRetries()
+    {
+        unrecoveredWriterRaceRetries.incrementAndGet();
     }
 }

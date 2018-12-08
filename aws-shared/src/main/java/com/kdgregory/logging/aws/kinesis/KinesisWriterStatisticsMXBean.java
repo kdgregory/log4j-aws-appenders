@@ -61,7 +61,7 @@ public interface KinesisWriterStatisticsMXBean
 
 
     /**
-     *  Returns the number of messages discarded by the message queue.
+     *  Returns the number of messages discarded by the writer's message queue.
      */
     int getMessagesDiscarded();
 }

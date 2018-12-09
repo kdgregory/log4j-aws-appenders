@@ -41,6 +41,7 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
     public SNSLogWriter(SNSWriterConfig config, SNSWriterStatistics stats, InternalLogger logger, ClientFactory<AmazonSNS> clientFactory)
     {
         super(config, stats, logger, clientFactory);
+        stats.setActualSubject(config.subject);
     }
 
 //----------------------------------------------------------------------------

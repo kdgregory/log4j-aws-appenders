@@ -33,10 +33,15 @@ public interface SNSWriterStatisticsMXBean
 
 
     /**
-     *  Returns the actual topic ARN used by the writer (after substitutions on
-     *  the topic name).
+     *  Returns the actual topic ARN used by the writer (after substitutions).
      */
     String getActualTopicArn();
+
+
+    /**
+     *  Returns the actual subject used by the writer (after substitutions).
+     */
+    String getActualSubject();
 
 
     /**

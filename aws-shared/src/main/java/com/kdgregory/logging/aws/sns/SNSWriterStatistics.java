@@ -23,6 +23,7 @@ implements SNSWriterStatisticsMXBean
 {
     private String actualTopicName;
     private String actualTopicArn;
+    private String actualSubject;
 
 
     public void setActualTopicName(String value)
@@ -46,5 +47,17 @@ implements SNSWriterStatisticsMXBean
     public String getActualTopicArn()
     {
         return actualTopicArn;
+    }
+
+
+    public void setActualSubject(String value)
+    {
+        actualSubject = value;
+    }
+
+    @Override
+    public String getActualSubject()
+    {
+        return actualSubject;
     }
 }

@@ -223,8 +223,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("message queue set to discard all",    DiscardAction.oldest,   messageQueue.getDiscardAction());
 
         assertStatisticsErrorMessage(".*not exist.*" + TEST_TOPIC_NAME + ".*");
-        assertNull("stats: topic name",                     stats.getActualTopicName());
-        assertNull("stats: topic ARN",                      stats.getActualTopicArn());
+        assertNotNull("stats: topic name",                  stats.getActualTopicName());    // comes from configu
+        assertNull("stats: topic ARN",                      stats.getActualTopicArn());     // would come from init
 
         internalLogger.assertInternalDebugLog("log writer starting.*");
         internalLogger.assertInternalErrorLog(".*not exist.*" + TEST_TOPIC_NAME + ".*");
@@ -356,8 +356,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("message queue set to discard all",    DiscardAction.oldest,   messageQueue.getDiscardAction());
 
         assertStatisticsErrorMessage(".*not exist.*" + TEST_TOPIC_ARN + ".*");
-        assertNull("stats: topic name",                     stats.getActualTopicName());
-        assertNull("stats: topic ARN",                      stats.getActualTopicArn());
+        assertNull("stats: topic name",                     stats.getActualTopicName());    // would come from init
+        assertNotNull("stats: topic ARN",                   stats.getActualTopicArn());     // comes from config
 
         internalLogger.assertInternalDebugLog("log writer starting.*");
         internalLogger.assertInternalErrorLog(".*not exist.*" + TEST_TOPIC_ARN + ".*");
@@ -404,8 +404,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         assertEquals("invocations of listTopics",               0,                      mock.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",              0,                      mock.createTopicInvocationCount);
-        assertNull("topic name, from statistics",                                       stats.getActualTopicName());
-        assertNull("topic ARN, from statistics",                                        stats.getActualTopicArn());
+        assertNotNull("topic name, from statistics",                                    stats.getActualTopicName());        // comes from config
+        assertNull("topic ARN, from statistics",                                        stats.getActualTopicArn());         // would come from init
         assertEquals("message queue set to discard all",        0,                      messageQueue.getDiscardThreshold());
         assertEquals("message queue set to discard all",        DiscardAction.oldest,   messageQueue.getDiscardAction());
 

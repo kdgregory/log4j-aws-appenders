@@ -554,8 +554,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     protected void registerStatisticsBean()
     {
-        // TODO
-//        JMXManager.getInstance().addStatsBean(getName(), appenderStats, appenderStatsMXBeanClass);
+        JMXManager.getInstance().addStatsBean(getName(), appenderStats, appenderStatsMXBeanClass);
     }
 
 
@@ -567,8 +566,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     protected void unregisterStatisticsBean()
     {
-        // TODO
-//        JMXManager.getInstance().removeStatsBean(getName());
+        JMXManager.getInstance().removeStatsBean(getName());
     }
 
 

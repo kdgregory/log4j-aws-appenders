@@ -22,6 +22,8 @@ import javax.management.ObjectName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kdgregory.logback.aws.StatisticsMBean;
+
 
 /**
  *  Example program to generate log events of varying levels.
@@ -50,6 +52,10 @@ public class Main
         int numThreads = (argv.length > 0)
                        ? Integer.parseInt(argv[0])
                        : 2;
+                       
+        ManagementFactory.getPlatformMBeanServer().createMBean(
+                StatisticsMBean.class.getName(),
+                new ObjectName("ch.qos.logback.classic:name=statistics"));
 
         for (int ii = 0 ; ii < numThreads ; ii++)
         {

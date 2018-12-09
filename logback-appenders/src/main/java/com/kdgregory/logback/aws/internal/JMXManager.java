@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws.internal;
+package com.kdgregory.logback.aws.internal;
 
 import com.kdgregory.logging.common.jmx.AbstractJMXManager;
+
+import ch.qos.logback.core.spi.ContextAware;
 
 
 /**
@@ -30,15 +32,33 @@ public class JMXManager
 extends AbstractJMXManager
 {
     private static JMXManager singleton;
+    private static LateInitializedLogbackInternalLogger singletonLogger;
+
 
     /**
-     *  Lazily instantiates the singleton instance.
+     *  Retrieves the singleton instance for a consumer that isn't itself
+     *  context-aware, lazily instantiating.
      */
     public static synchronized JMXManager getInstance()
     {
         if (singleton == null)
-            singleton = new JMXManager();
+        {
+            singletonLogger = new LateInitializedLogbackInternalLogger("JMXManager");
+            singleton = new JMXManager(singletonLogger);
+        }
         return (JMXManager)singleton;
+    }
+
+
+    /**
+     *  Retrieves the singleton instance for a consumer that is context-aware,
+     *  lazily instantiating.
+     */
+    public static synchronized JMXManager getInstance(ContextAware destination)
+    {
+        getInstance();
+        singletonLogger.setDestination(destination.getContext());
+        return singleton;
     }
 
 
@@ -51,8 +71,9 @@ extends AbstractJMXManager
     }
 
 
-    private JMXManager()
+    private JMXManager(LateInitializedLogbackInternalLogger internalLogger)
     {
-        super(new Log4JInternalLogger("JMXManager"));
+        super(internalLogger);
     }
+
 }

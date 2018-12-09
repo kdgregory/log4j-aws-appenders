@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws;
+package com.kdgregory.logback.aws;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import com.kdgregory.log4j.aws.internal.JMXManager;
+import com.kdgregory.logback.aws.internal.JMXManager;
 import com.kdgregory.logging.common.jmx.AbstractMarkerBean;
 
 /**
@@ -29,32 +29,12 @@ import com.kdgregory.logging.common.jmx.AbstractMarkerBean;
  *  <h1>Example</strong>
  *  <pre>
  *      ManagementFactory.getPlatformMBeanServer().createMBean(
- *              HierarchyDynamicMBean.class.getName(),
- *              new ObjectName("log4j:name=Config"));
- *
- *      ManagementFactory.getPlatformMBeanServer().createMBean(
  *              StatisticsMBean.class.getName(),
- *              new ObjectName("log4j:name=Statistics"));
+ *              new ObjectName("ch.qos.logback.classic:name=Statistics"));
  *  </pre>
- *  Note that the object names for both beans can be whatever you want. The
- *  names that I show here are consistent with the hardcoded names produced
- *  by both the Log4J appender/layout beans and the writer statistics beans
- *  from this package, so if you use them you'll see everything Log4J in one
- *  place.
- *  <p>
- *  <strong>Support for multiple Log4J hierarchies</strong>
- *  <p>
- *  For a stand-alone application, you would typically register both the Log4J
- *  <code>HierarchyDynamicMBean</code> and this bean with the platform MBean
- *  server. For a multi-container deployment such as an app-server, however,
- *  you may have a container-specific MBean server. However, there's no simple
- *  way to identify which of possibly many MBean servers may be the one we use
- *  to register, or if indeed we should register.
- *  <p>
- *  The solution I've chosen is to maintain two static collections: one holds
- *  registrations for instances of this class, the other holds references to
- *  each of the configured appenders. When one or the other of these collections
- *  changes then the appropriate JMX registrations/deregistrations are performed.
+ *  Note that the object names for this bean can be whatever you want. For the
+ *  example I picked a name that will ensure that the statistics are grouped
+ *  with the Logback configuration beans.
  */
 public class StatisticsMBean
 extends AbstractMarkerBean

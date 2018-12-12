@@ -15,9 +15,9 @@
 package com.kdgregory.log4j.testhelpers.sns;
 
 import com.kdgregory.log4j.aws.SNSAppender;
+import com.kdgregory.log4j.testhelpers.TestableLog4JInternalLogger;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
-import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.ThreadFactory;
 import com.kdgregory.logging.common.factories.WriterFactory;
@@ -39,6 +39,7 @@ extends SNSAppender
         super();
         setThreadFactory(new InlineThreadFactory());
         setWriterFactory(new MockSNSWriterFactory());
+        logger = new TestableLog4JInternalLogger("");
     }
 
     public void setThreadFactory(ThreadFactory threadFactory)
@@ -71,21 +72,8 @@ extends SNSAppender
     }
 
 
-    public void updateLastRotationTimestamp(long offset)
+    public TestableLog4JInternalLogger getInternalLogger()
     {
-        lastRotationTimestamp += offset;
-    }
-
-
-    public long getLastRotationTimestamp()
-    {
-        return lastRotationTimestamp;
-    }
-
-
-    @Override
-    public boolean isMessageTooLarge(LogMessage message)
-    {
-        return super.isMessageTooLarge(message);
+        return (TestableLog4JInternalLogger)logger;
     }
 }

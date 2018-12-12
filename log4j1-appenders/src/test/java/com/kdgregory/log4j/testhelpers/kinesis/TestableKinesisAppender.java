@@ -15,6 +15,7 @@
 package com.kdgregory.log4j.testhelpers.kinesis;
 
 import com.kdgregory.log4j.aws.KinesisAppender;
+import com.kdgregory.log4j.testhelpers.TestableLog4JInternalLogger;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.common.LogWriter;
@@ -38,6 +39,7 @@ extends KinesisAppender
         super();
         setThreadFactory(new InlineThreadFactory());
         setWriterFactory(new MockKinesisWriterFactory());
+        logger = new TestableLog4JInternalLogger("");
     }
 
     public void setThreadFactory(ThreadFactory threadFactory)
@@ -67,5 +69,11 @@ extends KinesisAppender
     public MockKinesisWriter getMockWriter()
     {
         return (MockKinesisWriter)writer;
+    }
+
+
+    public TestableLog4JInternalLogger getInternalLogger()
+    {
+        return (TestableLog4JInternalLogger)logger;
     }
 }

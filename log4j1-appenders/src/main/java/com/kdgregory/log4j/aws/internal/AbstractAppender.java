@@ -397,14 +397,25 @@ extends AppenderSkeleton
         {
             initialize();
         }
-
+        
+        LogMessage logMessage;
         try
         {
-            internalAppend(Utils.convertToLogMessage(event, getLayout()));
+            logMessage = Utils.convertToLogMessage(event, getLayout());
         }
         catch (Exception ex)
         {
-            logger.warn("unable to append event: " + ex);
+            logger.error("unable to apply layout", ex);
+            return;
+        }
+
+        try
+        {
+            internalAppend(logMessage);
+        }
+        catch (Exception ex)
+        {
+            logger.error("unable to append event", ex);
         }
     }
 

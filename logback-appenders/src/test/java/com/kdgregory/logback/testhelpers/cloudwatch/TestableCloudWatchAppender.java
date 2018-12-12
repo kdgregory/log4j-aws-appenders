@@ -15,6 +15,7 @@
 package com.kdgregory.logback.testhelpers.cloudwatch;
 
 import com.kdgregory.logback.aws.CloudWatchAppender;
+import com.kdgregory.logback.testhelpers.TestableLogbackInternalLogger;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.common.LogMessage;
@@ -26,6 +27,7 @@ import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriterFactory;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
+
 
 /**
  *  This class provides visibility into the protected variables held by
@@ -41,6 +43,7 @@ extends CloudWatchAppender<ILoggingEvent>
         super();
         setThreadFactory(new InlineThreadFactory());
         setWriterFactory(new MockCloudWatchWriterFactory());
+        logger = new TestableLogbackInternalLogger(this);
     }
 
 
@@ -72,6 +75,12 @@ extends CloudWatchAppender<ILoggingEvent>
     public MockCloudWatchWriter getMockWriter()
     {
         return (MockCloudWatchWriter)writer;
+    }
+
+
+    public TestableLogbackInternalLogger getInternalLogger()
+    {
+        return (TestableLogbackInternalLogger)logger;
     }
 
 

@@ -106,9 +106,9 @@ public class TestKinesisAppender
 
 
     @Test
-    public void testAppend() throws Exception
+    public void testLifecycle() throws Exception
     {
-        initialize("TestKinesisAppender/testAppend.xml");
+        initialize("TestKinesisAppender/testLifecycle.xml");
 
         MockKinesisWriterFactory writerFactory = appender.getWriterFactory();
         MockKinesisWriter writer = appender.getMockWriter();
@@ -120,12 +120,12 @@ public class TestKinesisAppender
 
         long initialTimestamp = System.currentTimeMillis();
 
-        // this sleep is to make timestamps discernable
-        Thread.sleep(100);
-
         logger.debug("first message");
 
         assertEquals("after message 1, number of messages in writer",           1,              writer.messages.size());
+
+        // throw in a sleep so that we can discern timestamps
+        Thread.sleep(50);
 
         logger.error("test with exception", new Exception("this is a test"));
 
@@ -158,7 +158,7 @@ public class TestKinesisAppender
     @Test
     public void testStopAppender() throws Exception
     {
-        initialize("TestKinesisAppender/testAppend.xml");
+        initialize("TestKinesisAppender/testLifecycle.xml");
 
         MockKinesisWriter writer = appender.getMockWriter();
 

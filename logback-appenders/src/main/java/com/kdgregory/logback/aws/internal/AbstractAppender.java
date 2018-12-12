@@ -417,21 +417,30 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
             return;
         }
 
-        // FIXME - check for stopped
+        // it would be nice if Logback events had a shared superinterface,
+        // but they don't so we need to get ugly to get timestamp
+        long timestamp = (event instanceof ILoggingEvent) ? ((ILoggingEvent)event).getTimeStamp()
+                       : (event instanceof IAccessEvent)  ? ((IAccessEvent)event).getTimeStamp()
+                       : System.currentTimeMillis();
+
+        String message = null;
+        try
+        {
+            message = layout.doLayout(event);
+        }
+        catch (Exception ex)
+        {
+            logger.error("unable to apply layout", ex);
+            return;
+        }
 
         try
         {
-            // it would be nice if Logback events had a shared superinterface,
-            // but they don't so we need to get ugly to get timestamp
-            long timestamp = (event instanceof ILoggingEvent) ? ((ILoggingEvent)event).getTimeStamp()
-                           : (event instanceof IAccessEvent)  ? ((IAccessEvent)event).getTimeStamp()
-                           : System.currentTimeMillis();
-            String message = layout.doLayout(event);
             internalAppend(new LogMessage(timestamp, message));
         }
         catch (Exception ex)
         {
-            logger.warn("unable to append event: " + ex);
+            logger.error("unable to append event", ex);
         }
     }
 

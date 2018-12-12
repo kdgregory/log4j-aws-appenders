@@ -31,6 +31,7 @@ import net.sf.kdgcommons.lang.StringUtil;
 import net.sf.kdgcommons.test.StringAsserts;
 
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
+import com.kdgregory.log4j.testhelpers.TestableLog4JInternalLogger;
 import com.kdgregory.log4j.testhelpers.kinesis.TestableKinesisAppender;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
@@ -49,6 +50,7 @@ public class TestKinesisAppender
 {
     private Logger logger;
     private TestableKinesisAppender appender;
+    private TestableLog4JInternalLogger internalLogger;
 
 
     private void initialize(String propsName)
@@ -62,6 +64,7 @@ public class TestKinesisAppender
 
         Logger rootLogger = Logger.getRootLogger();
         appender = (TestableKinesisAppender)rootLogger.getAppender("default");
+        internalLogger = appender.getInternalLogger();
     }
 
 //----------------------------------------------------------------------------
@@ -124,20 +127,18 @@ public class TestKinesisAppender
 
 
     @Test
-    public void testAppend() throws Exception
+    public void testLifecycle() throws Exception
     {
         initialize("TestKinesisAppender/testLifecycle.properties");
-        MockKinesisWriterFactory writerFactory = appender.getWriterFactory();
+
+        assertEquals("internal logger configured with name",            appender.getName(), internalLogger.appenderName);
+        assertNull("before messages, writer is null",                   appender.getMockWriter());
 
         long initialTimestamp = System.currentTimeMillis();
 
-        // this sleep is to make timestamps discernable
-        Thread.sleep(100);
-
-        assertNull("before messages, writer is null",                           appender.getMockWriter());
-
         logger.debug("first message");
 
+        MockKinesisWriterFactory writerFactory = appender.getWriterFactory();
         MockKinesisWriter writer = appender.getMockWriter();
 
         assertNotNull("after message 1, writer is initialized",                 writer);
@@ -146,6 +147,9 @@ public class TestKinesisAppender
         StringAsserts.assertRegex("stream name, with substitutions",            "argle-\\d+",   writer.streamName);
         StringAsserts.assertRegex("default partition key, after substitutions", "20\\d{12}",    writer.partitionKey);
         assertEquals("after message 1, number of messages in writer",           1,              writer.messages.size());
+
+        // throw in a sleep so that we can discern timestamps
+        Thread.sleep(50);
 
         logger.error("test with exception", new Exception("this is a test"));
 

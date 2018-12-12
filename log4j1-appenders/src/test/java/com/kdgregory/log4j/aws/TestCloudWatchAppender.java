@@ -31,6 +31,7 @@ import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
 
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
+import com.kdgregory.log4j.testhelpers.TestableLog4JInternalLogger;
 import com.kdgregory.log4j.testhelpers.cloudwatch.TestableCloudWatchAppender;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
@@ -51,6 +52,7 @@ public class TestCloudWatchAppender
 {
     private Logger logger;
     private TestableCloudWatchAppender appender;
+    private TestableLog4JInternalLogger appenderInternalLogger;
 
 
     private void initialize(String propsName)
@@ -64,6 +66,7 @@ public class TestCloudWatchAppender
 
         Logger rootLogger = Logger.getRootLogger();
         appender = (TestableCloudWatchAppender)rootLogger.getAppender("default");
+        appenderInternalLogger = appender.getInternalLogger();
     }
 
 //----------------------------------------------------------------------------
@@ -130,7 +133,8 @@ public class TestCloudWatchAppender
     public void testLifecycle() throws Exception
     {
         initialize("TestCloudWatchAppender/testLifecycle.properties");
-        MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
+
+        assertEquals("internal logger configured with name",            appender.getName(), appenderInternalLogger.appenderName);
 
         long initialTimestamp = System.currentTimeMillis();
 
@@ -138,6 +142,7 @@ public class TestCloudWatchAppender
 
         logger.debug("first message");
 
+        MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
         MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
 
         assertNotNull("after message 1, writer is initialized",         writer);
@@ -149,7 +154,7 @@ public class TestCloudWatchAppender
         assertEquals("after message 1, number of messages in writer",   1,          writer.messages.size());
 
         // throw in a sleep so that we can discern timestamps
-        Thread.sleep(100);
+        Thread.sleep(50);
 
         logger.error("test with exception", new Exception("this is a test"));
 
@@ -267,6 +272,9 @@ public class TestCloudWatchAppender
         assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.logStream);
         assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
         assertEquals("post-rotate, messages passed to new writer",  0,          writer1.messages.size());
+
+        // explicit rotation does not cause an internal log entry
+        appenderInternalLogger.assertDebugLog();
     }
 
 
@@ -292,6 +300,9 @@ public class TestCloudWatchAppender
         assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.logStream);
         assertEquals("post-rotate, messages passed to old writer",  3,          writer0.messages.size());
         assertEquals("post-rotate, messages passed to new writer",  1,          writer1.messages.size());
+
+        // implicit rotation is logged internally
+        appenderInternalLogger.assertDebugLog("rotating.*");
     }
 
 
@@ -316,6 +327,9 @@ public class TestCloudWatchAppender
         assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.logStream);
         assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
         assertEquals("post-rotate, messages passed to new writer",  1,          writer1.messages.size());
+
+        // implicit rotation is logged internally
+        appenderInternalLogger.assertDebugLog("rotating.*");
     }
 
 
@@ -340,6 +354,9 @@ public class TestCloudWatchAppender
         assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.logStream);
         assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
         assertEquals("post-rotate, messages passed to new writer",  1,          writer1.messages.size());
+
+        // implicit rotation is logged internally
+        appenderInternalLogger.assertDebugLog("rotating.*");
     }
 
 
@@ -364,6 +381,9 @@ public class TestCloudWatchAppender
         assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.logStream);
         assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
         assertEquals("post-rotate, messages passed to new writer",  1,          writer1.messages.size());
+
+        // implicit rotation is logged internally
+        appenderInternalLogger.assertDebugLog("rotating.*");
     }
 
 
@@ -373,7 +393,7 @@ public class TestCloudWatchAppender
         initialize("TestCloudWatchAppender/testInvalidRotationMode.properties");
         assertEquals("rotation mode", "none", appender.getRotationMode());
 
-        // TODO - check internal logger
+        // TODO - check error logging
     }
 
 
@@ -421,6 +441,28 @@ public class TestCloudWatchAppender
 
         assertNull("writer has been reset",         appender.getWriter());
         assertEquals("last writer exception class", TestingException.class, appenderStats.getLastError().getClass());
+
+        appenderInternalLogger.assertDebugLog();
+        appenderInternalLogger.assertErrorLog("unhandled exception in writer");
+        appenderInternalLogger.assertErrorThrowables(TestingException.class);
+    }
+
+
+    @Test
+    public void testExceptionInLayout() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testExceptionInLayout.properties");
+
+        logger.debug("this should trigger throwage");
+
+        MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
+        assertNotNull("writer was created", writer);
+
+        assertEquals("no messages sent to writer", 0, writer.messages.size());
+
+        appenderInternalLogger.assertDebugLog();
+        appenderInternalLogger.assertErrorLog("unable to apply layout");
+        appenderInternalLogger.assertErrorThrowables(TestingException.class);
     }
 
 

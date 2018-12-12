@@ -31,6 +31,7 @@ import net.sf.kdgcommons.lang.StringUtil;
 import net.sf.kdgcommons.test.StringAsserts;
 
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
+import com.kdgregory.log4j.testhelpers.TestableLog4JInternalLogger;
 import com.kdgregory.log4j.testhelpers.sns.TestableSNSAppender;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
@@ -49,6 +50,7 @@ public class TestSNSAppender
 {
     private Logger logger;
     private TestableSNSAppender appender;
+    private TestableLog4JInternalLogger internalLogger;
 
 
     private void initialize(String propsName)
@@ -62,6 +64,7 @@ public class TestSNSAppender
 
         Logger rootLogger = Logger.getRootLogger();
         appender = (TestableSNSAppender)rootLogger.getAppender("default");
+        internalLogger = appender.getInternalLogger();
     }
 
 //----------------------------------------------------------------------------
@@ -128,12 +131,13 @@ public class TestSNSAppender
     public void testLifecycle() throws Exception
     {
         initialize("TestSNSAppender/testLifecycle.properties");
-        MockSNSWriterFactory writerFactory = (MockSNSWriterFactory)appender.getWriterFactory();
 
+        assertEquals("internal logger configured with name",            appender.getName(), internalLogger.appenderName);
         assertNull("before messages, writer is null",                   appender.getMockWriter());
 
         logger.debug("first message");
 
+        MockSNSWriterFactory writerFactory = (MockSNSWriterFactory)appender.getWriterFactory();
         MockSNSWriter writer = appender.getMockWriter();
 
         assertNotNull("after message 1, writer is initialized",         writer);

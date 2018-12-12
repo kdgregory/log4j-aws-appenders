@@ -29,6 +29,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 
+import com.kdgregory.logback.testhelpers.TestableLogbackInternalLogger;
 import com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.common.LogMessage;
@@ -46,6 +47,8 @@ public class TestCloudWatchAppender
 {
     private Logger logger;
     private TestableCloudWatchAppender appender;
+    private TestableLogbackInternalLogger appenderInternalLogger;
+
 
     private void initialize(String propsName)
     throws Exception
@@ -61,6 +64,7 @@ public class TestCloudWatchAppender
 
         logger = context.getLogger(getClass());
         appender = (TestableCloudWatchAppender)logger.getAppender("CLOUDWATCH");
+        appenderInternalLogger = appender.getInternalLogger();
     }
 
 //----------------------------------------------------------------------------
@@ -124,7 +128,7 @@ public class TestCloudWatchAppender
         assertEquals("after message 1, number of messages in writer",   1,          writer.messages.size());
 
         // throw in a sleep so that we can discern timestamps
-        Thread.sleep(100);
+        Thread.sleep(50);
 
         logger.error("test with exception", new Exception("this is a test"));
 
@@ -176,10 +180,13 @@ public class TestCloudWatchAppender
         appender.stop();
 
         logger.error("blah blah blah");
+        
+        // AppenderBase shouldn't even call append() in this case, but we don't have
+        // an invocation counter, so will just look for effects
 
         assertEquals("nothing was written", 0, writer.messages.size());
-
-        // TODO - once the InternalLogger is implemented, verify that this caused a warning
+        
+        appenderInternalLogger.assertWarningLog();
     }
 
 
@@ -242,6 +249,9 @@ public class TestCloudWatchAppender
 
         assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
         assertEquals("post-rotate, messages passed to new writer",  0,          writer1.messages.size());
+
+        // explicit rotation does not cause an internal log entry
+        appenderInternalLogger.assertDebugLog();
     }
 
 
@@ -266,6 +276,9 @@ public class TestCloudWatchAppender
         assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.logStream);
         assertEquals("post-rotate, messages passed to old writer",  3,          writer0.messages.size());
         assertEquals("post-rotate, messages passed to new writer",  1,          writer1.messages.size());
+
+        // implicit rotation is logged internally
+        appenderInternalLogger.assertDebugLog("rotating.*");
     }
 
 
@@ -290,6 +303,9 @@ public class TestCloudWatchAppender
         assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.logStream);
         assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
         assertEquals("post-rotate, messages passed to new writer",  1,          writer1.messages.size());
+
+        // implicit rotation is logged internally
+        appenderInternalLogger.assertDebugLog("rotating.*");
     }
 
 
@@ -314,6 +330,9 @@ public class TestCloudWatchAppender
         assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.logStream);
         assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
         assertEquals("post-rotate, messages passed to new writer",  1,          writer1.messages.size());
+
+        // implicit rotation is logged internally
+        appenderInternalLogger.assertDebugLog("rotating.*");
     }
 
 
@@ -338,6 +357,9 @@ public class TestCloudWatchAppender
         assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.logStream);
         assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
         assertEquals("post-rotate, messages passed to new writer",  1,          writer1.messages.size());
+
+        // implicit rotation is logged internally
+        appenderInternalLogger.assertDebugLog("rotating.*");
     }
 
 
@@ -387,6 +409,27 @@ public class TestCloudWatchAppender
 
         assertNull("writer has been reset",         appender.getWriter());
         assertEquals("last writer exception class", TestingException.class, appenderStats.getLastError().getClass());
+
+        appenderInternalLogger.assertDebugLog();
+        appenderInternalLogger.assertErrorLog("unhandled exception in writer");
+        appenderInternalLogger.assertErrorThrowables(TestingException.class);
+    }
+
+
+    @Test
+    public void testExceptionInLayout() throws Exception
+    {
+        initialize("TestCloudWatchAppender/testExceptionInLayout.xml");
+
+        MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
+
+        logger.debug("this should trigger throwage");
+
+        assertEquals("no messages sent to writer", 0, writer.messages.size());
+
+        appenderInternalLogger.assertDebugLog();
+        appenderInternalLogger.assertErrorLog("unable to apply layout");
+        appenderInternalLogger.assertErrorThrowables(TestingException.class);
     }
 
 

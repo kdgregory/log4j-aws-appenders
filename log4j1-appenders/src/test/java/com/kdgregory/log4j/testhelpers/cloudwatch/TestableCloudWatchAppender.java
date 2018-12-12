@@ -15,6 +15,7 @@
 package com.kdgregory.log4j.testhelpers.cloudwatch;
 
 import com.kdgregory.log4j.aws.CloudWatchAppender;
+import com.kdgregory.log4j.testhelpers.TestableLog4JInternalLogger;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
@@ -39,6 +40,7 @@ extends CloudWatchAppender
         super();
         setThreadFactory(new InlineThreadFactory());
         setWriterFactory(new MockCloudWatchWriterFactory());
+        logger = new TestableLog4JInternalLogger("");
     }
 
 
@@ -73,6 +75,12 @@ extends CloudWatchAppender
     }
 
 
+    public TestableLog4JInternalLogger getInternalLogger()
+    {
+        return (TestableLog4JInternalLogger)logger;
+    }
+
+
     public void updateLastRotationTimestamp(long offset)
     {
         lastRotationTimestamp += offset;
@@ -85,6 +93,7 @@ extends CloudWatchAppender
     }
 
 
+    // TODO - is this necessary
     @Override
     public boolean isMessageTooLarge(LogMessage message)
     {

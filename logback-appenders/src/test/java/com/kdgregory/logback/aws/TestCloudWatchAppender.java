@@ -116,7 +116,7 @@ public class TestCloudWatchAppender
         initialize("testLifecycle");
 
         MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
-        MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
+        MockCloudWatchWriter writer = appender.getMockWriter();
 
         assertEquals("writer is initialized: calls to writer factory",  1,              writerFactory.invocationCount);
         assertNotNull("writer is initialized: writer created",          writer);
@@ -428,7 +428,7 @@ public class TestCloudWatchAppender
     {
         initialize("testExceptionInLayout");
 
-        MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
+        MockCloudWatchWriter writer = appender.getMockWriter();
 
         logger.debug("this should trigger throwage");
 
@@ -445,7 +445,7 @@ public class TestCloudWatchAppender
     {
         initialize("testReconfigureDiscardProperties");
 
-        MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
+        MockCloudWatchWriter writer = appender.getMockWriter();
 
         assertEquals("initial discard threshold, from appender",    12345,                              appender.getDiscardThreshold());
         assertEquals("initial discard action, from appender",       DiscardAction.newest.toString(),    appender.getDiscardAction());

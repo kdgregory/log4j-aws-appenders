@@ -145,7 +145,7 @@ public class TestCloudWatchAppender
         logger.debug("first message");
 
         MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
-        MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
+        MockCloudWatchWriter writer = appender.getMockWriter();
 
         assertNotNull("after message 1, writer is initialized",         writer);
         assertEquals("after message 1, calls to writer factory",        1,              writerFactory.invocationCount);
@@ -462,7 +462,7 @@ public class TestCloudWatchAppender
 
         logger.debug("this should trigger throwage");
 
-        MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
+        MockCloudWatchWriter writer = appender.getMockWriter();
         assertNotNull("writer was created", writer);
 
         assertEquals("no messages sent to writer", 0, writer.messages.size());
@@ -480,7 +480,7 @@ public class TestCloudWatchAppender
 
         logger.debug("a message to trigger writer creation");
 
-        MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
+        MockCloudWatchWriter writer = appender.getMockWriter();
 
         assertEquals("initial discard threshold, from appender",    12345,                              appender.getDiscardThreshold());
         assertEquals("initial discard action, from appender",       DiscardAction.newest.toString(),    appender.getDiscardAction());

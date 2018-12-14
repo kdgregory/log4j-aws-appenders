@@ -17,10 +17,8 @@ package com.kdgregory.log4j.testhelpers;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
-import static net.sf.kdgcommons.test.StringAsserts.*;
-
 import com.kdgregory.log4j.aws.internal.Log4JInternalLogger;
+import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 
 
 /**
@@ -80,13 +78,7 @@ extends Log4JInternalLogger
      */
     public void assertDebugLog(String... regexes)
     {
-        assertEquals("internal debug log number of entries", regexes.length, debugMessages.size());
-
-        for (int ii = 0 ; ii < regexes.length ; ii++)
-        {
-            assertRegex("internal debug log entry " + ii + " (was: " + debugMessages.get(ii) + ")",
-                        regexes[ii], debugMessages.get(ii));
-        }
+        TestableInternalLogger.assertLogMessages("debug", debugMessages, regexes);
     }
 
 
@@ -95,13 +87,7 @@ extends Log4JInternalLogger
      */
     public void assertWarningLog(String... regexes)
     {
-        assertEquals("internal warning log number of entries", regexes.length, warnMessages.size());
-
-        for (int ii = 0 ; ii < regexes.length ; ii++)
-        {
-            assertRegex("internal warning log entry " + ii + " (was: " + warnMessages.get(ii) + ")",
-                        regexes[ii], warnMessages.get(ii));
-        }
+        TestableInternalLogger.assertLogMessages("warning", warnMessages, regexes);
     }
 
 
@@ -110,13 +96,7 @@ extends Log4JInternalLogger
      */
     public void assertErrorLog(String... regexes)
     {
-        assertEquals("internal error log number of entries", regexes.length, errorMessages.size());
-
-        for (int ii = 0 ; ii < regexes.length ; ii++)
-        {
-            assertRegex("internal error log entry " + ii + " (was: " + errorMessages.get(ii) + ")",
-                        regexes[ii], errorMessages.get(ii));
-        }
+        TestableInternalLogger.assertLogMessages("error", errorMessages, regexes);
     }
 
 
@@ -125,11 +105,6 @@ extends Log4JInternalLogger
      */
     public void assertErrorThrowables(Class<?>... klasses)
     {
-        assertEquals("internal exception log number of entries", klasses.length, errorThrowables.size());
-
-        for (int ii = 0 ; ii < klasses.length ; ii++)
-        {
-            assertSame("internal error exception entry " + ii, klasses[ii], errorThrowables.get(ii).getClass());
-        }
+        TestableInternalLogger.assertThrowables("error", errorThrowables, klasses);
     }
 }

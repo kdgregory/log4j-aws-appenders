@@ -77,8 +77,8 @@ implements InternalLogger
      */
     public void assertInternalDebugLog(String... expectedRegexes)
     {
-        assertInternalLogContentsExpectedSize("debug", debugMessages, expectedRegexes.length);
-        assertInternalLogContents("debug", debugMessages, expectedRegexes);
+        assertLogBecomesExpectedSize("debug", debugMessages, expectedRegexes.length, 1000);
+        assertLogMessages("debug", debugMessages, expectedRegexes);
     }
 
 
@@ -88,8 +88,8 @@ implements InternalLogger
      */
     public void assertInternalWarningLog(String... expectedRegexes)
     {
-        assertInternalLogContentsExpectedSize("warning", warnMessages, expectedRegexes.length);
-        assertInternalLogContents("warning", warnMessages, expectedRegexes);
+        assertLogBecomesExpectedSize("warning", warnMessages, expectedRegexes.length, 1000);
+        assertLogMessages("warning", warnMessages, expectedRegexes);
     }
 
 
@@ -98,10 +98,9 @@ implements InternalLogger
      */
     public void assertInternalErrorLog(String... expectedRegexes)
     {
-        assertInternalLogContentsExpectedSize("error", errorMessages, expectedRegexes.length);
-        assertInternalLogContents("error", errorMessages, expectedRegexes);
+        assertLogBecomesExpectedSize("error", errorMessages, expectedRegexes.length, 1000);
+        assertLogMessages("error", errorMessages, expectedRegexes);
     }
-
 
     /**
      *  Asserts that the internal error log contains the expected number and type of
@@ -112,22 +111,25 @@ implements InternalLogger
      */
     public void assertInternalErrorLogExceptionTypes(Class<?>... expectedTypes)
     {
-        for (int ii = 0 ; ii < expectedTypes.length ; ii++)
-        {
-            Throwable actualThrowable = errorExceptions.get(ii);
-            Class<?> actualType = (actualThrowable == null) ? null : actualThrowable.getClass();
-            assertEquals("internal error log throwable " + ii, expectedTypes[ii], actualType);
-        }
+        assertThrowables("error", errorExceptions, expectedTypes);
     }
 
+//-----------------------------------------------------------------------------
+//  Common assertion functions, available for other InternalLog implementations
+//-----------------------------------------------------------------------------
 
     /**
-     *  Shared method to wait for an log list to reach an expected size.
+     *  Waits for a list to reach an expected size, failing if it does not reach
+     *  that size within a given timeout. This function can be used with lists
+     *  that do not intentionally support concurrent access, as long as the
+     *  <code>size()</code> function does not depend on consistent internal state.
      */
-    private void assertInternalLogContentsExpectedSize(String bufferName, List<String> logBuffer, int expectedSize)
+    public static void assertLogBecomesExpectedSize(String logName, List<String> logBuffer, int expectedSize, long timeoutMs)
     {
         int actualSize = 0;
-        for (int ii = 0 ; ii < 10 ; ii++)
+        long timeoutAt = System.currentTimeMillis() + timeoutMs;
+
+        while (System.currentTimeMillis() < timeoutAt)
         {
             actualSize = logBuffer.size();
             if (actualSize == expectedSize)
@@ -135,22 +137,41 @@ implements InternalLogger
             ThreadUtil.sleepQuietly(10);
         }
 
-        assertEquals("internal " + bufferName + "log number of entries", expectedSize, actualSize);
+        assertEquals("internal " + logName + " log number of entries", expectedSize, actualSize);
     }
 
 
     /**
      *  Shared method to compare a log buffer to a (possibly empty) list of regexes.
      *  This assumes that the log buffer has the correct size, so should be called
-     *  after {@link #assertInternalLogContentsExpectedSize}.
+     *  after {@link #assertLogBecomesExpectedSize} in a multi-threaded test..
      */
-    private void assertInternalLogContents(String bufferName, List<String> logBuffer, String[] regexes)
+    public static void assertLogMessages(String logName, List<String> logBuffer, String[] expectedRegexes)
     {
-        for (int ii = 0 ; ii < regexes.length ; ii++)
+        assertEquals("internal " + logName + " log size", expectedRegexes.length, logBuffer.size());
+
+        for (int ii = 0 ; ii < expectedRegexes.length ; ii++)
         {
             // we know that buffers are ArrayLists, so List.get() isn't a concern
             String actual = logBuffer.get(ii);
-            assertRegex("internal " + bufferName + " log entry " + ii + " (was: " + actual + ")", regexes[ii], actual);
+            assertRegex("internal " + logName + " log entry " + ii + " (was: " + actual + ")", expectedRegexes[ii], actual);
+        }
+    }
+
+
+    /**
+     *  Shared method to compare a list of exceptions to those that are expected.
+     */
+    public static void assertThrowables(String logName, List<Throwable> logBuffer, Class<?>[] expectedTypes)
+    {
+        assertEquals("internal " + logName + " throwables size", expectedTypes.length, logBuffer.size());
+
+        for (int ii = 0 ; ii < expectedTypes.length ; ii++)
+        {
+            // we know that buffers are ArrayLists, so List.get() isn't a concern
+            Throwable throwable = logBuffer.get(ii);
+            Class<?> actualType = (throwable == null) ? null : throwable.getClass();
+            assertSame("internal " + logName + " exception " + ii, expectedTypes[ii], actualType);
         }
     }
 }

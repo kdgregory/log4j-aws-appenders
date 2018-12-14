@@ -506,7 +506,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             "using existing.*log stream.*",
             "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog(".*InvalidSequenceTokenException.*");
-        internalLogger.assertInternalErrorLogExceptionTypes();
+        internalLogger.assertInternalErrorLogExceptionTypes(new Class<?>[] { null });   // we record the message, not the exception
     }
 
 

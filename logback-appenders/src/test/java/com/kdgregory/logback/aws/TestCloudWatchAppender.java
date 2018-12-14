@@ -50,9 +50,10 @@ public class TestCloudWatchAppender
     private TestableLogbackInternalLogger appenderInternalLogger;
 
 
-    private void initialize(String propsName)
+    private void initialize(String testName)
     throws Exception
     {
+        String propsName = "TestCloudWatchAppender/" + testName + ".xml";
         URL config = ClassLoader.getSystemResource(propsName);
         assertNotNull("was able to retrieve config", config);
 
@@ -74,7 +75,7 @@ public class TestCloudWatchAppender
     @Test
     public void testConfiguration() throws Exception
     {
-        initialize("TestCloudWatchAppender/testConfiguration.xml");
+        initialize("testConfiguration");
 
         assertEquals("log group name",      "argle",                        appender.getLogGroup());
         assertEquals("log stream name",     "bargle",                       appender.getLogStream());
@@ -92,7 +93,7 @@ public class TestCloudWatchAppender
     @Test
     public void testDefaultConfiguration() throws Exception
     {
-        initialize("TestCloudWatchAppender/testDefaultConfiguration.xml");
+        initialize("testDefaultConfiguration");
 
         // note: this is allowed at time of configuration, would disable logger if we try to append
         assertNull("log group name",                                        appender.getLogGroup());
@@ -112,7 +113,7 @@ public class TestCloudWatchAppender
     @Test
     public void testLifecycle() throws Exception
     {
-        initialize("TestCloudWatchAppender/testLifecycle.xml");
+        initialize("testLifecycle");
 
         MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
         MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
@@ -173,19 +174,19 @@ public class TestCloudWatchAppender
     @Test
     public void testStopAppender() throws Exception
     {
-        initialize("TestCloudWatchAppender/testLifecycle.xml");
+        initialize("testLifecycle");
 
         MockCloudWatchWriter writer = appender.getMockWriter();
 
         appender.stop();
 
         logger.error("blah blah blah");
-        
+
         // AppenderBase shouldn't even call append() in this case, but we don't have
         // an invocation counter, so will just look for effects
 
         assertEquals("nothing was written", 0, writer.messages.size());
-        
+
         appenderInternalLogger.assertWarningLog();
     }
 
@@ -193,7 +194,7 @@ public class TestCloudWatchAppender
     @Test
     public void testWriteHeaderAndFooter() throws Exception
     {
-        initialize("TestCloudWatchAppender/testWriteHeaderAndFooter.xml");
+        initialize("testWriteHeaderAndFooter");
 
         MockCloudWatchWriter mockWriter = appender.getMockWriter();
 
@@ -214,7 +215,7 @@ public class TestCloudWatchAppender
         // note that the property value includes invalid characters
         System.setProperty("TestCloudWatchAppender.testSubstitution", "foo/bar");
 
-        initialize("TestCloudWatchAppender/testSubstitution.xml");
+        initialize("testSubstitution");
 
         MockCloudWatchWriter writer = appender.getMockWriter();
 
@@ -228,7 +229,7 @@ public class TestCloudWatchAppender
     @Test
     public void testExplicitRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender/testExplicitRotation.xml");
+        initialize("testExplicitRotation");
 
         MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
 
@@ -258,7 +259,7 @@ public class TestCloudWatchAppender
     @Test
     public void testCountedRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender/testCountedRotation.xml");
+        initialize("testCountedRotation");
 
         MockCloudWatchWriter writer0 = appender.getMockWriter();
 
@@ -285,7 +286,7 @@ public class TestCloudWatchAppender
     @Test
     public void testIntervalRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender/testIntervalRotation.xml");
+        initialize("testIntervalRotation");
 
         MockCloudWatchWriter writer0 = appender.getMockWriter();
 
@@ -312,7 +313,7 @@ public class TestCloudWatchAppender
     @Test
     public void testHourlyRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender/testHourlyRotation.xml");
+        initialize("testHourlyRotation");
 
         MockCloudWatchWriter writer0 = appender.getMockWriter();
 
@@ -339,7 +340,7 @@ public class TestCloudWatchAppender
     @Test
     public void testDailyRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender/testDailyRotation.xml");
+        initialize("testDailyRotation");
 
         MockCloudWatchWriter writer0 = appender.getMockWriter();
 
@@ -366,7 +367,7 @@ public class TestCloudWatchAppender
     @Test
     public void testInvalidRotationMode() throws Exception
     {
-        initialize("TestCloudWatchAppender/testInvalidRotationMode.xml");
+        initialize("testInvalidRotationMode");
         assertEquals("rotation mode", "none", appender.getRotationMode());
 
         // TODO - check InternalLogger once implemented
@@ -383,12 +384,12 @@ public class TestCloudWatchAppender
         final int maxMessageSize                = cloudwatchMaximumBatchSize - (cloudwatchOverhead + layoutOverhead);
         final String bigMessage                 = StringUtil.repeat('A', maxMessageSize);
         final String biggerMessage              = bigMessage + "1";
-        
-        initialize("TestCloudWatchAppender/testMaximumMessageSize.xml");
-        
+
+        initialize("testMaximumMessageSize");
+
         logger.debug(biggerMessage);
         logger.debug(bigMessage);
-        
+
         MockCloudWatchWriter writer = appender.getMockWriter();
 
         assertEquals("number of messages",  1,                  writer.messages.size());
@@ -399,7 +400,7 @@ public class TestCloudWatchAppender
     @Test
     public void testUncaughtExceptionHandling() throws Exception
     {
-        initialize("TestCloudWatchAppender/testUncaughtExceptionHandling.xml");
+        initialize("testUncaughtExceptionHandling");
 
         CloudWatchWriterStatistics appenderStats = appender.getAppenderStatistics();
         assertNull("writer has not yet thrown", appenderStats.getLastError());
@@ -425,7 +426,7 @@ public class TestCloudWatchAppender
     @Test
     public void testExceptionInLayout() throws Exception
     {
-        initialize("TestCloudWatchAppender/testExceptionInLayout.xml");
+        initialize("testExceptionInLayout");
 
         MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
 
@@ -442,7 +443,7 @@ public class TestCloudWatchAppender
     @Test
     public void testReconfigureDiscardProperties() throws Exception
     {
-        initialize("TestCloudWatchAppender/testReconfigureDiscardProperties.xml");
+        initialize("testReconfigureDiscardProperties");
 
         MockCloudWatchWriter writer = (MockCloudWatchWriter)appender.getWriter();
 

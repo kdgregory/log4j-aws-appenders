@@ -51,9 +51,10 @@ public class TestSNSAppender
     private TestableLog4JInternalLogger internalLogger;
 
 
-    private void initialize(String propsName)
+    private void initialize(String testName)
     throws Exception
     {
+        String propsName = "TestSNSAppender/" + testName + ".properties";
         URL config = ClassLoader.getSystemResource(propsName);
         assertNotNull("was able to retrieve config", config);
         PropertyConfigurator.configure(config);
@@ -91,7 +92,7 @@ public class TestSNSAppender
     public void testConfigurationByName() throws Exception
     {
         // note: this also tests non-default configuration
-        initialize("TestSNSAppender/testConfigurationByName.properties");
+        initialize("testConfigurationByName");
 
         assertEquals("topicName",           "example",                      appender.getTopicName());
         assertEquals("topicArn",            null,                           appender.getTopicArn());
@@ -110,7 +111,7 @@ public class TestSNSAppender
     public void testConfigurationByArn() throws Exception
     {
         // note: this also tests default configuration
-        initialize("TestSNSAppender/testConfigurationByArn.properties");
+        initialize("testConfigurationByArn");
 
         assertEquals("topicName",           null,                           appender.getTopicName());
         assertEquals("topicArn",            "arn-example",                  appender.getTopicArn());
@@ -128,7 +129,7 @@ public class TestSNSAppender
     @Test
     public void testLifecycle() throws Exception
     {
-        initialize("TestSNSAppender/testLifecycle.properties");
+        initialize("testLifecycle");
 
         assertEquals("internal logger configured with name",            appender.getName(), internalLogger.appenderName);
         assertNull("before messages, writer is null",                   appender.getMockWriter());
@@ -175,7 +176,7 @@ public class TestSNSAppender
     @Test(expected=IllegalStateException.class)
     public void testThrowsIfAppenderClosed() throws Exception
     {
-        initialize("TestSNSAppender/testLifecycle.properties");
+        initialize("testLifecycle");
 
         // write the first message to initialize the appender
         logger.debug("should not throw");
@@ -192,7 +193,7 @@ public class TestSNSAppender
     @Test
     public void testWriteHeaderAndFooter() throws Exception
     {
-        initialize("TestSNSAppender/testWriteHeaderAndFooter.properties");
+        initialize("testWriteHeaderAndFooter");
 
         logger.debug("message");
 
@@ -210,7 +211,7 @@ public class TestSNSAppender
     @Test
     public void testUncaughtExceptionHandling() throws Exception
     {
-        initialize("TestSNSAppender/testUncaughtExceptionHandling.properties");
+        initialize("testUncaughtExceptionHandling");
 
         // note that we will be running the writer on a separate thread
 

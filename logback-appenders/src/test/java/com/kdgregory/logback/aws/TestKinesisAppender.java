@@ -48,9 +48,10 @@ public class TestKinesisAppender
     private TestableKinesisAppender appender;
 
 
-    private void initialize(String propsName)
+    private void initialize(String testName)
     throws Exception
     {
+        String propsName = "TestKinesisAppender/" + testName + ".xml";
         URL config = ClassLoader.getSystemResource(propsName);
         assertNotNull("was able to retrieve config", config);
 
@@ -71,7 +72,7 @@ public class TestKinesisAppender
     @Test
     public void testConfiguration() throws Exception
     {
-        initialize("TestKinesisAppender/testConfiguration.xml");
+        initialize("testConfiguration");
 
         assertEquals("stream name",         "argle-{bargle}",                   appender.getStreamName());
         assertEquals("partition key",       "foo-{date}",                       appender.getPartitionKey());
@@ -89,7 +90,7 @@ public class TestKinesisAppender
     @Test
     public void testDefaultConfiguration() throws Exception
     {
-        initialize("TestKinesisAppender/testDefaultConfiguration.xml");
+        initialize("testDefaultConfiguration");
 
         // don't test stream name because there's no default
         assertEquals("partition key",       "{startupTimestamp}",               appender.getPartitionKey());
@@ -107,7 +108,7 @@ public class TestKinesisAppender
     @Test
     public void testLifecycle() throws Exception
     {
-        initialize("TestKinesisAppender/testLifecycle.xml");
+        initialize("testLifecycle");
 
         MockKinesisWriterFactory writerFactory = appender.getWriterFactory();
         MockKinesisWriter writer = appender.getMockWriter();
@@ -157,7 +158,7 @@ public class TestKinesisAppender
     @Test
     public void testStopAppender() throws Exception
     {
-        initialize("TestKinesisAppender/testLifecycle.xml");
+        initialize("testLifecycle");
 
         MockKinesisWriter writer = appender.getMockWriter();
 
@@ -174,7 +175,7 @@ public class TestKinesisAppender
     @Test
     public void testWriteHeaderAndFooter() throws Exception
     {
-        initialize("TestKinesisAppender/testWriteHeaderAndFooter.xml");
+        initialize("testWriteHeaderAndFooter");
 
         MockKinesisWriter mockWriter = appender.getMockWriter();
 
@@ -192,7 +193,7 @@ public class TestKinesisAppender
     @Test
     public void testUncaughtExceptionHandling() throws Exception
     {
-        initialize("TestKinesisAppender/testUncaughtExceptionHandling.xml");
+        initialize("testUncaughtExceptionHandling");
 
         // note that we will be running the writer on a separate thread
 
@@ -221,7 +222,7 @@ public class TestKinesisAppender
     @Test
     public void testReconfigureDiscardProperties() throws Exception
     {
-        initialize("TestKinesisAppender/testReconfigureDiscardProperties.xml");
+        initialize("testReconfigureDiscardProperties");
 
         MockKinesisWriter writer = appender.getMockWriter();
 

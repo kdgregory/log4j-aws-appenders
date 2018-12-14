@@ -52,9 +52,10 @@ public class TestKinesisAppender
     private TestableLog4JInternalLogger internalLogger;
 
 
-    private void initialize(String propsName)
+    private void initialize(String testName)
     throws Exception
     {
+        String propsName = "TestKinesisAppender/" + testName + ".properties";
         URL config = ClassLoader.getSystemResource(propsName);
         assertNotNull("was able to retrieve config", config);
         PropertyConfigurator.configure(config);
@@ -92,7 +93,7 @@ public class TestKinesisAppender
     @Test
     public void testConfiguration() throws Exception
     {
-        initialize("TestKinesisAppender/testConfiguration.properties");
+        initialize("testConfiguration");
 
         assertEquals("stream name",         "argle-{bargle}",                   appender.getStreamName());
         assertEquals("partition key",       "foo-{date}",                       appender.getPartitionKey());
@@ -110,7 +111,7 @@ public class TestKinesisAppender
     @Test
     public void testDefaultConfiguration() throws Exception
     {
-        initialize("TestKinesisAppender/testDefaultConfiguration.properties");
+        initialize("testDefaultConfiguration");
 
         // don't test stream name because there's no default
         assertEquals("partition key",       "{startupTimestamp}",               appender.getPartitionKey());
@@ -128,7 +129,7 @@ public class TestKinesisAppender
     @Test
     public void testLifecycle() throws Exception
     {
-        initialize("TestKinesisAppender/testLifecycle.properties");
+        initialize("testLifecycle");
 
         assertEquals("internal logger configured with name",            appender.getName(), internalLogger.appenderName);
         assertNull("before messages, writer is null",                   appender.getMockWriter());
@@ -192,7 +193,7 @@ public class TestKinesisAppender
     @Test(expected=IllegalStateException.class)
     public void testThrowsIfAppenderClosed() throws Exception
     {
-        initialize("TestKinesisAppender/testLifecycle.properties");
+        initialize("testLifecycle");
 
         // write the first message to initialize the appender
         logger.debug("should not throw");
@@ -209,7 +210,7 @@ public class TestKinesisAppender
     @Test
     public void testWriteHeaderAndFooter() throws Exception
     {
-        initialize("TestKinesisAppender/testWriteHeaderAndFooter.properties");
+        initialize("testWriteHeaderAndFooter");
 
         logger.debug("blah blah blah");
 
@@ -226,7 +227,7 @@ public class TestKinesisAppender
     @Test
     public void testUncaughtExceptionHandling() throws Exception
     {
-        initialize("TestKinesisAppender/testUncaughtExceptionHandling.properties");
+        initialize("testUncaughtExceptionHandling");
 
         // note that we will be running the writer on a separate thread
 
@@ -255,7 +256,7 @@ public class TestKinesisAppender
     @Test
     public void testReconfigureDiscardProperties() throws Exception
     {
-        initialize("TestKinesisAppender/testReconfigureDiscardProperties.properties");
+        initialize("testReconfigureDiscardProperties");
 
         logger.debug("a message to trigger writer creation");
 

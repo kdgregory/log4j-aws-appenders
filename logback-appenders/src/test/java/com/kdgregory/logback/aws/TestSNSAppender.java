@@ -45,9 +45,10 @@ public class TestSNSAppender
     private TestableSNSAppender appender;
 
 
-    private void initialize(String propsName)
+    private void initialize(String testName)
     throws Exception
     {
+        String propsName = "TestSNSAppender/" + testName + ".xml";
         URL config = ClassLoader.getSystemResource(propsName);
         assertNotNull("was able to retrieve config", config);
 
@@ -69,7 +70,7 @@ public class TestSNSAppender
     public void testConfigurationByName() throws Exception
     {
         // note: this also tests non-default configuration
-        initialize("TestSNSAppender/testConfigurationByName.xml");
+        initialize("testConfigurationByName");
 
         assertEquals("topicName",           "example",                      appender.getTopicName());
         assertEquals("topicArn",            null,                           appender.getTopicArn());
@@ -88,7 +89,7 @@ public class TestSNSAppender
     public void testConfigurationByArn() throws Exception
     {
         // note: this also tests default configuration
-        initialize("TestSNSAppender/testConfigurationByArn.xml");
+        initialize("testConfigurationByArn");
 
         assertEquals("topicName",           null,                           appender.getTopicName());
         assertEquals("topicArn",            "arn-example",                  appender.getTopicArn());
@@ -106,7 +107,7 @@ public class TestSNSAppender
     @Test
     public void testLifecycle() throws Exception
     {
-        initialize("TestSNSAppender/testLifecycle.xml");
+        initialize("testLifecycle");
 
         MockSNSWriterFactory writerFactory = (MockSNSWriterFactory)appender.getWriterFactory();
         MockSNSWriter writer = appender.getMockWriter();
@@ -161,7 +162,7 @@ public class TestSNSAppender
     @Test
     public void testThrowsIfAppenderClosed() throws Exception
     {
-        initialize("TestSNSAppender/testLifecycle.xml");
+        initialize("testLifecycle");
         MockSNSWriter writer = appender.getMockWriter();
 
         appender.stop();
@@ -177,7 +178,7 @@ public class TestSNSAppender
     @Test
     public void testWriteHeaderAndFooter() throws Exception
     {
-        initialize("TestSNSAppender/testWriteHeaderAndFooter.xml");
+        initialize("testWriteHeaderAndFooter");
         MockSNSWriter writer = appender.getMockWriter();
 
         logger.debug("blah blah blah");
@@ -194,7 +195,7 @@ public class TestSNSAppender
     @Test
     public void testUncaughtExceptionHandling() throws Exception
     {
-        initialize("TestSNSAppender/testUncaughtExceptionHandling.xml");
+        initialize("testUncaughtExceptionHandling");
 
         SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
         assertNull("writer has not yet thrown", appenderStats.getLastError());

@@ -56,9 +56,10 @@ public class TestCloudWatchAppender
     private TestableLog4JInternalLogger appenderInternalLogger;
 
 
-    private void initialize(String propsName)
+    private void initialize(String testName)
     throws Exception
     {
+        String propsName = "TestCloudWatchAppender/" + testName + ".properties";
         URL config = ClassLoader.getSystemResource(propsName);
         assertNotNull("was able to retrieve config", config);
         PropertyConfigurator.configure(config);
@@ -95,7 +96,7 @@ public class TestCloudWatchAppender
     @Test
     public void testConfiguration() throws Exception
     {
-        initialize("TestCloudWatchAppender/testConfiguration.properties");
+        initialize("testConfiguration");
 
         assertEquals("log group name",      "argle",                        appender.getLogGroup());
         assertEquals("log stream name",     "bargle",                       appender.getLogStream());
@@ -113,7 +114,7 @@ public class TestCloudWatchAppender
     @Test
     public void testDefaultConfiguration() throws Exception
     {
-        initialize("TestCloudWatchAppender/testDefaultConfiguration.properties");
+        initialize("testDefaultConfiguration");
 
         // note: this is allowed at time of configuration, would disable logger if we try to append
         assertNull("log group name",                                        appender.getLogGroup());
@@ -133,7 +134,7 @@ public class TestCloudWatchAppender
     @Test
     public void testLifecycle() throws Exception
     {
-        initialize("TestCloudWatchAppender/testLifecycle.properties");
+        initialize("testLifecycle");
 
         assertEquals("internal logger configured with name",            appender.getName(), appenderInternalLogger.appenderName);
 
@@ -199,7 +200,7 @@ public class TestCloudWatchAppender
     @Test(expected=IllegalStateException.class)
     public void testThrowsIfAppenderClosed() throws Exception
     {
-        initialize("TestCloudWatchAppender/testLifecycle.properties");
+        initialize("testLifecycle");
 
         // write the first message to initialize the appender
         logger.debug("should not throw");
@@ -216,7 +217,7 @@ public class TestCloudWatchAppender
     @Test
     public void testWriteHeaderAndFooter() throws Exception
     {
-        initialize("TestCloudWatchAppender/testWriteHeaderAndFooter.properties");
+        initialize("testWriteHeaderAndFooter");
 
         logger.debug("blah blah blah");
 
@@ -237,7 +238,7 @@ public class TestCloudWatchAppender
         // note that the property value includes invalid characters
         System.setProperty("TestCloudWatchAppender.testSubstitution", "foo/bar");
 
-        initialize("TestCloudWatchAppender/testSubstitution.properties");
+        initialize("testSubstitution");
 
         assertEquals("appender's log group name",   "MyLog-{sysprop:TestCloudWatchAppender.testSubstitution}", appender.getLogGroup());
         assertEquals("appender's log stream name",  "MyStream-{timestamp}-{bogus}",                            appender.getLogStream());
@@ -254,7 +255,7 @@ public class TestCloudWatchAppender
     @Test
     public void testExplicitRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender/testExplicitRotation.properties");
+        initialize("testExplicitRotation");
         MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
 
         logger.debug("first message");
@@ -282,7 +283,7 @@ public class TestCloudWatchAppender
     @Test
     public void testCountedRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender/testCountedRotation.properties");
+        initialize("testCountedRotation");
 
         logger.debug("message 1");
 
@@ -310,7 +311,7 @@ public class TestCloudWatchAppender
     @Test
     public void testIntervalRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender/testIntervalRotation.properties");
+        initialize("testIntervalRotation");
 
         logger.debug("first message");
 
@@ -337,7 +338,7 @@ public class TestCloudWatchAppender
     @Test
     public void testHourlyRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender/testHourlyRotation.properties");
+        initialize("testHourlyRotation");
 
         logger.debug("first message");
 
@@ -364,7 +365,7 @@ public class TestCloudWatchAppender
     @Test
     public void testDailyRotation() throws Exception
     {
-        initialize("TestCloudWatchAppender/testDailyRotation.properties");
+        initialize("testDailyRotation");
 
         logger.debug("first message");
 
@@ -391,7 +392,7 @@ public class TestCloudWatchAppender
     @Test
     public void testInvalidRotationMode() throws Exception
     {
-        initialize("TestCloudWatchAppender/testInvalidRotationMode.properties");
+        initialize("testInvalidRotationMode");
         assertEquals("rotation mode", "none", appender.getRotationMode());
 
         // TODO - check error logging
@@ -409,7 +410,7 @@ public class TestCloudWatchAppender
         final String bigMessage                 = StringUtil.repeat('A', maxMessageSize);
         final String biggerMessage              = bigMessage + "1";
 
-        initialize("TestCloudWatchAppender/testMaximumMessageSize.properties");
+        initialize("testMaximumMessageSize");
 
         logger.debug(biggerMessage);
         logger.debug(bigMessage);
@@ -424,7 +425,7 @@ public class TestCloudWatchAppender
     @Test
     public void testUncaughtExceptionHandling() throws Exception
     {
-        initialize("TestCloudWatchAppender/testUncaughtExceptionHandling.properties");
+        initialize("testUncaughtExceptionHandling");
 
         // note that we will be running the writer on a separate thread
 
@@ -457,7 +458,7 @@ public class TestCloudWatchAppender
     @Test
     public void testExceptionInLayout() throws Exception
     {
-        initialize("TestCloudWatchAppender/testExceptionInLayout.properties");
+        initialize("testExceptionInLayout");
 
         logger.debug("this should trigger throwage");
 
@@ -475,7 +476,7 @@ public class TestCloudWatchAppender
     @Test
     public void testReconfigureDiscardProperties() throws Exception
     {
-        initialize("TestCloudWatchAppender/testReconfigureDiscardProperties.properties");
+        initialize("testReconfigureDiscardProperties");
 
         logger.debug("a message to trigger writer creation");
 

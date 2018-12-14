@@ -49,6 +49,13 @@ public class ThrowingWriterFactory<C,S> implements WriterFactory<C,S>
                 }
 
                 @Override
+                public boolean isMessageTooLarge(LogMessage message)
+                {
+                    // for testing we'll assume that everything's good unless test overrides
+                    return false;
+                }
+
+                @Override
                 public void addMessage(LogMessage message)
                 {
                     appendLatch.countDown();

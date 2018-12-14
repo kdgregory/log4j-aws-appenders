@@ -22,13 +22,14 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import net.sf.kdgcommons.lang.StringUtil;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
+
+import net.sf.kdgcommons.lang.StringUtil;
 
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.TestableLog4JInternalLogger;
@@ -404,14 +405,19 @@ public class TestCloudWatchAppender
         final int cloudwatchOverhead            = 26;       // ditto
         final int layoutOverhead                = 1;        // newline after message
 
-        final int maxMessageSize                =  cloudwatchMaximumBatchSize - (layoutOverhead + cloudwatchOverhead);
-        final String bigMessage                 =  StringUtil.repeat('A', maxMessageSize);
+        final int maxMessageSize                = cloudwatchMaximumBatchSize - (cloudwatchOverhead + layoutOverhead);
+        final String bigMessage                 = StringUtil.repeat('A', maxMessageSize);
+        final String biggerMessage              = bigMessage + "1";
 
         initialize("TestCloudWatchAppender/testMaximumMessageSize.properties");
-        // no need to create a writer; cloudwatch messages not dependent on any names
 
-        assertFalse("max message size",             appender.isMessageTooLarge(new LogMessage(System.currentTimeMillis(), bigMessage)));
-        assertTrue("bigger than max message size",  appender.isMessageTooLarge(new LogMessage(System.currentTimeMillis(), bigMessage + "1")));
+        logger.debug(biggerMessage);
+        logger.debug(bigMessage);
+
+        MockCloudWatchWriter writer = appender.getMockWriter();
+
+        assertEquals("number of messages",  1,                  writer.messages.size());
+        assertEquals("successful message",  bigMessage,         writer.getMessage(0));
     }
 
 

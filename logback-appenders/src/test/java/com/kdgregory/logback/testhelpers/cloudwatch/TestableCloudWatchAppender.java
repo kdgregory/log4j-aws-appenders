@@ -18,7 +18,6 @@ import com.kdgregory.logback.aws.CloudWatchAppender;
 import com.kdgregory.logback.testhelpers.TestableLogbackInternalLogger;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
-import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.ThreadFactory;
 import com.kdgregory.logging.common.factories.WriterFactory;
@@ -93,12 +92,5 @@ extends CloudWatchAppender<ILoggingEvent>
     public long getLastRotationTimestamp()
     {
         return lastRotationTimestamp;
-    }
-
-
-    @Override
-    public boolean isMessageTooLarge(LogMessage message)
-    {
-        return super.isMessageTooLarge(message);
     }
 }

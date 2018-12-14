@@ -41,6 +41,16 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
     }
 
 //----------------------------------------------------------------------------
+//  LogWriter overrides
+//----------------------------------------------------------------------------
+
+    @Override
+    public boolean isMessageTooLarge(LogMessage message)
+    {
+        return (message.size() + CloudWatchConstants.MESSAGE_OVERHEAD)  > CloudWatchConstants.MAX_BATCH_BYTES;
+    }
+
+//----------------------------------------------------------------------------
 //  Hooks for superclass
 //----------------------------------------------------------------------------
 
@@ -112,7 +122,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
     @Override
     protected boolean withinServiceLimits(int batchBytes, int numMessages)
     {
-        return (batchBytes < CloudWatchConstants.MAX_BATCH_BYTES)
+        return (batchBytes <= CloudWatchConstants.MAX_BATCH_BYTES)
             && (numMessages <= CloudWatchConstants.MAX_BATCH_COUNT);
     }
 

@@ -473,14 +473,6 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     protected abstract WriterConfigType generateWriterConfig();
 
-
-    /**
-     *  Called {@link #append} to ensure that we don't have a single message
-     *  that violates AWS batching rules.
-     */
-    protected abstract boolean isMessageTooLarge(LogMessage message);
-
-
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
@@ -582,9 +574,12 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     private void internalAppend(LogMessage message)
     {
         if (message == null)
+        {
+            logger.error("internal error: message was null", null);
             return;
+        }
 
-        if (isMessageTooLarge(message))
+        if (writer.isMessageTooLarge(message))
         {
             logger.warn("attempted to append a message > AWS batch size; ignored");
             return;

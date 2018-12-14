@@ -14,7 +14,6 @@
 
 package com.kdgregory.logback.aws;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Date;
 
 import com.kdgregory.logback.aws.internal.AbstractAppender;
@@ -24,7 +23,6 @@ import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterFactory;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatisticsMXBean;
-import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 
 
@@ -47,12 +45,6 @@ extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWrit
 
     private String          actualStreamName;
     private String          actualPartitionKey;
-
-    // the length of the actual partition key, after being converted to UTF-8
-    // (doesn't apply to random partition keys)
-
-    private int             partitionKeyLength;
-
 
 
     public KinesisAppender()
@@ -217,28 +209,9 @@ extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWrit
         actualStreamName   = subs.perform(streamName);
         actualPartitionKey = subs.perform(partitionKey);
 
-        try
-        {
-            partitionKeyLength = actualPartitionKey.getBytes("UTF-8").length;
-        }
-        catch (UnsupportedEncodingException ex)
-        {
-            throw new RuntimeException("JVM doesn't support UTF-8 (should never happen)");
-        }
-
-        return new KinesisWriterConfig(actualStreamName, actualPartitionKey, partitionKeyLength,
+        return new KinesisWriterConfig(actualStreamName, actualPartitionKey,
                                        batchDelay, discardThreshold, discardAction,
                                        clientFactory, clientEndpoint,
                                        autoCreate, shardCount, retentionPeriod);
-    }
-
-
-    @Override
-    protected boolean isMessageTooLarge(LogMessage message)
-    {
-        // note: we assume that the writer config has been generated as part of
-        //       initialization, prior to any message being processed
-
-        return (message.size() + partitionKeyLength) >= KinesisConstants.MAX_MESSAGE_BYTES;
     }
 }

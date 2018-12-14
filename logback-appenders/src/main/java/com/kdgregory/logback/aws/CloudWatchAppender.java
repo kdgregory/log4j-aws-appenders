@@ -17,13 +17,11 @@ package com.kdgregory.logback.aws;
 import java.util.Date;
 
 import com.kdgregory.logback.aws.internal.AbstractAppender;
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchConstants;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterFactory;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatisticsMXBean;
 import com.kdgregory.logging.aws.common.Substitutions;
-import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 
 
@@ -128,12 +126,5 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
         String actualLogStream = subs.perform(logStream);
 
         return new CloudWatchWriterConfig(actualLogGroup, actualLogStream, batchDelay, discardThreshold, discardAction, clientFactory, clientEndpoint);
-    }
-
-
-    @Override
-    protected boolean isMessageTooLarge(LogMessage message)
-    {
-        return (message.size() + CloudWatchConstants.MESSAGE_OVERHEAD)  >= CloudWatchConstants.MAX_BATCH_BYTES;
     }
 }

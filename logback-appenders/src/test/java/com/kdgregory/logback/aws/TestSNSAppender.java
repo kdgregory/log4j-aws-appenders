@@ -20,7 +20,6 @@ import java.net.URL;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import net.sf.kdgcommons.lang.StringUtil;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import org.slf4j.LoggerFactory;
@@ -189,26 +188,6 @@ public class TestSNSAppender
         assertEquals("header is first",     "File Header",      writer.getMessage(0));
         assertEquals("message is middle",   "blah blah blah",   writer.getMessage(1));
         assertEquals("footer is last",      "File Footer",      writer.getMessage(2));
-    }
-
-
-    @Test
-    public void testMaximumMessageSize() throws Exception
-    {
-        final int snsMaximumMessageSize     = 262144;       // from http://docs.aws.amazon.com/sns/latest/api/API_Publish.html
-        final int layoutOverhead            = 1;            // newline after message
-
-        final String undersizeMessage       = StringUtil.repeat('A', snsMaximumMessageSize - 1 - layoutOverhead);
-        final String okMessage              = undersizeMessage + "A";
-        final String oversizeMessage        = undersizeMessage + "\u00A1";
-
-        initialize("TestSNSAppender/testLifecycle.xml");
-
-        logger.debug("this message triggers writer configuration");
-
-        assertFalse("under max size",          appender.isMessageTooLarge(new LogMessage(0, undersizeMessage)));
-        assertFalse("at max size",             appender.isMessageTooLarge(new LogMessage(0, okMessage)));
-        assertFalse("over max size",           appender.isMessageTooLarge(new LogMessage(0, oversizeMessage)));
     }
 
 

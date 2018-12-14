@@ -17,6 +17,7 @@ package com.kdgregory.logging.testhelpers.cloudwatch;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.kdgregory.logging.aws.cloudwatch.CloudWatchConstants;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
@@ -53,6 +54,14 @@ implements LogWriter
 //----------------------------------------------------------------------------
 //  LogWriter
 //----------------------------------------------------------------------------
+
+    @Override
+    public boolean isMessageTooLarge(LogMessage message)
+    {
+        // this is copied from CloudWatchLogWriter
+        return (message.size() + CloudWatchConstants.MESSAGE_OVERHEAD)  >= CloudWatchConstants.MAX_BATCH_BYTES;
+    }
+
 
     @Override
     public void addMessage(LogMessage message)

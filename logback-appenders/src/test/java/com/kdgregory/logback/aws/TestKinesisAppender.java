@@ -21,7 +21,6 @@ import static org.junit.Assert.*;
 
 import org.slf4j.LoggerFactory;
 
-import net.sf.kdgcommons.lang.StringUtil;
 import net.sf.kdgcommons.test.StringAsserts;
 
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
@@ -187,23 +186,6 @@ public class TestKinesisAppender
         assertEquals("header is first",     "File Header",      mockWriter.getMessage(0));
         assertEquals("message is middle",   "blah blah blah",   mockWriter.getMessage(1));
         assertEquals("footer is last",      "File Footer",      mockWriter.getMessage(2));
-    }
-
-
-    @Test
-    public void testMaximumMessageSize() throws Exception
-    {
-        final int kinesisMaximumMessageSize = 1024 * 1024;      // 1 MB
-        final int layoutOverhead            = 1;                // newline after message
-        final int partitionKeySize          = 4;                // "test"
-
-        final int maxMessageSize            =  kinesisMaximumMessageSize - (layoutOverhead + partitionKeySize);
-        final String bigMessage             =  StringUtil.repeat('A', maxMessageSize);
-
-        initialize("TestKinesisAppender/testMaximumMessageSize.xml");
-
-        assertFalse("max message size",             appender.isMessageTooLarge(new LogMessage(System.currentTimeMillis(), bigMessage)));
-        assertTrue("bigger than max message size",  appender.isMessageTooLarge(new LogMessage(System.currentTimeMillis(), bigMessage + "1")));
     }
 
 

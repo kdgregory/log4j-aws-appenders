@@ -23,6 +23,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.ClassUtil;
+import net.sf.kdgcommons.lang.StringUtil;
 
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.*;
@@ -489,6 +490,42 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testMaximumMessageSize() throws Exception
+    {
+        final int snsMaxMessageSize     = 262144;  // per https://docs.aws.amazon.com/sns/latest/api/API_Publish.html
+
+        final String bigMessage         = StringUtil.repeat('A', snsMaxMessageSize);
+        final String biggerMessage      = bigMessage + "1";
+
+        config.topicName = TEST_TOPIC_NAME;
+        config.subject = "example";
+        createWriter();
+
+        try
+        {
+            writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
+            fail("writer allowed too-large message");
+        }
+        catch (IllegalArgumentException ex)
+        {
+            assertEquals("exception message", "attempted to enqueue a too-large message", ex.getMessage());
+        }
+        catch (Exception ex)
+        {
+            fail("writer threw " + ex.getClass().getName() + ", not IllegalArgumentException");
+        }
+
+        // we'll send an OK message through to verify that nothing bad happened
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
+
+        mock.allowWriterThread();
+
+        assertEquals("publish: invocation count",        1,                  mock.publishInvocationCount);
+        assertEquals("publish: last call #/messages",    bigMessage,                  mock.lastPublishMessage);
     }
 
 

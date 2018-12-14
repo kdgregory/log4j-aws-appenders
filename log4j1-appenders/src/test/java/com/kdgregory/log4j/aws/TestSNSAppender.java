@@ -27,7 +27,6 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
 
-import net.sf.kdgcommons.lang.StringUtil;
 import net.sf.kdgcommons.test.StringAsserts;
 
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
@@ -35,7 +34,6 @@ import com.kdgregory.log4j.testhelpers.TestableLog4JInternalLogger;
 import com.kdgregory.log4j.testhelpers.sns.TestableSNSAppender;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
-import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.testhelpers.TestingException;
 import com.kdgregory.logging.testhelpers.ThrowingWriterFactory;
@@ -206,26 +204,6 @@ public class TestSNSAppender
         assertEquals("header is first",                     HeaderFooterLayout.HEADER,  writer.getMessage(0));
         assertEquals("message is second",                   "message",                  writer.getMessage(1));
         assertEquals("footer is last",                      HeaderFooterLayout.FOOTER,  writer.getMessage(2));
-    }
-
-
-    @Test
-    public void testMaximumMessageSize() throws Exception
-    {
-        final int snsMaximumMessageSize     = 262144;       // from http://docs.aws.amazon.com/sns/latest/api/API_Publish.html
-        final int layoutOverhead            = 1;            // newline after message
-
-        final String undersizeMessage       = StringUtil.repeat('A', snsMaximumMessageSize - 1 - layoutOverhead);
-        final String okMessage              = undersizeMessage + "A";
-        final String oversizeMessage        = undersizeMessage + "\u00A1";
-
-        initialize("TestSNSAppender/testLifecycle.properties");
-
-        logger.debug("this message triggers writer configuration");
-
-        assertFalse("under max size",          appender.isMessageTooLarge(new LogMessage(0, undersizeMessage)));
-        assertFalse("at max size",             appender.isMessageTooLarge(new LogMessage(0, okMessage)));
-        assertFalse("over max size",           appender.isMessageTooLarge(new LogMessage(0, oversizeMessage)));
     }
 
 

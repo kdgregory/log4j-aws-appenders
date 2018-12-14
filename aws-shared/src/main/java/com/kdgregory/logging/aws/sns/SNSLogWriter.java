@@ -47,7 +47,17 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
     }
 
 //----------------------------------------------------------------------------
-//  AbstractLogWriter implementation
+//  LogWriter overrides
+//----------------------------------------------------------------------------
+
+    @Override
+    public boolean isMessageTooLarge(LogMessage message)
+    {
+        return message.size() > SNSConstants.MAX_MESSAGE_BYTES;
+    }
+
+//----------------------------------------------------------------------------
+//  Hooks for superclass
 //----------------------------------------------------------------------------
 
     @Override

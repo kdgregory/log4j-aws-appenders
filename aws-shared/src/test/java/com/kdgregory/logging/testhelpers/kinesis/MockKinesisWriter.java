@@ -54,6 +54,14 @@ implements LogWriter
 //----------------------------------------------------------------------------
 
     @Override
+    public boolean isMessageTooLarge(LogMessage message)
+    {
+        // there are no tests for this, so we'll pretend everything's great
+        return false;
+    }
+
+
+    @Override
     public void addMessage(LogMessage message)
     {
         messages.add(message);

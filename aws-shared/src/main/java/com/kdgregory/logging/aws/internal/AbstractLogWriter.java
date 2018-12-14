@@ -109,6 +109,11 @@ implements LogWriter
     @Override
     public void addMessage(LogMessage message)
     {
+        // we're going to assume that the appender has already checked this, and
+        // fail hard if that assumption is not valid
+        if (isMessageTooLarge(message))
+            throw new IllegalArgumentException("attempted to enqueue a too-large message");
+
         messageQueue.enqueue(message);
     }
 
@@ -187,7 +192,7 @@ implements LogWriter
         } while (keepRunning());
 
         stopAWSClient();
-        logger.debug("stopping log-writer on thread " + Thread.currentThread().getName() 
+        logger.debug("stopping log-writer on thread " + Thread.currentThread().getName()
                      + " (#" + Thread.currentThread().getId() + ")");
     }
 

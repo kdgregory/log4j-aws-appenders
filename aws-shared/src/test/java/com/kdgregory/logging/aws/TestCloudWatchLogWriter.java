@@ -634,6 +634,43 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
 
     @Test
+    public void testMaximumMessageSize() throws Exception
+    {
+        final int cloudwatchMaximumBatchSize    = 1048576;  // copied from http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
+        final int cloudwatchOverhead            = 26;       // ditto
+
+        final int maxMessageSize                = cloudwatchMaximumBatchSize - cloudwatchOverhead;
+        final String bigMessage                 = StringUtil.repeat('A', maxMessageSize);
+        final String biggerMessage              = bigMessage + "1";
+
+        createWriter();
+
+        try
+        {
+            writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
+            fail("writer allowed too-large message");
+        }
+        catch (IllegalArgumentException ex)
+        {
+            assertEquals("exception message", "attempted to enqueue a too-large message", ex.getMessage());
+        }
+        catch (Exception ex)
+        {
+            fail("writer threw " + ex.getClass().getName() + ", not IllegalArgumentException");
+        }
+
+        // we'll send an OK message through to verify that nothing bad happened
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
+
+        mock.allowWriterThread();
+
+        assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",              bigMessage,         mock.mostRecentEvents.get(0).getMessage());
+    }
+
+
+    @Test
     public void testDiscardOldest() throws Exception
     {
         config.discardAction = DiscardAction.oldest;

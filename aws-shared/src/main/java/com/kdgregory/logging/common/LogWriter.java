@@ -26,6 +26,15 @@ public interface LogWriter
 extends Runnable
 {
     /**
+     *  Determines whether the passed message size exceeds the service limits.
+     *  This is exposed so that the appender can do a check before calling
+     *  {@link #addMessage}, because that method throws if given a too-large
+     *  message.
+     */
+    boolean isMessageTooLarge(LogMessage message);
+
+
+    /**
      *  Adds a message to the writer waiting for batch.
      *  <p>
      *  Implementations should assume that they are invoked within a synchronized

@@ -27,7 +27,6 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
 
-import net.sf.kdgcommons.lang.StringUtil;
 import net.sf.kdgcommons.test.StringAsserts;
 
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
@@ -221,24 +220,6 @@ public class TestKinesisAppender
         assertEquals("number of messages written to log", 3, writer.messages.size());
         assertEquals("header is first", HeaderFooterLayout.HEADER, writer.getMessage(0));
         assertEquals("footer is last",  HeaderFooterLayout.FOOTER, writer.getMessage(2));
-    }
-
-
-    @Test
-    public void testMaximumMessageSize() throws Exception
-    {
-        final int kinesisMaximumMessageSize = 1024 * 1024;      // 1 MB
-        final int layoutOverhead            = 1;                // newline after message
-        final int partitionKeySize          = 4;                // "test"
-
-        final int maxMessageSize            =  kinesisMaximumMessageSize - (layoutOverhead + partitionKeySize);
-        final String bigMessage             =  StringUtil.repeat('A', maxMessageSize);
-
-        initialize("TestKinesisAppender/testMaximumMessageSize.properties");
-        logger.debug("this message triggers writer configuration");
-
-        assertFalse("max message size",             appender.isMessageTooLarge(new LogMessage(System.currentTimeMillis(), bigMessage)));
-        assertTrue("bigger than max message size",  appender.isMessageTooLarge(new LogMessage(System.currentTimeMillis(), bigMessage + "1")));
     }
 
 

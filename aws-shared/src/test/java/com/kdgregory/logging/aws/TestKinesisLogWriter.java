@@ -95,7 +95,6 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         config = new KinesisWriterConfig(
             DEFAULT_STREAM_NAME,
             DEFAULT_PARTITION_KEY,
-            DEFAULT_PARTITION_KEY.length(),
             100,                            // batchDelay
             10000,                          // discardThreshold
             DiscardAction.oldest,
@@ -131,7 +130,6 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         config = new KinesisWriterConfig(
             DEFAULT_STREAM_NAME,
             DEFAULT_PARTITION_KEY,
-            DEFAULT_PARTITION_KEY.length(),
             123,                            // batchDelay
             456,                          // discardThreshold
             DiscardAction.newest,
@@ -491,6 +489,44 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
                    Arrays.equals(
                        BinaryUtils.copyAllBytesFrom(savedFailure2.getData()),
                        BinaryUtils.copyAllBytesFrom(mock.putRecordsSuccesses.get(0).getData())));
+    }
+
+
+    @Test
+    public void testMaximumMessageSize() throws Exception
+    {
+        final int kinesisMaxMessageSize = 1024 * 1024;  // per https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html
+
+        final int maxMessageSize        = kinesisMaxMessageSize - DEFAULT_PARTITION_KEY.length();   // DEFAULT_PARTITION_KEY is ASCII
+        final String bigMessage         = StringUtil.repeat('A', maxMessageSize);
+        final String biggerMessage      = bigMessage + "1";
+
+        createWriter();
+
+        try
+        {
+            writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
+            fail("writer allowed too-large message");
+        }
+        catch (IllegalArgumentException ex)
+        {
+            assertEquals("exception message", "attempted to enqueue a too-large message", ex.getMessage());
+        }
+        catch (Exception ex)
+        {
+            fail("writer threw " + ex.getClass().getName() + ", not IllegalArgumentException");
+        }
+
+        // we'll send an OK message through to verify that nothing bad happened
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
+
+        mock.allowWriterThread();
+
+        assertEquals("putRecords: invocation count",        1,                  mock.putRecordsInvocationCount);
+        assertEquals("putRecords: last call #/messages",    1,                  mock.putRecordsSourceRecords.size());
+
+        byte[] lastMessageContent = BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(0).getData());
+        assertEquals("putRecords: last call content",       bigMessage,         new String(lastMessageContent, "UTF-8"));
     }
 
 

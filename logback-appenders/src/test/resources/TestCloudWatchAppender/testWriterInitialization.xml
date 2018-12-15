@@ -3,8 +3,13 @@
   <root level="off"/>
 
   <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
-    <logGroup>MyLog-{sysprop:TestCloudWatchAppender.testSubstitution}</logGroup>
-    <logStream>MyStream-{timestamp}-{bogus}</logStream>
+    <logGroup>MyLog-{sysprop:TestCloudWatchAppender.testWriterInitialization}</logGroup>
+    <logStream>MyStream-{date}-{bogus}</logStream>
+    <batchDelay>9876</batchDelay>
+    <discardThreshold>12345</discardThreshold>
+    <discardAction>newest</discardAction>
+    <clientFactory>com.example.Foo.bar</clientFactory>
+    <clientEndpoint>logs.us-west-2.amazonaws.com</clientEndpoint>
     <layout class="ch.qos.logback.classic.PatternLayout">
       <pattern>%msg</pattern>
     </layout>

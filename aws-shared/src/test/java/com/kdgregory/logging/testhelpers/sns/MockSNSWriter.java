@@ -29,12 +29,12 @@ import com.kdgregory.logging.common.util.DiscardAction;
 public class MockSNSWriter
 implements LogWriter
 {
+    public SNSWriterConfig config;
+
     public List<LogMessage> messages = new ArrayList<LogMessage>();
     public LogMessage lastMessage;
 
     public boolean stopped;
-
-    public SNSWriterConfig config;
 
 
     public MockSNSWriter(SNSWriterConfig config)

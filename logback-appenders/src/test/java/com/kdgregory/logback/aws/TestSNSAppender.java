@@ -14,7 +14,6 @@
 
 package com.kdgregory.logback.aws;
 
-
 import java.net.URL;
 
 import org.junit.Test;
@@ -29,15 +28,11 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 
 import com.kdgregory.logback.testhelpers.sns.TestableSNSAppender;
-import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
-import com.kdgregory.logging.common.LogMessage;
-import com.kdgregory.logging.testhelpers.TestingException;
+import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.testhelpers.sns.MockSNSWriter;
-import com.kdgregory.logging.testhelpers.sns.MockSNSWriterFactory;
 
 /**
- *  These tests exercise the high-level logic of the appender: configuration
- *  and interaction with the writer. To do so, it mocks the LogWriter.
+ *  These tests exercise appender logic specific to SNSAppender, using a mock log-writer.
  */
 public class TestSNSAppender
 {
@@ -105,111 +100,29 @@ public class TestSNSAppender
 
 
     @Test
-    public void testLifecycle() throws Exception
+    public void testWriterInitialization() throws Exception
     {
-        initialize("testLifecycle");
+        // property has to be set before initialization
+        System.setProperty("TestSNSAppender.testWriterInitialization", "example");
 
-        MockSNSWriterFactory writerFactory = (MockSNSWriterFactory)appender.getWriterFactory();
-        MockSNSWriter writer = appender.getMockWriter();
-        long initialTimestamp = System.currentTimeMillis();
+        initialize("testWriterInitialization");
 
-        assertEquals("writer is initialized: calls to writer factory",  1,                  writerFactory.invocationCount);
-        assertNotNull("writer is initialized: writer created",          writer);
-        assertRegex("writer is initialized: actual topic name",         "name-[0-9]{8}",    writer.config.topicName);
-        assertRegex("writer is initialized: actual topic arn",          "arn-[0-9]{8}",     writer.config.topicArn);
+        assertEquals("configured topicName",            "name-{date}",                                          appender.getTopicName());
+        assertEquals("configured topicArn",             "arn-{date}",                                           appender.getTopicArn());
+        assertEquals("configured subect",               "{sysprop:TestSNSAppender.testWriterInitialization}",   appender.getSubject());
 
-        logger.debug("first message");
+        logger.debug("this triggers writer creation");
 
-        // throw in a sleep so that we can discern timestamps
-        Thread.sleep(100);
-
-        logger.error("test with exception", new Exception("this is a test"));
-
-        long finalTimestamp = System.currentTimeMillis();
-
-        assertEquals("after message 2, number of messages in writer",   2,                  writer.messages.size());
-
-        LogMessage message1 = writer.messages.get(0);
-        assertTrue("message 1 timestamp >= initial timestamp", message1.getTimestamp() >= initialTimestamp);
-        assertTrue("message 1 timestamp <= batch timestamp",   message1.getTimestamp() <= finalTimestamp);
-
-        assertRegex(
-                "message 1 follows layout: " + message1.getMessage(),
-                "20[12][0-9] TestSNSAppender first message",
-                message1.getMessage());
-
-        LogMessage message2 = writer.messages.get(1);
-        assertTrue("message 2 includes exception",
-                   message2.getMessage().indexOf("java.lang.Exception") > 0);
-        assertTrue("message 2 includes exception",
-                   message2.getMessage().indexOf("this is a test") > 0);
-
-
-        // finish off the life-cycle
-
-        assertTrue("appender not closed before shutdown", appender.isStarted());
-        assertFalse("writer still running before shutdown", writer.stopped);
-
-
-        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
-        context.stop();
-
-        assertFalse("appender closed after shutdown", appender.isStarted());
-        assertTrue("writer stopped after shutdown", writer.stopped);
-    }
-
-
-    @Test
-    public void testThrowsIfAppenderClosed() throws Exception
-    {
-        initialize("testLifecycle");
         MockSNSWriter writer = appender.getMockWriter();
 
-        appender.stop();
-
-        logger.error("blah blah blah");
-
-        assertEquals("nothing was written", 0, writer.messages.size());
-
-        // TODO - once the InternalLogger is implemented, verify that this caused a warning
-    }
-
-
-    @Test
-    public void testWriteHeaderAndFooter() throws Exception
-    {
-        initialize("testWriteHeaderAndFooter");
-        MockSNSWriter writer = appender.getMockWriter();
-
-        logger.debug("blah blah blah");
-
-        appender.stop();
-
-        assertEquals("number of messages",  3,                  writer.messages.size());
-        assertEquals("header is first",     "File Header",      writer.getMessage(0));
-        assertEquals("message is middle",   "blah blah blah",   writer.getMessage(1));
-        assertEquals("footer is last",      "File Footer",      writer.getMessage(2));
-    }
-
-
-    @Test
-    public void testUncaughtExceptionHandling() throws Exception
-    {
-        initialize("testUncaughtExceptionHandling");
-
-        SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
-        assertNull("writer has not yet thrown", appenderStats.getLastError());
-
-        logger.debug("first message should be processed");
-        logger.debug("this should trigger writer throwage");
-
-        // without getting really clever, the best way to wait for the throw to be reported is to sit and spin
-        for (int ii = 0 ; (ii < 10) && (appenderStats.getLastError() == null) ; ii++)
-        {
-            Thread.sleep(10);
-        }
-
-        assertNull("writer has been reset",         appender.getMockWriter());
-        assertEquals("last writer exception class", TestingException.class, appenderStats.getLastError().getClass());
+        assertRegex("writer topicName",                 "name-20\\d{6}",                    writer.config.topicName);
+        assertRegex("writer topicArn",                  "arn-20\\d{6}",                     writer.config.topicArn);
+        assertEquals("writer subect",                   "example",                          writer.config.subject);
+        assertTrue("writer autoCreate",                                                     writer.config.autoCreate);
+        assertEquals("writer batch delay",              1L,                                 writer.config.batchDelay);
+        assertEquals("writer discard threshold",        123,                                writer.config.discardThreshold);
+        assertEquals("writer discard action",           DiscardAction.newest,               writer.config.discardAction);
+        assertEquals("writer client factory method",    "com.example.Foo.bar",              writer.config.clientFactoryMethod);
+        assertEquals("writer client endpoint",          "sns.us-east-2.amazonaws.com",      writer.config.clientEndpoint);
     }
 }

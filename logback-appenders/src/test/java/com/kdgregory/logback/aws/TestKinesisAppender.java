@@ -19,28 +19,22 @@ import java.net.URL;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import static net.sf.kdgcommons.test.StringAsserts.*;
+
 import org.slf4j.LoggerFactory;
-
-import net.sf.kdgcommons.test.StringAsserts;
-
-import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
-import com.kdgregory.logback.testhelpers.kinesis.TestableKinesisAppender;
-import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
-import com.kdgregory.logging.common.LogMessage;
-import com.kdgregory.logging.common.factories.DefaultThreadFactory;
-import com.kdgregory.logging.common.util.DiscardAction;
-import com.kdgregory.logging.testhelpers.TestingException;
-import com.kdgregory.logging.testhelpers.ThrowingWriterFactory;
-import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriter;
-import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriterFactory;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 
+import com.kdgregory.logback.testhelpers.kinesis.TestableKinesisAppender;
+import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriter;
+
 
 /**
- *  These tests exercise the high-level logic of the appender.
+ *  These tests exercise appender logic specific to KinesisAppender, using a
+ *  mock log-writer.
  */
 public class TestKinesisAppender
 {
@@ -106,139 +100,29 @@ public class TestKinesisAppender
 
 
     @Test
-    public void testLifecycle() throws Exception
+    public void testWriterInitialization() throws Exception
     {
-        initialize("testLifecycle");
+        // property has to be set before initialization
+        System.setProperty("TestKinesisAppender.testWriterInitialization", "example");
 
-        MockKinesisWriterFactory writerFactory = appender.getWriterFactory();
-        MockKinesisWriter writer = appender.getMockWriter();
+        initialize("testWriterInitialization");
 
-        assertNotNull("after initializaton, writer exists",                     writer);
-        StringAsserts.assertRegex("stream name, with substitutions",            "argle-\\d+",   writer.streamName);
-        StringAsserts.assertRegex("default partition key, after substitutions", "20\\d{12}",    writer.partitionKey);
-        assertEquals("calls to writer factory",                                 1,              writerFactory.invocationCount);
+        assertEquals("configured stream name",      "MyStream-{sysprop:TestKinesisAppender.testWriterInitialization}",  appender.getStreamName());
+        assertEquals("configured partition key",    "{date}-{bogus}",                                                   appender.getPartitionKey());
 
-        long initialTimestamp = System.currentTimeMillis();
-
-        logger.debug("first message");
-
-        assertEquals("after message 1, number of messages in writer",           1,              writer.messages.size());
-
-        // throw in a sleep so that we can discern timestamps
-        Thread.sleep(50);
-
-        logger.error("test with exception", new Exception("this is a test"));
-
-        assertEquals("after message 2, number of messages in writer",           2,          writer.messages.size());
-
-        long finalTimestamp = System.currentTimeMillis();
-
-        LogMessage message1 = writer.messages.get(0);
-        assertTrue("message 1 timestamp >= initial timestamp", message1.getTimestamp() >= initialTimestamp);
-        assertTrue("message 1 timestamp <= batch timestamp",   message1.getTimestamp() <= finalTimestamp);
-
-        StringAsserts.assertRegex(
-                "message 1 follows layout: " + message1.getMessage(),
-                "20[12][0-9] TestKinesisAppender first message",
-                message1.getMessage());
-
-        LogMessage message2 = writer.messages.get(1);
-        assertTrue("message 2 includes exception",
-                   message2.getMessage().indexOf("java.lang.Exception") > 0);
-        assertTrue("message 2 includes exception",
-                   message2.getMessage().indexOf("this is a test") > 0);
-
-        // since we have the writer, we can verify that setting the batch delay gets propagated
-
-        appender.setBatchDelay(1234567);
-        assertEquals("writer batch delay propagated", 1234567, writer.batchDelay);
-    }
-
-
-    @Test
-    public void testStopAppender() throws Exception
-    {
-        initialize("testLifecycle");
+        logger.debug("this triggers writer creation");
 
         MockKinesisWriter writer = appender.getMockWriter();
 
-        appender.stop();
-
-        logger.error("blah blah blah");
-
-        assertEquals("nothing was written", 0, writer.messages.size());
-
-        // TODO - once the InternalLogger is implemented, verify that this caused a warning
-    }
-
-
-    @Test
-    public void testWriteHeaderAndFooter() throws Exception
-    {
-        initialize("testWriteHeaderAndFooter");
-
-        MockKinesisWriter mockWriter = appender.getMockWriter();
-
-        logger.debug("blah blah blah");
-
-        appender.stop();
-
-        assertEquals("number of messages",  3,                  mockWriter.messages.size());
-        assertEquals("header is first",     "File Header",      mockWriter.getMessage(0));
-        assertEquals("message is middle",   "blah blah blah",   mockWriter.getMessage(1));
-        assertEquals("footer is last",      "File Footer",      mockWriter.getMessage(2));
-    }
-
-
-    @Test
-    public void testUncaughtExceptionHandling() throws Exception
-    {
-        initialize("testUncaughtExceptionHandling");
-
-        // note that we will be running the writer on a separate thread
-
-        appender.setThreadFactory(new DefaultThreadFactory("test"));
-        appender.setWriterFactory(new ThrowingWriterFactory<KinesisWriterConfig,KinesisWriterStatistics>());
-
-        KinesisWriterStatistics appenderStats = appender.getAppenderStatistics();
-
-        logger.debug("this should trigger writer creation");
-
-        assertNull("writer has not yet thrown", appenderStats.getLastError());
-
-        logger.debug("this should trigger writer throwage");
-
-        // without getting really clever, the best way to wait for the throw to be reported is to sit and spin
-        for (int ii = 0 ; (ii < 10) && (appenderStats.getLastError() == null) ; ii++)
-        {
-            Thread.sleep(10);
-        }
-
-        assertNull("writer has been reset",         appender.getWriter());
-        assertEquals("last writer exception class", TestingException.class, appenderStats.getLastError().getClass());
-    }
-
-
-    @Test
-    public void testReconfigureDiscardProperties() throws Exception
-    {
-        initialize("testReconfigureDiscardProperties");
-
-        MockKinesisWriter writer = appender.getMockWriter();
-
-        assertEquals("initial discard threshold, from appender",    12345,                              appender.getDiscardThreshold());
-        assertEquals("initial discard action, from appender",       DiscardAction.newest.toString(),    appender.getDiscardAction());
-
-        assertEquals("initial discard threshold, from writer",      12345,                              writer.discardThreshold);
-        assertEquals("initial discard action, from writer",         DiscardAction.newest,               writer.discardAction);
-
-        appender.setDiscardThreshold(54321);
-        appender.setDiscardAction(DiscardAction.oldest.toString());
-
-        assertEquals("updated discard threshold, from appender",    54321,                              appender.getDiscardThreshold());
-        assertEquals("updated discard action, from appender",       DiscardAction.oldest.toString(),    appender.getDiscardAction());
-
-        assertEquals("updated discard threshold, from writer",      54321,                              writer.discardThreshold);
-        assertEquals("updated discard action, from writer",         DiscardAction.oldest,               writer.discardAction);
+        assertEquals("writer stream name",              "MyStream-example",                 writer.config.streamName);
+        assertRegex("writer partition key",             "20\\d{6}-\\{bogus}",               writer.config.partitionKey);
+        assertTrue("writer autoCreate",                                                     writer.config.autoCreate);
+        assertEquals("writer shardCount",               7,                                  writer.config.shardCount);
+        assertEquals("writer retentionPeriod",          Integer.valueOf(48),                writer.config.retentionPeriod);
+        assertEquals("writer batch delay",              1234L,                              writer.config.batchDelay);
+        assertEquals("writer discard threshold",        54321,                              writer.config.discardThreshold);
+        assertEquals("writer discard action",           DiscardAction.newest,               writer.config.discardAction);
+        assertEquals("writer client factory method",    "com.example.Foo.bar",              writer.config.clientFactoryMethod);
+        assertEquals("writer client endpoint",          "kinesis.us-west-1.amazonaws.com",  writer.config.clientEndpoint);
     }
 }

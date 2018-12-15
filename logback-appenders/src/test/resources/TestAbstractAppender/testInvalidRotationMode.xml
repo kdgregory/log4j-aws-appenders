@@ -4,14 +4,15 @@
 
   <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
     <logGroup>argle</logGroup>
+    <logStream>bargle-{sequence}</logStream>
+    <rotationMode>bogus</rotationMode>
+    <rotationInterval>10000</rotationInterval>
     <layout class="ch.qos.logback.classic.PatternLayout">
       <pattern>%msg</pattern>
-      <fileHeader>File Header</fileHeader>
-      <fileFooter>File Footer</fileFooter>
     </layout>
   </appender>
 
-  <logger name="com.kdgregory.logback.aws.TestCloudWatchAppender" level="debug">
+  <logger name="com.kdgregory.logback.aws.TestAbstractAppender" level="debug">
     <appender-ref ref="CLOUDWATCH" />
   </logger>
 

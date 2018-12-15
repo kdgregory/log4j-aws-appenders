@@ -29,24 +29,17 @@ import com.kdgregory.logging.common.util.DiscardAction;
 public class MockKinesisWriter
 implements LogWriter
 {
+    public KinesisWriterConfig config;
+
     public List<LogMessage> messages = new ArrayList<LogMessage>();
     public LogMessage lastMessage;
-    public boolean stopped;
 
-    public String streamName;
-    public String partitionKey;
-    public long batchDelay;
-    public int discardThreshold;
-    public DiscardAction discardAction;
+    public boolean stopped;
 
 
     public MockKinesisWriter(KinesisWriterConfig config)
     {
-        this.streamName = config.streamName;
-        this.partitionKey = config.partitionKey;
-        this.batchDelay = config.batchDelay;
-        this.discardThreshold = config.discardThreshold;
-        this.discardAction = config.discardAction;
+        this.config = config;
     }
 
 //----------------------------------------------------------------------------
@@ -79,21 +72,21 @@ implements LogWriter
     @Override
     public void setBatchDelay(long value)
     {
-        this.batchDelay = value;
+        this.config.batchDelay = value;
     }
 
 
     @Override
     public void setDiscardThreshold(int value)
     {
-        this.discardThreshold = value;
+        this.config.discardThreshold = value;
     }
 
 
     @Override
     public void setDiscardAction(DiscardAction value)
     {
-        this.discardAction = value;
+        this.config.discardAction = value;
     }
 
 //----------------------------------------------------------------------------

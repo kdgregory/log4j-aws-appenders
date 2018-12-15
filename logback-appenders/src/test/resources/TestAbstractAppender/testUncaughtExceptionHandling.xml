@@ -9,7 +9,7 @@
     </layout>
   </appender>
 
-  <logger name="com.kdgregory.logback.aws.TestCloudWatchAppender" level="debug">
+  <logger name="com.kdgregory.logback.aws.TestAbstractAppender" level="debug">
     <appender-ref ref="CLOUDWATCH" />
   </logger>
 

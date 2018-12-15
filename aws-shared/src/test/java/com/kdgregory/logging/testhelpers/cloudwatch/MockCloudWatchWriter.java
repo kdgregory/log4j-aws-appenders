@@ -30,25 +30,17 @@ import com.kdgregory.logging.common.util.DiscardAction;
 public class MockCloudWatchWriter
 implements LogWriter
 {
+    public CloudWatchWriterConfig config;
+    
     public List<LogMessage> messages = new ArrayList<LogMessage>();
     public LogMessage lastMessage;
 
     public boolean stopped;
 
-    public String logGroup;
-    public String logStream;
-    public long batchDelay;
-    public int discardThreshold;
-    public DiscardAction discardAction;
-
 
     public MockCloudWatchWriter(CloudWatchWriterConfig config)
     {
-        this.logGroup = config.logGroupName;
-        this.logStream = config.logStreamName;
-        this.batchDelay = config.batchDelay;
-        this.discardThreshold = config.discardThreshold;
-        this.discardAction = config.discardAction;
+        this.config = config;
     }
 
 //----------------------------------------------------------------------------
@@ -81,21 +73,21 @@ implements LogWriter
     @Override
     public void setBatchDelay(long value)
     {
-        this.batchDelay = value;
+        this.config.batchDelay = value;
     }
 
 
     @Override
     public void setDiscardThreshold(int value)
     {
-        this.discardThreshold = value;
+        this.config.discardThreshold = value;
     }
 
 
     @Override
     public void setDiscardAction(DiscardAction value)
     {
-        this.discardAction = value;
+        this.config.discardAction = value;
     }
 
 //----------------------------------------------------------------------------

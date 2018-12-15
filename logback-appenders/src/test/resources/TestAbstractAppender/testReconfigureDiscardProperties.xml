@@ -2,8 +2,8 @@
 
   <root level="off"/>
 
-  <appender name="KINESIS" class="com.kdgregory.logback.testhelpers.kinesis.TestableKinesisAppender">
-    <streamName>argle</streamName>
+  <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
+    <logGroup>argle</logGroup>
     <discardThreshold>12345</discardThreshold>
     <discardAction>newest</discardAction>
     <layout class="ch.qos.logback.classic.PatternLayout">
@@ -11,8 +11,8 @@
     </layout>
   </appender>
 
-  <logger name="com.kdgregory.logback.aws.TestKinesisAppender" level="debug">
-    <appender-ref ref="KINESIS" />
+  <logger name="com.kdgregory.logback.aws.TestAbstractAppender" level="debug">
+    <appender-ref ref="CLOUDWATCH" />
   </logger>
 
 </configuration>

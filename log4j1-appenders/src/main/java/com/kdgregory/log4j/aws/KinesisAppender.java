@@ -40,8 +40,8 @@ extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWrit
     private int             shardCount;
     private Integer         retentionPeriod;    // we only set if not null
 
-    // these variables hold the post-substitution log-group and log-stream names
-    // (held here for testing, as they're passed to the writer for use)
+    // these variables are assigned when the writer is initialized, are used
+    // to prevent attempts at reconfiguration
 
     private String          actualStreamName;
     private String          actualPartitionKey;

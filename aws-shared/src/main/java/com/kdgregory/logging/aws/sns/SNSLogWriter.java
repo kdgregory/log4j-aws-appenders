@@ -63,6 +63,25 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
     @Override
     protected boolean ensureDestinationAvailable()
     {
+        if ((config.subject != null) && ! config.subject.isEmpty())
+        {
+            if (config.subject.length() >= 100)
+            {
+                reportError("invalid subject (too long): " + config.subject, null);
+                return false;
+            }
+            if (config.subject.matches(".*[^\u0020-\u007d].*"))
+            {
+                reportError("invalid subject (disallowed characters): " + config.subject, null);
+                return false;
+            }
+            if (config.subject.startsWith(" "))
+            {
+                reportError("invalid subject (starts with space): " + config.subject, null);
+                return false;
+            }
+        }
+
         try
         {
             boolean topicAvailable = (config.topicArn != null)
@@ -76,7 +95,6 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
             }
 
             return topicAvailable;
-
         }
         catch (Exception ex)
         {

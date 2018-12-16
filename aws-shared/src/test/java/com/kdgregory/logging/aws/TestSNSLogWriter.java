@@ -369,7 +369,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     public void testSubject() throws Exception
     {
         config.topicName = TEST_TOPIC_NAME;
-        config.subject = "example";
+        config.subject = "This is OK";
         createWriter();
 
         assertEquals("after init, invocations of listTopics",   1,                      mock.listTopicsInvocationCount);
@@ -385,7 +385,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         assertEquals("after publish, invocation count",         1,                      mock.publishInvocationCount);
         assertEquals("after publish, arn",                      TEST_TOPIC_ARN,         mock.lastPublishArn);
-        assertEquals("after publish, subject",                  "example",              mock.lastPublishSubject);
+        assertEquals("after publish, subject",                  "This is OK",           mock.lastPublishSubject);
         assertEquals("after publish, body",                     "message one",          mock.lastPublishMessage);
         assertStatisticsMessagesSent("after publish, messages sent", 1);
 
@@ -412,6 +412,69 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         internalLogger.assertInternalDebugLog("log writer starting.*");
         internalLogger.assertInternalErrorLog(".*invalid.*topic.*");
+    }
+
+
+    @Test
+    public void testInvalidSubjectTooLong() throws Exception
+    {
+        config.topicName = TEST_TOPIC_NAME;
+        config.subject = StringUtil.repeat('A', 100);
+        createWriter();
+
+        assertStatisticsErrorMessage("invalid subject.*too long.*");
+
+        assertEquals("invocations of listTopics",               0,                      mock.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",              0,                      mock.createTopicInvocationCount);
+        assertNotNull("topic name, from statistics",                                    stats.getActualTopicName());        // comes from config
+        assertNull("topic ARN, from statistics",                                        stats.getActualTopicArn());         // would come from init
+        assertEquals("message queue set to discard all",        0,                      messageQueue.getDiscardThreshold());
+        assertEquals("message queue set to discard all",        DiscardAction.oldest,   messageQueue.getDiscardAction());
+
+        internalLogger.assertInternalDebugLog("log writer starting.*");
+        internalLogger.assertInternalErrorLog("invalid.*subject.*too long.*");
+    }
+
+
+    @Test
+    public void testInvalidSubjectBadCharacters() throws Exception
+    {
+        config.topicName = TEST_TOPIC_NAME;
+        config.subject = "This is \t not OK";
+        createWriter();
+
+        assertStatisticsErrorMessage("invalid subject.*disallowed characters.*");
+
+        assertEquals("invocations of listTopics",               0,                      mock.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",              0,                      mock.createTopicInvocationCount);
+        assertNotNull("topic name, from statistics",                                    stats.getActualTopicName());        // comes from config
+        assertNull("topic ARN, from statistics",                                        stats.getActualTopicArn());         // would come from init
+        assertEquals("message queue set to discard all",        0,                      messageQueue.getDiscardThreshold());
+        assertEquals("message queue set to discard all",        DiscardAction.oldest,   messageQueue.getDiscardAction());
+
+        internalLogger.assertInternalDebugLog("log writer starting.*");
+        internalLogger.assertInternalErrorLog("invalid subject.*disallowed characters.*");
+    }
+
+
+    @Test
+    public void testInvalidSubjectBeginsWithSpace() throws Exception
+    {
+        config.topicName = TEST_TOPIC_NAME;
+        config.subject = " not OK";
+        createWriter();
+
+        assertStatisticsErrorMessage("invalid subject.*starts with space.*");
+
+        assertEquals("invocations of listTopics",               0,                      mock.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",              0,                      mock.createTopicInvocationCount);
+        assertNotNull("topic name, from statistics",                                    stats.getActualTopicName());        // comes from config
+        assertNull("topic ARN, from statistics",                                        stats.getActualTopicArn());         // would come from init
+        assertEquals("message queue set to discard all",        0,                      messageQueue.getDiscardThreshold());
+        assertEquals("message queue set to discard all",        DiscardAction.oldest,   messageQueue.getDiscardAction());
+
+        internalLogger.assertInternalDebugLog("log writer starting.*");
+        internalLogger.assertInternalErrorLog("invalid.*subject.*starts with space.*");
     }
 
 

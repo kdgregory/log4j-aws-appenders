@@ -314,9 +314,9 @@ public class TestAbstractAppender
     public void testInvalidRotationMode() throws Exception
     {
         initialize("testInvalidRotationMode");
-        assertEquals("rotation mode", "none", appender.getRotationMode());
 
-        // TODO - check InternalLogger once implemented
+        assertEquals("rotation mode", "none", appender.getRotationMode());
+        appenderInternalLogger.assertErrorLog("invalid rotation mode.*bogus.*");
     }
 
 
@@ -385,7 +385,7 @@ public class TestAbstractAppender
         appenderInternalLogger.assertErrorThrowables(TestingException.class);
     }
 
-    
+
     @Test
     public void testReconfigureDiscardProperties() throws Exception
     {

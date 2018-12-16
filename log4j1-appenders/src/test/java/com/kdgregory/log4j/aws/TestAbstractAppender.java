@@ -336,9 +336,9 @@ public class TestAbstractAppender
     public void testInvalidRotationMode() throws Exception
     {
         initialize("testInvalidRotationMode");
-        assertEquals("rotation mode", "none", appender.getRotationMode());
 
-        // TODO - check error logging
+        assertEquals("rotation mode", "none", appender.getRotationMode());
+        appenderInternalLogger.assertErrorLog("invalid rotation mode.*bogus.*");
     }
 
 

@@ -100,23 +100,24 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
     }
 
 //----------------------------------------------------------------------------
-//  Appender-specific methods
+//  AbstractAppender overrides
 //----------------------------------------------------------------------------
 
-    /**
-     *  Rotates the log stream: flushes all outstanding messages to the current
-     *  stream, and opens a new stream. This is called internally, and exposed
-     *  for testing.
-     */
     @Override
+    /** {@inheritDoc} */
+    public void setRotationMode(String value)
+    {
+        super.setRotationMode(value);
+    }
+
+
+    @Override
+    /** {@inheritDoc} */
     public void rotate()
     {
         super.rotate();
     }
 
-//----------------------------------------------------------------------------
-//  AbstractAppender overrides
-//----------------------------------------------------------------------------
 
     @Override
     protected CloudWatchWriterConfig generateWriterConfig()

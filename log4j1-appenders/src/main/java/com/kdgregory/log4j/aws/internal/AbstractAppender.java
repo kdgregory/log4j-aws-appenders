@@ -249,11 +249,20 @@ extends AppenderSkeleton
 
     /**
      *  Sets the rule for log stream rotation, for those appenders that support rotation.
-     *  See {@link com.kdgregory.logging.common.util.RotationMode} for values.
+     *  See {@link com.kdgregory.logging.common.util.RotationMode} for values. Invalid
+     *  values are logged and translated to "none".
+     *  <p>
+     *  Note: this method must be explicitly overridden by appenders that support rotation.
      */
-    public void setRotationMode(String value)
+    protected void setRotationMode(String value)
     {
-        this.rotationMode = RotationMode.lookup(value);
+        RotationMode newMode = RotationMode.lookup(value);
+        if (newMode == null)
+        {
+            newMode = RotationMode.none;
+            logger.error("invalid rotation mode: " + value + ", setting to " + newMode, null);
+        }
+        this.rotationMode = newMode;
     }
 
 
@@ -450,8 +459,9 @@ extends AppenderSkeleton
 //----------------------------------------------------------------------------
 
     /**
-     *  Rotates the log writer. This must be exposed by appenders that support
-     *  log rotation; they can simply delegate to the super implementation.
+     *  Rotates the log writer. This will create in a new writer thread, with
+     *  the pre-rotation writer shutting down after processing all messages in
+     *  its queue.
      */
     protected void rotate()
     {
@@ -462,7 +472,6 @@ extends AppenderSkeleton
             startWriter();
         }
     }
-
 
 //----------------------------------------------------------------------------
 //  Subclass hooks

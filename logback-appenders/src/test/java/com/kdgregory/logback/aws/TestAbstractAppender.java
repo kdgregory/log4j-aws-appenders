@@ -407,5 +407,28 @@ public class TestAbstractAppender
 
         assertEquals("updated discard threshold, from writer",      54321,                              writer.config.discardThreshold);
         assertEquals("updated discard action, from writer",         DiscardAction.oldest,               writer.config.discardAction);
+
+        appenderInternalLogger.assertDebugLog();
+        appenderInternalLogger.assertErrorLog();
+    }
+
+
+    @Test
+    public void testInvalidDiscardAction() throws Exception
+    {
+        initialize("testReconfigureDiscardProperties");
+
+        MockCloudWatchWriter writer = appender.getMockWriter();
+
+        assertEquals("pre-update discard action, from appender",    DiscardAction.newest.toString(),    appender.getDiscardAction());
+        assertEquals("pre-update discard action, from writer",      DiscardAction.newest,               writer.config.discardAction);
+
+        appender.setDiscardAction("bogus");
+
+        assertEquals("post-update discard action, from appender",   DiscardAction.newest.toString(),    appender.getDiscardAction());
+        assertEquals("post-update discard action, from writer",     DiscardAction.newest,               writer.config.discardAction);
+
+        appenderInternalLogger.assertDebugLog();
+        appenderInternalLogger.assertErrorLog("invalid discard action.*bogus.*");
     }
 }

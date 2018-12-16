@@ -230,11 +230,19 @@ extends AppenderSkeleton
      */
     public void setDiscardAction(String value)
     {
-        discardAction = DiscardAction.lookup(value);
+        DiscardAction tmpDiscardAction = DiscardAction.lookup(value);
+        if (tmpDiscardAction == null)
+        {
+            logger.error("invalid discard action: " + value, null);
+            return;
+        }
+
         if (writer != null)
         {
-            writer.setDiscardAction(discardAction);
+            writer.setDiscardAction(tmpDiscardAction);
         }
+
+        discardAction = tmpDiscardAction;
     }
 
 

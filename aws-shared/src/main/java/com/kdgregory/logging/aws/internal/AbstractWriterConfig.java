@@ -22,8 +22,8 @@ import com.kdgregory.logging.common.util.DiscardAction;
 public class AbstractWriterConfig
 {
     public volatile long batchDelay;
-    public int discardThreshold;
-    public DiscardAction discardAction;
+    public volatile int discardThreshold;
+    public volatile DiscardAction discardAction;
     public String clientFactoryMethod;
     public String clientEndpoint;
 

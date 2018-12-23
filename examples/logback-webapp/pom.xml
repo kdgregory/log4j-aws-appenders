@@ -41,9 +41,12 @@
         </dependency>
 
         <dependency>
+            <!-- this is here to make it easy to copy dependencies into an app-server deployment
+                 it's not actually used by the example -->
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-access</artifactId>
             <version>${logback.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>

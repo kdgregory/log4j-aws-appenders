@@ -21,7 +21,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <aws-sdk.version>1.11.405</aws-sdk.version>
-        <logback.version>1.2.3</logback.version>
+        <logback.version>1.2.0</logback.version>
     </properties>
 
 

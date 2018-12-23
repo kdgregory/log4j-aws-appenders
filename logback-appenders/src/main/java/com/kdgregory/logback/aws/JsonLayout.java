@@ -20,13 +20,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import com.kdgregory.logging.aws.common.Substitutions;
-import com.kdgregory.logging.common.util.JsonConverter;
+import com.kdgregory.logback.aws.internal.AbstractJsonLayout;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
 import ch.qos.logback.classic.spi.StackTraceElementProxy;
-import ch.qos.logback.core.LayoutBase;
 
 
 /**
@@ -83,34 +81,14 @@ import ch.qos.logback.core.LayoutBase;
  *  ordering is an implementation artifact and subject to change without notice.
  */
 public class JsonLayout
-extends LayoutBase<ILoggingEvent>
+extends AbstractJsonLayout<ILoggingEvent>
 {
-    // if enabled and supported, these will be not-null
-    private String processId;
-    private String hostname;
-    private String instanceId;
-    private Map<String,String> tags;
 
 //----------------------------------------------------------------------------
 //  Configuration
 //----------------------------------------------------------------------------
 
-    private boolean appendNewlines;
     private boolean enableLocation;
-    private boolean enableHostname;
-    private boolean enableInstanceId;
-    private String rawTags;
-
-
-    public void setAppendNewlines(boolean value)
-    {
-        appendNewlines = value;
-    }
-
-    public boolean getAppendNewlines()
-    {
-        return appendNewlines;
-    }
 
 
     public void setEnableLocation(boolean value)
@@ -124,88 +102,9 @@ extends LayoutBase<ILoggingEvent>
         return enableLocation;
     }
 
-
-    public void setEnableInstanceId(boolean value)
-    {
-        enableInstanceId = value;
-    }
-
-
-    public boolean getEnableInstanceId()
-    {
-        return enableInstanceId;
-    }
-
-
-    public void setEnableHostname(boolean value)
-    {
-        enableHostname = value;
-    }
-
-
-    public boolean getEnableHostname()
-    {
-        return enableHostname;
-    }
-
-
-    public void setTags(String value)
-    {
-        rawTags = value;
-    }
-
-
-    public String getTags()
-    {
-        return rawTags;
-    }
-
 //----------------------------------------------------------------------------
 //  Layout Overrides
 //----------------------------------------------------------------------------
-
-    @Override
-    public void start()
-    {
-        Substitutions subs = new Substitutions(new Date(), 0);
-
-        processId = subs.perform("{pid}");
-        if ("unknown".equals(processId))
-            processId = null;
-
-        if (enableHostname)
-        {
-            hostname = subs.perform("{hostname}");
-            if ("unknown".equals(hostname))
-                hostname = null;
-        }
-
-        if (enableInstanceId)
-        {
-            instanceId = subs.perform("{instanceId}");
-            if ("{instanceId}".equals(instanceId))
-                instanceId = null;
-        }
-
-        if ((rawTags != null) && !rawTags.isEmpty())
-        {
-            tags = new TreeMap<String,String>();
-            for (String tagdef : rawTags.split(","))
-            {
-                String[] splitdef = tagdef.split("=");
-                if (splitdef.length == 2)
-                {
-                    tags.put(splitdef[0], subs.perform(splitdef[1]));
-                }
-                else
-                {
-                    throw new IllegalArgumentException("invalid tag definition: " + tagdef);
-                }
-            }
-        }
-        super.start();
-    }
-
 
     @Override
     public String doLayout(ILoggingEvent event)
@@ -243,19 +142,7 @@ extends LayoutBase<ILoggingEvent>
             }
         }
 
-        if (processId != null)  map.put("processId", processId);
-        if (hostname != null)   map.put("hostname", hostname);
-        if (instanceId != null) map.put("instanceId", instanceId);
-
-        if (tags != null)       map.put("tags",         tags);
-
-        String json = (new JsonConverter()).convert(map);
-        if (getAppendNewlines())
-        {
-            json += "\n";
-        }
-
-        return json;
+        return addCommonAttributesAndConvert(map);
     }
 
 

@@ -52,7 +52,6 @@ public class TestSubstitutions
     }
 
 
-
     @Test
     public void testDate() throws Exception
     {

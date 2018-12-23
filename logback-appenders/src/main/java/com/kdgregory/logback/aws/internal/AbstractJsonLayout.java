@@ -49,8 +49,8 @@ extends LayoutBase<E>
 //  Configuration
 //----------------------------------------------------------------------------
 
+    private boolean enableHostname = true;
     private boolean appendNewlines;
-    private boolean enableHostname;
     private boolean enableInstanceId;
     private String rawTags;
 

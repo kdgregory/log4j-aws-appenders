@@ -38,6 +38,10 @@ import ch.qos.logback.classic.spi.StackTraceElementProxy;
  *  <li> <code>logger</code>:       the name of the logger.
  *  <li> <code>level</code>:        the level of this log message.
  *  <li> <code>message</code>:      the message itself.
+ *  <li> <code>hostname</code>:     the name of the machine where the logger is running, if
+ *                                  available (this is currently retrieved from
+ *                                  <code>RuntimeMxBean</code> and may not be available on
+ *                                  all platforms).
  *  <li> <code>processId</code>:    the PID of the invoking process, if available (this is
  *                                  retrieved from <code>RuntimeMxBean</code> and may not be
  *                                  available on all platforms).
@@ -48,7 +52,7 @@ import ch.qos.logback.classic.spi.StackTraceElementProxy;
  *  <li> <code>exception</code>:    an exception with stack trace. This is an array, with the
  *                                  first element identifying the exception and message, and
  *                                  subsequent elements identifying the stack trace.
- *  <li> <code>mdc</code>:          the mapped diagnostic context. This is a child map.
+ *  <li> <code>mdc</code>:          the mapped diagnostic context. This is a child object.
  *  </ul>
  *  <p>
  *  The following properties are potentially expensive to compute, so will only
@@ -65,10 +69,6 @@ import ch.qos.logback.classic.spi.StackTraceElementProxy;
  *  <li> <code>instanceId</code>:   the EC2 instance ID of the machine where the logger is
  *                                  running. WARNING: do not enable this elsewhere, as the
  *                                  operation to retrieve this value may take a long time.
- *  <li> <code>hostname</code>:     the name of the machine where the logger is running, if
- *                                  available (this is currently retrieved from
- *                                  <code>RuntimeMxBean</code> and may not be available on
- *                                  all platforms).
  *  </ul>
  *  <p>
  *  Lastly, you can define a set of user tags, which are written as a child object with

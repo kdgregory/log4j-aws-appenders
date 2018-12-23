@@ -30,6 +30,7 @@ import static org.junit.Assert.*;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import net.sf.kdgcommons.lang.StringUtil;
 // I know of a nice library for making XPath-based assertions against a DOM, so convert
 // the generated JSON into XML ... sue me
 import net.sf.practicalxml.converter.JsonConverter;
@@ -140,11 +141,13 @@ public class TestJsonLayout
         captureLoggingOutputAndParse();
         assertCommonElements(TEST_MESSAGE);
 
+        String hostname = new XPathWrapper("/data/hostname").evaluateAsString(dom);
+        assertFalse("hostname", StringUtil.isBlank(hostname));
+
         DomAsserts.assertCount("no exception",  0,  dom, "/data/exception");
         DomAsserts.assertCount("no NDC",        0,  dom, "/data/ndc");
         DomAsserts.assertCount("no MDC",        0,  dom, "/data/mdc");
         DomAsserts.assertCount("no location",   0,  dom, "/data/locationInfo");
-        DomAsserts.assertCount("no hostname",   0,  dom, "/data/hostname");
         DomAsserts.assertCount("no instanceId", 0,  dom, "/data/instanceId");
         DomAsserts.assertCount("no tags",       0,  dom, "/data/tags");
     }
@@ -224,17 +227,16 @@ public class TestJsonLayout
 
 
     @Test
-    public void testHostname() throws Exception
+    public void testDisableHostname() throws Exception
     {
-        initialize("TestJsonLayout/testHostname.xml");
+        initialize("TestJsonLayout/testDisableHostname.xml");
 
         logger.debug(TEST_MESSAGE);
 
         captureLoggingOutputAndParse();
         assertCommonElements(TEST_MESSAGE);
 
-        String hostname = new XPathWrapper("/data/hostname").evaluateAsString(dom);
-        assertFalse("hostname should be set", hostname.isEmpty());
+        DomAsserts.assertCount("no hostname element", 0, dom, new XPathWrapper("/data/hostname"));
     }
 
 

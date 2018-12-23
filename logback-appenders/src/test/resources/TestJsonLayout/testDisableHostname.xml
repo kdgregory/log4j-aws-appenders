@@ -5,7 +5,7 @@
     <appender name="test" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
             <layout class="com.kdgregory.logback.aws.JsonLayout">
-                <enableHostname>true</enableHostname>
+                <enableHostname>false</enableHostname>
             </layout>
         </encoder>
     </appender>

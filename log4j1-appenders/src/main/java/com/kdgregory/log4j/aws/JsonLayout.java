@@ -41,6 +41,10 @@ import com.kdgregory.logging.common.util.JsonConverter;
  *  <li> <code>processId</code>:    the PID of the invoking process, if available (this is
  *                                  retrieved from <code>RuntimeMxBean</code> and may not be
  *                                  available on all platforms).
+ *  <li> <code>hostname</code>:     the name of the machine where the logger is running, if
+ *                                  available (this is currently retrieved from
+ *                                  <code>RuntimeMxBean</code> and may not be available on
+ *                                  all platforms).
  *  </ul>
  *  <p>
  *  The following properties will only appear if they are present in the event:
@@ -48,7 +52,7 @@ import com.kdgregory.logging.common.util.JsonConverter;
  *  <li> <code>exception</code>:    an exception with stack trace. This is an array, with the
  *                                  first element identifying the exception and message, and
  *                                  subsequent elements identifying the stack trace.
- *  <li> <code>mdc</code>:          the mapped diagnostic context. This is a child map.
+ *  <li> <code>mdc</code>:          the mapped diagnostic context. This is a child object.
  *  <li> <code>ndc</code>:          the nested diagnostic context. This is a single
  *                                  string that contains each of the pushed entries
  *                                  separated by spaces (yes, that's how Log4J does it).
@@ -68,10 +72,6 @@ import com.kdgregory.logging.common.util.JsonConverter;
  *  <li> <code>instanceId</code>:   the EC2 instance ID of the machine where the logger is
  *                                  running. WARNING: do not enable this elsewhere, as the
  *                                  operation to retrieve this value may take a long time.
- *  <li> <code>hostname</code>:     the name of the machine where the logger is running, if
- *                                  available (this is currently retrieved from
- *                                  <code>RuntimeMxBean</code> and may not be available on
- *                                  all platforms).
  *  </ul>
  *  <p>
  *  Lastly, you can define a set of user tags, which are written as a child object with
@@ -96,9 +96,10 @@ extends Layout
 //  Configuration
 //----------------------------------------------------------------------------
 
+    private boolean enableHostname = true;
+
     private boolean appendNewlines;
     private boolean enableLocation;
-    private boolean enableHostname;
     private boolean enableInstanceId;
     private String rawTags;
 

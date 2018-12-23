@@ -189,6 +189,11 @@ public class TestJsonLayout
         assertNotNull("trace includes cause", causeEntry);
         assertTrue("cause includes inner exception class", causeEntry.contains(IllegalArgumentException.class.getName()));
         assertTrue("cause includes inner exception message", causeEntry.contains(innerMessage));
+
+        for (String entry : entries)
+        {
+            assertFalse("entry contains tab character (was: " + entry + ")", entry.contains("\t"));
+        }
     }
 
 

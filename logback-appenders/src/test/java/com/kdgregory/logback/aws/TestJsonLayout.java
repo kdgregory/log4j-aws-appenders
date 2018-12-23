@@ -31,8 +31,6 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import net.sf.kdgcommons.lang.StringUtil;
-// I know of a nice library for making XPath-based assertions against a DOM, so convert
-// the generated JSON into XML ... sue me
 import net.sf.practicalxml.converter.JsonConverter;
 import net.sf.practicalxml.junit.DomAsserts;
 import net.sf.practicalxml.xpath.XPathWrapper;
@@ -182,6 +180,11 @@ public class TestJsonLayout
         assertNotNull("trace includes cause", causeEntry);
         assertTrue("cause includes inner exception class", causeEntry.contains(IllegalArgumentException.class.getName()));
         assertTrue("cause includes inner exception message", causeEntry.contains(innerMessage));
+
+        for (String entry : entries)
+        {
+            assertFalse("entry contains tab character (was: " + entry + ")", entry.contains("\t"));
+        }
     }
 
 

@@ -218,19 +218,26 @@ extends Layout
         map.put("level",        event.getLevel().toString());
         map.put("message",      event.getRenderedMessage());
 
-        if (event.getThrowableStrRep() != null) map.put("exception",    event.getThrowableStrRep());
-        if (event.getNDC() != null)             map.put("ndc",          event.getNDC());
-        if (tags != null)                       map.put("tags",         tags);
+        if (event.getNDC() != null)     map.put("ndc",          event.getNDC());
+        if (tags != null)               map.put("tags",         tags);
+        if (processId != null)          map.put("processId",    processId);
+        if (hostname != null)           map.put("hostname",     hostname);
+        if (instanceId != null)         map.put("instanceId",   instanceId);
 
         if ((event.getProperties() != null) && ! event.getProperties().isEmpty())
         {
             map.put("mdc", event.getProperties());
         }
 
-
-        if (processId != null)  map.put("processId", processId);
-        if (hostname != null)   map.put("hostname", hostname);
-        if (instanceId != null) map.put("instanceId", instanceId);
+        if (event.getThrowableStrRep() != null)
+        {
+            String[] trace = event.getThrowableStrRep();
+            for (int ii = 0 ; ii < trace.length ; ii++)
+            {
+                trace[ii] = trace[ii].replace("\t", "");
+            }
+            map.put("exception", trace);
+        }
 
         if (enableLocation)
         {

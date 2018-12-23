@@ -573,4 +573,18 @@ public class TestJsonAccessLayout
         DomAsserts.assertEquals("explicit tag",                     "bar",              dom, "/data/tags/foo");
         StringAsserts.assertRegex("substituted tag",                "\\d+",             new XPathWrapper("/data/tags/process").evaluateAsString(dom));
     }
+
+
+    @Test
+    public void testForwardedFor() throws Exception
+    {
+        JsonAccessLayout layout = new JsonAccessLayout();
+
+        constructMocks("/example", "", "success!");
+        request.addHeader("X-Forwarded-For", "10.64.1.2");
+
+        applyLayoutAndParse(layout);
+
+        DomAsserts.assertEquals("forwardedFor",                 "10.64.1.2",        dom, "/data/forwardedFor");
+    }
 }

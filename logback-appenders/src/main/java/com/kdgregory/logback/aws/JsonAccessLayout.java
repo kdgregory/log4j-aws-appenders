@@ -50,6 +50,8 @@ import com.kdgregory.logback.aws.internal.AbstractJsonLayout;
  *  <li> <code>statusCode</code>:       the response status code.
  *  <li> <code>bytesSent</code>:        the number of bytes (content-length) of the response.
  *  <li> <code>remoteIP</code>:         the IP address of the originating server.
+ *  <li> <code>forwardedFor</code>:     the value of the <code>X-Forwarded-For</code> header, if it exists.
+ *                                      Used to identify source IP when running behind a load balancer.
  *  </ul>
  *  <p>
  *  The following properties are potentially expensive to compute, may leak secrets, or significantly
@@ -469,6 +471,10 @@ extends AbstractJsonLayout<IAccessEvent>
 
         if (enableParameters)
             map.put("parameters",       applyFilters(event.getRequestParameterMap(), whitelistAllParameters, parameterWhitelist, parameterBlacklist));
+
+        String forwardedFor = event.getRequestHeader("x-forwarded-for");
+        if (forwardedFor != null)
+            map.put("forwardedFor",     forwardedFor);
 
         return addCommonAttributesAndConvert(map);
     }

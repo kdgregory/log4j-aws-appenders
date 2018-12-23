@@ -497,6 +497,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertRegex("statistics: error message",                        ".*repeated InvalidSequenceTokenException.*",
                                                                         stats.getLastErrorMessage());
 
+        // when running on a single-core CPU, this will occasionallly not report the most recent retry
         assertEquals("stats: writer race retries",                      6,                      stats.getWriterRaceRetries());
         assertEquals("stats: unrecovered writer race retries",          1,                      stats.getUnrecoveredWriterRaceRetries());
 

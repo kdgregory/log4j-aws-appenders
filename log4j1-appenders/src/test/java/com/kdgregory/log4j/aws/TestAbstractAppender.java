@@ -39,6 +39,7 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.common.util.RotationMode;
 import com.kdgregory.logging.testhelpers.TestingException;
 import com.kdgregory.logging.testhelpers.ThrowingWriterFactory;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
@@ -339,6 +340,40 @@ public class TestAbstractAppender
 
         assertEquals("rotation mode", "none", appender.getRotationMode());
         appenderInternalLogger.assertErrorLog("invalid rotation mode.*bogus.*");
+    }
+
+
+    @Test
+    public void testReconfigureRotation() throws Exception
+    {
+        initialize("testDailyRotation");
+
+        // this message creates the writer
+        logger.debug("first message");
+        
+        MockCloudWatchWriter writer0 = appender.getMockWriter();
+
+        appender.updateLastRotationTimestamp(-7200000);
+
+        // with daily rotation we should not rotate from this message
+        logger.debug("second message");
+        
+        assertSame("still using original writer", writer0, appender.getMockWriter());
+        appenderInternalLogger.assertDebugLog();
+        
+        appender.setRotationMode(RotationMode.hourly.toString());
+        
+        // this message should trigger rotation
+        logger.debug("third message");
+        
+        appenderInternalLogger.assertDebugLog("rotating.*");
+        
+        MockCloudWatchWriter writer1 = appender.getMockWriter();
+        
+        assertNotSame("should be using new writer", writer0, writer1);
+        
+        assertEquals("messages passed to old writer",  2,          writer0.messages.size());
+        assertEquals("messages passed to new writer",  1,          writer1.messages.size());
     }
 
 

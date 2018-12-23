@@ -101,8 +101,8 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     protected long                      batchDelay;
     protected int                       discardThreshold;
     protected DiscardAction             discardAction;
-    protected RotationMode              rotationMode = RotationMode.none;
-    protected long                      rotationInterval;
+    protected volatile RotationMode     rotationMode = RotationMode.none;
+    protected volatile long             rotationInterval;
     protected AtomicInteger             sequence;
     protected String                    clientFactory;
     protected String                    clientEndpoint;

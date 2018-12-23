@@ -103,15 +103,14 @@ extends AppenderSkeleton
 
     // all member vars below this point are shared configuration
 
-    protected long            batchDelay;
-    protected int             discardThreshold;
-    protected DiscardAction   discardAction;
-    protected RotationMode    rotationMode = RotationMode.none;
-    protected long            rotationInterval;
-    protected AtomicInteger   sequence;
-    protected String          clientFactory;
-    protected String          clientEndpoint;
-
+    protected long                  batchDelay;
+    protected int                   discardThreshold;
+    protected DiscardAction         discardAction;
+    protected volatile RotationMode rotationMode = RotationMode.none;
+    protected volatile long         rotationInterval;
+    protected AtomicInteger         sequence;
+    protected String                clientFactory;
+    protected String                clientEndpoint;
 
 //----------------------------------------------------------------------------
 //  Constructor

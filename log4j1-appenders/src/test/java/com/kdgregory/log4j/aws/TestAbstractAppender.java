@@ -16,6 +16,9 @@ package com.kdgregory.log4j.aws;
 
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.junit.After;
 import org.junit.Before;
@@ -37,8 +40,10 @@ import com.kdgregory.log4j.testhelpers.cloudwatch.TestableCloudWatchAppender;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
+import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.common.util.InternalLogger;
 import com.kdgregory.logging.common.util.RotationMode;
 import com.kdgregory.logging.testhelpers.TestingException;
 import com.kdgregory.logging.testhelpers.ThrowingWriterFactory;
@@ -71,6 +76,33 @@ public class TestAbstractAppender
         Logger rootLogger = Logger.getRootLogger();
         appender = (TestableCloudWatchAppender)rootLogger.getAppender("default");
         appenderInternalLogger = appender.getInternalLogger();
+    }
+
+
+    private void runLoggingThreads(final int numThreads, final int messagesPerThread)
+    throws Exception
+    {
+        List<Thread> threads = new ArrayList<Thread>();
+        for (int ii = 0 ; ii < numThreads ; ii++)
+        {
+            threads.add(new Thread(new Runnable() {
+                @Override
+                public void run()
+                {
+                    for (int jj = 0 ; jj < messagesPerThread ; jj++)
+                    {
+                        logger.debug(Thread.currentThread().getName() + " " + jj);
+                        Thread.yield();
+                    }
+                }
+            }));
+        }
+
+        for (Thread thread : threads)
+            thread.start();
+
+        for (Thread thread : threads)
+            thread.join();
     }
 
 //----------------------------------------------------------------------------
@@ -350,28 +382,28 @@ public class TestAbstractAppender
 
         // this message creates the writer
         logger.debug("first message");
-        
+
         MockCloudWatchWriter writer0 = appender.getMockWriter();
 
         appender.updateLastRotationTimestamp(-7200000);
 
         // with daily rotation we should not rotate from this message
         logger.debug("second message");
-        
+
         assertSame("still using original writer", writer0, appender.getMockWriter());
         appenderInternalLogger.assertDebugLog();
-        
+
         appender.setRotationMode(RotationMode.hourly.toString());
-        
+
         // this message should trigger rotation
         logger.debug("third message");
-        
+
         appenderInternalLogger.assertDebugLog("rotating.*");
-        
+
         MockCloudWatchWriter writer1 = appender.getMockWriter();
-        
+
         assertNotSame("should be using new writer", writer0, writer1);
-        
+
         assertEquals("messages passed to old writer",  2,          writer0.messages.size());
         assertEquals("messages passed to new writer",  1,          writer1.messages.size());
     }
@@ -499,5 +531,64 @@ public class TestAbstractAppender
 
         appenderInternalLogger.assertDebugLog();
         appenderInternalLogger.assertErrorLog("invalid discard action.*bogus.*");
+    }
+
+
+    @Test
+    public void testManyThreads() throws Exception
+    {
+        final int numThreads = 100;
+        final int messagesPerThread = 1000;
+
+        initialize("testLifecycle");
+
+        runLoggingThreads(numThreads, messagesPerThread);
+
+        MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
+        MockCloudWatchWriter writer = appender.getMockWriter();
+
+        assertEquals("writer factory invocations",  1,                              writerFactory.invocationCount);
+        assertEquals("total messages written",      numThreads * messagesPerThread, writer.messages.size());
+    }
+
+
+    @Test
+    public void testManyThreadsWithRotation() throws Exception
+    {
+        final int numThreads = 100;
+        final int messagesPerThread = 1000;
+        final int expectedTotalMessages = numThreads * messagesPerThread;
+        final int rotationInterval = 3000;  // from config
+
+        initialize("testManyThreadsWithRotation");
+
+        // we need to capture new writers as they're created because we can't find them later
+
+        final ConcurrentLinkedQueue<MockCloudWatchWriter> writers = new ConcurrentLinkedQueue<MockCloudWatchWriter>();
+        appender.setWriterFactory(new MockCloudWatchWriterFactory()
+        {
+            @Override
+            public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger ignored)
+            {
+                MockCloudWatchWriter newWriter = (MockCloudWatchWriter)super.newLogWriter(config, stats, ignored);
+                writers.add(newWriter);
+                return newWriter;
+            }
+        });
+
+        runLoggingThreads(numThreads, messagesPerThread);
+
+        assertEquals("calls to append()", expectedTotalMessages, appender.appendInvocationCount.get());
+        appenderInternalLogger.assertErrorLog();
+
+        assertEquals("expected writer factory invocations", expectedTotalMessages / rotationInterval + 1, appender.getWriterFactory().invocationCount);
+
+        int actualTotalMessages = 0;
+        for (MockCloudWatchWriter writer : writers)
+        {
+            actualTotalMessages += writer.messages.size();
+        }
+
+        assertEquals("total messages written", expectedTotalMessages, actualTotalMessages);
     }
 }

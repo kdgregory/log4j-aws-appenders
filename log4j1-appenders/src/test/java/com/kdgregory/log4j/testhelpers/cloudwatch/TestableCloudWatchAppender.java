@@ -14,6 +14,10 @@
 
 package com.kdgregory.log4j.testhelpers.cloudwatch;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.log4j.spi.LoggingEvent;
+
 import com.kdgregory.log4j.aws.CloudWatchAppender;
 import com.kdgregory.log4j.testhelpers.TestableLog4JInternalLogger;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
@@ -34,6 +38,9 @@ import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriterFactory;
 public class TestableCloudWatchAppender
 extends CloudWatchAppender
 {
+    public AtomicInteger appendInvocationCount = new AtomicInteger();
+
+
     public TestableCloudWatchAppender()
     {
         super();
@@ -90,4 +97,13 @@ extends CloudWatchAppender
     {
         return lastRotationTimestamp;
     }
+
+
+    @Override
+    protected void append(LoggingEvent event)
+    {
+        appendInvocationCount.incrementAndGet();
+        super.append(event);
+    }
+
 }

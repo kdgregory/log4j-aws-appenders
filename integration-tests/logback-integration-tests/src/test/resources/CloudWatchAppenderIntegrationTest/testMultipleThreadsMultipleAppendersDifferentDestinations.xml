@@ -9,7 +9,7 @@
     <appender name="test1" class="com.kdgregory.logback.aws.CloudWatchAppender">
         <logGroup>AppenderIntegrationTest-testMultipleThreadsMultipleAppendersDifferentDestinations</logGroup>
         <logStream>AppenderTest-1</logStream>
-        <batchDelay>1000</batchDelay>
+        <batchDelay>500</batchDelay>
         <layout class="ch.qos.logback.classic.PatternLayout">
             <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
         </layout>
@@ -18,7 +18,7 @@
     <appender name="test2" class="com.kdgregory.logback.aws.CloudWatchAppender">
         <logGroup>AppenderIntegrationTest-testMultipleThreadsMultipleAppendersDifferentDestinations</logGroup>
         <logStream>AppenderTest-2</logStream>
-        <batchDelay>1000</batchDelay>
+        <batchDelay>500</batchDelay>
         <layout class="ch.qos.logback.classic.PatternLayout">
             <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
         </layout>
@@ -27,7 +27,7 @@
     <appender name="test3" class="com.kdgregory.logback.aws.CloudWatchAppender">
         <logGroup>AppenderIntegrationTest-testMultipleThreadsMultipleAppendersDifferentDestinations</logGroup>
         <logStream>AppenderTest-3</logStream>
-        <batchDelay>1000</batchDelay>
+        <batchDelay>500</batchDelay>
         <layout class="ch.qos.logback.classic.PatternLayout">
             <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
         </layout>

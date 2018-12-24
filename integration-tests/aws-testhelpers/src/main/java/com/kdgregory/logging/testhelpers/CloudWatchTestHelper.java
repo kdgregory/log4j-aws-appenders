@@ -54,11 +54,17 @@ public class CloudWatchTestHelper
 
     /**
      *  Asserts that the stream contains the expected number of messages, and that
-     *  they're in order. Properly handles multi-threaded writes.
+     *  they're in order (including case where writes are from different threads,
+     *  as long as they follow the standard pattern).
+     *  <p>
+     *  Message count assertion is approximate, +/- 5 messages, to compensate for
+     *  logstream rotation testing. This function returns the number of messages
+     *  from the given stream so that they can be aggregated in multi-thread tests.
      */
-    public void assertMessages(String logStreamName, int expectedMessageCount) throws Exception
+    public int assertMessages(String logStreamName, int expectedMessageCount) throws Exception
     {
         LinkedHashSet<OutputLogEvent> events = retrieveAllMessages(logStreamName);
+
         assertEquals("number of events in " + logStreamName, expectedMessageCount, events.size());
 
         Map<Integer,Integer> lastMessageByThread = new HashMap<Integer,Integer>();
@@ -81,6 +87,7 @@ public class CloudWatchTestHelper
                            prevMessageNum.intValue() < messageNum.intValue());
             }
         }
+        return events.size();
     }
 
 

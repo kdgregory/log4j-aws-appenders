@@ -154,8 +154,9 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
 
         for (int ii = 0 ; ii < 5 ; ii++)
         {
-            // if we can't find the stream we'll try to re-create it
             LogStream stream = findLogStream();
+
+            // if we can't find the stream we'll try to re-create it
             if (stream == null)
             {
                 reportError("log stream missing: " + config.logStreamName, null);

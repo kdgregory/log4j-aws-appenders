@@ -226,10 +226,9 @@ public class SNSAppenderIntegrationTest
 
         assertNull("topic was not created", testHelper.lookupTopic());
 
-        // note: if we don't initialize, we don't update name/ARN in statistics
-        assertEquals("actual topic name, from statistics",  null,           appenderStats.getActualTopicName());
-        assertEquals("actual topic ARN, from statistics",   null,           appenderStats.getActualTopicArn());
-        assertEquals("messages written, from stats",        0,              appenderStats.getMessagesSent());
+        assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),      appenderStats.getActualTopicName());
+        assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       appenderStats.getActualTopicArn());
+        assertEquals("messages written, from stats",        0,                              appenderStats.getMessagesSent());
 
         localLogger.info("finished");
     }

@@ -9,9 +9,9 @@
     <appender name="test" class="com.kdgregory.logback.aws.CloudWatchAppender">
         <logGroup>AppenderIntegrationTest-testMultipleThreadsSingleAppender</logGroup>
         <logStream>AppenderTest-{sequence}</logStream>
-        <batchDelay>1000</batchDelay>
+        <batchDelay>500</batchDelay>
         <rotationMode>count</rotationMode>
-        <rotationInterval>333</rotationInterval>
+        <rotationInterval>300</rotationInterval>
         <sequence>1</sequence>
         <layout class="ch.qos.logback.classic.PatternLayout">
             <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>

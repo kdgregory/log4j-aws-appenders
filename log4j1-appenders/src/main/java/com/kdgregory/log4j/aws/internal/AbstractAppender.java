@@ -616,14 +616,14 @@ extends AppenderSkeleton
             return;
         }
 
-        if (writer.isMessageTooLarge(message))
-        {
-            logger.warn("attempted to append a message > AWS batch size; ignored");
-            return;
-        }
-
         synchronized (appendLock)
         {
+            if (writer.isMessageTooLarge(message))
+            {
+                logger.warn("attempted to append a message > AWS batch size; ignored");
+                return;
+            }
+
             long now = System.currentTimeMillis();
             if (shouldRotate(now))
             {

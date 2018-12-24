@@ -17,3 +17,6 @@ Each example contains its own README that goes into further detail on its operat
 
 In addition, there are [CloudFormation templates](cloudformation) to create the destinations
 used by these examples.
+
+To build the examples, run `mvn clean package` from either this directory (to build all of
+them) or the individual project directories.

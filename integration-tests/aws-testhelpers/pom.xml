@@ -55,10 +55,7 @@
         <plugin.cobertura.version>2.7</plugin.cobertura.version>
         <plugin.compiler.version>3.1</plugin.compiler.version>
         <plugin.findbugs.version>3.0.5</plugin.findbugs.version>
-        <plugin.javadoc.version>3.0.1</plugin.javadoc.version>
         <plugin.jar.version>3.1.0</plugin.jar.version>
-        <plugin.project-info-reports.version>2.7</plugin.project-info-reports.version>
-        <plugin.site.version>3.3</plugin.site.version>
     </properties>
 
 
@@ -142,14 +139,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>${plugin.javadoc.version}</version>
-                <configuration>
-                    <doclint>none</doclint>
-                </configuration>
             </plugin>
         </plugins>
     </build>

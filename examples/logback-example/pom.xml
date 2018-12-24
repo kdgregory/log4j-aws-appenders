@@ -22,6 +22,9 @@
 
         <aws-sdk.version>1.11.405</aws-sdk.version>
         <logback.version>1.2.0</logback.version>
+
+        <plugin.compiler.version>3.1</plugin.compiler.version>
+        <plugin.shade.version>3.1.1</plugin.shade.version>
     </properties>
 
 
@@ -66,6 +69,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>${plugin.compiler.version}</version>
                 <configuration>
                     <source>1.6</source>
                     <target>1.6</target>
@@ -75,6 +79,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
+                <version>${plugin.shade.version}</version>
                 <executions>
                     <execution>
                         <phase>package</phase>

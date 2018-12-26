@@ -1,7 +1,7 @@
 # log4j-aws-appenders
 
-Appenders for [Log4J 1.x](http://logging.apache.org/log4j/1.2/index.html) that write to
-various AWS destinations:
+Appenders for [Log4J 1.x](http://logging.apache.org/log4j/1.2/index.html) and
+[Logback](https://logback.qos.ch/) that write to various AWS destinations:
 
 * [CloudWatch Logs](docs/cloudwatch.md): basic centralized log management, providing keyword and time range search.
 * [Kinesis Streams](docs/kinesis.md): the first step in a [logging pipeline](https://www.kdgregory.com/index.php?page=aws.loggingPipeline)
@@ -18,17 +18,15 @@ In addition to the appenders, this library provides:
 
 ## Usage
 
-To use these appenders, include the appenders JAR in your project, along with Log4J and
-the relevant AWS JAR(s) as described [below](#dependencies). The JARs are available from
-from Maven Central; you can find the latest version
-[here](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.kdgregory.logging%22).
+To use these appenders, include the framework-specific appenders JAR in your project, along
+with the JAR(s) specific to your logging framework and the relevant AWS JAR(s) as described
+[below](#dependencies).
 
-> **Note:** the Maven group and artifact IDs have changed between version 1.x and 2.x.
-  The appender classnames, however, are unchanged; you need to update your POMs, but
-  your config files are not affected.
+The appender JARs are published on Maven Central. You can find the latest version from the
+following links:
 
-Next, configure the desired appender in your Log4J properties. Each appender's documentation
-describes the complete set of configuration properties and shows a typical configuration.
+* [Log4J 1.x](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.kdgregory.logging%22%20AND%20a%3A%22log4j1-aws-appenders%22)
+* [Logback](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.kdgregory.logging%22%20AND%20a%3A%22logback-aws-appenders%22)
 
 See the documentation for each appender to see how to configure that appender. You can
 also look at the [example projects](examples).
@@ -44,8 +42,7 @@ I follow the standard `MAJOR.MINOR.PATCH` versioning scheme:
   _behavior_ of existing functionality in non-backwards-compatible ways. The API _does not_
   break backwards compatibility for minor releases, so your configurations can remain the
   same.
-* `PATCH` is incremented for reflect bugfixes or additional features that don't change the
-  existing behavior (although they may add behavior).
+* `PATCH` is incremented for bugfixes or minor additions to existing features.
 
 
 ### Dependencies
@@ -53,11 +50,11 @@ I follow the standard `MAJOR.MINOR.PATCH` versioning scheme:
 To avoid dependency hell, all dependencies are marked as "provided": you will need
 to ensure that your project includes necessary dependencies for your destination(s):
 
-* `log4j`
-* `aws-java-sdk-logs` to use `CloudWatchAppender`
-* `aws-java-sdk-kinesis` to use `KinesisAppender`
-* `aws-java-sdk-sns` to use `SNSAppender`
-* `aws-java-sdk-sts` to use the `aws:accountId` substitution variable.
+* Your logging framework of choice
+* [`aws-java-sdk-logs`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-logs%22) to use `CloudWatchAppender`
+* [`aws-java-sdk-kinesis`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-kinesis%22) to use `KinesisAppender`
+* [`aws-java-sdk-sns`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-sns%22) to use `SNSAppender`
+* [`aws-java-sdk-sts`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-sts%22) to use the `aws:accountId` substitution variable.
 
 The minimum supported dependency versions are:
 
@@ -67,10 +64,13 @@ The minimum supported dependency versions are:
   become increasingly difficult to set up a JDK 1.6 test environment, so I use 1.7
   as a baseline. If you're still running 1.6 you should be able to use the library,
   but really, it's time to upgrade your JVM.
-* Log4J: 1.2.16
+* Log4J 1.x: 1.2.16
   This is the first version that implements `LoggingEvent.getTimeStamp()`, which
   is needed to order messages when sending to AWS. It's been around since 2010,
   so if you haven't upgraded already you should.
+* Logback: 1.2.0
+  This version is required to support `JsonAccessLayout`. If you don't use that,
+  version 1.0.0 is sufficient.
 * AWS SDK: 1.11.0
   The appenders will work with all releases in the 1.11.x sequence. If you're using
   a version that has client builders, they will be used to create service clients;

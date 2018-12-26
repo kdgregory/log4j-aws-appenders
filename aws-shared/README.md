@@ -1,10 +1,10 @@
 This module contains the AWS writers and supporting code that's indepent of the logging
 framework. For each supported destination you'll find the following classes:
 
-* a `Writer`, that does the work.
-* a `WriterConfig`, that contains configuration information specific to the writer. It
+* a `Writer` that does the work.
+* a `WriterConfig` that contains configuration information specific to the writer. It
   is populated by the appender.
-* a `WriterFactory`, that creates instances of the writer. This exists so that (1) the
+* a `WriterFactory` that creates instances of the writer. This exists so that (1) the
   appenders can use a shared abstract superclass that doesn't need to know anything
   about the actual writer, and (2) tests can easily substitute a mock writer.
 * a `WriterStatistics` object and `WriterStatisticsMXBean` interface that allow the

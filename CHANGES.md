@@ -1,10 +1,16 @@
 # Change History
 
-## 2.1.0 (TBD)
+## 2.1.0 (2018-12-26)
 
-* Support for [Logback](https://logback.qos.ch/) logging framework.
+* Support for the [Logback](https://logback.qos.ch/) logging framework.
 * KinesisAppender now uses `{random}` to configure random partition keys, with
   empty string still supported for Log4J 1.x.
+* JsonLayout and JsonAccessLayout now default to including hostname in output.
+* JsonLayout for Log4J no longer includes tab characters in stack traces.
+  ([#57](https://github.com/kdgregory/log4j-aws-appenders/issues/57))
+* SNSAppender verifies that subject is valid (< 100 ASCII characters), will not
+  start if invalid.
+  ([#67](https://github.com/kdgregory/log4j-aws-appenders/issues/67))
 
 ## 2.0.2 (2018-12-08)
 

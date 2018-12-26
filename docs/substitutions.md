@@ -31,5 +31,6 @@ in any other environment will result in a (long) wait as the SDK tries to make a
 non-existent endpoint.
 
 Note that a particular destination may not accept all of the characters produced by a substitution,
-and the logger will remove illegal characters. As a general rule you should limit substitution values
-to alphanumeric characters, along with hyphens and underscores.
+and the appenders will not initialize that happens. As a general rule you should limit substituted
+values (from environment variable or system properties) to alphanumeric characters, hyphens, and
+underscores.

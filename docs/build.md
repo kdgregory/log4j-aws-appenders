@@ -8,7 +8,7 @@ There are multiple projects in this repository:
 * [logback-appenders](../logback-appenders): appender implementations for Logback.
 * [examples](../examples): example programs that demonstrate using the appenders.
 * [integration-tests](../integration-tests): integration tests that execute several
-  scenarios against each set of appenders.
+  scenarios against each set of appenders, using actual AWS resources.
 
 All sub-projects are built using [Apache Maven](http://maven.apache.org/). The build commands
 differ depending on project:

@@ -24,26 +24,40 @@ Name                | Description
 `shardCount`        | When creating a stream, specifies the number of shards to use. Defaults to 1.
 `retentionPeriod`   | When creating a stream, specifies the retention period for messages in hours. Per AWS, the minimum is 24 (the default) and the maximum is 168 (7 days). Note that increasing retention time increases the per-hour shard cost.
 `batchDelay`        | The time, in milliseconds, that the writer will wait to accumulate messages for a batch. See the [design doc](design.md#message-batches) for more information.
-`discardThreshold`  | The threshold count for discarding messages; default is 10,000. See [design doc](design.md#message-discard) for more information.
+`discardThreshold`  | The threshold count for discarding messages; default is 10,000. See the [design doc](design.md#message-discard) for more information.
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
-`clientFactory`     | Specifies the fully-qualified name of a static method that will be used to create the AWS service client via reflection. See [service client doc](service-client.md) for more information.
-`clientEndpoint`    | Specifies a non-default endpoint for the client (eg, "logs.us-west-2.amazonaws.com"). See [service client doc](service-client.md) for more information.
+`clientFactory`     | Specifies the fully-qualified name of a static method that will be used to create the AWS service client via reflection. See the [service client doc](service-client.md) for more information.
+`clientEndpoint`    | Specifies a non-default endpoint for the client (eg, "logs.us-west-2.amazonaws.com"). See the [service client doc](service-client.md) for more information.
 
 
-### Example
+### Example: Log4J 1.x
 
 ```
-log4j.rootLogger=INFO, kinesis
-
 log4j.appender.kinesis=com.kdgregory.log4j.aws.KinesisAppender
 log4j.appender.kinesis.streamName=logging-stream
 log4j.appender.kinesis.partitionKey={pid}
-log4j.appender.kinesis.batchDelay=100
+log4j.appender.kinesis.batchDelay=500
 
 log4j.appender.kinesis.layout=com.kdgregory.log4j.aws.JsonLayout
-log4j.appender.kinesis.layout.tags=applicationName={env:APP_NAME}
 log4j.appender.kinesis.layout.enableHostname=true
 log4j.appender.kinesis.layout.enableLocation=true
+log4j.appender.kinesis.layout.tags=applicationName={env:APP_NAME}
+```
+
+
+### Example: Logback
+
+```
+<appender name="KINESIS" class="com.kdgregory.logback.aws.KinesisAppender">
+    <streamName>logging-stream</streamName>
+    <partitionKey>{pid}</partitionKey>
+    <batchDelay>500</batchDelay>
+    <layout class="com.kdgregory.logback.aws.JsonLayout">
+        <enableHostname>true</enableHostname>
+        <enableLocation>true</enableLocation>
+        <tags>applicationName={env:APP_NAME}</tags>
+    </layout>
+</appender>
 ```
 
 
@@ -62,7 +76,7 @@ To auto-create a stream you must grant these additional permissions:
 
 ## Stream management
 
-You will normally pre-create the Kinesis stream, and adjust its retention period and number of
+You will normally pre-create the Kinesis stream and adjust its retention period and number of
 shards based on your environment.
 
 To support testing (and because it was the original behavior, copied from the CloudWatch appender),
@@ -86,9 +100,16 @@ In most cases this is sufficient, and there's no reason to configure this parame
 If, however, you have an application that generates a high volume of log messages, you can
 get improved performance (or at least reduce the likelihood of throttling) by generating a
 per-record random partition key (note that you will also need to have multiple shards in
-the stream). Enable this for the appender by explicitly configuring a blank partition key:
+the stream). 
 
-    log4j.appender.kinesis.partitionKey=
+You enable this behavior by specifying `{random}` as the partition key value (note: this
+value is case sensitive):
 
-If you have many applications logging to the same stream this may be counter-productive,
-as it means that every application will consume capacity from every shard.
+```
+log4j.appender.kinesis.partitionKey={random}
+```
+
+For backwards compatibility, you may specify an empty partition key for Log4J 1.x (this was
+the original behavior, but Logback doesn't support empty configuration values). Note that
+`getPartitionKey()` returns whatever value you set (ie, it doesn't translate an empty string
+to `"{random}"`).

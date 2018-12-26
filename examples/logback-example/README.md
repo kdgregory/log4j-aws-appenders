@@ -1,7 +1,15 @@
 # Logging Example
 
-This directory contains an example program that writes log messages to all supported loggers. It
-also contains CloudFormation templates that will create the destinations for these loggers.
+This directory contains a simple program that writes log messages at various levels. It's
+configured to use all appenders, sending all of the messages to CloudWatch Logs and Kinesis,
+and error messages to SNS.
+
+
+## Preparation
+
+You will need to create the Kinesis and SNS destinations; CloudWatch is created automatically.
+You can create them using the CloudFormation templates [here](../cloudformation), manually, or
+by enabling the auto-create feature on the appenders.
 
 > *BEWARE!* You will be charged for all AWS services used by this example. I have tried to keep
   the costs minimal, and some services (such as CloudWatch) may be covered under a free tier.
@@ -24,3 +32,4 @@ Log levels are randomly assigned: 65% DEBUG, 20% INFO, 10% WARN, and 5% ERROR.
 
 To spawn more threads, give the number of desired threads as a command-line argument. Kill the
 program to stop logging.
+

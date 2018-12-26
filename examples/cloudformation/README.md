@@ -1,5 +1,6 @@
-This directory contains CloudFormation templates to create the logging destinations,
-along with their permissions. All of the examples write to the same destinations.
+This directory contains CloudFormation templates to create the example logging
+destinations, along with their permissions. All of the examples write to the
+same destinations.
 
 > *WARNING*: these templates create AWS resources for which you will be changed. Be
   sure to delete the stacks when you are done.

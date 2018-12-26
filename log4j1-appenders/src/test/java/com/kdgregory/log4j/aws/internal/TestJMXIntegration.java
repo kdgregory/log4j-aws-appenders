@@ -30,14 +30,14 @@ import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
 
 import com.kdgregory.log4j.aws.StatisticsMBean;
-import com.kdgregory.log4j.testhelpers.aws.cloudwatch.MockCloudWatchWriterFactory;
-import com.kdgregory.log4j.testhelpers.aws.cloudwatch.TestableCloudWatchAppender;
-import com.kdgregory.log4j.testhelpers.aws.kinesis.MockKinesisWriterFactory;
-import com.kdgregory.log4j.testhelpers.aws.kinesis.TestableKinesisAppender;
-import com.kdgregory.log4j.testhelpers.aws.sns.MockSNSWriterFactory;
-import com.kdgregory.log4j.testhelpers.aws.sns.TestableSNSAppender;
-import com.kdgregory.logging.aws.testhelpers.InlineThreadFactory;
-import com.kdgregory.logging.aws.testhelpers.jmx.MockMBeanServer;
+import com.kdgregory.log4j.testhelpers.cloudwatch.TestableCloudWatchAppender;
+import com.kdgregory.log4j.testhelpers.kinesis.TestableKinesisAppender;
+import com.kdgregory.log4j.testhelpers.sns.TestableSNSAppender;
+import com.kdgregory.logging.testhelpers.InlineThreadFactory;
+import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriterFactory;
+import com.kdgregory.logging.testhelpers.jmx.MockMBeanServer;
+import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriterFactory;
+import com.kdgregory.logging.testhelpers.sns.MockSNSWriterFactory;
 
 
 /**

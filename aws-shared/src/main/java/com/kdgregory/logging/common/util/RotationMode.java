@@ -37,12 +37,21 @@ public enum RotationMode
 
 
     /**
-     *  Finds the rotation mode corresponding to a passed string (case-insensitive).
-     *  Unable to find a matching mode, logs to the Log4J intenal logger and returns
-     *  {@link #none}.
+     *  Finds the rotation mode corresponding to a passed string (case-insensitive),
+     *  <code>null</code> if unable to do so.
      */
     public static RotationMode lookup(String value)
     {
-        return RotationMode.valueOf(value.toLowerCase());
+        if (value == null)
+            return null;
+
+        try
+        {
+            return RotationMode.valueOf(value.toLowerCase());
+        }
+        catch (IllegalArgumentException ex)
+        {
+            return null;
+        }
     }
 }

@@ -55,9 +55,6 @@ import com.kdgregory.logging.common.jmx.AbstractMarkerBean;
  *  registrations for instances of this class, the other holds references to
  *  each of the configured appenders. When one or the other of these collections
  *  changes then the appropriate JMX registrations/deregistrations are performed.
- *  <p>
- *  If you never register an instance of this class, then JMX is effectively
- *  disabled.
  */
 public class StatisticsMBean
 extends AbstractMarkerBean

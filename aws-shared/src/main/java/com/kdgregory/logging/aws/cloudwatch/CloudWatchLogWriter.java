@@ -41,6 +41,16 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
     }
 
 //----------------------------------------------------------------------------
+//  LogWriter overrides
+//----------------------------------------------------------------------------
+
+    @Override
+    public boolean isMessageTooLarge(LogMessage message)
+    {
+        return (message.size() + CloudWatchConstants.MESSAGE_OVERHEAD)  > CloudWatchConstants.MAX_BATCH_BYTES;
+    }
+
+//----------------------------------------------------------------------------
 //  Hooks for superclass
 //----------------------------------------------------------------------------
 
@@ -67,6 +77,10 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
                 logger.debug("creating CloudWatch log group: " + config.logGroupName);
                 createLogGroup();
             }
+            else
+            {
+                logger.debug("using existing CloudWatch log group: " + config.logGroupName);
+            }
 
 
             LogStream logStream = findLogStream();
@@ -74,6 +88,10 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             {
                 logger.debug("creating CloudWatch log stream: " + config.logStreamName);
                 createLogStream();
+            }
+            else
+            {
+                logger.debug("using existing CloudWatch log stream: " + config.logStreamName);
             }
 
             return true;
@@ -104,7 +122,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
     @Override
     protected boolean withinServiceLimits(int batchBytes, int numMessages)
     {
-        return (batchBytes < CloudWatchConstants.MAX_BATCH_BYTES)
+        return (batchBytes <= CloudWatchConstants.MAX_BATCH_BYTES)
             && (numMessages <= CloudWatchConstants.MAX_BATCH_COUNT);
     }
 
@@ -136,8 +154,9 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
 
         for (int ii = 0 ; ii < 5 ; ii++)
         {
-            // if we can't find the stream we'll try to re-create it
             LogStream stream = findLogStream();
+
+            // if we can't find the stream we'll try to re-create it
             if (stream == null)
             {
                 reportError("log stream missing: " + config.logStreamName, null);

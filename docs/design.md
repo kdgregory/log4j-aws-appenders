@@ -14,42 +14,41 @@ These are the primary design constraints:
 ## Message Queue and Writer Thread
 
 To meet these constraints, the appender creates a separate thread for communication with the service,
-along with a concurrent queue to hold appended messages. When Log4J calls `append()`, the appender
-converts the passed `LoggingEvent` into a  textual representation, verifies that it conforms to
+along with a concurrent queue to hold appended messages. When the logging framework calls `append()`,
+the appender converts the passed event into a  textual representation, verifies that it conforms to
 limitations imposed by the service, and adds it to the queue.
 
-The writer consumes that queue, attempting to batch together messages into a single request. Once it
-has a batch (either based on size or a configurable timeout) it attempts to write those messages to
-the service. In addition to retries embedded within the AWS SDK, the writer will requeue messages
-that can't be sent, dropping messages once a user-configurable threshold is reached.
+The writer runs on a separate thread (created when the appender is initialized) reading that queue
+and  attempting to batch together messages into a single request. Once it has a batch (based either
+on size or a configurable timeout) it attempts to write the entire batch to the service.
 
-The writer thread is lazily started on the first call to `append()`. There's a factory for writer
-objects and writer threads, to support testing. If unable to start the writer thread, all messages
-are dropped and the situation is reported to the internal logger.
-
-The writer thread handles most exceptions internally. Unexpected exceptions are reported using an
-uncaught exception handler in the appender. This is considered an unrecoverable error, so the
-appender discards its writer, clears the message queue, and drops all subsequent messages. The
-error is reported to the internal logger and is also available from [JMX](jmx.md).
+The writer thread handles most exceptions internally, reporting them via [JMX](jmx.md) and requeing
+messages for a later retry (this is in addition to any retries handled within the AWS SDK). Some
+exceptions are expected, such as CloudWatch's `InvalidSequenceTokenException`; these are handled
+silently.
 
 
 ## Message Discard
 
-The appenders will attempt to deliver every message, requeuing messages that can't be sent (this is
-particularly relevant to the Kinesis appender, since some messages in a batch may fail while others
-succeed). If there are persistent errors, such as a network outage, an unconstrained queue could
-consume all of the available memory.
-
+One of the drawbacks of retrying messages is that an unbounded queue can consume all of memory.
 To avoid such errors, the message queue has a maximum size, configured by the `discardThreshold`
-parameter. How it behaves once full is configured by the `discardAction` parameter:
+parameter. How the queue behaves once full is further configured by the `discardAction` parameter:
 
-* `oldest` - the oldest message in the queue is discarded. This is the default, as it allows you to
-  track the current behavior of the application once the failure condition is resolved.
-* `newest` - the newest message in the queue is discarded. This is useful if you want to see what
+* `oldest`
+
+  The oldest message in the queue is discarded. This is the default, as it allows you to
+  track the current behavior of the application if/when the failure condition is resolved.
+
+* `newest`
+
+  The newest message in the queue is discarded. This is useful if you want to see what
   was happening at the time the failure condition occured.
-* `none` - no messages are discarded. If you expect intermittent connectivity problems, have lots of
-  memory, and don't want to miss any logging then this option may be reasonable. However, it's probably
-  better to increase the threshold and use one of the other discard actions.
+
+* `none`
+
+  No messages are discarded. If you expect intermittent connectivity problems, have lots of
+  memory, and don't want to miss any logging then this option may be reasonable. However, it's
+  probably better to increase the threshold and use one of the other discard actions.
 
 The default threshold is 10,000 messages. Assuming 1kb per message, that's 10MB of heap that will be
 used by the queue. 
@@ -62,18 +61,18 @@ more efficient when there's a high volume of logging, it would cause an excessiv
 low volume. And it will leave more messages unwritten if the program shuts down without waiting for
 all messages to be sent.
 
-The user can control message batching via the `batchDelay` configuration variable, which specifies the
-number of milliseconds that the writer will wait after reading a message to construct a batch. The
-writer will send the batch either once the timer expires or the service-defined batch size limit is
+The user can control message batching via the `batchDelay` configuration variable, which specifies
+the number of milliseconds that the writer will wait after reading  the first message in a batch.
+The writer sends the batch either once the timer expires or the service-defined batch size limit is
 reached. Then it blocks, waiting for a message to start the next batch.
 
 The default value, 2000, is intended as a tradeoff between keeping the log up to date and minimizing
-the number of API calls generated by the logger (to avoid throttling). For long-running applications
+the number of API calls generated by the logger to avoid throttling. For long-running applications
 this default should be fine, but for applications that only run for a few seconds it may cause message
 loss (the appenders do not attach a shutdown hook, and the JVM does not necessarily respect those anyway).
 For such applications it makes sense to reduce the batch size to maybe 250 milliseconds, but beware that
-increasing the message rate may result in AWS throttling requests, which could extend the actual delay
-between a logging event and that event being written to its destination.
+increasing the message rate may result in request throttling. This may then _increase_ the delay between
+the time that the application logs an event and the time that event is delivered to its destination.
 
 If you absolutely, positively cannot lose messages, you should use a different appender. But beware:
 even the standard `FileAppender` is not guaranteed to save all messages, because file writes are

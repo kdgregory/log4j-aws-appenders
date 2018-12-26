@@ -1,0 +1,18 @@
+<configuration debug="false">
+
+  <root level="off"/>
+
+  <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
+    <logGroup>argle</logGroup>
+    <discardThreshold>12345</discardThreshold>
+    <discardAction>newest</discardAction>
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <pattern>%msg</pattern>
+    </layout>
+  </appender>
+
+  <logger name="com.kdgregory.logback.aws.TestAbstractAppender" level="debug">
+    <appender-ref ref="CLOUDWATCH" />
+  </logger>
+
+</configuration>

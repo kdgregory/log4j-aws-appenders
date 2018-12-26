@@ -1,0 +1,22 @@
+<configuration debug="false">
+
+  <root level="off"/>
+
+  <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
+    <logGroup>MyLog-{sysprop:TestCloudWatchAppender.testWriterInitialization}</logGroup>
+    <logStream>MyStream-{date}-{bogus}</logStream>
+    <batchDelay>9876</batchDelay>
+    <discardThreshold>12345</discardThreshold>
+    <discardAction>newest</discardAction>
+    <clientFactory>com.example.Foo.bar</clientFactory>
+    <clientEndpoint>logs.us-west-2.amazonaws.com</clientEndpoint>
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <pattern>%msg</pattern>
+    </layout>
+  </appender>
+
+  <logger name="com.kdgregory.logback.aws.TestCloudWatchAppender" level="debug">
+    <appender-ref ref="CLOUDWATCH" />
+  </logger>
+
+</configuration>

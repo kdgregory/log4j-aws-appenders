@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="2.4" xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd">
+
+    <context-param>
+        <param-name>logback.config.location</param-name>
+        <param-value>/tmp/logback.xml</param-value>
+    </context-param>
+
+    <listener>
+        <listener-class>com.kdgregory.logback.aws.example.ExampleContextListener</listener-class>
+    </listener>
+
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file>
+    </welcome-file-list>
+
+    <session-config>
+        <session-timeout>30</session-timeout>
+    </session-config>
+
+    <servlet>
+        <servlet-name>Example</servlet-name>
+        <servlet-class>com.kdgregory.logback.aws.example.ExampleServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>Example</servlet-name>
+        <url-pattern>/example</url-pattern>
+    </servlet-mapping>
+
+    <filter>
+        <filter-name>RequestIdFilter</filter-name>
+        <filter-class>com.kdgregory.logback.aws.example.RequestIdFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>RequestIdFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+</web-app>

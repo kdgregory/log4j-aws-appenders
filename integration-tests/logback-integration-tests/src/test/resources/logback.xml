@@ -1,0 +1,14 @@
+<configuration debug="false">
+    <!-- default logging configuration, to handle the time from test start to first init()  -->
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d [%thread] %-5level %logger{0} - %mdc{testName}: %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="console" />
+    </root>
+
+</configuration>

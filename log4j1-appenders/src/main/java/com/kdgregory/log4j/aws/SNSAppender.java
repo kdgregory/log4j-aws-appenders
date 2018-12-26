@@ -20,10 +20,8 @@ import com.kdgregory.log4j.aws.internal.AbstractAppender;
 import com.kdgregory.logging.aws.common.Substitutions;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSWriterStatisticsMXBean;
-import com.kdgregory.logging.aws.sns.SNSConstants;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterFactory;
-import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 
 
@@ -170,12 +168,5 @@ extends AbstractAppender<SNSWriterConfig,SNSWriterStatistics,SNSWriterStatistics
         String actualSubject    = subs.perform(subject);
 
         return new SNSWriterConfig(actualTopicName, actualTopicArn, autoCreate, actualSubject, discardThreshold, discardAction, clientFactory, clientEndpoint);
-    }
-
-
-    @Override
-    protected boolean isMessageTooLarge(LogMessage message)
-    {
-        return message.size() > SNSConstants.MAX_MESSAGE_BYTES;
     }
 }

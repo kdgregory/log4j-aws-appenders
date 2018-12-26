@@ -36,17 +36,20 @@ import com.kdgregory.logging.common.util.RotationMode;
  *  log messages, and shut down. Most of the code to do that lives here, with a few
  *  hooks that are implemented in the appender proper.
  *  <p>
- *  Note that some behaviors, such as log rotation, are implemented here even if they
- *  are not supported by all appenders. The appenders that do not support those
- *  behaviors are responsible for disabling them. For example, an appender that does
- *  not support log rotation should throw if {@link #setRotationMode} is called.
+ *  Some behaviors, such as log rotation, are implemented here even if they are not
+ *  supported by all appenders. The appenders that do not support those behaviors are
+ *  responsible for disabling them. For example, an appender that does not support log
+ *  rotation should throw if {@link #setRotationMode} is called.
  *  <p>
- *  Note that most of the member variables defined by this class are protected. This
- *  is primarily to support testing, but also follows my philosophy of related classes:
- *  there is no logical difference between direct access properties; in both cases
- *  you're defining an API. Of course, this is a public API for an internal class,
- *  so any application code that touches these variables should not be surprised if
- *  they cease to exist.
+ *  Most of the member variables defined by this class are protected. This is intended
+ *  to support testing. If you decide to subclass and access those variables, well,
+ *  this is an internal class: they may go away.
+ *  <p>
+ *  Note: Log4J synchronizes calls to appenders by logger. In typical usage, this means
+ *  that all calls will be synchronized and we shouldn't synchronize outself. However,
+ *  it appears that there's no synchronization for loggers that use the same appender
+ *  but do not share an appender list. For that reason, we use internal synchronization
+ *  of critical sections.
  */
 public abstract class AbstractAppender<WriterConfigType,AppenderStatsType extends AbstractWriterStatistics,AppenderStatsMXBeanType>
 extends AppenderSkeleton
@@ -100,15 +103,14 @@ extends AppenderSkeleton
 
     // all member vars below this point are shared configuration
 
-    protected long            batchDelay;
-    protected int             discardThreshold;
-    protected DiscardAction   discardAction;
-    protected RotationMode    rotationMode = RotationMode.none;
-    protected long            rotationInterval;
-    protected AtomicInteger   sequence;
-    protected String          clientFactory;
-    protected String          clientEndpoint;
-
+    protected long                  batchDelay;
+    protected int                   discardThreshold;
+    protected DiscardAction         discardAction;
+    protected volatile RotationMode rotationMode = RotationMode.none;
+    protected volatile long         rotationInterval;
+    protected AtomicInteger         sequence;
+    protected String                clientFactory;
+    protected String                clientEndpoint;
 
 //----------------------------------------------------------------------------
 //  Constructor
@@ -227,11 +229,19 @@ extends AppenderSkeleton
      */
     public void setDiscardAction(String value)
     {
-        discardAction = DiscardAction.lookup(value);
+        DiscardAction tmpDiscardAction = DiscardAction.lookup(value);
+        if (tmpDiscardAction == null)
+        {
+            logger.error("invalid discard action: " + value, null);
+            return;
+        }
+
         if (writer != null)
         {
-            writer.setDiscardAction(discardAction);
+            writer.setDiscardAction(tmpDiscardAction);
         }
+
+        discardAction = tmpDiscardAction;
     }
 
 
@@ -246,11 +256,20 @@ extends AppenderSkeleton
 
     /**
      *  Sets the rule for log stream rotation, for those appenders that support rotation.
-     *  See {@link com.kdgregory.logging.common.util.RotationMode} for values.
+     *  See {@link com.kdgregory.logging.common.util.RotationMode} for values. Invalid
+     *  values are logged and translated to "none".
+     *  <p>
+     *  Note: this method must be explicitly overridden by appenders that support rotation.
      */
-    public void setRotationMode(String value)
+    protected void setRotationMode(String value)
     {
-        this.rotationMode = RotationMode.lookup(value);
+        RotationMode newMode = RotationMode.lookup(value);
+        if (newMode == null)
+        {
+            newMode = RotationMode.none;
+            logger.error("invalid rotation mode: " + value + ", setting to " + newMode, null);
+        }
+        this.rotationMode = newMode;
     }
 
 
@@ -356,7 +375,6 @@ extends AppenderSkeleton
         return clientEndpoint;
     }
 
-
 //----------------------------------------------------------------------------
 //  Other accessors
 //----------------------------------------------------------------------------
@@ -396,13 +414,24 @@ extends AppenderSkeleton
             initialize();
         }
 
+        LogMessage logMessage;
         try
         {
-            internalAppend(Utils.convertToLogMessage(event, getLayout()));
+            logMessage = Utils.convertToLogMessage(event, getLayout());
         }
         catch (Exception ex)
         {
-            logger.warn("unable to append event: " + ex);
+            logger.error("unable to apply layout", ex);
+            return;
+        }
+
+        try
+        {
+            internalAppend(logMessage);
+        }
+        catch (Exception ex)
+        {
+            logger.error("unable to append event", ex);
         }
     }
 
@@ -437,8 +466,9 @@ extends AppenderSkeleton
 //----------------------------------------------------------------------------
 
     /**
-     *  Rotates the log writer. This must be exposed by appenders that support
-     *  log rotation; they can simply delegate to the super implementation.
+     *  Rotates the log writer. This will create in a new writer thread, with
+     *  the pre-rotation writer shutting down after processing all messages in
+     *  its queue.
      */
     protected void rotate()
     {
@@ -450,7 +480,6 @@ extends AppenderSkeleton
         }
     }
 
-
 //----------------------------------------------------------------------------
 //  Subclass hooks
 //----------------------------------------------------------------------------
@@ -460,14 +489,6 @@ extends AppenderSkeleton
      *  perform substitutions on the configuration.
      */
     protected abstract WriterConfigType generateWriterConfig();
-
-
-    /**
-     *  Called {@link #append} to ensure that we don't have a single message
-     *  that violates AWS batching rules.
-     */
-    protected abstract boolean isMessageTooLarge(LogMessage message);
-
 
 //----------------------------------------------------------------------------
 //  Internals
@@ -519,6 +540,8 @@ extends AppenderSkeleton
                 {
                     internalAppend(new LogMessage(System.currentTimeMillis(), layout.getHeader()));
                 }
+
+                // note the header doesn't contribute to the message count
 
                 lastRotationTimestamp = System.currentTimeMillis();
                 messagesSinceLastRotation = 0;
@@ -588,16 +611,19 @@ extends AppenderSkeleton
     private void internalAppend(LogMessage message)
     {
         if (message == null)
-            return;
-
-        if (isMessageTooLarge(message))
         {
-            logger.warn("attempted to append a message > AWS batch size; ignored");
+            logger.error("internal error: message was null", null);
             return;
         }
 
         synchronized (appendLock)
         {
+            if (writer.isMessageTooLarge(message))
+            {
+                logger.warn("attempted to append a message > AWS batch size; ignored");
+                return;
+            }
+
             long now = System.currentTimeMillis();
             if (shouldRotate(now))
             {

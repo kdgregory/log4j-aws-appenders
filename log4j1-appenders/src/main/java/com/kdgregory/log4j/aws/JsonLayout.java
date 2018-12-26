@@ -27,8 +27,8 @@ import com.kdgregory.logging.common.util.JsonConverter;
 
 
 /**
- *  Formats a LogMessage as a JSON string. This is useful when directing the
- *  output of the logger into a search engine such as ElasticSearch.
+ *  Formats a <code>LogMessage</code> as a JSON string. This supports Elasticsearch
+ *  without the need for Logstash (as well as any other JSON-consuming endpoint).
  *  <p>
  *  The JSON object will always contain the following properties, most of which
  *  are extracted from the Log4J <code>LoggingEvent</code>
@@ -41,15 +41,18 @@ import com.kdgregory.logging.common.util.JsonConverter;
  *  <li> <code>processId</code>:    the PID of the invoking process, if available (this is
  *                                  retrieved from <code>RuntimeMxBean</code> and may not be
  *                                  available on all platforms).
+ *  <li> <code>hostname</code>:     the name of the machine where the logger is running, if
+ *                                  available (this is currently retrieved from
+ *                                  <code>RuntimeMxBean</code> and may not be available on
+ *                                  all platforms).
  *  </ul>
  *  <p>
  *  The following properties will only appear if they are present in the event:
  *  <ul>
- *  <li> <code>exception</code>:    the stack trace of an associated exception. This
- *                                  is exposed as an array of strings, with the first
- *                                  element being the location where the exception
- *                                  was caught.
- *  <li> <code>mdc</code>:          the mapped diagnostic context. This is a child map.
+ *  <li> <code>exception</code>:    an exception with stack trace. This is an array, with the
+ *                                  first element identifying the exception and message, and
+ *                                  subsequent elements identifying the stack trace.
+ *  <li> <code>mdc</code>:          the mapped diagnostic context. This is a child object.
  *  <li> <code>ndc</code>:          the nested diagnostic context. This is a single
  *                                  string that contains each of the pushed entries
  *                                  separated by spaces (yes, that's how Log4J does it).
@@ -58,7 +61,7 @@ import com.kdgregory.logging.common.util.JsonConverter;
  *  The following properties are potentially expensive to compute, so will only
  *  appear if specifically enabled via configuration:
  *  <ul>
- *  <li> <code>locationInfo</code>: the location where the logger was called. This is a
+ *  <li> <code>locationInfo</code>: the location where the logger was invoked. This is a
  *                                  child object with the following components:
  *                                  <ul>
  *                                  <li> <code>className</code>
@@ -69,10 +72,6 @@ import com.kdgregory.logging.common.util.JsonConverter;
  *  <li> <code>instanceId</code>:   the EC2 instance ID of the machine where the logger is
  *                                  running. WARNING: do not enable this elsewhere, as the
  *                                  operation to retrieve this value may take a long time.
- *  <li> <code>hostname</code>:     the name of the machine where the logger is running, if
- *                                  available (this is currently retrieved from
- *                                  <code>RuntimeMxBean</code> and may not be available on
- *                                  all platforms).
  *  </ul>
  *  <p>
  *  Lastly, you can define a set of user tags, which are written as a child object with
@@ -82,7 +81,7 @@ import com.kdgregory.logging.common.util.JsonConverter;
  *  <code>appName=Fribble,startedAt={startupTimestamp}</code>).
  *  <p>
  *  WARNING: you should not rely on the order in which elements are output. Any apparent
- *  ordering is an implementation choice and subject to change without notice.
+ *  ordering is an implementation artifact and subject to change without notice.
  */
 public class JsonLayout
 extends Layout
@@ -97,9 +96,10 @@ extends Layout
 //  Configuration
 //----------------------------------------------------------------------------
 
+    private boolean enableHostname = true;
+
     private boolean appendNewlines;
     private boolean enableLocation;
-    private boolean enableHostname;
     private boolean enableInstanceId;
     private String rawTags;
 
@@ -218,19 +218,26 @@ extends Layout
         map.put("level",        event.getLevel().toString());
         map.put("message",      event.getRenderedMessage());
 
-        if (event.getThrowableStrRep() != null) map.put("exception",    event.getThrowableStrRep());
-        if (event.getNDC() != null)             map.put("ndc",          event.getNDC());
-        if (tags != null)                       map.put("tags",         tags);
+        if (event.getNDC() != null)     map.put("ndc",          event.getNDC());
+        if (tags != null)               map.put("tags",         tags);
+        if (processId != null)          map.put("processId",    processId);
+        if (hostname != null)           map.put("hostname",     hostname);
+        if (instanceId != null)         map.put("instanceId",   instanceId);
 
         if ((event.getProperties() != null) && ! event.getProperties().isEmpty())
         {
             map.put("mdc", event.getProperties());
         }
 
-
-        if (processId != null)  map.put("processId", processId);
-        if (hostname != null)   map.put("hostname", hostname);
-        if (instanceId != null) map.put("instanceId", instanceId);
+        if (event.getThrowableStrRep() != null)
+        {
+            String[] trace = event.getThrowableStrRep();
+            for (int ii = 0 ; ii < trace.length ; ii++)
+            {
+                trace[ii] = trace[ii].replace("\t", "");
+            }
+            map.put("exception", trace);
+        }
 
         if (enableLocation)
         {

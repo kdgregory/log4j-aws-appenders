@@ -30,20 +30,36 @@ Name                | Description
 Note: the `batchDelay` parameter is not used (although it can be configured); the SNS appender attempts to send messages immediately.
 
 
-### Example
+### Example: Log4J 1.x
 
 Note the `threshold` setting; this is a Log4J feature that allows different appenders to receive different levels of output.
 
 ```
-log4j.rootLogger=ERROR, sns
-
 log4j.appender.sns=com.kdgregory.log4j.aws.SNSAppender
 log4j.appender.sns.threshold=ERROR
 log4j.appender.sns.topicArn=arn:aws:sns:us-east-1:123456789012:LoggingExample
 log4j.appender.sns.subject=Error from {env:APPNAME}
 
 log4j.appender.sns.layout=org.apache.log4j.PatternLayout
-log4j.appender.sns.layout.ConversionPattern=%d [%t] %-5p %c %x - %m%n
+log4j.appender.sns.layout.ConversionPattern=%d %c - %m%n
+```
+
+
+### Example: Logback
+
+```
+<appender name="SNS" class="com.kdgregory.logback.aws.SNSAppender">
+    <topicArn>arn:aws:sns:us-east-1:123456789012:LoggingExample</topicArn>
+    <subject>Error from {env:APPNAME}</subject>
+    <layout class="ch.qos.logback.classic.PatternLayout">
+        <pattern>%d{HH:mm:ss.SSS} %logger{36} - %msg%n</pattern>
+    </layout>
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+        <level>ERROR</level>
+        <onMatch>ACCEPT</onMatch>
+        <onMismatch>DENY</onMismatch>
+    </filter>
+</appender>
 ```
 
 
@@ -81,4 +97,4 @@ You may use [substitutions](substitutions.md) in either the topic name or ARN. W
 ARN it's particularly useful to use `{env:AWS_REGION}` or `{ec2:region}` along with `{aws:accountId}`.
 
 While the appender exposes the batch delay configuration parameters, these are ignored. Each message
-will be sent as soon as possible after it's passed to the appender (SNS does not support message batching).
+is sent as soon as possible after it's passed to the appender (SNS does not support message batching).

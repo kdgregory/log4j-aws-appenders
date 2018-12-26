@@ -64,9 +64,9 @@ public interface CloudWatchWriterStatisticsMXBean
 
     /**
      *  Returns the number of messages discarded by the current writer's message queue.
-     *  Note that writer rotation (which can happen due to errors) will reset this.
+     *  Reset by writer rotation.
      */
-    int getMessagesDiscardedByCurrentWriter();
+    int getMessagesDiscarded();
 
 
     /**

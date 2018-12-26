@@ -1,0 +1,24 @@
+<configuration debug="false">
+
+  <root level="off"/>
+
+  <appender name="SNS" class="com.kdgregory.logback.testhelpers.sns.TestableSNSAppender">
+    <!-- note: specifying both ARN and name for testing; this is not a normal configuration -->
+    <topicName>name-{date}</topicName>
+    <topicArn>arn-{date}</topicArn>
+    <subject>{sysprop:TestSNSAppender.testWriterInitialization}</subject>
+    <autoCreate>true</autoCreate>
+    <discardThreshold>123</discardThreshold>
+    <discardAction>newest</discardAction>
+    <clientFactory>com.example.Foo.bar</clientFactory>
+    <clientEndpoint>sns.us-east-2.amazonaws.com</clientEndpoint>
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <pattern>%msg</pattern>
+    </layout>
+  </appender>
+
+  <logger name="com.kdgregory.logback.aws.TestSNSAppender" level="debug">
+    <appender-ref ref="SNS" />
+  </logger>
+
+</configuration>

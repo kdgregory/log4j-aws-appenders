@@ -14,6 +14,7 @@
 
 package com.kdgregory.logging.aws.kinesis;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +35,12 @@ import com.kdgregory.logging.common.util.InternalLogger;
 public class KinesisLogWriter
 extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKinesis>
 {
+    /**
+     *  This string is used in configuration to specify random partition keys.
+     */
+    public final static String RANDOM_PARTITION_KEY_CONFIG = "{random}";
+
+
     // this controls the number of times that we'll accept rate limiting on describe
     private final static int DESCRIBE_TRIES = 300;
 
@@ -55,6 +62,12 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
     // and how long we'll sleep between attempts
     private final static int CREATE_RETRY_SLEEP = 5000;
 
+    // the length of a partition key after UTF-8 conversion; will use a constant for random keys
+    private int partitionKeyLength;
+
+    // rather than use String.equals() to check for random partition keys, we'll cache result
+    private boolean randomPartitionKeys;
+
     // only used for random partition keys; cheap enough we'll eagerly create
     private Random rnd = new Random();
 
@@ -63,9 +76,34 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
     {
         super(config, stats, logger, clientFactory);
 
+        randomPartitionKeys = RANDOM_PARTITION_KEY_CONFIG.equals(config.partitionKey)
+                           || "".equals(config.partitionKey)
+                           || (null == config.partitionKey);
+
+        try
+        {
+            partitionKeyLength = randomPartitionKeys
+                               ? 8
+                               : config.partitionKey.getBytes("UTF-8").length;
+        }
+        catch (UnsupportedEncodingException ex)
+        {
+            // this should never happen; if it does the appender can't do its job
+            throw new RuntimeException("JVM does not support UTF-8 encoding");
+        }
+
         stats.setActualStreamName(config.streamName);
     }
 
+//----------------------------------------------------------------------------
+//  LogWriter overrides
+//----------------------------------------------------------------------------
+
+    @Override
+    public boolean isMessageTooLarge(LogMessage message)
+    {
+        return (effectiveSize(message)) > KinesisConstants.MAX_MESSAGE_BYTES;
+    }
 
 //----------------------------------------------------------------------------
 //  Hooks for superclass
@@ -137,7 +175,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
     @Override
     protected int effectiveSize(LogMessage message)
     {
-        return message.size() + config.partitionKeyLength;
+        return message.size() + partitionKeyLength;
     }
 
 
@@ -353,10 +391,10 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
      */
     private String partitionKey()
     {
-        if ("".equals(config.partitionKey))
+        if (randomPartitionKeys)
         {
             StringBuilder sb = new StringBuilder(16);
-            for (int ii = 0 ; ii < config.partitionKeyLength ; ii++)
+            for (int ii = 0 ; ii < partitionKeyLength ; ii++)
             {
                 sb.append((char)('0' + rnd.nextInt(10)));
             }

@@ -23,6 +23,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.ClassUtil;
+import net.sf.kdgcommons.lang.StringUtil;
 
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.*;
@@ -31,11 +32,11 @@ import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterFactory;
-import com.kdgregory.logging.aws.testhelpers.TestingException;
-import com.kdgregory.logging.aws.testhelpers.sns.MockSNSClient;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.common.util.MessageQueue;
+import com.kdgregory.logging.testhelpers.TestingException;
+import com.kdgregory.logging.testhelpers.sns.MockSNSClient;
 
 
 /**
@@ -171,7 +172,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("second publish, body",                                    "message two",      mock.lastPublishMessage);
         assertStatisticsMessagesSent("second publish, messages sent per stats", 2);
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -202,7 +204,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         assertStatisticsMessagesSent(1);
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -221,10 +224,10 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("message queue set to discard all",    DiscardAction.oldest,   messageQueue.getDiscardAction());
 
         assertStatisticsErrorMessage(".*not exist.*" + TEST_TOPIC_NAME + ".*");
-        assertNull("stats: topic name",                     stats.getActualTopicName());
-        assertNull("stats: topic ARN",                      stats.getActualTopicArn());
+        assertNotNull("stats: topic name",                  stats.getActualTopicName());    // comes from configu
+        assertNull("stats: topic ARN",                      stats.getActualTopicArn());     // would come from init
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*");
         internalLogger.assertInternalErrorLog(".*not exist.*" + TEST_TOPIC_NAME + ".*");
     }
 
@@ -259,7 +262,9 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         assertStatisticsMessagesSent(1);
 
-        internalLogger.assertInternalDebugLog(".*creat.*" + TEST_TOPIC_NAME + ".*");
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              ".*creat.*" + TEST_TOPIC_NAME + ".*",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -300,7 +305,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("second publish, body",                                    "message two",          mock.lastPublishMessage);
         assertStatisticsMessagesSent("second publish, messages sent per stats", 2);
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -331,7 +337,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         assertStatisticsMessagesSent(1);
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -350,10 +357,10 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("message queue set to discard all",    DiscardAction.oldest,   messageQueue.getDiscardAction());
 
         assertStatisticsErrorMessage(".*not exist.*" + TEST_TOPIC_ARN + ".*");
-        assertNull("stats: topic name",                     stats.getActualTopicName());
-        assertNull("stats: topic ARN",                      stats.getActualTopicArn());
+        assertNull("stats: topic name",                     stats.getActualTopicName());    // would come from init
+        assertNotNull("stats: topic ARN",                   stats.getActualTopicArn());     // comes from config
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*");
         internalLogger.assertInternalErrorLog(".*not exist.*" + TEST_TOPIC_ARN + ".*");
     }
 
@@ -362,7 +369,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     public void testSubject() throws Exception
     {
         config.topicName = TEST_TOPIC_NAME;
-        config.subject = "example";
+        config.subject = "This is OK";
         createWriter();
 
         assertEquals("after init, invocations of listTopics",   1,                      mock.listTopicsInvocationCount);
@@ -378,11 +385,12 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         assertEquals("after publish, invocation count",         1,                      mock.publishInvocationCount);
         assertEquals("after publish, arn",                      TEST_TOPIC_ARN,         mock.lastPublishArn);
-        assertEquals("after publish, subject",                  "example",              mock.lastPublishSubject);
+        assertEquals("after publish, subject",                  "This is OK",           mock.lastPublishSubject);
         assertEquals("after publish, body",                     "message one",          mock.lastPublishMessage);
         assertStatisticsMessagesSent("after publish, messages sent", 1);
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -397,13 +405,76 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         assertEquals("invocations of listTopics",               0,                      mock.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",              0,                      mock.createTopicInvocationCount);
-        assertNull("topic name, from statistics",                                       stats.getActualTopicName());
-        assertNull("topic ARN, from statistics",                                        stats.getActualTopicArn());
+        assertNotNull("topic name, from statistics",                                    stats.getActualTopicName());        // comes from config
+        assertNull("topic ARN, from statistics",                                        stats.getActualTopicArn());         // would come from init
         assertEquals("message queue set to discard all",        0,                      messageQueue.getDiscardThreshold());
         assertEquals("message queue set to discard all",        DiscardAction.oldest,   messageQueue.getDiscardAction());
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*");
         internalLogger.assertInternalErrorLog(".*invalid.*topic.*");
+    }
+
+
+    @Test
+    public void testInvalidSubjectTooLong() throws Exception
+    {
+        config.topicName = TEST_TOPIC_NAME;
+        config.subject = StringUtil.repeat('A', 100);
+        createWriter();
+
+        assertStatisticsErrorMessage("invalid subject.*too long.*");
+
+        assertEquals("invocations of listTopics",               0,                      mock.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",              0,                      mock.createTopicInvocationCount);
+        assertNotNull("topic name, from statistics",                                    stats.getActualTopicName());        // comes from config
+        assertNull("topic ARN, from statistics",                                        stats.getActualTopicArn());         // would come from init
+        assertEquals("message queue set to discard all",        0,                      messageQueue.getDiscardThreshold());
+        assertEquals("message queue set to discard all",        DiscardAction.oldest,   messageQueue.getDiscardAction());
+
+        internalLogger.assertInternalDebugLog("log writer starting.*");
+        internalLogger.assertInternalErrorLog("invalid.*subject.*too long.*");
+    }
+
+
+    @Test
+    public void testInvalidSubjectBadCharacters() throws Exception
+    {
+        config.topicName = TEST_TOPIC_NAME;
+        config.subject = "This is \t not OK";
+        createWriter();
+
+        assertStatisticsErrorMessage("invalid subject.*disallowed characters.*");
+
+        assertEquals("invocations of listTopics",               0,                      mock.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",              0,                      mock.createTopicInvocationCount);
+        assertNotNull("topic name, from statistics",                                    stats.getActualTopicName());        // comes from config
+        assertNull("topic ARN, from statistics",                                        stats.getActualTopicArn());         // would come from init
+        assertEquals("message queue set to discard all",        0,                      messageQueue.getDiscardThreshold());
+        assertEquals("message queue set to discard all",        DiscardAction.oldest,   messageQueue.getDiscardAction());
+
+        internalLogger.assertInternalDebugLog("log writer starting.*");
+        internalLogger.assertInternalErrorLog("invalid subject.*disallowed characters.*");
+    }
+
+
+    @Test
+    public void testInvalidSubjectBeginsWithSpace() throws Exception
+    {
+        config.topicName = TEST_TOPIC_NAME;
+        config.subject = " not OK";
+        createWriter();
+
+        assertStatisticsErrorMessage("invalid subject.*starts with space.*");
+
+        assertEquals("invocations of listTopics",               0,                      mock.listTopicsInvocationCount);
+        assertEquals("invocations of createTopic",              0,                      mock.createTopicInvocationCount);
+        assertNotNull("topic name, from statistics",                                    stats.getActualTopicName());        // comes from config
+        assertNull("topic ARN, from statistics",                                        stats.getActualTopicArn());         // would come from init
+        assertEquals("message queue set to discard all",        0,                      messageQueue.getDiscardThreshold());
+        assertEquals("message queue set to discard all",        DiscardAction.oldest,   messageQueue.getDiscardAction());
+
+        internalLogger.assertInternalDebugLog("log writer starting.*");
+        internalLogger.assertInternalErrorLog("invalid.*subject.*starts with space.*");
     }
 
 
@@ -427,7 +498,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertStatisticsErrorMessage("unable to configure.*");
         assertStatisticsException(TestingException.class, "arbitrary failure");
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*");
         internalLogger.assertInternalErrorLog("unable to configure.*");
     }
 
@@ -479,8 +550,45 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertStatisticsErrorMessage(".*no notifications for you");
         assertStatisticsException(TestingException.class, "no notifications for you");
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testMaximumMessageSize() throws Exception
+    {
+        final int snsMaxMessageSize     = 262144;  // per https://docs.aws.amazon.com/sns/latest/api/API_Publish.html
+
+        final String bigMessage         = StringUtil.repeat('A', snsMaxMessageSize);
+        final String biggerMessage      = bigMessage + "1";
+
+        config.topicName = TEST_TOPIC_NAME;
+        config.subject = "example";
+        createWriter();
+
+        try
+        {
+            writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
+            fail("writer allowed too-large message");
+        }
+        catch (IllegalArgumentException ex)
+        {
+            assertEquals("exception message", "attempted to enqueue a too-large message", ex.getMessage());
+        }
+        catch (Exception ex)
+        {
+            fail("writer threw " + ex.getClass().getName() + ", not IllegalArgumentException");
+        }
+
+        // we'll send an OK message through to verify that nothing bad happened
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
+
+        mock.allowWriterThread();
+
+        assertEquals("publish: invocation count",        1,                  mock.publishInvocationCount);
+        assertEquals("publish: last call #/messages",    bigMessage,                  mock.lastPublishMessage);
     }
 
 
@@ -598,7 +706,9 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("stats: topic name",                       TEST_TOPIC_NAME,            stats.getActualTopicName());
         assertEquals("stats: topic ARN",                        TEST_TOPIC_ARN,             stats.getActualTopicArn());
 
-        internalLogger.assertInternalDebugLog(".*created client from factory.*");
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              ".*created client from factory.*",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -629,7 +739,10 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         assertEquals("shutdown: invocation count",  1,                  mock.shutdownInvocationCount);
 
-        internalLogger.assertInternalDebugLog("stopping log.writer.*");
+        internalLogger.assertInternalDebugLog(
+            "log writer starting.*",
+            "log writer initialization complete.*",
+            "stopping log.writer.*");
         internalLogger.assertInternalErrorLog();
     }
 }

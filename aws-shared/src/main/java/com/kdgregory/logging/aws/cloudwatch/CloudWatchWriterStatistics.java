@@ -62,7 +62,7 @@ implements CloudWatchWriterStatisticsMXBean
 
 
     @Override
-    public int getMessagesDiscardedByCurrentWriter()
+    public int getMessagesDiscarded()
     {
         return super.getMessagesDiscarded();
     }

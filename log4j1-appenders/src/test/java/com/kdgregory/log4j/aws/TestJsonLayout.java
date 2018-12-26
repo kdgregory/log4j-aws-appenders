@@ -36,8 +36,7 @@ import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.WriterAppender;
 import org.apache.log4j.helpers.LogLog;
 
-// I know of a nice library for making XPath-based assertions against a DOM, so convert
-// the generated JSON into XML ... sue me
+import net.sf.kdgcommons.lang.StringUtil;
 import net.sf.practicalxml.converter.JsonConverter;
 import net.sf.practicalxml.junit.DomAsserts;
 import net.sf.practicalxml.xpath.XPathWrapper;
@@ -84,6 +83,8 @@ public class TestJsonLayout
     private void captureLoggingOutputAndParse()
     {
         captureLoggingOutput();
+
+        // I have a nice library for working with XML, so that's the way I'll test
         dom = JsonConverter.convertToXml(rawJson, "");
     }
 
@@ -147,11 +148,13 @@ public class TestJsonLayout
         captureLoggingOutputAndParse();
         assertCommonElements(TEST_MESSAGE);
 
+        String hostname = new XPathWrapper("/data/hostname").evaluateAsString(dom);
+        assertFalse("hostname present", StringUtil.isBlank(hostname));
+
         DomAsserts.assertCount("no exception",  0,  dom, "/data/exception");
         DomAsserts.assertCount("no NDC",        0,  dom, "/data/ndc");
         DomAsserts.assertCount("no MDC",        0,  dom, "/data/mdc");
         DomAsserts.assertCount("no location",   0,  dom, "/data/locationInfo");
-        DomAsserts.assertCount("no hostname",   0,  dom, "/data/hostname");
         DomAsserts.assertCount("no instanceId", 0,  dom, "/data/instanceId");
         DomAsserts.assertCount("no tags",       0,  dom, "/data/tags");
     }
@@ -162,16 +165,35 @@ public class TestJsonLayout
     {
         initialize("TestJsonLayout/default.properties");
 
-        String exceptionMessage = "throw it out";
-        Exception ex = new RuntimeException(exceptionMessage);
+        String innerMessage = "I'm not worthy";
+        String outerMessage = "throw it out";
+        Exception ex = new RuntimeException(outerMessage, new IllegalArgumentException(innerMessage));
         logger.debug(TEST_MESSAGE, ex);
 
         captureLoggingOutputAndParse();
         assertCommonElements(TEST_MESSAGE);
 
-        List<String> exceptionInfo = new XPathWrapper("/data/exception/data").evaluateAsStringList(dom);
-        assertTrue("first array element contains exception message",    exceptionInfo.get(0).contains(exceptionMessage));
-        assertTrue("second array element contains throwing class name", exceptionInfo.get(1).contains(this.getClass().getName()));
+        List<String> entries = new XPathWrapper("/data/exception/data").evaluateAsStringList(dom);
+        assertTrue("first array element contains exception message",    entries.get(0).contains(outerMessage));
+        assertTrue("second array element contains throwing class name", entries.get(1).contains(this.getClass().getName()));
+
+        String causeEntry = null;
+        for (String entry : entries)
+        {
+            if (entry.toLowerCase().contains("caused by"))
+            {
+                causeEntry = entry;
+                break;
+            }
+        }
+        assertNotNull("trace includes cause", causeEntry);
+        assertTrue("cause includes inner exception class", causeEntry.contains(IllegalArgumentException.class.getName()));
+        assertTrue("cause includes inner exception message", causeEntry.contains(innerMessage));
+
+        for (String entry : entries)
+        {
+            assertFalse("entry contains tab character (was: " + entry + ")", entry.contains("\t"));
+        }
     }
 
 
@@ -235,23 +257,21 @@ public class TestJsonLayout
 
 
     @Test
-    public void testHostname() throws Exception
+    public void testDisableHostname() throws Exception
     {
-        initialize("TestJsonLayout/testHostname.properties");
+        initialize("TestJsonLayout/testDisableHostname.properties");
 
         logger.debug(TEST_MESSAGE);
 
         captureLoggingOutputAndParse();
         assertCommonElements(TEST_MESSAGE);
 
-        String hostname = new XPathWrapper("/data/hostname").evaluateAsString(dom);
-        assertFalse("hostname should be set", hostname.isEmpty());
+        DomAsserts.assertCount("no hostname element", 0, dom, new XPathWrapper("/data/hostname"));
     }
 
 
     @Test
-    @Ignore
-    // don't run this test unless you're on an EC2 instance
+    @Ignore("this test should only be run on an EC2 instance")
     public void testInstanceId() throws Exception
     {
         initialize("TestJsonLayout/testInstanceId.properties");

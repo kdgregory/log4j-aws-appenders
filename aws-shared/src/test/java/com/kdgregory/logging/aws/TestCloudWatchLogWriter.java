@@ -34,11 +34,11 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterFactory;
-import com.kdgregory.logging.aws.testhelpers.TestingException;
-import com.kdgregory.logging.aws.testhelpers.cloudwatch.MockCloudWatchClient;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.common.util.MessageQueue;
+import com.kdgregory.logging.testhelpers.TestingException;
+import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchClient;
 
 
 /**
@@ -169,7 +169,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         assertStatisticsMessagesSent(3);
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "using existing .* group: argle",
+                                              "using existing .* stream: bargle",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -219,7 +222,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         assertStatisticsMessagesSent(3);
 
-        internalLogger.assertInternalDebugLog("creat.*stream.*");
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "using existing .* group: argle",
+                                              "creating .* stream: zippy",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -271,7 +277,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         assertStatisticsMessagesSent(3);
 
-        internalLogger.assertInternalDebugLog("creat.*group.*", "creat.*stream.*");
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "creating .* group: griffy",
+                                              "creating .* stream: zippy",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -321,7 +330,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("describeLogGroups: invocation count",     0,                      mock.describeLogGroupsInvocationCount);
         assertEquals("describeLogStreams: invocation count",    0,                      mock.describeLogStreamsInvocationCount);
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*");
         internalLogger.assertInternalErrorLog(".*invalid.*group.*");
     }
 
@@ -341,7 +350,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("describeLogGroups: invocation count",     0,                      mock.describeLogGroupsInvocationCount);
         assertEquals("describeLogStreams: invocation count",    0,                      mock.describeLogStreamsInvocationCount);
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*");
         internalLogger.assertInternalErrorLog(".*invalid.*stream.*");
     }
 
@@ -371,7 +380,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertStatisticsErrorMessage("unable to configure.*");
         assertStatisticsException(TestingException.class, "not now, not ever");
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*");
         internalLogger.assertInternalErrorLog("unable to configure.*");
         internalLogger.assertInternalErrorLogExceptionTypes(TestingException.class);
     }
@@ -407,7 +416,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         assertTrue("message queue still accepts messages",                                      messageQueue.getDiscardThreshold() > 0);
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "using existing .* group: argle",
+                                              "using existing .* stream: bargle",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog("failed to send.*", "failed to send.*");
         internalLogger.assertInternalErrorLogExceptionTypes(TestingException.class, TestingException.class);
     }
@@ -448,7 +460,11 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("stats: writer race retries",                      2,                      stats.getWriterRaceRetries());
         assertEquals("stats: unrecovered writer race retries",          0,                      stats.getUnrecoveredWriterRaceRetries());
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog(
+            "log writer starting.*",
+            "using existing.*log group.*",
+            "using existing.*log stream.*",
+            "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
         internalLogger.assertInternalErrorLogExceptionTypes();
     }
@@ -481,12 +497,17 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertRegex("statistics: error message",                        ".*repeated InvalidSequenceTokenException.*",
                                                                         stats.getLastErrorMessage());
 
+        // when running on a single-core CPU, this will occasionallly not report the most recent retry
         assertEquals("stats: writer race retries",                      6,                      stats.getWriterRaceRetries());
         assertEquals("stats: unrecovered writer race retries",          1,                      stats.getUnrecoveredWriterRaceRetries());
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog(
+            "log writer starting.*",
+            "using existing.*log group.*",
+            "using existing.*log stream.*",
+            "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog(".*InvalidSequenceTokenException.*");
-        internalLogger.assertInternalErrorLogExceptionTypes();
+        internalLogger.assertInternalErrorLogExceptionTypes(new Class<?>[] { null });   // we record the message, not the exception
     }
 
 
@@ -535,7 +556,11 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         assertStatisticsMessagesSent(1);
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog(
+            "log writer starting.*",
+            "using existing.*log group.*",
+            "using existing.*log stream.*",
+            "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog("received DataAlreadyAcceptedException.*");
         internalLogger.assertInternalErrorLogExceptionTypes(DataAlreadyAcceptedException.class);
     }
@@ -586,7 +611,12 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         // will get an error message when stream goes missing, debug when it's recreated
 
-        internalLogger.assertInternalDebugLog("creat.*stream.*");
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "using existing .* group: argle",
+                                              "using existing .* stream: bargle",
+                                              "log writer initialization complete.*",
+                                              "using existing .* group: argle",
+                                              "creating .* stream: bargle*");
         internalLogger.assertInternalErrorLog(".*stream.*missing.*");
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message three"));
@@ -601,6 +631,43 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: invocation count",          3,                  mock.putLogEventsInvocationCount);
         assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",              "message three",    mock.mostRecentEvents.get(0).getMessage());
+    }
+
+
+    @Test
+    public void testMaximumMessageSize() throws Exception
+    {
+        final int cloudwatchMaximumBatchSize    = 1048576;  // copied from http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
+        final int cloudwatchOverhead            = 26;       // ditto
+
+        final int maxMessageSize                = cloudwatchMaximumBatchSize - cloudwatchOverhead;
+        final String bigMessage                 = StringUtil.repeat('A', maxMessageSize);
+        final String biggerMessage              = bigMessage + "1";
+
+        createWriter();
+
+        try
+        {
+            writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
+            fail("writer allowed too-large message");
+        }
+        catch (IllegalArgumentException ex)
+        {
+            assertEquals("exception message", "attempted to enqueue a too-large message", ex.getMessage());
+        }
+        catch (Exception ex)
+        {
+            fail("writer threw " + ex.getClass().getName() + ", not IllegalArgumentException");
+        }
+
+        // we'll send an OK message through to verify that nothing bad happened
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
+
+        mock.allowWriterThread();
+
+        assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",              bigMessage,         mock.mostRecentEvents.get(0).getMessage());
     }
 
 
@@ -748,7 +815,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         assertStatisticsMessagesSent(numMessages);
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "using existing .* group: argle",
+                                              "using existing .* stream: bargle",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -803,7 +873,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         assertStatisticsMessagesSent(numMessages);
 
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "using existing .* group: argle",
+                                              "using existing .* stream: bargle",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -830,7 +903,11 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("stats: actual log group name",            "argle",                        stats.getActualLogGroupName());
         assertEquals("stats: actual log stream name",           "bargle",                       stats.getActualLogStreamName());
 
-        internalLogger.assertInternalDebugLog( ".*created client from factory.*" + getClass().getName() + ".*");
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              ".*created client from factory.*" + getClass().getName() + ".*",
+                                              "using existing .* group: argle",
+                                              "using existing .* stream: bargle",
+                                              "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -858,7 +935,12 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         assertEquals("shutdown: invocation count",              1,                  mock.shutdownInvocationCount);
 
-        internalLogger.assertInternalDebugLog("stopping log.writer.*");
+        internalLogger.assertInternalDebugLog(
+            "log writer starting.*",
+            "using existing.*log group.*",
+            "using existing.*log stream.*",
+            "log writer initialization complete.*",
+            "stopping log.writer.*");
         internalLogger.assertInternalErrorLog();
     }
 }

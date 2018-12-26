@@ -19,11 +19,9 @@ import java.util.Date;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatisticsMXBean;
 import com.kdgregory.log4j.aws.internal.AbstractAppender;
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchConstants;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterFactory;
 import com.kdgregory.logging.aws.common.Substitutions;
-import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 
 
@@ -105,23 +103,24 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
     }
 
 //----------------------------------------------------------------------------
-//  Appender-specific methods
+//  AbstractAppender overrides
 //----------------------------------------------------------------------------
 
-    /**
-     *  Rotates the log stream: flushes all outstanding messages to the current
-     *  stream, and opens a new stream. This is called internally, and exposed
-     *  for testing.
-     */
     @Override
+    /** {@inheritDoc} */
+    public void setRotationMode(String value)
+    {
+        super.setRotationMode(value);
+    }
+
+
+    @Override
+    /** {@inheritDoc} */
     public void rotate()
     {
         super.rotate();
     }
 
-//----------------------------------------------------------------------------
-//  AbstractAppender overrides
-//----------------------------------------------------------------------------
 
     @Override
     protected CloudWatchWriterConfig generateWriterConfig()
@@ -131,12 +130,5 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
         String actualLogStream  = subs.perform(logStream);
 
         return new CloudWatchWriterConfig(actualLogGroup, actualLogStream, batchDelay, discardThreshold, discardAction, clientFactory, clientEndpoint);
-    }
-
-
-    @Override
-    protected boolean isMessageTooLarge(LogMessage message)
-    {
-        return (message.size() + CloudWatchConstants.MESSAGE_OVERHEAD)  >= CloudWatchConstants.MAX_BATCH_BYTES;
     }
 }

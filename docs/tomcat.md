@@ -1,7 +1,7 @@
 # Tomcat Dangling Thread Warnings
 
-You may see the following warning in the Tomcat logs when you undeploy an application that uses
-the AWS appenders:
+You may see the following warning in your Tomcat logs when you undeploy an application that
+uses the AWS appenders:
 
 ```
 16-Nov-2018 21:15:57.834 WARNING [http-nio-8080-exec-37] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [log4j1-aws-appenders-webapp-2.1.0-SNAPSHOT] appears to have started a thread named [com-kdgregory-aws-logwriter-log4j-cloudwatch-0] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
@@ -23,15 +23,15 @@ When Tomcat undeploys an application, it essentially releases all references to 
 application's classes and data, and relies on the JVM garbage collector to remove the
 application from memory. However, threads started by the application can interfere with
 this process: they hold references to application objects, which in turn hold references
-to the application's class(es), which prevent the JVM from collecting those classes. For
+to the application's classes, which prevent the JVM from collecting those classes. For
 this reason, when Tomcat undeploys a web application it examines each running thread to
 determine whether it was started by that application, and warns you if it finds any.
 
-If you just use Log4J with a `FileAppender` or `ConsoleAppender`, there are no threads to
-shut down, so you don't need to take any explicit action when undeploying an application.
-However, the AWS appenders use a background thread to communicate with AWS, and this
-background thread runs as long as the appender is alive. To stop it you need to explicitly
-shut down the Log4J framework.
+When you write logs to files or the console, this is an inline operation, so you don't
+need to take any explicit action when undeploying an application. However, the AWS
+appenders use a background thread to communicate with AWS, and this background thread
+runs as long as the appender is alive. To stop it you need to explicitly shut down the
+logging framework.
 
 
 ## Solution #1: Use a Context Listener
@@ -74,11 +74,12 @@ Then you reference this listener in the applications `web.xml`:
 </web-app>
 ```
 
-Be aware that you will still see the error even if you shut down Log4J using a context
-listener. As long as you're using version 2.0.1 or later of the appender libraries this
-is a non-issue: the background thread remains running for a short time after being shut
-down to ensure that it sends any queued messages. If you use `jstack` to look at the
-running threads, you will see the log-writer thread disappear after a few seconds.
+For Logback, it's even easier: use or subclass [LogbackServletContextListener](https://logback.qos.ch/apidocs/ch/qos/logback/classic/servlet/LogbackServletContextListener.html).
+
+Be aware that you will still see the error even if you explicitly shut down the logging
+framework using a context listener, because the background thread remains running for a
+short time to send any queued messages. If you wait a few seconds after undeploying and
+run `jstack`, you will see that the thread's no longer running.
 
 > Note: version 2.0.0 and earlier had a bug in which the log-writer would wait for an
   excessively long time before shutting down. If using one of these versions in a
@@ -108,8 +109,7 @@ the container logs to AWS along with application logs (and note that the Tomcat 
 no longer tells you how to use Log4J as Tomcat's internal logger). However, it _is_ a solution: if
 you never need to restart the logging framework you won't have to worry about dangling threads.
 
-If you do this, make sure that you copy _all_ of the necessary libraries from Maven Central. When
-building an application you only need to reference `log4j1-aws-appenders` and it will bring in
-`aws-shared` as a transitive dependency. When configuring the default Tomcat logger, you must
-install both of these libraries, as well as the AWS libraries relevant to your destination(s).
-
+If you do this, make sure that you copy _all_ of the necessary libraries from Maven Central. This
+includes the appenders "framework" JAR (eg, `log4j1-aws-appenders`), the shared JAR (`aws-shared`),
+the AWS libraries for your destination, and all of their transitive dependencies. You can use
+Maven to copy the dependencies for you, as described [here](../examples/logback-webapp#using-jsonaccesslayout).

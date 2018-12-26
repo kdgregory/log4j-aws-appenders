@@ -1,0 +1,14 @@
+<configuration debug="false">
+
+  <root level="off"/>
+
+  <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
+    <logGroup>argle</logGroup>
+    <layout class="com.kdgregory.logback.testhelpers.ThrowingLayout"/>
+  </appender>
+
+  <logger name="com.kdgregory.logback.aws.TestAbstractAppender" level="debug">
+    <appender-ref ref="CLOUDWATCH" />
+  </logger>
+
+</configuration>

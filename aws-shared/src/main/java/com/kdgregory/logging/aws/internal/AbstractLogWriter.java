@@ -109,6 +109,11 @@ implements LogWriter
     @Override
     public void addMessage(LogMessage message)
     {
+        // we're going to assume that the appender has already checked this, and
+        // fail hard if that assumption is not valid
+        if (isMessageTooLarge(message))
+            throw new IllegalArgumentException("attempted to enqueue a too-large message");
+
         messageQueue.enqueue(message);
     }
 
@@ -151,6 +156,8 @@ implements LogWriter
     @Override
     public void run()
     {
+        logger.debug("log writer starting on thread " + Thread.currentThread().getName());
+
         if (! initialize())
         {
             messageQueue.setDiscardThreshold(0);
@@ -171,6 +178,8 @@ implements LogWriter
         // real world, but was causing problems with the smoketest (which is configured to
         // quickly transition writers)
 
+        logger.debug("log writer initialization complete (thread " + Thread.currentThread().getName() + ")");
+
         do
         {
             List<LogMessage> currentBatch = buildBatch();
@@ -183,7 +192,7 @@ implements LogWriter
         } while (keepRunning());
 
         stopAWSClient();
-        logger.debug("stopping log-writer on thread " + Thread.currentThread().getName() 
+        logger.debug("stopping log-writer on thread " + Thread.currentThread().getName()
                      + " (#" + Thread.currentThread().getId() + ")");
     }
 

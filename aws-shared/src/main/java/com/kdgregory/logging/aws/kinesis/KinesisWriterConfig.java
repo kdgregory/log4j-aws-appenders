@@ -27,7 +27,6 @@ extends AbstractWriterConfig
 {
     public String           streamName;
     public String           partitionKey;
-    public int              partitionKeyLength;
     public boolean          autoCreate;
     public int              shardCount;
     public Integer          retentionPeriod;
@@ -37,8 +36,6 @@ extends AbstractWriterConfig
      *  @param streamName           Name of the stream where messages will be written.
      *  @param partitionKey         Partition key for messages written to stream. If blank
      *                              we'll generate a random partition key for each message.
-     *  @param partitionKeyLength   Length of the partition key in bytes, after conversion
-     *                              to UTF-8. Used to calculate message packing.
      *  @param batchDelay           Number of milliseconds to wait for messages to be
      *                              ready to send.
      *  @param discardThreshold     Maximum number of messages to retain if unable to send.
@@ -54,7 +51,7 @@ extends AbstractWriterConfig
      *                              use the default retention period.
      */
     public KinesisWriterConfig(
-        String streamName, String partitionKey, int partitionKeyLength,
+        String streamName, String partitionKey,
         long batchDelay, int discardThreshold, DiscardAction discardAction,
         String clientFactoryMethod, String clientEndpoint,
         boolean autoCreate, int shardCount, Integer retentionPeriod)
@@ -63,7 +60,6 @@ extends AbstractWriterConfig
 
         this.streamName = streamName;
         this.partitionKey = partitionKey;
-        this.partitionKeyLength = (partitionKeyLength > 0) ? partitionKeyLength : 8;
         this.autoCreate = autoCreate;
         this.shardCount = shardCount;
         this.retentionPeriod = retentionPeriod;

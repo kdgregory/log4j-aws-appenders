@@ -14,6 +14,7 @@
 
 package com.kdgregory.log4j.aws.internal;
 
+import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 
@@ -51,13 +52,15 @@ public class Utils
 
             return new LogMessage(event.getTimeStamp(), out.toString());
         }
-        catch (UnsupportedEncodingException e)
+        catch (UnsupportedEncodingException ex)
         {
+            // this should never happen
             throw new RuntimeException("UnsupportedEncodingException when converting to UTF-8");
         }
-        catch (Exception ex)
+        catch (IOException ex)
         {
-            throw new RuntimeException("error creating LogMessage", ex);
+            // this should never happen
+            throw new RuntimeException("IOException from StringWriter");
         }
     }
 }

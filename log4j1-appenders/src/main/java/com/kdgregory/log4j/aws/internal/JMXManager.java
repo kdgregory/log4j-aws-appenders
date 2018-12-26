@@ -53,6 +53,6 @@ extends AbstractJMXManager
 
     private JMXManager()
     {
-        super(new Log4JInternalLogger("log4j-aws-appenders JMXManager"));
+        super(new Log4JInternalLogger("JMXManager"));
     }
 }

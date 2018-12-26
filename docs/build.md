@@ -4,21 +4,21 @@ There are multiple projects in this repository:
 
 * [aws-shared](../aws-shared): the AWS log-writers and supporting code that would be
   used by any appender implementation.
-* [log4j1-appenders](../log4j1-appenders): the Log4J 1.x appenders.
-* [log4j1-integration-tests](../log4j1-integration-tests): a set of integration tests
-  for the Log4J 1.x appenders. These are in a separate project so that they can be
-  can be run as desired, rather than as part of every build.
+* [log4j1-appenders](../log4j1-appenders): appender implementations for Log4J 1.x.
+* [logback-appenders](../logback-appenders): appender implementations for Logback.
 * [examples](../examples): example programs that demonstrate using the appenders.
+* [integration-tests](../integration-tests): integration tests that execute several
+  scenarios against each set of appenders, using actual AWS resources.
 
 All sub-projects are built using [Apache Maven](http://maven.apache.org/). The build commands
 differ depending on project:
 
 * appenders (including aws-shared): `mvn clean install` run from the project root
+* examples: `mvn clean package` (see individual documentation for running)
 * integration tests: `mvn clean test`
-* examples: `mvn clean package` (but see individual documentation)
 
-**Beware:** the integration tests and examples create resources and does not delete them.
-You will be charged for those resources, including a per-hour charge for the Kinesis streams.
+**Beware:** the integration tests and examples create resources and do not delete them. You
+will be charged for those resources, including a per-hour charge for the Kinesis streams.
 To avoid charges, be sure to delete all resources when they're no longer needed.
 
 

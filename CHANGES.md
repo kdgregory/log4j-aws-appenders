@@ -1,5 +1,11 @@
 # Change History
 
+## 2.1.1 (2019-01-06)
+
+* Fixed service-client creation code so that it would not need SDK JARs for
+  all supported destinations.
+  ([#71](https://github.com/kdgregory/log4j-aws-appenders/issues/71))
+
 ## 2.1.0 (2018-12-26)
 
 * Support for the [Logback](https://logback.qos.ch/) logging framework.

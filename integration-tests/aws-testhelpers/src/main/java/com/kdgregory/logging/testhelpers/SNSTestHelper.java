@@ -35,7 +35,6 @@ import net.sf.kdgcommons.lang.StringUtil;
 import net.sf.practicalxml.converter.json.Json2XmlConverter;
 import net.sf.practicalxml.xpath.XPathWrapper;
 
-import com.amazonaws.services.logs.model.ResourceNotFoundException;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.*;
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -317,20 +316,15 @@ public class SNSTestHelper
 
         for (int ii = 0 ; ii < 60 ; ii++)
         {
-            try
-            {
-                GetQueueAttributesRequest attribsRequest = new GetQueueAttributesRequest()
-                                                                .withQueueUrl(queueUrl)
-                                                                .withAttributeNames(attributeName);
-                GetQueueAttributesResult attribsResponse = sqsClient.getQueueAttributes(attribsRequest);
-                Map<String,String> attribs = attribsResponse.getAttributes();
-                if (! StringUtil.isEmpty(attribs.get(attributeName)))
-                    return attribs.get(attributeName);
-            }
-            catch (ResourceNotFoundException ex)
-            {
-                // ignored; queue isn't ready
-            }
+            GetQueueAttributesRequest attribsRequest = new GetQueueAttributesRequest()
+                                                            .withQueueUrl(queueUrl)
+                                                            .withAttributeNames(attributeName);
+            GetQueueAttributesResult attribsResponse = sqsClient.getQueueAttributes(attribsRequest);
+            Map<String,String> attribs = attribsResponse.getAttributes();
+            if (! StringUtil.isEmpty(attribs.get(attributeName)))
+                return attribs.get(attributeName);
+
+            // it's unclear to me whether this will ever happen
             Thread.sleep(1000);
         }
 

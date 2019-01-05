@@ -29,6 +29,8 @@ import org.slf4j.LoggerFactory;
 
 import net.sf.kdgcommons.collections.DefaultMap;
 import net.sf.kdgcommons.lang.ThreadUtil;
+import net.sf.kdgcommons.test.NumericAsserts;
+import net.sf.kdgcommons.test.StringAsserts;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
@@ -55,6 +57,15 @@ public class KinesisTestHelper
     {
         this.client = client;
         this.streamName = "AppenderIntegrationTest-" + testName;
+    }
+
+
+    /**
+     *  Returns the constructed stream name.
+     */
+    public String getStreamName()
+    {
+        return streamName;
     }
 
 
@@ -206,16 +217,19 @@ public class KinesisTestHelper
     }
 
 
-    public void assertMessages(List<RetrievedRecord> messages, int expectedThreadCount, int expectedMessagesPerPartitionKey, String... expectedPartitionKeys)
+    /**
+     *  Asserts that we retrieved the expected number of messages and that they
+     *  match the expected format.
+     */
+    public void assertMessages(List<RetrievedRecord> messages, int expectedThreadCount, int expectedMessagesPerThread)
     throws Exception
     {
         assertEquals("overall message count",
-                     expectedMessagesPerPartitionKey * expectedPartitionKeys.length,
+                     expectedThreadCount * expectedMessagesPerThread,
                      messages.size());
 
         Set<Integer> threadIds = new HashSet<Integer>();
         Map<Integer,Integer> countsByMessageNumber = new DefaultMap<Integer,Integer>(new HashMap<Integer,Integer>(), Integer.valueOf(0));
-        Map<String,Integer> countsByPartitionKey = new DefaultMap<String,Integer>(new HashMap<String,Integer>(), Integer.valueOf(0));
 
         for (RetrievedRecord message : messages)
         {
@@ -228,9 +242,6 @@ public class KinesisTestHelper
             Integer messageNum = MessageWriter.getMessageNumber(matcher);
             int oldMessageCount = countsByMessageNumber.get(messageNum);
             countsByMessageNumber.put(messageNum, oldMessageCount + 1);
-
-            int oldPartitionCount = countsByPartitionKey.get(message.partitionKey);
-            countsByPartitionKey.put(message.partitionKey, oldPartitionCount + 1);
         }
 
         assertEquals("number of threads that were writing", expectedThreadCount, threadIds.size());
@@ -241,6 +252,29 @@ public class KinesisTestHelper
                          Integer.valueOf(expectedThreadCount),
                          countsByMessageNumber.get(messageNum));
         }
+    }
+
+
+    /**
+     *  Asserts that we received messages with the expected partition keys.
+     */
+    public void assertPartitionKeys(List<RetrievedRecord> messages, int expectedMessagesPerPartitionKey, String... expectedPartitionKeys)
+    throws Exception
+    {
+        assertEquals("overall message count",
+                     expectedMessagesPerPartitionKey * expectedPartitionKeys.length,
+                     messages.size());
+
+        Map<String,Integer> countsByPartitionKey = new DefaultMap<String,Integer>(new HashMap<String,Integer>(), Integer.valueOf(0));
+
+        for (RetrievedRecord message : messages)
+        {
+            Matcher matcher = MessageWriter.PATTERN.matcher(message.message);
+            assertTrue("message matches pattern: " + message, matcher.matches());
+
+            int oldPartitionCount = countsByPartitionKey.get(message.partitionKey);
+            countsByPartitionKey.put(message.partitionKey, oldPartitionCount + 1);
+        }
 
         for (String partitionKey : expectedPartitionKeys)
         {
@@ -248,6 +282,28 @@ public class KinesisTestHelper
                          expectedMessagesPerPartitionKey,
                          countsByPartitionKey.get(partitionKey).intValue());
         }
+    }
+
+
+    /**
+     *  Asserts that each message has its own partition key, and that the partition key
+     *  follows the documented convention for random keys.
+     */
+    public void assertRandomPartitionKeys(List<RetrievedRecord> messages, int expectedMessageCount)
+    throws Exception
+    {
+        assertEquals("message count", expectedMessageCount, messages.size());
+
+        Set<String> actualPartitionKeys = new HashSet<String>(expectedMessageCount);
+
+        for (RetrievedRecord message : messages)
+        {
+            actualPartitionKeys.add(message.partitionKey);
+            StringAsserts.assertRegex("8-character numeric partition key (was: " + message.partitionKey + ")",
+                                      "\\d{8}", message.partitionKey);
+        }
+
+        NumericAsserts.assertApproximate("number of distinct partition keys", expectedMessageCount, actualPartitionKeys.size(), 10);
     }
 
 

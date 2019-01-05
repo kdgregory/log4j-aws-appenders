@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.kdgregory.logging</groupId>
-    <artifactId>examples</artifactId>
+    <artifactId>integration-tests</artifactId>
     <version>2.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
@@ -14,10 +14,11 @@
     </description>
 
     <modules>
-        <module>log4j1-integration-tests</module>
-        <module>logback-integration-tests</module>
         <module>cloudwatch-logwriter-integration-tests</module>
         <module>kinesis-logwriter-integration-tests</module>
+        <module>sns-logwriter-integration-tests</module>
+        <module>log4j1-integration-tests</module>
+        <module>logback-integration-tests</module>
     </modules>
 
 </project>

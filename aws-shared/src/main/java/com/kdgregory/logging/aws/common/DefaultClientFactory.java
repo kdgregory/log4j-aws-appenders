@@ -15,15 +15,11 @@
 package com.kdgregory.logging.aws.common;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.amazonaws.AmazonWebServiceClient;
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.kinesis.AmazonKinesis;
-import com.amazonaws.services.kinesis.AmazonKinesisClient;
-import com.amazonaws.services.logs.AWSLogs;
-import com.amazonaws.services.logs.AWSLogsClient;
-import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.AmazonSNSClient;
 
 import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
@@ -44,6 +40,19 @@ import com.kdgregory.logging.common.util.InternalLogger;
 public class DefaultClientFactory<AWSClientType>
 implements ClientFactory<AWSClientType>
 {
+    private static Map<String,String> sdkFactoryNames = new HashMap<String,String>();
+    private static Map<String,String> clientClasses = new HashMap<String,String>();
+    static
+    {
+        sdkFactoryNames.put("com.amazonaws.services.logs.AWSLogs",          "com.amazonaws.services.logs.AWSLogsClientBuilder.defaultClient");
+        sdkFactoryNames.put("com.amazonaws.services.kinesis.AmazonKinesis", "com.amazonaws.services.kinesis.AmazonKinesisClientBuilder.defaultClient");
+        sdkFactoryNames.put("com.amazonaws.services.sns.AmazonSNS",         "com.amazonaws.services.sns.AmazonSNSClientBuilder.defaultClient");
+
+        clientClasses.put("com.amazonaws.services.logs.AWSLogs",          "com.amazonaws.services.logs.AWSLogsClient");
+        clientClasses.put("com.amazonaws.services.kinesis.AmazonKinesis", "com.amazonaws.services.kinesis.AmazonKinesisClient");
+        clientClasses.put("com.amazonaws.services.sns.AmazonSNS",         "com.amazonaws.services.sns.AmazonSNSClient");
+    }
+
     private Class<AWSClientType> clientType;
     private String factoryMethodName;
     private String endpoint;
@@ -74,7 +83,7 @@ implements ClientFactory<AWSClientType>
         if (client != null)
             return client;
 
-        client = tryClientFactory(getSDKFactoryName(), false);
+        client = tryClientFactory(sdkFactoryNames.get(clientType.getName()), false);
         if (client != null)
             return client;
 
@@ -125,34 +134,25 @@ implements ClientFactory<AWSClientType>
 
 
     /**
-     *  Returns the SDK factory method name for the client class.
-     */
-    private String getSDKFactoryName()
-    {
-        if (clientType == AWSLogs.class)
-            return "com.amazonaws.services.logs.AWSLogsClientBuilder.defaultClient";
-        else if (clientType == AmazonKinesis.class)
-            return "com.amazonaws.services.kinesis.AmazonKinesisClientBuilder.defaultClient";
-        if (clientType == AmazonSNS.class)
-            return "com.amazonaws.services.sns.AmazonSNSClientBuilder.defaultClient";
-        else
-            return null; // should never happen
-    }
-
-
-    /**
      *  Invokes the default constructor appropriate to the client type.
      */
     private AmazonWebServiceClient createViaConstructor()
     {
-        if (clientType == AWSLogs.class)
-            return new AWSLogsClient();
-        else if (clientType == AmazonKinesis.class)
-            return new AmazonKinesisClient();
-        if (clientType == AmazonSNS.class)
-            return new AmazonSNSClient();
-        else
+        String clientClass = clientClasses.get(clientType.getName());
+        if (clientClass == null)
+        {
             throw new IllegalArgumentException("unsupported client type: " + clientType);  // should never happen
+        }
+
+        try
+        {
+            Class<?> klass = Class.forName(clientClass);
+            return (AmazonWebServiceClient)klass.newInstance();
+        }
+        catch (Exception ex)
+        {
+            throw new RuntimeException("failed to instantiate service client: " + clientClass, ex);
+        }
     }
 
 

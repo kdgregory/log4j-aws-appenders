@@ -3,16 +3,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.kdgregory.logging</groupId>
-    <artifactId>aws-testhelpers</artifactId>
+    <artifactId>kinesis-logwriter-integration-tests</artifactId>
     <version>2.1.1</version>
     <packaging>jar</packaging>
 
-    <name>AWS Integration Test Helpers</name>
+    <name>CloudWatchLogWriter Integration Tests</name>
 
     <description>
-        Utility methods for configuring and retrieving AWS services.
-        Supports integration tests for the AWS log library. Not intended
-        for independent production use.
+        Tests the CloudWatch back-end in isolation.
     </description>
 
     <url> https://github.com/kdgregory/log4j-aws-appenders </url>
@@ -39,84 +37,88 @@
 
 
     <properties>
+        <!-- build configuration props, because Maven can't pick a sensible default -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <!-- note: do not update this lest we accidentally use newer APIs -->
+        <!-- note: this version chosen to ensure that we use client constructors -->
         <aws-sdk.version>1.11.0</aws-sdk.version>
 
-        <!-- classes may need to log, so we'll provide the SLF4J API and expect consumers to configure -->
+        <junit.version>4.10</junit.version>
+        <log4j.version>1.2.17</log4j.version>
+        <kdgcommons.version>1.0.16</kdgcommons.version>
+        <practicalxml.version>1.1.19</practicalxml.version>
         <slf4j.version>1.7.25</slf4j.version>
 
-        <junit.version>4.10</junit.version>
-        <kdgcommons.version>1.0.16</kdgcommons.version>
-        <practicalxml.version>1.1.18</practicalxml.version>
-
-        <plugin.cobertura.version>2.7</plugin.cobertura.version>
         <plugin.compiler.version>3.1</plugin.compiler.version>
-        <plugin.findbugs.version>3.0.5</plugin.findbugs.version>
-        <plugin.jar.version>3.1.0</plugin.jar.version>
+        <plugin.surefire.version>2.12.4</plugin.surefire.version>
     </properties>
 
 
     <dependencies>
-
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
             <artifactId>aws-shared</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.kdgregory.logging</groupId>
+            <artifactId>aws-shared</artifactId>
+            <classifier>tests</classifier>
+            <type>test-jar</type>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.kdgregory.logging</groupId>
+            <artifactId>aws-testhelpers</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-logs</artifactId>
-            <version>${aws-sdk.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-kinesis</artifactId>
             <version>${aws-sdk.version}</version>
-            <scope>provided</scope>
+            <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-sns</artifactId>
-            <version>${aws-sdk.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-sqs</artifactId>
-            <version>${aws-sdk.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-sts</artifactId>
-            <version>${aws-sdk.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>${log4j.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>net.sf.kdgcommons</groupId>
             <artifactId>kdgcommons</artifactId>
             <version>${kdgcommons.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>net.sf.practicalxml</groupId>
             <artifactId>practicalxml</artifactId>
             <version>${practicalxml.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -135,17 +137,16 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>${plugin.jar.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${plugin.surefire.version}</version>
+                <configuration>
+                    <includes>
+                        <include>**/*IntegrationTest.java</include>
+                    </includes>
+                </configuration>
             </plugin>
         </plugins>
     </build>
 
 </project>
+

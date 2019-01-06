@@ -15,10 +15,8 @@
 package com.kdgregory.log4j.aws;
 
 import java.net.URL;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -95,7 +93,8 @@ public class KinesisAppenderIntegrationTest
         localLogger.info("reading messages");
         List<RetrievedRecord> messages = testHelper.retrieveAllMessages(numMessages);
 
-        testHelper.assertMessages(messages, 1, numMessages, "test");
+        testHelper.assertMessages(messages, 1, numMessages);
+        testHelper.assertPartitionKeys(messages, numMessages, "test");
 
         testHelper.assertShardCount(3);
         testHelper.assertRetentionPeriod(48);
@@ -133,7 +132,8 @@ public class KinesisAppenderIntegrationTest
         localLogger.info("reading messages");
         List<RetrievedRecord> messages = testHelper.retrieveAllMessages(expectedMessages);
 
-        testHelper.assertMessages(messages, writers.length, messagesPerThread * writers.length, "test");
+        testHelper.assertMessages(messages, writers.length, messagesPerThread);
+        testHelper.assertPartitionKeys(messages, messagesPerThread * writers.length, "test");
 
         Map<String,List<RetrievedRecord>> groupedByShard = testHelper.groupByShard(messages);
         assertEquals("all messages written to same shard", 1, groupedByShard.size());
@@ -175,7 +175,8 @@ public class KinesisAppenderIntegrationTest
         localLogger.info("reading messages");
         List<RetrievedRecord> messages = testHelper.retrieveAllMessages(expectedMessages);
 
-        testHelper.assertMessages(messages, writers.length, messagesPerThread * 2, "test1", "test2", "test3");
+        testHelper.assertMessages(messages, writers.length, messagesPerThread);
+        testHelper.assertPartitionKeys(messages, messagesPerThread * 2, "test1", "test2", "test3");
 
         Map<String,List<RetrievedRecord>> groupedByShard = testHelper.groupByShard(messages);
         assertEquals("messages written to multiple shards", 2, groupedByShard.size());
@@ -205,22 +206,8 @@ public class KinesisAppenderIntegrationTest
         List<RetrievedRecord> messages = testHelper.retrieveAllMessages(numMessages);
 
         testHelper.assertShardCount(2);
-
-        // at this point I'm going to assume that the message content is correct,
-        // because three other tests have asserted that, so will just verify overall
-        // count and how the records were partitioned
-
-        assertEquals("overall message count", numMessages, messages.size());
-
-        Set<String> partitionKeys = new HashSet<String>();
-        for (RetrievedRecord message : messages)
-        {
-            partitionKeys.add(message.partitionKey);
-            StringAsserts.assertRegex("8-character numeric partition key (was: " + message.partitionKey + ")",
-                                      "\\d{8}", message.partitionKey);
-        }
-        assertTrue("expected roughly " + numMessages + " partition keys (was: " + partitionKeys.size() + ")",
-                   (partitionKeys.size() > numMessages - 20) && (partitionKeys.size() < numMessages + 20));
+        testHelper.assertMessages(messages, 1, numMessages);
+        testHelper.assertRandomPartitionKeys(messages, numMessages);
 
         localLogger.info("finished");
     }

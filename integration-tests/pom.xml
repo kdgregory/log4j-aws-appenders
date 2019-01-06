@@ -3,8 +3,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.kdgregory.logging</groupId>
-    <artifactId>examples</artifactId>
-    <version>2.1.0</version>
+    <artifactId>integration-tests</artifactId>
+    <version>2.1.1</version>
     <packaging>pom</packaging>
 
     <name>AWS Log Appenders - Integration Tests</name>
@@ -14,6 +14,9 @@
     </description>
 
     <modules>
+        <module>cloudwatch-logwriter-integration-tests</module>
+        <module>kinesis-logwriter-integration-tests</module>
+        <module>sns-logwriter-integration-tests</module>
         <module>log4j1-integration-tests</module>
         <module>logback-integration-tests</module>
     </modules>

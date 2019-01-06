@@ -4,7 +4,7 @@
 
     <groupId>com.kdgregory.logging</groupId>
     <artifactId>logback-aws-appenders-example</artifactId>
-    <version>2.1.0</version>
+    <version>2.1.1</version>
     <packaging>jar</packaging>
 
     <name>Log4J 1.x Example</name>
@@ -20,7 +20,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <aws-sdk.version>1.11.405</aws-sdk.version>
+        <aws-sdk.version>1.11.478</aws-sdk.version>
         <logback.version>1.2.0</logback.version>
 
         <plugin.compiler.version>3.1</plugin.compiler.version>

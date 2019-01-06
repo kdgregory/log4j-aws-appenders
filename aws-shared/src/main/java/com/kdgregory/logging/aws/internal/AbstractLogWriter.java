@@ -52,11 +52,13 @@ implements LogWriter
     private MessageQueue messageQueue;
     private Thread dispatchThread;
 
+    // this will be set to true on either success or failure
+    private volatile boolean initializationComplete;
+
     // updated by stop()
     private volatile long shutdownTime = Long.MAX_VALUE;
 
-    // these can be read via accessor methods; they're intended for testing
-    private volatile boolean initializationComplete;
+    // this is intended for testing
     private volatile int batchCount;
 
 
@@ -92,16 +94,6 @@ implements LogWriter
         return batchCount;
     }
 
-
-    /**
-     *  Returns a flag indicating that initialization has completed (whether or not
-     *  successful).
-     */
-    public boolean isInitializationComplete()
-    {
-        return initializationComplete;
-    }
-
 //----------------------------------------------------------------------------
 //  Implementation of LogWriter
 //----------------------------------------------------------------------------
@@ -115,6 +107,25 @@ implements LogWriter
             throw new IllegalArgumentException("attempted to enqueue a too-large message");
 
         messageQueue.enqueue(message);
+    }
+
+
+    @Override
+    public boolean waitUntilInitialized(long millisToWait)
+    {
+        long timeoutAt = System.currentTimeMillis() + millisToWait;
+        while (! initializationComplete && (System.currentTimeMillis() < timeoutAt))
+        {
+            try
+            {
+                Thread.sleep(100);
+            }
+            catch (InterruptedException ex)
+            {
+                return false;
+            }
+        }
+        return initializationComplete;
     }
 
 
@@ -162,6 +173,7 @@ implements LogWriter
         {
             messageQueue.setDiscardThreshold(0);
             messageQueue.setDiscardAction(DiscardAction.oldest);
+            initializationComplete = true;
             return;
         }
 

@@ -44,6 +44,15 @@ extends Runnable
 
 
     /**
+     *  Waits up to the specified amount of time for the writer to initialize.
+     *  Returns <code>true</code> if it initialized successfully, <code>false</code>
+     *  if it failed to initialize, the timeout expired, or the calling thread was
+     *  interrupted.
+     */
+    boolean waitUntilInitialized(long millisToWait);
+
+
+    /**
      *  Signals the writer that it will no longer receive batches. It should, however,
      *  make a best effort to send any batches that it already has before exiting its
      *  <code>run()</code> method.

@@ -63,6 +63,13 @@ implements LogWriter
 
 
     @Override
+    public boolean waitUntilInitialized(long millisToWait)
+    {
+        return true;
+    }
+
+
+    @Override
     public void stop()
     {
         stopped = true;

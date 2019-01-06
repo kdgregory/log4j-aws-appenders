@@ -31,7 +31,7 @@ public class MockCloudWatchWriter
 implements LogWriter
 {
     public CloudWatchWriterConfig config;
-    
+
     public List<LogMessage> messages = new ArrayList<LogMessage>();
     public LogMessage lastMessage;
 
@@ -62,6 +62,12 @@ implements LogWriter
         lastMessage = message;
     }
 
+
+    @Override
+    public boolean waitUntilInitialized(long millisToWait)
+    {
+        return true;
+    }
 
     @Override
     public void stop()

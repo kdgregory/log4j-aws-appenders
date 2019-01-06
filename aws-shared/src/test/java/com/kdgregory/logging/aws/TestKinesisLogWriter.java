@@ -749,7 +749,6 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         createWriter(new KinesisWriterFactory());
 
-        assertTrue("writer successfully initialized",                                       writer.isInitializationComplete());
         assertNotNull("factory called (local flag)",                                        staticFactoryMock);
 
         assertEquals("describeStream: invocation count",        1,                          staticFactoryMock.describeStreamInvocationCount);

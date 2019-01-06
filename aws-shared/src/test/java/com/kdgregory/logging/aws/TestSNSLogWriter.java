@@ -694,7 +694,6 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         createWriter(new SNSWriterFactory());
 
-        assertTrue("writer successfully initialized",                                       writer.isInitializationComplete());
         assertNotNull("factory called (local flag)",                                        staticFactoryMock);
 
         assertEquals("invocations of listTopics",               1,                          staticFactoryMock.listTopicsInvocationCount);

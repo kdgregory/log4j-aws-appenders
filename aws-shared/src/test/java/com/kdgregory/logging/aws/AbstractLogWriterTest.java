@@ -21,7 +21,6 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.ClassUtil;
-import net.sf.kdgcommons.lang.StringUtil;
 import net.sf.kdgcommons.lang.ThreadUtil;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
@@ -115,16 +114,8 @@ public abstract class AbstractLogWriterTest
 
         new DefaultThreadFactory("test").startLoggingThread(writer, defaultUncaughtExceptionHandler);
 
-        // we'll spin until either the writer is initialized, signals an error,
-        // or a 5-second timeout expires
-        for (int ii = 0 ; ii < 100 ; ii++)
-        {
-            if (writer.isInitializationComplete())
-                return;
-            if (! StringUtil.isEmpty(stats.getLastErrorMessage()))
-                return;
-            Thread.sleep(50);
-        }
+        if (writer.waitUntilInitialized(5000))
+            return;
 
         fail("unable to initialize writer");
     }

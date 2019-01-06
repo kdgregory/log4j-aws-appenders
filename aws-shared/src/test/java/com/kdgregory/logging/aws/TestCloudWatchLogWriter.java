@@ -890,7 +890,6 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         createWriter(new CloudWatchWriterFactory());
 
-        assertTrue("writer successfully initialized",                                           writer.isInitializationComplete());
         assertNotNull("factory called (local flag)",                                            staticFactoryMock);
 
         assertEquals("describeLogGroups: invocation count",     1,                              staticFactoryMock.describeLogGroupsInvocationCount);

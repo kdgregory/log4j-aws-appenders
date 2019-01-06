@@ -61,6 +61,13 @@ public class ThrowingWriterFactory<C,S> implements WriterFactory<C,S>
                     appendLatch.countDown();
                 }
 
+
+                @Override
+                public boolean waitUntilInitialized(long millisToWait)
+                {
+                    return true;
+                }
+
                 @Override
                 public void stop()
                 {

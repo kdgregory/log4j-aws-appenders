@@ -7,10 +7,10 @@
     <version>2.1.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>CloudWatchLogWriter Integration Tests</name>
+    <name>SNSLogWriter Integration Tests</name>
 
     <description>
-        Tests the CloudWatch back-end in isolation.
+        Tests the SNS back-end in isolation.
     </description>
 
     <url> https://github.com/kdgregory/log4j-aws-appenders </url>

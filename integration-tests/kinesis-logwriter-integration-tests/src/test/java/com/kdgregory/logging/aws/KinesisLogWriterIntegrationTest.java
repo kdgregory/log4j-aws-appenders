@@ -26,7 +26,7 @@ import org.slf4j.MDC;
 import org.slf4j.Logger;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
-import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
+import com.amazonaws.services.kinesis.AmazonKinesisClient;
 
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
@@ -64,7 +64,8 @@ public class KinesisLogWriterIntegrationTest
     @BeforeClass
     public static void beforeClass()
     {
-        kinesisClient = AmazonKinesisClientBuilder.defaultClient();
+        // constructor because we're running against 1.11.0
+        kinesisClient = new AmazonKinesisClient();
     }
 
     @After

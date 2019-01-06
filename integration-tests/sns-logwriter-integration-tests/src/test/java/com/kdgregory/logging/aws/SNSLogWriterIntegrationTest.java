@@ -28,9 +28,9 @@ import org.slf4j.MDC;
 import org.slf4j.Logger;
 
 import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.AmazonSNSClientBuilder;
+import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+import com.amazonaws.services.sqs.AmazonSQSClient;
 
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
@@ -68,8 +68,9 @@ public class SNSLogWriterIntegrationTest
     @BeforeClass
     public static void beforeClass()
     {
-        snsClient = AmazonSNSClientBuilder.defaultClient();
-        sqsClient = AmazonSQSClientBuilder.defaultClient();
+        // constructor because we're running against 1.11.0
+        snsClient = new AmazonSNSClient();
+        sqsClient = new AmazonSQSClient();
     }
 
     @After

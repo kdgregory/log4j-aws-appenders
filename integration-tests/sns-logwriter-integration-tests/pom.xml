@@ -41,10 +41,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <log4j.version>1.2.17</log4j.version>
-        <aws-sdk.version>1.11.405</aws-sdk.version>
+        <!-- note: this version chosen to ensure that we use client constructors -->
+        <aws-sdk.version>1.11.0</aws-sdk.version>
 
         <junit.version>4.10</junit.version>
+        <log4j.version>1.2.17</log4j.version>
         <kdgcommons.version>1.0.16</kdgcommons.version>
         <practicalxml.version>1.1.19</practicalxml.version>
         <slf4j.version>1.7.25</slf4j.version>

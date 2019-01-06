@@ -24,7 +24,7 @@ import org.slf4j.MDC;
 import org.slf4j.Logger;
 
 import com.amazonaws.services.logs.AWSLogs;
-import com.amazonaws.services.logs.AWSLogsClientBuilder;
+import com.amazonaws.services.logs.AWSLogsClient;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
@@ -63,7 +63,8 @@ public class CloudWatchLogWriterIntegrationTest
     @BeforeClass
     public static void beforeClass()
     {
-        cloudwatchClient = AWSLogsClientBuilder.defaultClient();
+        // constructor because we're running against 1.11.0
+        cloudwatchClient = new AWSLogsClient();
     }
 
     @After

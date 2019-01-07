@@ -37,12 +37,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
 
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.testhelpers.SNSTestHelper;
+import com.kdgregory.logging.testhelpers.CommonTestHelper;
 
 
 public class SNSAppenderIntegrationTest
@@ -147,6 +147,8 @@ public class SNSAppenderIntegrationTest
     @Test
     public void testTopicMissingAutoCreate() throws Exception
     {
+        final int numMessages = 11;
+
         init("testTopicMissingAutoCreate", false);
         localLogger.info("starting");
 
@@ -154,31 +156,22 @@ public class SNSAppenderIntegrationTest
         SNSAppender<ILoggingEvent> appender = (SNSAppender<ILoggingEvent>)testLogger.getAppender("test");
         SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
 
-        // writer initialization is happening in a background thread; we need to spin until
-        // it's done
-
-        SNSLogWriter writer = null;
-        for (int ii = 0 ; ii < 60 ; ii++)
-        {
-            writer = ClassUtil.getFieldValue(appender, "writer", SNSLogWriter.class);
-            if (writer != null)
-                break;
-            Thread.sleep(1000);
-        }
-        assertNotNull("writer was created", writer);
-
-        for (int ii = 0 ; ii < 60 ; ii++)
-        {
-            if (writer.isInitializationComplete())
-                break;
-            Thread.sleep(1000);
-        }
-        assertTrue("writer initialization complete", writer.isInitializationComplete());
+        localLogger.info("waiting for writer initialization to finish");
+        CommonTestHelper.waitUntilWriterInitialized(appender, SNSLogWriter.class, 30000);
 
         assertNotEmpty("topic was created", testHelper.lookupTopic());
 
         assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),      appenderStats.getActualTopicName());
         assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       appenderStats.getActualTopicArn());
+
+        // even though we trust initialization, we'll still write messages
+
+        localLogger.info("writing messages");
+        (new MessageWriter(testLogger, numMessages)).run();
+
+        // no queue attached to this topic so we can't read messages directly
+
+        CommonTestHelper.waitUntilMessagesSent(appenderStats, numMessages, 30000);
 
         localLogger.info("finished");
     }

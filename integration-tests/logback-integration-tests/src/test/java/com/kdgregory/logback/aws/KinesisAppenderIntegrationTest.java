@@ -28,6 +28,7 @@ import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.testhelpers.KinesisTestHelper;
+import com.kdgregory.logging.testhelpers.CommonTestHelper;
 import com.kdgregory.logging.testhelpers.KinesisTestHelper.RetrievedRecord;
 
 import ch.qos.logback.classic.LoggerContext;
@@ -38,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.test.StringAsserts;
 
 
@@ -228,8 +228,7 @@ public class KinesisAppenderIntegrationTest
         (new MessageWriter(testLogger, numMessages)).run();
 
         localLogger.info("waiting for writer initialization to finish");
-
-        waitForWriterInitialization(appender, 10);
+        CommonTestHelper.waitUntilWriterInitialized(appender, KinesisLogWriter.class, 10000);
         String initializationMessage = appender.getAppenderStatistics().getLastErrorMessage();
 
         StringAsserts.assertRegex(
@@ -299,30 +298,5 @@ public class KinesisAppenderIntegrationTest
         MDC.put("testName", testName);
 
         localLogger = LoggerFactory.getLogger(getClass());
-    }
-
-
-    /**
-     *  Waits until the passed appender (1) creates a writer, and (2) that writer
-     *  signals that initialization is complete or that an error occurred.
-     *
-     *  @return The writer's initialization message (null means successful init).
-     */
-    private void waitForWriterInitialization(KinesisAppender<ILoggingEvent> appender, int timeoutInSeconds)
-    throws Exception
-    {
-        long timeoutAt = System.currentTimeMillis() + 1000 * timeoutInSeconds;
-        while (System.currentTimeMillis() < timeoutAt)
-        {
-            KinesisLogWriter writer = ClassUtil.getFieldValue(appender, "writer", KinesisLogWriter.class);
-            if ((writer != null) && writer.isInitializationComplete())
-                return;
-            else if (appender.getAppenderStatistics().getLastErrorMessage() != null)
-                return;
-
-            Thread.sleep(1000);
-        }
-
-        fail("writer not initialized within timeout");
     }
 }

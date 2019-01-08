@@ -82,6 +82,12 @@ log4j.logger.com.amazonaws=ERROR
    happen, you will need to add a context listener to your web-app, as described
    [here](tomcat.md).
 
+## I'm running on Lambda, why don't I see any log messages?
+
+   This happens because the appenders use a background thread to batch messages, and
+   [Lambda doesn't give that thread a chance to run](https://blog.kdgregory.com/2019/01/multi-threaded-programming-with-aws.html).
+   I'm currently working on [a fix](https://github.com/kdgregory/log4j-aws-appenders/issues/73).
+
 ## Can I contribute?
 
   At this point I haven't thought through the issues with having other contributors (and,

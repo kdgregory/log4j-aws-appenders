@@ -16,10 +16,10 @@ package com.kdgregory.logging.testhelpers;
 
 import java.util.concurrent.CountDownLatch;
 
+import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.WriterFactory;
-import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.common.util.InternalLogger;
 
 
@@ -27,74 +27,19 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *  This factory creates a LogWriter that throws on its second invocation.
  *  It's used to test the uncaught exception handling in the appender.
  */
-public class ThrowingWriterFactory<C,S> implements WriterFactory<C,S>
+public class ThrowingWriterFactory<C extends AbstractWriterConfig,S> implements WriterFactory<C,S>
 {
         @Override
         public LogWriter newLogWriter(C ignored1, S ignored2, InternalLogger ignored3)
         {
-            return new LogWriter()
+            return new MockLogWriter<AbstractWriterConfig>(ignored1)
             {
                 private CountDownLatch appendLatch = new CountDownLatch(2);
-
-                @Override
-                public void setBatchDelay(long value)
-                {
-                    // not used
-                }
-
-                @Override
-                public void setDiscardThreshold(int value)
-                {
-                    // not used
-                }
-
-                @Override
-                public void setDiscardAction(DiscardAction value)
-                {
-                    // not used
-                }
-
-                @Override
-                public boolean isMessageTooLarge(LogMessage message)
-                {
-                    // for testing we'll assume that everything's good unless test overrides
-                    return false;
-                }
 
                 @Override
                 public void addMessage(LogMessage message)
                 {
                     appendLatch.countDown();
-                }
-
-                @Override
-                public boolean initialize()
-                {
-                    return true;
-                }
-
-                @Override
-                public boolean waitUntilInitialized(long millisToWait)
-                {
-                    return true;
-                }
-
-                @Override
-                public void processBatch()
-                {
-                    // nothing happening here
-                }
-
-                @Override
-                public void stop()
-                {
-                    // not used
-                }
-
-                @Override
-                public void shutdown()
-                {
-                    // nothing happening here
                 }
 
                 @Override

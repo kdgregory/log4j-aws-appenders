@@ -26,41 +26,6 @@ public interface LogWriter
 extends Runnable
 {
     /**
-     *  Determines whether the passed message size exceeds the service limits.
-     *  This is exposed so that the appender can do a check before calling
-     *  {@link #addMessage}, because that method throws if given a too-large
-     *  message.
-     */
-    boolean isMessageTooLarge(LogMessage message);
-
-
-    /**
-     *  Adds a message to the writer waiting for batch.
-     *  <p>
-     *  Implementations should assume that they are invoked within a synchronized
-     *  block, and therefore should not perform excessive amounts of work.
-     */
-    void addMessage(LogMessage message);
-
-
-    /**
-     *  Waits up to the specified amount of time for the writer to initialize.
-     *  Returns <code>true</code> if it initialized successfully, <code>false</code>
-     *  if it failed to initialize, the timeout expired, or the calling thread was
-     *  interrupted.
-     */
-    boolean waitUntilInitialized(long millisToWait);
-
-
-    /**
-     *  Signals the writer that it will no longer receive batches. It should, however,
-     *  make a best effort to send any batches that it already has before exiting its
-     *  <code>run()</code> method.
-     */
-    void stop();
-
-
-    /**
      *  Sets the batch delay for the writer. The appender is assumed to expose a delay
      *  parameter, and this method allows it to change the writer's delay at runtime.
      *  Changes may or may not take place immediately.
@@ -82,4 +47,67 @@ extends Runnable
      *  has been reached.
      */
     void setDiscardAction(DiscardAction value);
+
+
+    /**
+     *  Determines whether the passed message size exceeds the service limits.
+     *  This is exposed so that the appender can do a check before calling
+     *  {@link #addMessage}, because that method throws if given a too-large
+     *  message.
+     */
+    boolean isMessageTooLarge(LogMessage message);
+
+
+    /**
+     *  Adds a message to the writer waiting for batch.
+     *  <p>
+     *  Implementations should assume that they are invoked within a synchronized
+     *  block, and therefore should not perform excessive amounts of work.
+     */
+    void addMessage(LogMessage message);
+
+
+    /**
+     *  Initializes the writer. Normally called from the <code>run()</code>
+     *  method, but exposed for synchronous operation.
+     *
+     *  @return <code>true</code> if initialization was successful, <code>false</code>
+     *          if it failed for any reason. The writer is expected to clean up after
+     *          itself on failure.
+     */
+    boolean initialize();
+
+
+    /**
+     *  Waits up to the specified amount of time for the writer to initialize. This
+     *  is intended to be called in non-synchronous mode, primarily for testing.
+     *
+     *  @return <code>true</code> if it initialized successfully, <code>false</code>
+     *          if writer failed to initialize, the timeout expired, or the calling
+     *          thread was interrupted.
+     */
+    boolean waitUntilInitialized(long millisToWait);
+
+
+    /**
+     *  Processes a batch of messages. Normally called from the <code>run()</code>
+     *  method, but exposed for synchronous operation. This invokes the batch-building
+     *  code, which means that execution time depends on <code>batchDelay</code>.
+     */
+    void processBatch();
+
+
+    /**
+     *  Signals the writer that it will no longer receive batches. It should, however,
+     *  make a best effort to send any batches that it already has before exiting its
+     *  <code>run()</code> method.
+     */
+    void stop();
+
+
+    /**
+     *  Performs any cleanup before the writer is truly stopped. Normally called from the
+     *  <code>run()</code> method, but exposed for synchronous operation.
+     */
+    void shutdown();
 }

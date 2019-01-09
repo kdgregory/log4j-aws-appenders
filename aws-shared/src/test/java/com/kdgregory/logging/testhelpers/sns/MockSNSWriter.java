@@ -47,36 +47,6 @@ implements LogWriter
 //----------------------------------------------------------------------------
 
     @Override
-    public boolean isMessageTooLarge(LogMessage message)
-    {
-        // there are no tests for this, so we'll pretend everything's great
-        return false;
-    }
-
-
-    @Override
-    public void addMessage(LogMessage message)
-    {
-        messages.add(message);
-        lastMessage = message;
-    }
-
-
-    @Override
-    public boolean waitUntilInitialized(long millisToWait)
-    {
-        return true;
-    }
-
-
-    @Override
-    public void stop()
-    {
-        stopped = true;
-    }
-
-
-    @Override
     public void setBatchDelay(long value)
     {
         throw new IllegalStateException("this function should never be called");
@@ -93,6 +63,57 @@ implements LogWriter
     public void setDiscardAction(DiscardAction value)
     {
         // ignored for now
+    }
+
+
+    @Override
+    public boolean isMessageTooLarge(LogMessage message)
+    {
+        // there are no tests for this, so we'll pretend everything's great
+        return false;
+    }
+
+
+    @Override
+    public void addMessage(LogMessage message)
+    {
+        messages.add(message);
+        lastMessage = message;
+    }
+
+
+    @Override
+    public boolean initialize()
+    {
+        return true;
+    }
+
+
+    @Override
+    public boolean waitUntilInitialized(long millisToWait)
+    {
+        return true;
+    }
+
+
+    @Override
+    public void processBatch()
+    {
+        // nothing happening here
+    }
+
+
+    @Override
+    public void stop()
+    {
+        stopped = true;
+    }
+
+
+    @Override
+    public void shutdown()
+    {
+        // nothing happening here
     }
 
 //----------------------------------------------------------------------------

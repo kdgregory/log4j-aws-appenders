@@ -939,7 +939,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             "using existing.*log group.*",
             "using existing.*log stream.*",
             "log writer initialization complete.*",
-            "stopping log.writer.*");
+            "log.writer shut down.*");
         internalLogger.assertInternalErrorLog();
     }
 }

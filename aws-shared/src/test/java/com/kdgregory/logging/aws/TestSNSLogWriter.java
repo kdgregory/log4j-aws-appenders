@@ -741,7 +741,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         internalLogger.assertInternalDebugLog(
             "log writer starting.*",
             "log writer initialization complete.*",
-            "stopping log.writer.*");
+            "log.writer shut down.*");
         internalLogger.assertInternalErrorLog();
     }
 }

@@ -792,7 +792,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         internalLogger.assertInternalDebugLog(
             "log writer starting.*",
             "log writer initialization complete.*",
-            "stopping log.writer.*");
+            "log.writer shut down.*");
         internalLogger.assertInternalErrorLog();
     }
 }

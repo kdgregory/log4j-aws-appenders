@@ -95,39 +95,37 @@ implements LogWriter
     }
 
 //----------------------------------------------------------------------------
-//  Implementation of LogWriter
+//  Implementation of Runnable
 //----------------------------------------------------------------------------
 
     @Override
-    public void addMessage(LogMessage message)
+    public void run()
     {
-        // we're going to assume that the appender has already checked this, and
-        // fail hard if that assumption is not valid
-        if (isMessageTooLarge(message))
-            throw new IllegalArgumentException("attempted to enqueue a too-large message");
+        logger.debug("log writer starting (thread: " + Thread.currentThread().getName() + ")");
 
-        messageQueue.enqueue(message);
-    }
+        if (! initialize())
+            return;
 
+        logger.debug("log writer initialization complete (thread: " + Thread.currentThread().getName() + ")");
 
-    @Override
-    public boolean waitUntilInitialized(long millisToWait)
-    {
-        long timeoutAt = System.currentTimeMillis() + millisToWait;
-        while (! initializationComplete && (System.currentTimeMillis() < timeoutAt))
+        // the do-while loop ensures that we attempt to process at least one batch, even if
+        // the writer is started and immediately stopped; that's not likely to happen in the
+        // real world, but was causing problems with the smoketest (which is configured to
+        // quickly transition writers)
+
+        do
         {
-            try
-            {
-                Thread.sleep(100);
-            }
-            catch (InterruptedException ex)
-            {
-                return false;
-            }
-        }
-        return initializationComplete;
+            processBatch();
+        } while (keepRunning());
+
+        shutdown();
+        logger.debug("log-writer shut down (thread: " + Thread.currentThread().getName()
+                     + " (#" + Thread.currentThread().getId() + ")");
     }
 
+//----------------------------------------------------------------------------
+//  Implementation of LogWriter
+//----------------------------------------------------------------------------
 
     @Override
     public void setBatchDelay(long value)
@@ -151,6 +149,81 @@ implements LogWriter
 
 
     @Override
+    public void addMessage(LogMessage message)
+    {
+        // we're going to assume that the appender has already checked this, and
+        // fail hard if that assumption is not valid
+        if (isMessageTooLarge(message))
+            throw new IllegalArgumentException("attempted to enqueue a too-large message");
+
+        messageQueue.enqueue(message);
+    }
+
+
+    @Override
+    public boolean initialize()
+    {
+        boolean successful = true;
+
+        try
+        {
+            client = clientFactory.createClient();
+            successful = ensureDestinationAvailable();
+        }
+        catch (Exception ex)
+        {
+            reportError("exception in initializer", ex);
+            successful = false;
+        }
+
+        if (!successful)
+        {
+            messageQueue.setDiscardThreshold(0);
+            messageQueue.setDiscardAction(DiscardAction.oldest);
+            initializationComplete = true;
+            return false;
+        }
+
+        dispatchThread = Thread.currentThread();
+        initializationComplete = true;
+
+        return true;
+    }
+
+
+    @Override
+    public boolean waitUntilInitialized(long millisToWait)
+    {
+        long timeoutAt = System.currentTimeMillis() + millisToWait;
+        while (! initializationComplete && (System.currentTimeMillis() < timeoutAt))
+        {
+            try
+            {
+                Thread.sleep(100);
+            }
+            catch (InterruptedException ex)
+            {
+                return false;
+            }
+        }
+        return initializationComplete;
+    }
+
+
+    @Override
+    public void processBatch()
+    {
+        List<LogMessage> currentBatch = buildBatch();
+        if (currentBatch.size() > 0)
+        {
+            batchCount++;
+            List<LogMessage> failures = sendBatch(currentBatch);
+            requeueMessages(failures);
+        }
+    }
+
+
+    @Override
     public void stop()
     {
         shutdownTime = System.currentTimeMillis() + config.batchDelay;
@@ -160,77 +233,16 @@ implements LogWriter
         }
     }
 
-//----------------------------------------------------------------------------
-//  Implementation of Runnable
-//----------------------------------------------------------------------------
 
     @Override
-    public void run()
+    public void shutdown()
     {
-        logger.debug("log writer starting on thread " + Thread.currentThread().getName());
-
-        if (! initialize())
-        {
-            messageQueue.setDiscardThreshold(0);
-            messageQueue.setDiscardAction(DiscardAction.oldest);
-            initializationComplete = true;
-            return;
-        }
-
-        // this is set after initialization because the integration tests were telling
-        // the writer to shut down while it was still initializing; in the real world
-        // that should never happen without the appender being shut down as well
-
-        dispatchThread = Thread.currentThread();
-
-        initializationComplete = true;
-
-        // the do-while loop ensures that we attempt to process at least one batch, even if
-        // the writer is started and immediately stopped; that's not likely to happen in the
-        // real world, but was causing problems with the smoketest (which is configured to
-        // quickly transition writers)
-
-        logger.debug("log writer initialization complete (thread " + Thread.currentThread().getName() + ")");
-
-        do
-        {
-            List<LogMessage> currentBatch = buildBatch();
-            if (currentBatch.size() > 0)
-            {
-                batchCount++;
-                List<LogMessage> failures = processBatch(currentBatch);
-                requeueMessages(failures);
-            }
-        } while (keepRunning());
-
         stopAWSClient();
-        logger.debug("stopping log-writer on thread " + Thread.currentThread().getName()
-                     + " (#" + Thread.currentThread().getId() + ")");
     }
 
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
-
-    /**
-     *  Creates the client and then calls {@link #ensureDestinationAvailable}.
-     *  Returns <code>true</code> if both actions succeed, <code>false</code>
-     *  if either fails.
-     */
-    private boolean initialize()
-    {
-        try
-        {
-            client = clientFactory.createClient();
-            return ensureDestinationAvailable();
-        }
-        catch (Exception ex)
-        {
-            reportError("exception in initializer", ex);
-            return false;
-        }
-    }
-
 
     /**
      *  A check for whether we should keep running: either we haven't been shut
@@ -325,10 +337,10 @@ implements LogWriter
 
 
     /**
-     *  Processes a batch of messages. The subclass is responsible for returning
+     *  Sends a batch of messages. The subclass is responsible for returning
      *  any messages that weren't sent, in order, so that they can be requeued.
      */
-    protected abstract List<LogMessage> processBatch(List<LogMessage> currentBatch);
+    protected abstract List<LogMessage> sendBatch(List<LogMessage> currentBatch);
 
 
     /**

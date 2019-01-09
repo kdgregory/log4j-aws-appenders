@@ -48,35 +48,6 @@ implements LogWriter
 //----------------------------------------------------------------------------
 
     @Override
-    public boolean isMessageTooLarge(LogMessage message)
-    {
-        // this is copied from CloudWatchLogWriter
-        return (message.size() + CloudWatchConstants.MESSAGE_OVERHEAD)  >= CloudWatchConstants.MAX_BATCH_BYTES;
-    }
-
-
-    @Override
-    public void addMessage(LogMessage message)
-    {
-        messages.add(message);
-        lastMessage = message;
-    }
-
-
-    @Override
-    public boolean waitUntilInitialized(long millisToWait)
-    {
-        return true;
-    }
-
-    @Override
-    public void stop()
-    {
-        stopped = true;
-    }
-
-
-    @Override
     public void setBatchDelay(long value)
     {
         this.config.batchDelay = value;
@@ -94,6 +65,57 @@ implements LogWriter
     public void setDiscardAction(DiscardAction value)
     {
         this.config.discardAction = value;
+    }
+
+
+    @Override
+    public boolean isMessageTooLarge(LogMessage message)
+    {
+        // this is copied from CloudWatchLogWriter
+        return (message.size() + CloudWatchConstants.MESSAGE_OVERHEAD)  >= CloudWatchConstants.MAX_BATCH_BYTES;
+    }
+
+
+    @Override
+    public void addMessage(LogMessage message)
+    {
+        messages.add(message);
+        lastMessage = message;
+    }
+
+
+    @Override
+    public boolean initialize()
+    {
+        return true;
+    }
+
+
+    @Override
+    public boolean waitUntilInitialized(long millisToWait)
+    {
+        return true;
+    }
+
+
+    @Override
+    public void processBatch()
+    {
+        // nothing happening here
+    }
+
+
+    @Override
+    public void stop()
+    {
+        stopped = true;
+    }
+
+
+    @Override
+    public void shutdown()
+    {
+        // nothing happening here
     }
 
 //----------------------------------------------------------------------------

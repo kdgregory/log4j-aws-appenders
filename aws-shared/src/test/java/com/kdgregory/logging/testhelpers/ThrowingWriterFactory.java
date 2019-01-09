@@ -37,44 +37,6 @@ public class ThrowingWriterFactory<C,S> implements WriterFactory<C,S>
                 private CountDownLatch appendLatch = new CountDownLatch(2);
 
                 @Override
-                public void run()
-                {
-                    try
-                    {
-                        appendLatch.await();
-                        throw new TestingException("danger, danger Will Robinson!");
-                    }
-                    catch (InterruptedException ex)
-                    { /* nothing to do */ }
-                }
-
-                @Override
-                public boolean isMessageTooLarge(LogMessage message)
-                {
-                    // for testing we'll assume that everything's good unless test overrides
-                    return false;
-                }
-
-                @Override
-                public void addMessage(LogMessage message)
-                {
-                    appendLatch.countDown();
-                }
-
-
-                @Override
-                public boolean waitUntilInitialized(long millisToWait)
-                {
-                    return true;
-                }
-
-                @Override
-                public void stop()
-                {
-                    // not used
-                }
-
-                @Override
                 public void setBatchDelay(long value)
                 {
                     // not used
@@ -90,6 +52,61 @@ public class ThrowingWriterFactory<C,S> implements WriterFactory<C,S>
                 public void setDiscardAction(DiscardAction value)
                 {
                     // not used
+                }
+
+                @Override
+                public boolean isMessageTooLarge(LogMessage message)
+                {
+                    // for testing we'll assume that everything's good unless test overrides
+                    return false;
+                }
+
+                @Override
+                public void addMessage(LogMessage message)
+                {
+                    appendLatch.countDown();
+                }
+
+                @Override
+                public boolean initialize()
+                {
+                    return true;
+                }
+
+                @Override
+                public boolean waitUntilInitialized(long millisToWait)
+                {
+                    return true;
+                }
+
+                @Override
+                public void processBatch()
+                {
+                    // nothing happening here
+                }
+
+                @Override
+                public void stop()
+                {
+                    // not used
+                }
+
+                @Override
+                public void shutdown()
+                {
+                    // nothing happening here
+                }
+
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        appendLatch.await();
+                        throw new TestingException("danger, danger Will Robinson!");
+                    }
+                    catch (InterruptedException ex)
+                    { /* nothing to do */ }
                 }
             };
         }

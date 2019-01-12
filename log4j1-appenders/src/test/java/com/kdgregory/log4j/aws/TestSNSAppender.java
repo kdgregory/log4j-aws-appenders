@@ -89,6 +89,7 @@ public class TestSNSAppender
 
         assertTrue("autoCreate",                                            appender.getAutoCreate());
         assertEquals("subject",             "This is a test",               appender.getSubject());
+        assertFalse("synchronous mode",                                     appender.getSynchronous());
         assertEquals("batch delay",         1L,                             appender.getBatchDelay());
         assertEquals("discard threshold",   123,                            appender.getDiscardThreshold());
         assertEquals("discard action",      "newest",                       appender.getDiscardAction());
@@ -108,11 +109,24 @@ public class TestSNSAppender
 
         assertFalse("autoCreate",                                           appender.getAutoCreate());
         assertEquals("subject",             null,                           appender.getSubject());
+        assertFalse("synchronous mode",                                     appender.getSynchronous());
         assertEquals("batch delay",         1L,                             appender.getBatchDelay());
         assertEquals("discard threshold",   1000,                           appender.getDiscardThreshold());
         assertEquals("discard action",      "oldest",                       appender.getDiscardAction());
         assertEquals("client factory",      null,                           appender.getClientFactory());
         assertEquals("client endpoint",     null,                           appender.getClientEndpoint());
+    }
+
+
+    @Test
+    public void testSynchronousConfiguration() throws Exception
+    {
+        initialize("testSynchronousConfiguration");
+
+        // all we care about is the interaction between synchronous and batchDelay
+
+        assertTrue("synchronous mode",                                      appender.getSynchronous());
+        assertEquals("batch delay",         0L,                             appender.getBatchDelay());
     }
 
 

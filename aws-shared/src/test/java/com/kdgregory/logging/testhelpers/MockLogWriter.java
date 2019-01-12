@@ -31,10 +31,17 @@ implements LogWriter
 {
     public T config;
 
+    public Thread writerThread;
+
     public List<LogMessage> messages = new ArrayList<LogMessage>();
     public LogMessage lastMessage;
 
     public boolean stopped;
+
+    public int initializeInvocationCount;
+    public int processBatchInvocationCount;
+    public long processBatchLastTimeout;
+    public long cleanupInvocationCount;
 
 
     public MockLogWriter(T config)
@@ -86,6 +93,7 @@ implements LogWriter
     @Override
     public boolean initialize()
     {
+        initializeInvocationCount++;
         return true;
     }
 
@@ -100,7 +108,8 @@ implements LogWriter
     @Override
     public synchronized void processBatch(long shutdownTime)
     {
-        // nothing happening here
+        processBatchInvocationCount++;
+        processBatchLastTimeout = shutdownTime;
     }
 
 
@@ -114,7 +123,7 @@ implements LogWriter
     @Override
     public void cleanup()
     {
-        // nothing happening here
+        cleanupInvocationCount++;
     }
 
 //----------------------------------------------------------------------------
@@ -124,7 +133,9 @@ implements LogWriter
     @Override
     public void run()
     {
-        // we're not expecting to be on a background thread, so do nothing
+        // most of the tests don't want the writer running on a thread, and
+        // don't care, but the life-cycle and synchronous-operation tests do
+        writerThread = Thread.currentThread();
     }
 
 //----------------------------------------------------------------------------

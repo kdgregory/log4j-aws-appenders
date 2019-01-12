@@ -103,6 +103,7 @@ extends AppenderSkeleton
 
     // all member vars below this point are shared configuration
 
+    protected boolean               synchronous;
     protected long                  batchDelay;
     protected int                   discardThreshold;
     protected DiscardAction         discardAction;
@@ -153,6 +154,42 @@ extends AppenderSkeleton
 //----------------------------------------------------------------------------
 
     /**
+     *  Enables or disables synchronous mode. This may only be called during
+     *  configuration.
+     *  <p>
+     *  When running in synchronous mode calls to append() will not return until
+     *  the writer has attempted to send a batch (errors may result in messages
+     *  being requeued for the next batch). This negates the benefits of message
+     *  batching, and should only be used in cases (like AWS Lambda) where
+     *  background thread processing is not guaranteed.
+     *  <p>
+     *  Note: setting <code>synchronous</code> true also sets <code>batchDelay</code>
+     *  to 0.
+     */
+    public void setSynchronous(boolean value)
+    {
+        if (writer != null)
+            throw new IllegalStateException("can not set synchronous mode once writer created");
+
+        this.synchronous = value;
+
+        if (this.synchronous)
+        {
+            this.batchDelay = 0;
+        }
+    }
+
+
+    /**
+     *  Returns the current synchronous mode setting.
+     */
+    public boolean getSynchronous()
+    {
+        return this.synchronous;
+    }
+
+
+    /**
      *  Sets the maximum batch delay, in milliseconds.
      *  <p>
      *  The writer attempts to gather multiple logging messages into a batch, to
@@ -163,15 +200,21 @@ extends AppenderSkeleton
      *  request size will be reached before the batch delay expires.
      *  <p>
      *  The default value is 2000, which is rather arbitrarily chosen.
+     *  <p>
+     *  If the appender is in synchronous mode, this setting is ignored.
      */
     public void setBatchDelay(long value)
     {
+        if (this.synchronous)
+            return;
+
         this.batchDelay = value;
         if (writer != null)
         {
             writer.setBatchDelay(value);
         }
     }
+
 
     /**
      *  Returns the maximum batch delay; see {@link #setBatchDelay}. Primarily used
@@ -449,6 +492,7 @@ extends AppenderSkeleton
 
             stopWriter();
             unregisterStatisticsBean();
+
             closed = true;
         }
     }
@@ -525,16 +569,23 @@ extends AppenderSkeleton
             try
             {
                 writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats, logger);
-                threadFactory.startLoggingThread(writer, new UncaughtExceptionHandler()
+                if (synchronous)
                 {
-                    @Override
-                    public void uncaughtException(Thread t, Throwable ex)
+                    writer.initialize();
+                }
+                else
+                {
+                    threadFactory.startLoggingThread(writer, new UncaughtExceptionHandler()
                     {
-                        logger.error("unhandled exception in writer", ex);
-                        appenderStats.setLastError(null, ex);
-                        writer = null;
-                    }
-                });
+                        @Override
+                        public void uncaughtException(Thread t, Throwable ex)
+                        {
+                            logger.error("unhandled exception in writer", ex);
+                            appenderStats.setLastError(null, ex);
+                            writer = null;
+                        }
+                    });
+                }
 
                 if (layout.getHeader() != null)
                 {
@@ -572,11 +623,17 @@ extends AppenderSkeleton
                 }
 
                 writer.stop();
+
+                if (synchronous)
+                {
+                    writer.cleanup();
+                }
             }
             catch (Exception ex)
             {
                 logger.error("exception while shutting down writer", ex);
             }
+
             writer = null;
         }
     }
@@ -641,6 +698,13 @@ extends AppenderSkeleton
                 writer.addMessage(message);
                 messagesSinceLastRotation++;
             }
+        }
+
+        // for Log4J append() happens within a big synchronized block managed by the framework
+        // however, logically, I want to separate putting a message on the queue from sending it
+        if (synchronous)
+        {
+            writer.processBatch(System.currentTimeMillis());
         }
     }
 

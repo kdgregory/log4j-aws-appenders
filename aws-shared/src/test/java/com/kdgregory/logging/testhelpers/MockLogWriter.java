@@ -98,7 +98,7 @@ implements LogWriter
 
 
     @Override
-    public void processBatch(long shutdownTime)
+    public synchronized void processBatch(long shutdownTime)
     {
         // nothing happening here
     }

@@ -212,7 +212,7 @@ implements LogWriter
 
 
     @Override
-    public void processBatch(long waitUntil)
+    public synchronized void processBatch(long waitUntil)
     {
         List<LogMessage> currentBatch = buildBatch(waitUntil);
         if (currentBatch.size() > 0)

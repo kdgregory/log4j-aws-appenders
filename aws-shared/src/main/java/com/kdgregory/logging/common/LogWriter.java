@@ -94,6 +94,11 @@ extends Runnable
      *  method, but exposed for synchronous operation. Note that execution time will
      *  depend on both initial wait time (which is passed here) and the batch delay
      *  (which is configured).
+     *  <p>
+     *  Implementations must be synchronized. In normal (threaded) operation this
+     *  synchronization will be uncontested. However, for an appender in synchronous
+     *  mode, it will prevent concurrent attempts to write to the destination, which
+     *  might otherwise result in throttling or retries.
      *
      *  @param  waitUntil   a timestamp (not timeout) that determines how long this
      *                      method will wait for the initial message in the batch.

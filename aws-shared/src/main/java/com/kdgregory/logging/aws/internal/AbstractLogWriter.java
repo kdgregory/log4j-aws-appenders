@@ -108,6 +108,11 @@ implements LogWriter
 
         logger.debug("log writer initialization complete (thread: " + Thread.currentThread().getName() + ")");
 
+        // to avoid any mid-initialization interrupts, we don't set the thread until done
+        // (was affecting integration tests, shouldn't be an issue in real-world use)
+
+        dispatchThread = Thread.currentThread();
+
         // the do-while loop ensures that we attempt to process at least one batch, even if
         // the writer is started and immediately stopped; that's not likely to happen in the
         // real world, but was causing problems with the smoketest (which is configured to
@@ -115,10 +120,10 @@ implements LogWriter
 
         do
         {
-            processBatch();
+            processBatch(shutdownTime);
         } while (keepRunning());
 
-        shutdown();
+        cleanup();
         logger.debug("log-writer shut down (thread: " + Thread.currentThread().getName()
                      + " (#" + Thread.currentThread().getId() + ")");
     }
@@ -163,31 +168,27 @@ implements LogWriter
     @Override
     public boolean initialize()
     {
-        boolean successful = true;
+        boolean success = true;
 
         try
         {
             client = clientFactory.createClient();
-            successful = ensureDestinationAvailable();
+            success = ensureDestinationAvailable();
         }
         catch (Exception ex)
         {
             reportError("exception in initializer", ex);
-            successful = false;
+            success = false;
         }
 
-        if (!successful)
+        if (!success)
         {
             messageQueue.setDiscardThreshold(0);
             messageQueue.setDiscardAction(DiscardAction.oldest);
-            initializationComplete = true;
-            return false;
         }
 
-        dispatchThread = Thread.currentThread();
         initializationComplete = true;
-
-        return true;
+        return success;
     }
 
 
@@ -211,9 +212,9 @@ implements LogWriter
 
 
     @Override
-    public void processBatch()
+    public void processBatch(long waitUntil)
     {
-        List<LogMessage> currentBatch = buildBatch();
+        List<LogMessage> currentBatch = buildBatch(waitUntil);
         if (currentBatch.size() > 0)
         {
             batchCount++;
@@ -235,7 +236,7 @@ implements LogWriter
 
 
     @Override
-    public void shutdown()
+    public void cleanup()
     {
         stopAWSClient();
     }
@@ -264,13 +265,13 @@ implements LogWriter
      *  of the message, and whether the aggregate batch size is within the range
      *  accepted by the service.
      */
-    protected List<LogMessage> buildBatch()
+    protected List<LogMessage> buildBatch(long waitUntil)
     {
         // presizing to a small-but-possible size to avoid repeated resizes
         List<LogMessage> batch = new ArrayList<LogMessage>(512);
 
         // we'll wait "forever" unless there's a shutdown timestamp in effect
-        LogMessage message = waitForMessage(shutdownTime);
+        LogMessage message = waitForMessage(waitUntil);
         if (message == null)
             return batch;
 

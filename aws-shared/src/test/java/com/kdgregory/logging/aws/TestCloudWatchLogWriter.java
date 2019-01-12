@@ -942,4 +942,57 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             "log.writer shut down.*");
         internalLogger.assertInternalErrorLog();
     }
+
+
+    @Test
+    public void testSynchronousOperation() throws Exception
+    {
+        // appender is expected to set batch delay in synchronous mode
+        config.batchDelay = 1;
+
+        // we just have one thread, so don't want any locks getting in the way
+        mock.disableThreadSynchronization();
+
+        // the createWriter() method spins up a background thread, which we don't want
+        writer = (CloudWatchLogWriter)mock.newWriterFactory().newLogWriter(config, stats, internalLogger);
+        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+
+        assertEquals("stats: actual log group name",            "argle",            stats.getActualLogGroupName());
+        assertEquals("stats: actual log stream name",           "bargle",           stats.getActualLogStreamName());
+        assertFalse("writer should not be initialized",         ClassUtil.getFieldValue(writer, "initializationComplete", Boolean.class).booleanValue());
+
+        writer.initialize();
+
+        assertTrue("writer has been initialized",               ClassUtil.getFieldValue(writer, "initializationComplete", Boolean.class).booleanValue());
+        assertNull("no dispatch thread",                        ClassUtil.getFieldValue(writer, "dispatchThread", Thread.class));
+
+        assertEquals("describeLogGroups: invocation count",     1,                  mock.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",    1,                  mock.describeLogStreamsInvocationCount);
+        assertEquals("createLogGroup: invocation count",        0,                  mock.createLogGroupInvocationCount);
+        assertEquals("createLogStream: invocation count",       0,                  mock.createLogStreamInvocationCount);
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+
+        assertEquals("message is waiting in queue",             1,                  messageQueue.queueSize());
+        assertEquals("putLogEvents: invocation count",          0,                  mock.putLogEventsInvocationCount);
+
+        writer.processBatch(System.currentTimeMillis());
+
+        assertEquals("no longer in queue",                      0,                  messageQueue.queueSize());
+        assertEquals("describeLogGroups: invocation count",     1,                  mock.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",    2,                  mock.describeLogStreamsInvocationCount);
+        assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",              "message one",      mock.mostRecentEvents.get(0).getMessage());
+        assertStatisticsMessagesSent(1);
+
+        assertEquals("shutdown not called before cleanup",      0,                  mock.shutdownInvocationCount);
+        writer.cleanup();
+        assertEquals("shutdown called after cleanup",           1,                  mock.shutdownInvocationCount);
+
+        // the "starting" and "initialization complete" messages are emitted in run(), so not present here
+        internalLogger.assertInternalDebugLog("using existing .* group: argle",
+                                              "using existing .* stream: bargle");
+        internalLogger.assertInternalErrorLog();
+    }
 }

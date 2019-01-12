@@ -98,7 +98,7 @@ implements LogWriter
 
 
     @Override
-    public void processBatch()
+    public void processBatch(long shutdownTime)
     {
         // nothing happening here
     }
@@ -112,7 +112,7 @@ implements LogWriter
 
 
     @Override
-    public void shutdown()
+    public void cleanup()
     {
         // nothing happening here
     }

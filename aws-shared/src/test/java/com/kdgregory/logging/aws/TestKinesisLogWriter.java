@@ -795,4 +795,60 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
             "log.writer shut down.*");
         internalLogger.assertInternalErrorLog();
     }
+
+
+    @Test
+    public void testSynchronousOperation() throws Exception
+    {
+        // appender is expected to set batch delay in synchronous mode
+        config.batchDelay = 1;
+
+        // we just have one thread, so don't want any locks getting in the way
+        mock.disableThreadSynchronization();
+
+        // the createWriter() method spins up a background thread, which we don't want
+        writer = (KinesisLogWriter)mock.newWriterFactory().newLogWriter(config, stats, internalLogger);
+        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+
+        assertEquals("stats: actual stream name",                   DEFAULT_STREAM_NAME,        stats.getActualStreamName());
+        assertFalse("writer should not be initialized",             ClassUtil.getFieldValue(writer, "initializationComplete", Boolean.class).booleanValue());
+
+        writer.initialize();
+
+        assertTrue("writer has been initialized",                   ClassUtil.getFieldValue(writer, "initializationComplete", Boolean.class).booleanValue());
+        assertNull("no dispatch thread",                            ClassUtil.getFieldValue(writer, "dispatchThread", Thread.class));
+
+        assertEquals("describeStream: invocation count",            1,                          mock.describeStreamInvocationCount);
+        assertEquals("describeStream: stream name",                 DEFAULT_STREAM_NAME,        mock.describeStreamStreamName);
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+
+        assertEquals("message is waiting in queue",                 1,                          messageQueue.queueSize());
+        assertEquals("putRecords: invocation count",                0,                          mock.putRecordsInvocationCount);
+
+        writer.processBatch(System.currentTimeMillis());
+
+        assertEquals("putRecords: invocation count",                1,                          mock.putRecordsInvocationCount);
+        assertEquals("putRecords: source record count",             1,                          mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,      mock.putRecordsSourceRecords.get(0).getPartitionKey());
+        assertEquals("putRecords: source record content",           "message one",
+                                                                    new String(
+                                                                        BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(0).getData()),
+                                                                        "UTF-8"));
+        assertStatisticsMessagesSent(1);
+
+        // general assertions to verify that nothing unexpected happened
+        assertEquals("describeStream: invocation count",            1,                          mock.describeStreamInvocationCount);
+        assertEquals("describeStream: stream name",                 DEFAULT_STREAM_NAME,        mock.describeStreamStreamName);
+        assertEquals("createStream: invocation count",              0,                          mock.createStreamInvocationCount);
+        assertEquals("increaseRetentionPeriod invocation count",    0,                          mock.increaseRetentionPeriodInvocationCount);
+
+        assertEquals("shutdown not called before cleanup",          0,                          mock.shutdownInvocationCount);
+        writer.cleanup();
+        assertEquals("shutdown called after cleanup",               1,                          mock.shutdownInvocationCount);
+
+        // the "starting" and "initialization complete" messages are emitted in run(), so not present here
+        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalErrorLog();
+    }
 }

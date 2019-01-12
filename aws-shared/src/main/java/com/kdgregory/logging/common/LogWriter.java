@@ -91,10 +91,14 @@ extends Runnable
 
     /**
      *  Processes a batch of messages. Normally called from the <code>run()</code>
-     *  method, but exposed for synchronous operation. This invokes the batch-building
-     *  code, which means that execution time depends on <code>batchDelay</code>.
+     *  method, but exposed for synchronous operation. Note that execution time will
+     *  depend on both initial wait time (which is passed here) and the batch delay
+     *  (which is configured).
+     *
+     *  @param  waitUntil   a timestamp (not timeout) that determines how long this
+     *                      method will wait for the initial message in the batch.
      */
-    void processBatch();
+    void processBatch(long waitUntil);
 
 
     /**
@@ -109,5 +113,5 @@ extends Runnable
      *  Performs any cleanup before the writer is truly stopped. Normally called from the
      *  <code>run()</code> method, but exposed for synchronous operation.
      */
-    void shutdown();
+    void cleanup();
 }

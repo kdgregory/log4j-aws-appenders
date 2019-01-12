@@ -217,20 +217,16 @@ public class TestAbstractAppender
         assertEquals("batch has been processed",                1,                                      writer.processBatchInvocationCount);
         assertInRange("batch processing time",                  start, System.currentTimeMillis(),      writer.processBatchLastTimeout);
 
-        assertFalse("appender not closed before shutdown",      appender.isClosed());
-        assertFalse("writer still running before shutdown",     writer.stopped);
-
+        assertEquals("before stop, calls to cleanup()",         0,                                      writer.cleanupInvocationCount);
+        
         appender.close();
-
-        assertTrue("appender closed after shutdown",            appender.isClosed());
-        assertTrue("writer stopped after shutdown",             writer.stopped);
-
-        assertEquals("AWS client shut down",                    1,                                      writer.cleanupInvocationCount);
+        
+        assertEquals("after stop, calls to cleanup()",          1,                                      writer.cleanupInvocationCount);
     }
 
 
     @Test(expected=IllegalStateException.class)
-    public void testThrowsIfAppenderClosed() throws Exception
+    public void testAppendAfterStop() throws Exception
     {
         initialize("testLifecycle");
 

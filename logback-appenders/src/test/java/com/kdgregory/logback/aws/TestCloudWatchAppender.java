@@ -70,6 +70,7 @@ public class TestCloudWatchAppender
 
         assertEquals("log group name",      "argle",                        appender.getLogGroup());
         assertEquals("log stream name",     "bargle",                       appender.getLogStream());
+        assertFalse("synchronous mode",                                     appender.getSynchronous());
         assertEquals("batch delay",         9876L,                          appender.getBatchDelay());
         assertEquals("sequence",            2,                              appender.getSequence());
         assertEquals("rotation mode",       "interval",                     appender.getRotationMode());
@@ -90,6 +91,7 @@ public class TestCloudWatchAppender
         assertNull("log group name",                                        appender.getLogGroup());
 
         assertEquals("log stream name",     "{startupTimestamp}",           appender.getLogStream());
+        assertFalse("synchronous mode",                                     appender.getSynchronous());
         assertEquals("batch delay",         2000L,                          appender.getBatchDelay());
         assertEquals("sequence",            0,                              appender.getSequence());
         assertEquals("rotation mode",       "none",                         appender.getRotationMode());
@@ -98,6 +100,18 @@ public class TestCloudWatchAppender
         assertEquals("discard action",      "oldest",                       appender.getDiscardAction());
         assertEquals("client factory",      null,                           appender.getClientFactory());
         assertEquals("client endpoint",     null,                           appender.getClientEndpoint());
+    }
+
+
+    @Test
+    public void testSynchronousConfiguration() throws Exception
+    {
+        initialize("testSynchronousConfiguration");
+
+        // all we care about is the interaction between synchronous and batchDelay
+
+        assertTrue("synchronous mode",                                      appender.getSynchronous());
+        assertEquals("batch delay",         0L,                             appender.getBatchDelay());
     }
 
 

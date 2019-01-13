@@ -84,9 +84,10 @@ log4j.logger.com.amazonaws=ERROR
 
 ## I'm running on Lambda, why don't I see any log messages?
 
-   This happens because the appenders use a background thread to batch messages, and
-   [Lambda doesn't give that thread a chance to run](https://blog.kdgregory.com/2019/01/multi-threaded-programming-with-aws.html).
-   I'm currently working on [a fix](https://github.com/kdgregory/log4j-aws-appenders/issues/73).
+   This happens because the appenders use a background thread to batch messages, and [Lambda
+   doesn't give that thread a chance to run](https://blog.kdgregory.com/2019/01/multi-threaded-programming-with-aws.html).
+   You can enable [synchronous mode](design.md#synchronous-mode) to mitigate this, but be aware
+   that it will slow down foreground execution and does not guarantee delivery.
 
 ## Can I contribute?
 

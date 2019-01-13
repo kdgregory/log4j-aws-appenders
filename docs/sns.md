@@ -22,6 +22,7 @@ Name                | Description
 `topicArn`          | The ARN of the SNS topic that will receive messages; may use [substitutions](substitutions.md). No default value. See below for more information.
 `autoCreate`        | If present and "true", the topic will be created if it does not already exist. This may only be used when specifying topic by name, not ARN.
 `subject`           | If used, attaches a subject to each message sent; no default value. See below for more information.
+`synchonous`        | If `true`, the appender will operate in [synchronous mode](design.md#synchronous-mode), sending messages from the invoking thread on every call to `append()`.
 `discardThreshold`  | The threshold count for discarding messages; default is 10,000. See [design doc](design.md#message-discard) for more information.
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
 `clientFactory`     | Specifies the fully-qualified name of a static method that will be used to create the AWS service client via reflection. See [service client doc](service-client.md) for more information.
@@ -96,5 +97,7 @@ does not already exist (this is only appropriate for development/test environmen
 You may use [substitutions](substitutions.md) in either the topic name or ARN. When constructing an
 ARN it's particularly useful to use `{env:AWS_REGION}` or `{ec2:region}` along with `{aws:accountId}`.
 
-While the appender exposes the batch delay configuration parameters, these are ignored. Each message
-is sent as soon as possible after it's passed to the appender (SNS does not support message batching).
+While the appender exposes the batch delay configuration parameter, it is ignored. Each message is
+sent as soon as possible after it's passed to the appender, because SNS does not support message batching.
+Note, however, that the messages are still sent on a background thread unless you enable
+[synchronous mode](docs/design.md#synchronous-mode).

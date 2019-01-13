@@ -279,7 +279,6 @@ public class CloudWatchAppenderIntegrationTest
         localLogger.info("finished");
     }
 
-
 //----------------------------------------------------------------------------
 //  Tests for synchronous operation -- this is common code, so will only be
 //  tested with the CloudWatch client

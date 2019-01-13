@@ -292,6 +292,66 @@ public class CloudWatchAppenderIntegrationTest
     }
 
 //----------------------------------------------------------------------------
+//  Tests for synchronous operation -- this is common code, so will only be
+//  tested with the CloudWatch client
+//----------------------------------------------------------------------------
+
+    @Test
+    public void testSynchronousModeSingleThread() throws Exception
+    {
+        init("testSynchronousModeSingleThread");
+        localLogger.info("starting");
+
+        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
+        CloudWatchAppender<ILoggingEvent> appender = (CloudWatchAppender<ILoggingEvent>)testLogger.getAppender("test");
+
+        localLogger.info("writing first message");
+
+        (new MessageWriter(testLogger, 1)).run();
+
+        assertEquals("number of messages recorded in stats", 1, appender.getAppenderStatistics().getMessagesSent());
+
+        // with just a single message the logstream may not show the message right away
+        // so we'll do a sleep (better would be to change the retrieval code?)
+        Thread.sleep(2000);
+
+        testHelper.assertMessages(LOGSTREAM_BASE, 1);
+    }
+
+
+    @Test
+    public void testSynchronousModeMultiThread() throws Exception
+    {
+        // we could do a lot of messages, but that will run very slowly
+        final int messagesPerThread = 10;
+
+        init("testSynchronousModeMultiThread");
+        localLogger.info("starting");
+
+        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
+        CloudWatchAppender<ILoggingEvent> appender = (CloudWatchAppender<ILoggingEvent>)testLogger.getAppender("test");
+
+        localLogger.info("writing messages");
+
+        MessageWriter[] writers = new MessageWriter[]
+        {
+            new MessageWriter(testLogger, messagesPerThread),
+            new MessageWriter(testLogger, messagesPerThread),
+            new MessageWriter(testLogger, messagesPerThread),
+            new MessageWriter(testLogger, messagesPerThread),
+            new MessageWriter(testLogger, messagesPerThread)
+        };
+        MessageWriter.runOnThreads(writers);
+
+        localLogger.info("all threads started; sleeping to give writer chance to run");
+        Thread.sleep(3000);
+
+        assertEquals("number of messages recorded in stats", messagesPerThread * 5, appender.getAppenderStatistics().getMessagesSent());
+
+        testHelper.assertMessages(LOGSTREAM_BASE, messagesPerThread * 5);
+    }
+
+//----------------------------------------------------------------------------
 //  Helpers
 //----------------------------------------------------------------------------
 

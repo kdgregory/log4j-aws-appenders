@@ -123,17 +123,6 @@ implements InvocationHandler
 //----------------------------------------------------------------------------
 
     /**
-     *  Pauses the main thread and allows the writer thread to proceed.
-     */
-    public void allowWriterThread() throws Exception
-    {
-        allowWriterThread.release();
-        Thread.sleep(100);
-        allowMainThread.acquire();
-    }
-
-
-    /**
      *  Creates a client proxy outside of the writer factory.
      */
     public AmazonKinesis createClient()
@@ -167,6 +156,31 @@ implements InvocationHandler
         };
     }
 
+
+    /**
+     *  Used for synchronous invocation tests: grants an "infinite" number of
+     *  permits for the writer to proceed.
+     */
+    public void disableThreadSynchronization()
+    {
+        allowMainThread = new Semaphore(1000);
+        allowWriterThread = new Semaphore(1000);
+    }
+
+
+    /**
+     *  Pauses the main thread and allows the writer thread to proceed.
+     */
+    public void allowWriterThread() throws Exception
+    {
+        allowWriterThread.release();
+        Thread.sleep(100);
+        allowMainThread.acquire();
+    }
+
+//----------------------------------------------------------------------------
+//  Invocation Handler
+//----------------------------------------------------------------------------
 
     /**
      *  The invocation handler; test code should not care about this.

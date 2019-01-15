@@ -157,6 +157,8 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     {
         createWriter();
 
+        assertEquals("stats: actual stream name",                   DEFAULT_STREAM_NAME,        stats.getActualStreamName());
+
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
         mock.allowWriterThread();
 
@@ -172,8 +174,8 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
                                                                         BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(0).getData()),
                                                                         "UTF-8"));
 
-        assertEquals("stats: actual stream name",                   DEFAULT_STREAM_NAME,        stats.getActualStreamName());
-        assertStatisticsMessagesSent(1);
+        assertStatisticsTotalMessagesSent(1);
+        assertEquals("statistics: last batch messages sent",        1,                          stats.getMessagesSentLastBatch());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               "log writer initialization complete.*");
@@ -191,6 +193,8 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         mock = new MockKinesisClient(1);
 
         createWriter();
+
+        assertEquals("actual stream name, from statistics",         DEFAULT_STREAM_NAME,        stats.getActualStreamName());
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
         mock.allowWriterThread();
@@ -214,8 +218,8 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
                                                                         BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(0).getData()),
                                                                         "UTF-8"));
 
-        assertEquals("actual stream name, from statistics",         DEFAULT_STREAM_NAME,        stats.getActualStreamName());
-        assertStatisticsMessagesSent(1);
+        assertStatisticsTotalMessagesSent(1);
+        assertEquals("statistics: last batch messages sent",        1,                          stats.getMessagesSentLastBatch());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               ".*creat.*stream.*",
@@ -393,26 +397,36 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         mock.allowWriterThread();
         mock.allowWriterThread();
 
-        assertEquals("putRecords: invocation count",            2,                              mock.putRecordsInvocationCount);
-        assertEquals("putRecords: number of messages",          1,                              mock.putRecordsSourceRecords.size());
+        // FIXME - we actually need to call four times, to get past interal retries
+        mock.allowWriterThread();
+        mock.allowWriterThread();
+
+        assertEquals("putRecords: invocation count",                4,                          mock.putRecordsInvocationCount);
+        assertEquals("putRecords: number of messages",              1,                          mock.putRecordsSourceRecords.size());
 
         assertStatisticsErrorMessage("failed to send batch");
         assertStatisticsException(TestingException.class, "I don't wanna do the work");
+
+        assertEquals("statistics: last batch messages sent",        0,                          stats.getMessagesSentLastBatch());
+        assertEquals("statistics: last batch messages requeued",    1,                          stats.getMessagesRequeuedLastBatch());
+
 
         assertTrue("message queue still accepts messages",                                      messageQueue.getDiscardThreshold() > 0);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog("failed to send.*",
+                                              "failed to send.*",
+                                              "failed to send.*",
                                               "failed to send.*");
-        internalLogger.assertInternalErrorLogExceptionTypes(TestingException.class, TestingException.class);
+        internalLogger.assertInternalErrorLogExceptionTypes(TestingException.class, TestingException.class, TestingException.class, TestingException.class);
 
         // the background thread will try to assemble another batch right away, so we can't examine
         // the message queue; instead we'll wait for the writer to call PutRecords again
 
         mock.allowWriterThread();
 
-        assertEquals("putRecords called again",                 3,                              mock.putRecordsInvocationCount);
+        assertEquals("putRecords called again",                 5,                              mock.putRecordsInvocationCount);
         assertEquals("putRecords: number of messages",          1,                              mock.putRecordsSourceRecords.size());
     }
 
@@ -453,10 +467,13 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         mock.allowWriterThread();
 
-        assertEquals("first batch, putRecords invocation count",                1,      mock.putRecordsInvocationCount);
-        assertEquals("first batch, number of successful messages",              7,      mock.putRecordsSuccesses.size());
-        assertEquals("first batch, number of failed messages",                  3,      mock.putRecordsFailures.size());
-        assertStatisticsMessagesSent("first batch, messages sent per stats",    7);
+        assertEquals("first batch, putRecords invocation count",                        1,      mock.putRecordsInvocationCount);
+        assertEquals("first batch, number of successful messages",                      7,      mock.putRecordsSuccesses.size());
+        assertEquals("first batch, number of failed messages",                          3,      mock.putRecordsFailures.size());
+
+        assertStatisticsTotalMessagesSent("stats: total messages after first batch",    7);
+        assertEquals("stats: messages sent in first batch",                             7,      stats.getMessagesSentLastBatch());
+        assertEquals("stats: messages requeued in first batch",                         3,      stats.getMessagesRequeuedLastBatch());
 
         PutRecordsRequestEntry savedFailure1 = mock.putRecordsFailures.get(0);
         PutRecordsRequestEntry savedFailure2 = mock.putRecordsFailures.get(1);
@@ -464,10 +481,14 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         mock.allowWriterThread();
 
-        assertEquals("second batch, putRecords invocation count",               2,      mock.putRecordsInvocationCount);
-        assertEquals("second batch, number of successful messages",             2,      mock.putRecordsSuccesses.size());
-        assertEquals("second batch, number of failed messages",                 1,      mock.putRecordsFailures.size());
-        assertStatisticsMessagesSent("second batch, messages sent per stats",   9);
+        assertEquals("second batch, putRecords invocation count",                       2,      mock.putRecordsInvocationCount);
+        assertEquals("second batch, number of successful messages",                     2,      mock.putRecordsSuccesses.size());
+        assertEquals("second batch, number of failed messages",                         1,      mock.putRecordsFailures.size());
+
+
+        assertStatisticsTotalMessagesSent("stats: total messages after second batch",   9);
+        assertEquals("stats: messages sent in second batch",                            2,      stats.getMessagesSentLastBatch());
+        assertEquals("stats: messages requeued in second batch",                        1,      stats.getMessagesRequeuedLastBatch());
 
         assertTrue("first failure is now first success",
                    Arrays.equals(
@@ -480,10 +501,13 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         mock.allowWriterThread();
 
-        assertEquals("third batch, putRecords invocation count",                3,      mock.putRecordsInvocationCount);
-        assertEquals("third batch, number of successful messages",              1,      mock.putRecordsSuccesses.size());
-        assertEquals("third batch, number of failed messages",                  0,      mock.putRecordsFailures.size());
-        assertStatisticsMessagesSent("third batch, messages sent per stats",    10);
+        assertEquals("third batch, putRecords invocation count",                        3,      mock.putRecordsInvocationCount);
+        assertEquals("third batch, number of successful messages",                      1,      mock.putRecordsSuccesses.size());
+        assertEquals("third batch, number of failed messages",                          0,      mock.putRecordsFailures.size());
+
+        assertStatisticsTotalMessagesSent("stats: total messages after third batch",    10);
+        assertEquals("stats: messages sent in after batch",                             1,      stats.getMessagesSentLastBatch());
+        assertEquals("stats: messages requeued in after batch",                         0,      stats.getMessagesRequeuedLastBatch());
 
         assertTrue("second original failure is now a success",
                    Arrays.equals(
@@ -673,7 +697,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
                                                                         BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(249).getData()),
                                                                         "UTF-8"));
 
-        assertStatisticsMessagesSent(numMessages);
+        assertStatisticsTotalMessagesSent(numMessages);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               "log writer initialization complete.*");
@@ -732,7 +756,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
                                                                         BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(expected2ndBatchCount - 1).getData()),
                                                                         "UTF-8"));
 
-        assertStatisticsMessagesSent(numMessages);
+        assertStatisticsTotalMessagesSent(numMessages);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               "log writer initialization complete.*");
@@ -749,7 +773,6 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         createWriter(new KinesisWriterFactory());
 
-        assertTrue("writer successfully initialized",                                       writer.isInitializationComplete());
         assertNotNull("factory called (local flag)",                                        staticFactoryMock);
 
         assertEquals("describeStream: invocation count",        1,                          staticFactoryMock.describeStreamInvocationCount);
@@ -793,7 +816,65 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         internalLogger.assertInternalDebugLog(
             "log writer starting.*",
             "log writer initialization complete.*",
-            "stopping log.writer.*");
+            "log.writer shut down.*");
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testSynchronousOperation() throws Exception
+    {
+        // appender is expected to set batch delay in synchronous mode
+        config.batchDelay = 1;
+
+        // we just have one thread, so don't want any locks getting in the way
+        mock.disableThreadSynchronization();
+
+        // the createWriter() method spins up a background thread, which we don't want
+        writer = (KinesisLogWriter)mock.newWriterFactory().newLogWriter(config, stats, internalLogger);
+        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+
+        assertEquals("stats: actual stream name",                   DEFAULT_STREAM_NAME,        stats.getActualStreamName());
+        assertFalse("writer should not be initialized",             ClassUtil.getFieldValue(writer, "initializationComplete", Boolean.class).booleanValue());
+
+        writer.initialize();
+
+        assertTrue("writer has been initialized",                   ClassUtil.getFieldValue(writer, "initializationComplete", Boolean.class).booleanValue());
+        assertNull("no dispatch thread",                            ClassUtil.getFieldValue(writer, "dispatchThread", Thread.class));
+
+        assertEquals("describeStream: invocation count",            1,                          mock.describeStreamInvocationCount);
+        assertEquals("describeStream: stream name",                 DEFAULT_STREAM_NAME,        mock.describeStreamStreamName);
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+
+        assertEquals("message is waiting in queue",                 1,                          messageQueue.queueSize());
+        assertEquals("putRecords: invocation count",                0,                          mock.putRecordsInvocationCount);
+
+        writer.processBatch(System.currentTimeMillis());
+
+        assertEquals("putRecords: invocation count",                1,                          mock.putRecordsInvocationCount);
+        assertEquals("putRecords: source record count",             1,                          mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,      mock.putRecordsSourceRecords.get(0).getPartitionKey());
+        assertEquals("putRecords: source record content",           "message one",
+                                                                    new String(
+                                                                        BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(0).getData()),
+                                                                        "UTF-8"));
+        assertStatisticsTotalMessagesSent(1);
+        assertEquals("stats: messages sent batch",                  1,                          stats.getMessagesSentLastBatch());
+        assertEquals("stats: messages requeued batch",              0,                          stats.getMessagesRequeuedLastBatch());
+
+        // general assertions to verify that nothing unexpected happened
+        assertEquals("describeStream: invocation count",            1,                          mock.describeStreamInvocationCount);
+        assertEquals("describeStream: stream name",                 DEFAULT_STREAM_NAME,        mock.describeStreamStreamName);
+        assertEquals("createStream: invocation count",              0,                          mock.createStreamInvocationCount);
+        assertEquals("increaseRetentionPeriod invocation count",    0,                          mock.increaseRetentionPeriodInvocationCount);
+
+        assertEquals("shutdown not called before cleanup",          0,                          mock.shutdownInvocationCount);
+        writer.cleanup();
+        assertEquals("shutdown called after cleanup",               1,                          mock.shutdownInvocationCount);
+
+        // the "starting" and "initialization complete" messages are emitted in run(), so not present here
+        internalLogger.assertInternalDebugLog();
         internalLogger.assertInternalErrorLog();
     }
 }

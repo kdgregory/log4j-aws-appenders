@@ -39,6 +39,7 @@ import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.testhelpers.SNSTestHelper;
+import com.kdgregory.logging.testhelpers.CommonTestHelper;
 
 
 public class SNSAppenderIntegrationTest
@@ -150,34 +151,20 @@ public class SNSAppenderIntegrationTest
         SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
         SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
 
+        localLogger.info("writing messages");
         (new MessageWriter(testLogger, numMessages)).run();
 
-        // we need to spin until both the appender and writer are initialized, both
-        // triggered by writing messages
-
-        SNSLogWriter writer = null;
-        for (int ii = 0 ; ii < 60 ; ii++)
-        {
-            writer = ClassUtil.getFieldValue(appender, "writer", SNSLogWriter.class);
-            if (writer != null)
-                break;
-            Thread.sleep(1000);
-        }
-        assertNotNull("writer was created", writer);
-
-        for (int ii = 0 ; ii < 60 ; ii++)
-        {
-            if (writer.isInitializationComplete())
-                break;
-            Thread.sleep(1000);
-        }
-        assertTrue("writer initialization complete", writer.isInitializationComplete());
+        localLogger.info("waiting for writer initialization to finish");
+        CommonTestHelper.waitUntilWriterInitialized(appender, SNSLogWriter.class, 30000);
 
         assertNotEmpty("topic was created", testHelper.lookupTopic());
 
         assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),      appenderStats.getActualTopicName());
         assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       appenderStats.getActualTopicArn());
-        assertEquals("messages written, from stats",        numMessages,                    appenderStats.getMessagesSent());
+
+        // no queue attached to this topic so we can't read messages directly
+
+        CommonTestHelper.waitUntilMessagesSent(appenderStats, numMessages, 30000);
 
         localLogger.info("finished");
     }

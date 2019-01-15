@@ -157,7 +157,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
 
 
     @Override
-    protected List<LogMessage> processBatch(List<LogMessage> currentBatch)
+    protected List<LogMessage> sendBatch(List<LogMessage> currentBatch)
     {
         PutRecordsRequest request = convertBatchToRequest(currentBatch);
         if (request != null)
@@ -339,7 +339,6 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
                     }
                     ii++;
                 }
-                stats.updateMessagesSent(request.getRecords().size() - failures.size());
                 return failures;
             }
             catch (ResourceNotFoundException ex)

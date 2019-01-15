@@ -47,6 +47,8 @@ public abstract class AbstractWriterStatistics
     private volatile List<String> lastErrorStacktrace;
 
     private volatile int messagesSent;
+    private volatile int messagesSentLastBatch;
+    private volatile int messagesRequeuedLastBatch;
 
 
     /**
@@ -114,7 +116,6 @@ public abstract class AbstractWriterStatistics
     }
 
 
-
     /**
      *  Updates the number of messages sent with the given count. This should only
      *  be called after all failures have been identified.
@@ -132,11 +133,40 @@ public abstract class AbstractWriterStatistics
 
 
     /**
+     *  Sets the number of messages sent in the last batch.
+     */
+    public synchronized void setMessagesSentLastBatch(int count)
+    {
+        messagesSentLastBatch = count;
+    }
+
+
+    public int getMessagesSentLastBatch()
+    {
+        return messagesSentLastBatch;
+    }
+
+
+    /**
+     *  Sets the number of messages requeued in the last batch.
+     */
+    public synchronized void setMessagesRequeuedLastBatch(int count)
+    {
+        messagesRequeuedLastBatch = count;
+    }
+
+
+    public int getMessagesRequeuedLastBatch()
+    {
+        return messagesRequeuedLastBatch;
+    }
+
+
+    /**
      *  Returns the number of messages discarded by the current writer's message queue.
      */
     public int getMessagesDiscarded()
     {
         return messageQueue.getDroppedMessageCount();
     }
-
 }

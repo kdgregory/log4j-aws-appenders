@@ -105,7 +105,7 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
 
 
     @Override
-    protected List<LogMessage> processBatch(List<LogMessage> currentBatch)
+    protected List<LogMessage> sendBatch(List<LogMessage> currentBatch)
     {
         // although we should only ever get a single message we'll process as a list
         List<LogMessage> failures = new ArrayList<LogMessage>();
@@ -128,7 +128,6 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
                 failures.add(message);
             }
         }
-        stats.updateMessagesSent(currentBatch.size() - failures.size());
         return failures;
     }
 

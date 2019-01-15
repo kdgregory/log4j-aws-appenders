@@ -1,5 +1,12 @@
 # Change History
 
+## 2.1.2 (TBD)
+
+* Enable synchonous operation of log-writer, to avoid losing messages in Lambda
+  or other limited-runtime environments. See [docs](docs/design.md#synchronous-mode)
+  for more information.
+  ([#73](https://github.com/kdgregory/log4j-aws-appenders/issues/73))
+
 ## 2.1.1 (2019-01-06)
 
 * Fixed service-client creation code so that it would not need SDK JARs for

@@ -14,37 +14,22 @@
 
 package com.kdgregory.logging.testhelpers.kinesis;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
-import com.kdgregory.logging.common.LogWriter;
-import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.testhelpers.MockLogWriter;
 
 
 /**
  *  A mock equivalent of KinesisLogWriter, used by appender tests.
  */
 public class MockKinesisWriter
-implements LogWriter
+extends MockLogWriter<KinesisWriterConfig>
 {
-    public KinesisWriterConfig config;
-
-    public List<LogMessage> messages = new ArrayList<LogMessage>();
-    public LogMessage lastMessage;
-
-    public boolean stopped;
-
-
     public MockKinesisWriter(KinesisWriterConfig config)
     {
-        this.config = config;
+        super(config);
     }
 
-//----------------------------------------------------------------------------
-//  LogWriter
-//----------------------------------------------------------------------------
 
     @Override
     public boolean isMessageTooLarge(LogMessage message)
@@ -53,62 +38,4 @@ implements LogWriter
         return false;
     }
 
-
-    @Override
-    public void addMessage(LogMessage message)
-    {
-        messages.add(message);
-        lastMessage = message;
-    }
-
-
-    @Override
-    public void stop()
-    {
-        stopped = true;
-    }
-
-
-    @Override
-    public void setBatchDelay(long value)
-    {
-        this.config.batchDelay = value;
-    }
-
-
-    @Override
-    public void setDiscardThreshold(int value)
-    {
-        this.config.discardThreshold = value;
-    }
-
-
-    @Override
-    public void setDiscardAction(DiscardAction value)
-    {
-        this.config.discardAction = value;
-    }
-
-//----------------------------------------------------------------------------
-//  Runnable
-//----------------------------------------------------------------------------
-
-    @Override
-    public void run()
-    {
-        // we're not expecting to be on a background thread, so do nothing
-    }
-
-//----------------------------------------------------------------------------
-//  Mock-specific methods
-//----------------------------------------------------------------------------
-
-    /**
-     *  Returns the text for the numbered message (starting at 0).
-     */
-    public String getMessage(int msgnum)
-    throws Exception
-    {
-        return messages.get(msgnum).getMessage();
-    }
 }

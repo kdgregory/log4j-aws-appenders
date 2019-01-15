@@ -26,13 +26,14 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 import static net.sf.kdgcommons.test.StringAsserts.*;
+import static net.sf.kdgcommons.test.NumericAsserts.*;
+
+import net.sf.kdgcommons.lang.StringUtil;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
-
-import net.sf.kdgcommons.lang.StringUtil;
 
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
 import com.kdgregory.log4j.testhelpers.TestableLog4JInternalLogger;
@@ -143,21 +144,25 @@ public class TestAbstractAppender
         MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
         MockCloudWatchWriter writer = appender.getMockWriter();
 
-        assertNotNull("after message 1, writer is initialized",         writer);
+        // note: we can't assert initialization and batch processing because the mock doesn't support that
+        // but as long as we can verify that the writer thread was running, we can assume writer tests
+        // have covered that functionality
+
         assertEquals("after message 1, calls to writer factory",        1,              writerFactory.invocationCount);
+        assertNotNull("after message 1, writer is initialized",                         writer);
+        assertNotNull("writer was started on background thread",                        writer.writerThread);
         assertEquals("actual log-group name",                           "argle",        writer.config.logGroupName);
         assertRegex("actual log-stream name",                           "20\\d{12}",    writer.config.logStreamName);
 
-
-        assertEquals("after message 1, number of messages in writer",   1,          writer.messages.size());
+        assertEquals("after message 1, number of messages in writer",   1,              writer.messages.size());
 
         // throw in a sleep so that we can discern timestamps
         Thread.sleep(50);
 
         logger.error("test with exception", new Exception("this is a test"));
 
-        assertEquals("after message 2, calls to writer factory",        1,          writerFactory.invocationCount);
-        assertEquals("after message 2, number of messages in writer",   2,          writer.messages.size());
+        assertEquals("after message 2, calls to writer factory",        1,              writerFactory.invocationCount);
+        assertEquals("after message 2, number of messages in writer",   2,              writer.messages.size());
 
         long finalTimestamp = System.currentTimeMillis();
 
@@ -183,18 +188,45 @@ public class TestAbstractAppender
 
         // finish off the life-cycle
 
-        assertFalse("appender not closed before shutdown", appender.isClosed());
+        assertFalse("appender not closed before shutdown",  appender.isClosed());
         assertFalse("writer still running before shutdown", writer.stopped);
 
         LogManager.shutdown();
 
-        assertTrue("appender closed after shutdown", appender.isClosed());
-        assertTrue("writer stopped after shutdown", writer.stopped);
+        assertTrue("appender closed after shutdown",        appender.isClosed());
+        assertTrue("writer stopped after shutdown",         writer.stopped);
+    }
+
+
+    @Test
+    public void testSynchronousMode() throws Exception
+    {
+        initialize("testSynchronousMode");
+
+        long start = System.currentTimeMillis();
+
+        logger.debug("a message to trigger writer creation");
+
+        MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
+        MockCloudWatchWriter writer = appender.getMockWriter();
+
+        assertEquals("calls to writer factory",                 1,                                      writerFactory.invocationCount);
+        assertNotNull("writer was created",                                                             writer);
+        assertNull("writer not started on thread",                                                      writer.writerThread);
+        assertEquals("initialize() called",                     1,                                      writer.initializeInvocationCount);
+        assertEquals("batch has been processed",                1,                                      writer.processBatchInvocationCount);
+        assertInRange("batch processing time",                  start, System.currentTimeMillis(),      writer.processBatchLastTimeout);
+
+        assertEquals("before stop, calls to cleanup()",         0,                                      writer.cleanupInvocationCount);
+        
+        appender.close();
+        
+        assertEquals("after stop, calls to cleanup()",          1,                                      writer.cleanupInvocationCount);
     }
 
 
     @Test(expected=IllegalStateException.class)
-    public void testThrowsIfAppenderClosed() throws Exception
+    public void testAppendAfterStop() throws Exception
     {
         initialize("testLifecycle");
 

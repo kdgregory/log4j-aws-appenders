@@ -21,7 +21,6 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.ClassUtil;
-import net.sf.kdgcommons.lang.StringUtil;
 import net.sf.kdgcommons.lang.ThreadUtil;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
@@ -115,16 +114,8 @@ public abstract class AbstractLogWriterTest
 
         new DefaultThreadFactory("test").startLoggingThread(writer, defaultUncaughtExceptionHandler);
 
-        // we'll spin until either the writer is initialized, signals an error,
-        // or a 5-second timeout expires
-        for (int ii = 0 ; ii < 100 ; ii++)
-        {
-            if (writer.isInitializationComplete())
-                return;
-            if (! StringUtil.isEmpty(stats.getLastErrorMessage()))
-                return;
-            Thread.sleep(50);
-        }
+        if (writer.waitUntilInitialized(5000))
+            return;
 
         fail("unable to initialize writer");
     }
@@ -156,9 +147,9 @@ public abstract class AbstractLogWriterTest
 
     /**
      *  Asserts that the statistics object has recorded the expected number of
-     *  sent messages.
+     *  sent messages (total and per-batch)
      */
-    protected void assertStatisticsMessagesSent(String message, int expected)
+    protected void assertStatisticsTotalMessagesSent(String message, int expected)
     {
         int actual = 0;
         for (int ii = 0 ; ii < 10 ; ii++)
@@ -176,9 +167,9 @@ public abstract class AbstractLogWriterTest
     /**
      *  A version of the message-sent assertion with fixed message.
      */
-    protected void assertStatisticsMessagesSent(int expected)
+    protected void assertStatisticsTotalMessagesSent(int expected)
     {
-        assertStatisticsMessagesSent("statistics: messages sent", expected);
+        assertStatisticsTotalMessagesSent("statistics: total messages sent", expected);
     }
 
 

@@ -174,6 +174,17 @@ implements InvocationHandler
 
 
     /**
+     *  Used for synchronous invocation tests: grants an "infinite" number of
+     *  permits for the writer to proceed.
+     */
+    public void disableThreadSynchronization()
+    {
+        allowMainThread = new Semaphore(1000);
+        allowWriterThread = new Semaphore(1000);
+    }
+
+
+    /**
      *  Pauses the main thread and allows the writer thread to proceed.
      */
     public void allowWriterThread() throws Exception
@@ -183,6 +194,9 @@ implements InvocationHandler
         allowMainThread.acquire();
     }
 
+//----------------------------------------------------------------------------
+//  Invocation Handler
+//----------------------------------------------------------------------------
 
     /**
      *  The invocation handler; test code should not care about this.

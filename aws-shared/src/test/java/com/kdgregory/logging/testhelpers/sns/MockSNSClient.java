@@ -143,6 +143,17 @@ public class MockSNSClient implements InvocationHandler
 
 
     /**
+     *  Used for synchronous invocation tests: grants an "infinite" number of
+     *  permits for the writer to proceed.
+     */
+    public void disableThreadSynchronization()
+    {
+        allowMainThread = new Semaphore(1000);
+        allowWriterThread = new Semaphore(1000);
+    }
+
+
+    /**
      *  Pauses the main thread and allows the writer thread to proceed.
      */
     public void allowWriterThread() throws Exception
@@ -151,7 +162,6 @@ public class MockSNSClient implements InvocationHandler
         Thread.sleep(100);
         allowMainThread.acquire();
     }
-
 
 //----------------------------------------------------------------------------
 //  Invocation Handler

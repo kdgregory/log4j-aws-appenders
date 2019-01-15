@@ -4,10 +4,10 @@
 
     <groupId>com.kdgregory.logging</groupId>
     <artifactId>logback-aws-appenders-webapp</artifactId>
-    <version>2.1.1</version>
+    <version>2.1.2-SNAPSHOT</version>
     <packaging>war</packaging>
 
-    <name>Log4J 1.x Webapp Example</name>
+    <name>Logback Webapp Example</name>
 
     <description>
         This is an example web-application that uses the AWS appenders and

@@ -142,13 +142,13 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         config.topicName = TEST_TOPIC_NAME;
         createWriter();
 
-        assertEquals("after init, invocations of listTopics",   1,                      mock.listTopicsInvocationCount);
-        assertEquals("after init, invocations of createTopic",  0,                      mock.createTopicInvocationCount);
-        assertEquals("after init, invocations of publish",      0,                      mock.publishInvocationCount);
-
         assertNull("after init, stats: no errors",                                      stats.getLastError());
         assertEquals("after init, stats: topic name",           TEST_TOPIC_NAME,        stats.getActualTopicName());
         assertEquals("after init, stats: topic ARN",            TEST_TOPIC_ARN,         stats.getActualTopicArn());
+
+        assertEquals("after init, invocations of listTopics",   1,                      mock.listTopicsInvocationCount);
+        assertEquals("after init, invocations of createTopic",  0,                      mock.createTopicInvocationCount);
+        assertEquals("after init, invocations of publish",      0,                      mock.publishInvocationCount);
 
         // the SNS writer should use batch sizes of 1, regardless of config, so we'll
         // add both messages at the same time, then wait separately to verify batching
@@ -158,19 +158,23 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         mock.allowWriterThread();
 
-        assertEquals("first publish, invocation count",                         1,                  mock.publishInvocationCount);
-        assertEquals("first publish, arn",                                      TEST_TOPIC_ARN,     mock.lastPublishArn);
-        assertEquals("first publish, subject",                                  null,               mock.lastPublishSubject);
-        assertEquals("first publish, body",                                     "message one",      mock.lastPublishMessage);
-        assertStatisticsMessagesSent("first publish, messages sent per stats",  1);
+        assertEquals("first publish, invocation count",                                         1,                  mock.publishInvocationCount);
+        assertEquals("first publish, arn",                                                      TEST_TOPIC_ARN,     mock.lastPublishArn);
+        assertEquals("first publish, subject",                                                  null,               mock.lastPublishSubject);
+        assertEquals("first publish, body",                                                     "message one",      mock.lastPublishMessage);
+
+        assertStatisticsTotalMessagesSent("statistics: total messages after first publish",     1);
+        assertEquals("statistics: last batch messages after first publish",                     1,                  stats.getMessagesSentLastBatch());
 
         mock.allowWriterThread();
 
-        assertEquals("second publish, invocation count",                        2,                  mock.publishInvocationCount);
-        assertEquals("second publish, arn",                                     TEST_TOPIC_ARN,     mock.lastPublishArn);
-        assertEquals("second publish, subject",                                 null,               mock.lastPublishSubject);
-        assertEquals("second publish, body",                                    "message two",      mock.lastPublishMessage);
-        assertStatisticsMessagesSent("second publish, messages sent per stats", 2);
+        assertEquals("second publish, invocation count",                                        2,                  mock.publishInvocationCount);
+        assertEquals("second publish, arn",                                                     TEST_TOPIC_ARN,     mock.lastPublishArn);
+        assertEquals("second publish, subject",                                                 null,               mock.lastPublishSubject);
+        assertEquals("second publish, body",                                                    "message two",      mock.lastPublishMessage);
+
+        assertStatisticsTotalMessagesSent("statistics: total messages after second publish",    2);
+        assertEquals("statistics: last batch messages after second publish",                    1,                  stats.getMessagesSentLastBatch());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               "log writer initialization complete.*");
@@ -202,7 +206,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("after publish, subject",                  null,                   mock.lastPublishSubject);
         assertEquals("after publish, body",                     "message one",          mock.lastPublishMessage);
 
-        assertStatisticsMessagesSent(1);
+        assertStatisticsTotalMessagesSent(1);
+        assertEquals("statistics: last batch messages",         1,                      stats.getMessagesSentLastBatch());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               "log writer initialization complete.*");
@@ -260,7 +265,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("after publish, subject",                  null,                   mock.lastPublishSubject);
         assertEquals("after publish, body",                     "message one",          mock.lastPublishMessage);
 
-        assertStatisticsMessagesSent(1);
+        assertStatisticsTotalMessagesSent(1);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               ".*creat.*" + TEST_TOPIC_NAME + ".*",
@@ -291,19 +296,23 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         mock.allowWriterThread();
 
-        assertEquals("first publish, invocation count",                         1,                      mock.publishInvocationCount);
-        assertEquals("first publish, arn",                                      TEST_TOPIC_ARN,         mock.lastPublishArn);
-        assertEquals("first publish, subject",                                  null,                   mock.lastPublishSubject);
-        assertEquals("first publish, body",                                     "message one",          mock.lastPublishMessage);
-        assertStatisticsMessagesSent("first publish, messages sent per stats",  1);
+        assertEquals("first publish, invocation count",                                         1,                      mock.publishInvocationCount);
+        assertEquals("first publish, arn",                                                      TEST_TOPIC_ARN,         mock.lastPublishArn);
+        assertEquals("first publish, subject",                                                  null,                   mock.lastPublishSubject);
+        assertEquals("first publish, body",                                                     "message one",          mock.lastPublishMessage);
+
+        assertStatisticsTotalMessagesSent("statistics: total messages after first publish",     1);
+        assertEquals("statistics: last batch messages after first publish",                     1,                  stats.getMessagesSentLastBatch());
 
         mock.allowWriterThread();
 
-        assertEquals("second publish, invocation count",                        2,                      mock.publishInvocationCount);
-        assertEquals("second publish, arn",                                     TEST_TOPIC_ARN,         mock.lastPublishArn);
-        assertEquals("second publish, subject",                                 null,                   mock.lastPublishSubject);
-        assertEquals("second publish, body",                                    "message two",          mock.lastPublishMessage);
-        assertStatisticsMessagesSent("second publish, messages sent per stats", 2);
+        assertEquals("second publish, invocation count",                                        2,                      mock.publishInvocationCount);
+        assertEquals("second publish, arn",                                                     TEST_TOPIC_ARN,         mock.lastPublishArn);
+        assertEquals("second publish, subject",                                                 null,                   mock.lastPublishSubject);
+        assertEquals("second publish, body",                                                    "message two",          mock.lastPublishMessage);
+
+        assertStatisticsTotalMessagesSent("statistics: total messages after second publish",    2);
+        assertEquals("statistics: last batch messages after second publish",                    1,                  stats.getMessagesSentLastBatch());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               "log writer initialization complete.*");
@@ -335,7 +344,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("after publish, subject",                  null,                   mock.lastPublishSubject);
         assertEquals("after publish, body",                     "message one",          mock.lastPublishMessage);
 
-        assertStatisticsMessagesSent(1);
+        assertStatisticsTotalMessagesSent(1);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               "log writer initialization complete.*");
@@ -387,7 +396,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("after publish, arn",                      TEST_TOPIC_ARN,         mock.lastPublishArn);
         assertEquals("after publish, subject",                  "This is OK",           mock.lastPublishSubject);
         assertEquals("after publish, body",                     "message one",          mock.lastPublishMessage);
-        assertStatisticsMessagesSent("after publish, messages sent", 1);
+        assertStatisticsTotalMessagesSent("after publish, messages sent", 1);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               "log writer initialization complete.*");
@@ -535,9 +544,16 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
 
-        // the first attempt should fail, so we'll wait for a second
-
+        // this attempt will fail
         mock.allowWriterThread();
+
+        // we could spin waiting for stats to be updated, but a sleep should suffice
+        Thread.sleep(50);
+
+        assertEquals("first try, messages sent",            0,                      stats.getMessagesSentLastBatch());
+        assertEquals("first try, messages requeued",        1,                      stats.getMessagesRequeuedLastBatch());
+
+        // this attempt will succeed
         mock.allowWriterThread();
 
         assertEquals("publish, invocation count",           2,                      mock.publishInvocationCount);
@@ -545,7 +561,10 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("publish, subject",                    null,                   mock.lastPublishSubject);
         assertEquals("publish, body",                       "message one",          mock.lastPublishMessage);
 
-        assertStatisticsMessagesSent(1);
+        assertStatisticsTotalMessagesSent(1);
+
+        assertEquals("second try, messages sent",           1,                      stats.getMessagesSentLastBatch());
+        assertEquals("second try, messages requeued",       0,                      stats.getMessagesRequeuedLastBatch());
 
         assertStatisticsErrorMessage(".*no notifications for you");
         assertStatisticsException(TestingException.class, "no notifications for you");
@@ -694,7 +713,6 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         createWriter(new SNSWriterFactory());
 
-        assertTrue("writer successfully initialized",                                       writer.isInitializationComplete());
         assertNotNull("factory called (local flag)",                                        staticFactoryMock);
 
         assertEquals("invocations of listTopics",               1,                          staticFactoryMock.listTopicsInvocationCount);
@@ -742,7 +760,57 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         internalLogger.assertInternalDebugLog(
             "log writer starting.*",
             "log writer initialization complete.*",
-            "stopping log.writer.*");
+            "log.writer shut down.*");
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testSynchronousOperation() throws Exception
+    {
+        // appender is expected to set batch delay in synchronous mode
+        config.batchDelay = 1;
+        config.topicName = TEST_TOPIC_NAME;
+
+        // we just have one thread, so don't want any locks getting in the way
+        mock.disableThreadSynchronization();
+
+        writer = (SNSLogWriter)mock.newWriterFactory().newLogWriter(config, stats, internalLogger);
+        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+
+        assertEquals("before init, stats: topic name",          TEST_TOPIC_NAME,        stats.getActualTopicName());
+        assertNull("before init, stats: topic ARN",                                     stats.getActualTopicArn());
+
+        writer.initialize();
+
+        assertEquals("after init, invocations of listTopics",   1,                      mock.listTopicsInvocationCount);
+        assertEquals("after init, invocations of createTopic",  0,                      mock.createTopicInvocationCount);
+        assertEquals("after init, invocations of publish",      0,                      mock.publishInvocationCount);
+
+        assertNull("after init, stats: no errors",                                      stats.getLastError());
+        assertEquals("after init, stats: topic name",           TEST_TOPIC_NAME,        stats.getActualTopicName());
+        assertEquals("after init, stats: topic ARN",            TEST_TOPIC_ARN,         stats.getActualTopicArn());
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+
+        assertEquals("message is waiting in queue",             1,                      messageQueue.queueSize());
+        assertEquals("publish: invocation count",               0,                      mock.publishInvocationCount);
+
+        writer.processBatch(System.currentTimeMillis());
+
+        assertEquals("after publish, invocation count",         1,                      mock.publishInvocationCount);
+        assertEquals("after publish, arn",                      TEST_TOPIC_ARN,         mock.lastPublishArn);
+        assertEquals("after publish, subject",                  null,                   mock.lastPublishSubject);
+        assertEquals("after publish, body",                     "message one",          mock.lastPublishMessage);
+
+        assertStatisticsTotalMessagesSent(1);
+        assertEquals("messages sent in batch",                  1,                      stats.getMessagesSentLastBatch());
+
+        assertEquals("shutdown not called before cleanup",      0,                      mock.shutdownInvocationCount);
+        writer.cleanup();
+        assertEquals("shutdown called after cleanup",           1,                      mock.shutdownInvocationCount);
+
+        internalLogger.assertInternalDebugLog();
         internalLogger.assertInternalErrorLog();
     }
 }

@@ -77,3 +77,19 @@ the time that the application logs an event and the time that event is delivered
 If you absolutely, positively cannot lose messages, you should use a different appender. But beware:
 even the standard `FileAppender` is not guaranteed to save all messages, because file writes are
 buffered in memory before they're actually written to the disk.
+
+
+## Synchronous Mode
+
+While batching and asynchronous delivery is the most efficient way to send messages, it is not
+appropriate when the background thread does not have the opportunity to run, as with a [short-duration
+Lambda](http://blog.kdgregory.com/2019/01/multi-threaded-programming-with-aws.html). To support that
+use-case, the appenders offer "synchronous" mode, enabled by setting the `synchronous` configuration
+parameter to `true`. When enabled, each call to `append()` attempts to send the message immediately,
+using the invoking thread.
+
+While useful for specific situations, _synchronous mode is not intended as the default_. In addition
+to slowing down the invoking thread (perhaps significantly, in the case where it needs to create the
+destination), it _does not guarantee delivery_. There is still the possibility of an exception during
+the send, which will requeue the message(s) for later deliver (which might never happen).
+

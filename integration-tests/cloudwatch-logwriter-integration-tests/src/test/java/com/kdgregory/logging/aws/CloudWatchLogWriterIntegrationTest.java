@@ -92,6 +92,9 @@ public class CloudWatchLogWriterIntegrationTest
 
         new MessageWriter(numMessages).run();
 
+        // sleep to let messages get written
+        Thread.sleep(3000);
+
         testHelper.assertMessages("smoketest", numMessages);
     }
 

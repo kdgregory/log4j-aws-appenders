@@ -73,6 +73,22 @@ public interface SNSWriterStatisticsMXBean
 
 
     /**
+     *  Returns the number of messages successfully sent to the logstream in the last
+     *  batch. This should be at least 1; higher values indicate how many messages
+     *  will be lost if the program shuts down unexpectedly.
+     */
+    int getMessagesSentLastBatch();
+
+
+    /**
+     *  Returns the number of messages requeued because they could not be sent. This
+     *  should be 0; non-zero values indicate throttling or an error condition (see
+     *  {@link #getLastErrorMessage} and {@link #getWriterRaceRetries} for more info).
+     */
+    int getMessagesRequeuedLastBatch();
+
+
+    /**
      *  Returns the number of messages discarded by the writer's message queue.
      */
     int getMessagesDiscarded();

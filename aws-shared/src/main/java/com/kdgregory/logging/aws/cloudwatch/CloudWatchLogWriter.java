@@ -105,7 +105,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
 
 
     @Override
-    protected List<LogMessage> processBatch(List<LogMessage> currentBatch)
+    protected List<LogMessage> sendBatch(List<LogMessage> currentBatch)
     {
         Collections.sort(currentBatch);
         return attemptToSend(currentBatch);
@@ -168,7 +168,6 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             {
                 request.setSequenceToken(stream.getUploadSequenceToken());
                 client.putLogEvents(request);
-                stats.updateMessagesSent(batch.size());
                 return Collections.emptyList();
             }
             catch (InvalidSequenceTokenException ex)

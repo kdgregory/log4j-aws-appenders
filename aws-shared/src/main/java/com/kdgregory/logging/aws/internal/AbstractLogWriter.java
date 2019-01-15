@@ -52,11 +52,13 @@ implements LogWriter
     private MessageQueue messageQueue;
     private Thread dispatchThread;
 
+    // this will be set to true on either success or failure
+    private volatile boolean initializationComplete;
+
     // updated by stop()
     private volatile long shutdownTime = Long.MAX_VALUE;
 
-    // these can be read via accessor methods; they're intended for testing
-    private volatile boolean initializationComplete;
+    // this is intended for testing
     private volatile int batchCount;
 
 
@@ -92,31 +94,43 @@ implements LogWriter
         return batchCount;
     }
 
+//----------------------------------------------------------------------------
+//  Implementation of Runnable
+//----------------------------------------------------------------------------
 
-    /**
-     *  Returns a flag indicating that initialization has completed (whether or not
-     *  successful).
-     */
-    public boolean isInitializationComplete()
+    @Override
+    public void run()
     {
-        return initializationComplete;
+        logger.debug("log writer starting (thread: " + Thread.currentThread().getName() + ")");
+
+        if (! initialize())
+            return;
+
+        logger.debug("log writer initialization complete (thread: " + Thread.currentThread().getName() + ")");
+
+        // to avoid any mid-initialization interrupts, we don't set the thread until done
+        // (was affecting integration tests, shouldn't be an issue in real-world use)
+
+        dispatchThread = Thread.currentThread();
+
+        // the do-while loop ensures that we attempt to process at least one batch, even if
+        // the writer is started and immediately stopped; that's not likely to happen in the
+        // real world, but was causing problems with the smoketest (which is configured to
+        // quickly transition writers)
+
+        do
+        {
+            processBatch(shutdownTime);
+        } while (keepRunning());
+
+        cleanup();
+        logger.debug("log-writer shut down (thread: " + Thread.currentThread().getName()
+                     + " (#" + Thread.currentThread().getId() + ")");
     }
 
 //----------------------------------------------------------------------------
 //  Implementation of LogWriter
 //----------------------------------------------------------------------------
-
-    @Override
-    public void addMessage(LogMessage message)
-    {
-        // we're going to assume that the appender has already checked this, and
-        // fail hard if that assumption is not valid
-        if (isMessageTooLarge(message))
-            throw new IllegalArgumentException("attempted to enqueue a too-large message");
-
-        messageQueue.enqueue(message);
-    }
-
 
     @Override
     public void setBatchDelay(long value)
@@ -140,6 +154,82 @@ implements LogWriter
 
 
     @Override
+    public void addMessage(LogMessage message)
+    {
+        // we're going to assume that the appender has already checked this, and
+        // fail hard if that assumption is not valid
+        if (isMessageTooLarge(message))
+            throw new IllegalArgumentException("attempted to enqueue a too-large message");
+
+        messageQueue.enqueue(message);
+    }
+
+
+    @Override
+    public boolean initialize()
+    {
+        boolean success = true;
+
+        try
+        {
+            client = clientFactory.createClient();
+            success = ensureDestinationAvailable();
+        }
+        catch (Exception ex)
+        {
+            reportError("exception in initializer", ex);
+            success = false;
+        }
+
+        if (!success)
+        {
+            messageQueue.setDiscardThreshold(0);
+            messageQueue.setDiscardAction(DiscardAction.oldest);
+        }
+
+        initializationComplete = true;
+        return success;
+    }
+
+
+    @Override
+    public boolean waitUntilInitialized(long millisToWait)
+    {
+        long timeoutAt = System.currentTimeMillis() + millisToWait;
+        while (! initializationComplete && (System.currentTimeMillis() < timeoutAt))
+        {
+            try
+            {
+                Thread.sleep(100);
+            }
+            catch (InterruptedException ex)
+            {
+                return false;
+            }
+        }
+        return initializationComplete;
+    }
+
+
+    @Override
+    public synchronized void processBatch(long waitUntil)
+    {
+        List<LogMessage> currentBatch = buildBatch(waitUntil);
+        if (currentBatch.size() > 0)
+        {
+            batchCount++;
+            List<LogMessage> failures = sendBatch(currentBatch);
+            requeueMessages(failures);
+
+            // note: order of updates is important to avoid race conditions in tests
+            stats.setMessagesRequeuedLastBatch(failures.size());
+            stats.setMessagesSentLastBatch(currentBatch.size() - failures.size());
+            stats.updateMessagesSent(currentBatch.size() - failures.size());
+        }
+    }
+
+
+    @Override
     public void stop()
     {
         shutdownTime = System.currentTimeMillis() + config.batchDelay;
@@ -149,76 +239,16 @@ implements LogWriter
         }
     }
 
-//----------------------------------------------------------------------------
-//  Implementation of Runnable
-//----------------------------------------------------------------------------
 
     @Override
-    public void run()
+    public void cleanup()
     {
-        logger.debug("log writer starting on thread " + Thread.currentThread().getName());
-
-        if (! initialize())
-        {
-            messageQueue.setDiscardThreshold(0);
-            messageQueue.setDiscardAction(DiscardAction.oldest);
-            return;
-        }
-
-        // this is set after initialization because the integration tests were telling
-        // the writer to shut down while it was still initializing; in the real world
-        // that should never happen without the appender being shut down as well
-
-        dispatchThread = Thread.currentThread();
-
-        initializationComplete = true;
-
-        // the do-while loop ensures that we attempt to process at least one batch, even if
-        // the writer is started and immediately stopped; that's not likely to happen in the
-        // real world, but was causing problems with the smoketest (which is configured to
-        // quickly transition writers)
-
-        logger.debug("log writer initialization complete (thread " + Thread.currentThread().getName() + ")");
-
-        do
-        {
-            List<LogMessage> currentBatch = buildBatch();
-            if (currentBatch.size() > 0)
-            {
-                batchCount++;
-                List<LogMessage> failures = processBatch(currentBatch);
-                requeueMessages(failures);
-            }
-        } while (keepRunning());
-
         stopAWSClient();
-        logger.debug("stopping log-writer on thread " + Thread.currentThread().getName()
-                     + " (#" + Thread.currentThread().getId() + ")");
     }
 
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
-
-    /**
-     *  Creates the client and then calls {@link #ensureDestinationAvailable}.
-     *  Returns <code>true</code> if both actions succeed, <code>false</code>
-     *  if either fails.
-     */
-    private boolean initialize()
-    {
-        try
-        {
-            client = clientFactory.createClient();
-            return ensureDestinationAvailable();
-        }
-        catch (Exception ex)
-        {
-            reportError("exception in initializer", ex);
-            return false;
-        }
-    }
-
 
     /**
      *  A check for whether we should keep running: either we haven't been shut
@@ -240,13 +270,13 @@ implements LogWriter
      *  of the message, and whether the aggregate batch size is within the range
      *  accepted by the service.
      */
-    protected List<LogMessage> buildBatch()
+    protected List<LogMessage> buildBatch(long waitUntil)
     {
         // presizing to a small-but-possible size to avoid repeated resizes
         List<LogMessage> batch = new ArrayList<LogMessage>(512);
 
         // we'll wait "forever" unless there's a shutdown timestamp in effect
-        LogMessage message = waitForMessage(shutdownTime);
+        LogMessage message = waitForMessage(waitUntil);
         if (message == null)
             return batch;
 
@@ -313,10 +343,10 @@ implements LogWriter
 
 
     /**
-     *  Processes a batch of messages. The subclass is responsible for returning
+     *  Sends a batch of messages. The subclass is responsible for returning
      *  any messages that weren't sent, in order, so that they can be requeued.
      */
-    protected abstract List<LogMessage> processBatch(List<LogMessage> currentBatch);
+    protected abstract List<LogMessage> sendBatch(List<LogMessage> currentBatch);
 
 
     /**

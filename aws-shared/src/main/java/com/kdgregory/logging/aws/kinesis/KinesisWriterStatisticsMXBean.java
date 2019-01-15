@@ -61,6 +61,24 @@ public interface KinesisWriterStatisticsMXBean
 
 
     /**
+     *  Returns the number of messages successfully sent to the stream in the last
+     *  batch. This should be at least 1; higher values indicate how many messages
+     *  will be lost if the program shuts down unexpectedly.
+     */
+    int getMessagesSentLastBatch();
+
+
+    /**
+     *  Returns the number of messages requeued because they could not be sent. This
+     *  should be 0; non-zero values indicate throttling or error. If you are able to
+     *  send some messages but not all, it indicates that individual partitions are
+     *  at their limit and the stream should be resharded or the partition key changed
+     *  (perhaps to a random key).
+     */
+    int getMessagesRequeuedLastBatch();
+
+
+    /**
      *  Returns the number of messages discarded by the writer's message queue.
      */
     int getMessagesDiscarded();

@@ -56,10 +56,26 @@ public interface CloudWatchWriterStatisticsMXBean
 
 
     /**
-     *  Returns the number of messages successfully sent to the logstream, by all
-     *  writers.
+     *  Returns the number of messages successfully sent to the logstream, by the
+     *  current writer.
      */
     int getMessagesSent();
+
+
+    /**
+     *  Returns the number of messages successfully sent to the logstream in the last
+     *  batch. This should be at least 1; higher values indicate how many messages
+     *  will be lost if the program shuts down unexpectedly.
+     */
+    int getMessagesSentLastBatch();
+
+
+    /**
+     *  Returns the number of messages requeued because they could not be sent. This
+     *  should be 0; non-zero values indicate throttling or an error condition (see
+     *  {@link #getLastErrorMessage} and {@link #getWriterRaceRetries} for more info).
+     */
+    int getMessagesRequeuedLastBatch();
 
 
     /**

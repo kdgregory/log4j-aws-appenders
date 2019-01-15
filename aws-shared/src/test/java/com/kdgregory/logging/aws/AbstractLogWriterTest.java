@@ -147,9 +147,9 @@ public abstract class AbstractLogWriterTest
 
     /**
      *  Asserts that the statistics object has recorded the expected number of
-     *  sent messages.
+     *  sent messages (total and per-batch)
      */
-    protected void assertStatisticsMessagesSent(String message, int expected)
+    protected void assertStatisticsTotalMessagesSent(String message, int expected)
     {
         int actual = 0;
         for (int ii = 0 ; ii < 10 ; ii++)
@@ -167,9 +167,9 @@ public abstract class AbstractLogWriterTest
     /**
      *  A version of the message-sent assertion with fixed message.
      */
-    protected void assertStatisticsMessagesSent(int expected)
+    protected void assertStatisticsTotalMessagesSent(int expected)
     {
-        assertStatisticsMessagesSent("statistics: messages sent", expected);
+        assertStatisticsTotalMessagesSent("statistics: total messages sent", expected);
     }
 
 

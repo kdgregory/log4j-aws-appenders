@@ -62,6 +62,14 @@ All log writers support the following attributes:
 
 * `MessagesSent`  
   The number of messages successfully written to the destination.
+* `MessagesSentLastBatch`  
+  The number of messages successfully sent in the last batch. This number can be used to tune the
+  batch delay for your application.
+* `MessagesRequeuedLastBatch`  
+  The number of messages that could not be sent in the last batch, and were requeued for a later
+  batch. This should be zero. For `KinesisAppender`, a persistent non-zero value indicates that
+  one or more partitions is at its limit for accepting messages. You should either increase the
+  number of partitions, or change to a different (perhaps random) partition key.
 * `MessagesDiscarded`  
   The number of messages that have been discarded by the writer due to queue backlog.
   Note: `CloudWatchAppender` resets this value each time the logstream is rotated.

@@ -220,6 +220,11 @@ implements LogWriter
             batchCount++;
             List<LogMessage> failures = sendBatch(currentBatch);
             requeueMessages(failures);
+
+            // note: order of updates is important to avoid race conditions in tests
+            stats.setMessagesRequeuedLastBatch(failures.size());
+            stats.setMessagesSentLastBatch(currentBatch.size() - failures.size());
+            stats.updateMessagesSent(currentBatch.size() - failures.size());
         }
     }
 

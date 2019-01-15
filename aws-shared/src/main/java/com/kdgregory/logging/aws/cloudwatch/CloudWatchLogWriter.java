@@ -168,7 +168,6 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             {
                 request.setSequenceToken(stream.getUploadSequenceToken());
                 client.putLogEvents(request);
-                stats.updateMessagesSent(batch.size());
                 return Collections.emptyList();
             }
             catch (InvalidSequenceTokenException ex)

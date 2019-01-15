@@ -128,7 +128,6 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
                 failures.add(message);
             }
         }
-        stats.updateMessagesSent(currentBatch.size() - failures.size());
         return failures;
     }
 

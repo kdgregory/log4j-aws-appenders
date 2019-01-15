@@ -339,7 +339,6 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
                     }
                     ii++;
                 }
-                stats.updateMessagesSent(request.getRecords().size() - failures.size());
                 return failures;
             }
             catch (ResourceNotFoundException ex)

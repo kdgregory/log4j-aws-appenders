@@ -28,6 +28,7 @@ import org.apache.log4j.PropertyConfigurator;
 
 import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.ObjectUtil;
+import static net.sf.kdgcommons.test.NumericAsserts.*;
 
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
@@ -97,15 +98,19 @@ public class CloudWatchAppenderIntegrationTest
         testHelper.assertMessages(LOGSTREAM_BASE + "-3", rotationCount);
         testHelper.assertMessages(LOGSTREAM_BASE + "-4", numMessages % rotationCount);
 
+        assertTrue("client factory should have been invoked", localFactoryUsed);
+
         CloudWatchWriterStatistics appenderStats = appender.getAppenderStatistics();
-        assertEquals("actual log group name, from statistics",  "AppenderIntegrationTest-smoketest",    appenderStats.getActualLogGroupName());
-        assertEquals("actual log stream name, from statistics", LOGSTREAM_BASE + "-4",                  appenderStats.getActualLogStreamName());
-        assertEquals("messages written, from statistics",       numMessages,                            appenderStats.getMessagesSent());
+        assertEquals("stats: actual log group name",    "AppenderIntegrationTest-smoketest",    appenderStats.getActualLogGroupName());
+        assertEquals("stats: actual log stream name",   LOGSTREAM_BASE + "-4",                  appenderStats.getActualLogStreamName());
+        assertEquals("stats: messages written",         numMessages,                            appenderStats.getMessagesSent());
+
+        // with four writers running concurrently, we can't say which wrote the last batch
+        // so will just verify that the stats are updated
+        assertInRange("stats: messages in last batch",  1, rotationCount,                       appenderStats.getMessagesSentLastBatch());
 
         CloudWatchLogWriter lastWriter = ClassUtil.getFieldValue(appender, "writer", CloudWatchLogWriter.class);
         assertEquals("number of batches for last writer", 1, lastWriter.getBatchCount());
-
-        assertTrue("client factory should have been invoked", localFactoryUsed);
 
         // while we're here, verify some more of the plumbing
 

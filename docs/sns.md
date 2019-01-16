@@ -27,6 +27,7 @@ Name                | Description
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
 `clientFactory`     | Specifies the fully-qualified name of a static method that will be used to create the AWS service client via reflection. See [service client doc](service-client.md) for more information.
 `clientEndpoint`    | Specifies a non-default endpoint for the client (eg, "logs.us-west-2.amazonaws.com"). See [service client doc](service-client.md) for more information.
+`useShutdownHook`   | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default; set to `false` to disable. See [docs](design.md#shutdown-hooks) for more information.
 
 Note: the `batchDelay` parameter is not used (although it can be configured); the SNS appender attempts to send messages immediately.
 

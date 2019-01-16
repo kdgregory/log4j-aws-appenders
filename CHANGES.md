@@ -6,6 +6,8 @@
   or other limited-runtime environments. See [docs](docs/design.md#synchronous-mode)
   for more information.
   ([#73](https://github.com/kdgregory/log4j-aws-appenders/issues/73))
+* Add a shutdown hook to avoid losing queued messages when the main thread exits.
+  ([#35](https://github.com/kdgregory/log4j-aws-appenders/issues/35))
 
 ## 2.1.1 (2019-01-06)
 

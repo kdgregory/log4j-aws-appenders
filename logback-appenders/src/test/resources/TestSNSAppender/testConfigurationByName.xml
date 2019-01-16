@@ -11,6 +11,7 @@
     <discardAction>newest</discardAction>
     <clientFactory>com.example.Foo.bar</clientFactory>
     <clientEndpoint>sns.us-east-2.amazonaws.com</clientEndpoint>
+    <useShutdownHook>false</useShutdownHook>
     <layout class="ch.qos.logback.classic.PatternLayout">
       <pattern>%msg</pattern>
     </layout>

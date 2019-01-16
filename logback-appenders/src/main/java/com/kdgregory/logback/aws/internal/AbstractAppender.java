@@ -78,9 +78,9 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     // the current writer; initialized on first append, changed after rotation or error
 
     protected volatile LogWriter writer;
-    
+
     // layout is managed by this class, not superclass
-    
+
     protected Layout<LogbackEventType>  layout;
 
     // the last time we rotated the writer
@@ -105,11 +105,12 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     protected long                      batchDelay;
     protected int                       discardThreshold;
     protected DiscardAction             discardAction;
-    protected volatile RotationMode     rotationMode = RotationMode.none;
+    protected volatile RotationMode     rotationMode;
     protected volatile long             rotationInterval;
     protected AtomicInteger             sequence;
     protected String                    clientFactory;
     protected String                    clientEndpoint;
+    protected boolean                   useShutdownHook;
 
 
     public AbstractAppender(
@@ -131,6 +132,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
         rotationMode = RotationMode.none;
         rotationInterval = -1;
         sequence = new AtomicInteger();
+        useShutdownHook = true;
     }
 
 //----------------------------------------------------------------------------
@@ -152,8 +154,8 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     {
         this.layout = layout;
     }
-    
-    
+
+
     /**
      *  Enables or disables synchronous mode. This may only be called during
      *  configuration.
@@ -208,7 +210,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     {
         if (this.synchronous)
             return;
-        
+
         this.batchDelay = value;
         if (writer != null)
         {
@@ -216,7 +218,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
         }
     }
 
-    
+
     /**
      *  Returns the maximum batch delay; see {@link #setBatchDelay}. Primarily used
      *  for testing.
@@ -419,6 +421,25 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
         return clientEndpoint;
     }
 
+
+    /**
+     *  Controls whether the appender will use a shutdown hook to wait for the
+     *  writer thread to stop. By default this is <code>true</code>.
+     */
+    public void setUseShutdownHook(boolean value)
+    {
+        this.useShutdownHook = value;
+    }
+
+
+    /**
+     *  Returns the current synchronous mode setting.
+     */
+    public boolean getUseShutdownHook()
+    {
+        return this.useShutdownHook;
+    }
+
 //----------------------------------------------------------------------------
 //  Other accessors
 //----------------------------------------------------------------------------
@@ -605,7 +626,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
                 }
 
                 writer.stop();
-                
+
                 if (synchronous)
                 {
                     writer.cleanup();
@@ -615,7 +636,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
             {
                 logger.error("exception while shutting down writer", ex);
             }
-            
+
             writer = null;
         }
     }
@@ -681,7 +702,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
                 messagesSinceLastRotation++;
             }
         }
-        
+
         // by processing the batch outside of the appendLock (and relying on writer internal
         // synchronization), we may end up with a single batch with more than one record (but
         // it's unlikely)

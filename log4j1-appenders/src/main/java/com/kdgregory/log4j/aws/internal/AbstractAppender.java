@@ -596,7 +596,7 @@ extends AppenderSkeleton
                 }
                 else
                 {
-                    threadFactory.startLoggingThread(writer, new UncaughtExceptionHandler()
+                    threadFactory.startLoggingThread(writer, useShutdownHook, new UncaughtExceptionHandler()
                     {
                         @Override
                         public void uncaughtException(Thread t, Throwable ex)

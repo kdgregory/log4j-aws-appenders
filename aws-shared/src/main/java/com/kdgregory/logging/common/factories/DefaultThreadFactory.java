@@ -36,9 +36,9 @@ public class DefaultThreadFactory implements ThreadFactory
 
 
     @Override
-    public void startLoggingThread(LogWriter writer, UncaughtExceptionHandler exceptionHandler)
+    public void startLoggingThread(LogWriter writer, boolean useShutdownHook, UncaughtExceptionHandler exceptionHandler)
     {
-        Thread writerThread = new Thread(writer);
+        final Thread writerThread = new Thread(writer);
         writerThread.setName("com-kdgregory-aws-logwriter-" + appenderName + "-" + threadNumber.getAndIncrement());
         writerThread.setPriority(Thread.NORM_PRIORITY);
         writerThread.setDaemon(true);

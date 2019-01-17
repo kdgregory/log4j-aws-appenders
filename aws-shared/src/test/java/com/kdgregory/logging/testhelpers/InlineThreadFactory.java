@@ -27,7 +27,7 @@ import com.kdgregory.logging.common.factories.ThreadFactory;
 public class InlineThreadFactory implements ThreadFactory
 {
     @Override
-    public void startLoggingThread(LogWriter writer, UncaughtExceptionHandler exceptionHandler)
+    public void startLoggingThread(LogWriter writer, boolean useShutdownHook, UncaughtExceptionHandler exceptionHandler)
     {
         writer.run();
     }

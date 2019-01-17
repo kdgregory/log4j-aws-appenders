@@ -105,6 +105,7 @@ public abstract class AbstractLogWriterTest
 
     /**
      *  Creates a writer using the provided factory, waiting for it to be initialized.
+     *  The writer thread will not use a shutdown handler.
      */
     protected void createWriter(WriterFactory<ConfigType,StatsType> factory)
     throws Exception
@@ -112,7 +113,7 @@ public abstract class AbstractLogWriterTest
         writer = (WriterType)factory.newLogWriter(config, stats, internalLogger);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
-        new DefaultThreadFactory("test").startLoggingThread(writer, defaultUncaughtExceptionHandler);
+        new DefaultThreadFactory("test").startLoggingThread(writer, false, defaultUncaughtExceptionHandler);
 
         if (writer.waitUntilInitialized(5000))
             return;

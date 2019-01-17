@@ -37,6 +37,9 @@ public abstract class AbstractLogWriter
 >
 implements LogWriter
 {
+    // flag value for shutdownTime
+    private final static long NEVER_SHUTDOWN = Long.MAX_VALUE;
+
     // these three are provided to constructor, used both here and in subclass
     protected ConfigType config;
     protected StatsType stats;
@@ -56,7 +59,7 @@ implements LogWriter
     private volatile boolean initializationComplete;
 
     // updated by stop()
-    private volatile long shutdownTime = Long.MAX_VALUE;
+    private volatile long shutdownTime = NEVER_SHUTDOWN;
 
     // this is intended for testing
     private volatile int batchCount;
@@ -232,6 +235,10 @@ implements LogWriter
     @Override
     public void stop()
     {
+        // if someone else already called stop then we shouldn't do it again
+        if (shutdownTime != NEVER_SHUTDOWN)
+            return;
+
         shutdownTime = System.currentTimeMillis() + config.batchDelay;
         if (dispatchThread != null)
         {

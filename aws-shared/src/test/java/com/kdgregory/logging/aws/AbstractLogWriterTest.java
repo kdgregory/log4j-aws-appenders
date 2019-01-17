@@ -121,6 +121,15 @@ public abstract class AbstractLogWriterTest
     }
 
 
+    /**
+     *  Retrieves the shutdown time from the writer.
+     */
+    protected long getShutdownTime() throws Exception
+    {
+        return ClassUtil.getFieldValue(writer, "shutdownTime", Long.class).longValue();
+    }
+
+
 //----------------------------------------------------------------------------
 //  Utility methods to synchronize main and writer threads.
 //----------------------------------------------------------------------------

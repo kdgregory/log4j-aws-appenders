@@ -23,12 +23,12 @@ import java.util.Set;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import static org.junit.Assert.*;
-import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
+import static net.sf.kdgcommons.test.NumericAsserts.*;
+import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
@@ -796,12 +796,21 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         // this test is the only place that we expicitly test shutdown logic, to avoid cluttering
         // the "operation" tests; it's otherwise identical to the "existing stream" test
 
+        // it actually tests functionality in AbstractAppender, but I've replicated for all concrete
+        // subclasses simply because it's a key piece of functionality
+
         createWriter();
+
+        assertEquals("after creation, shutdown time should be infinite", Long.MAX_VALUE, getShutdownTime());
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
 
         // the immediate stop should interrupt waitForMessage, but there's no guarantee
         writer.stop();
+
+        long now = System.currentTimeMillis();
+        long shutdownTime = getShutdownTime();
+        assertInRange("after stop(), shutdown time should be based on batch delay", now, now + config.batchDelay + 100, shutdownTime);
 
         // the batch should still be processed
         mock.allowWriterThread();
@@ -809,9 +818,14 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: invocation count",        1,                          mock.putRecordsInvocationCount);
         assertEquals("putRecords: source record count",     1,                          mock.putRecordsSourceRecords.size());
 
+        // another call to stop should be ignored -- sleep to ensure times would be different
+        Thread.sleep(100);
+        writer.stop();
+        assertEquals("second call to stop() should be no-op", shutdownTime, getShutdownTime());
+
         joinWriterThread();
 
-        assertEquals("shutdown: invocation count",          1,                  mock.shutdownInvocationCount);
+        assertEquals("shutdown: invocation count",          1,                          mock.shutdownInvocationCount);
 
         internalLogger.assertInternalDebugLog(
             "log writer starting.*",

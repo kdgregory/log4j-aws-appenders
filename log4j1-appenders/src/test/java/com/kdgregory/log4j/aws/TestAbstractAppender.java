@@ -218,10 +218,45 @@ public class TestAbstractAppender
         assertInRange("batch processing time",                  start, System.currentTimeMillis(),      writer.processBatchLastTimeout);
 
         assertEquals("before stop, calls to cleanup()",         0,                                      writer.cleanupInvocationCount);
-        
+
         appender.close();
-        
+
         assertEquals("after stop, calls to cleanup()",          1,                                      writer.cleanupInvocationCount);
+    }
+
+
+    @Test
+    public void testShutdownHook() throws Exception
+    {
+        initialize("testShutdownHook");
+
+        // for this test we need a real dispatch thread
+        appender.setThreadFactory(new DefaultThreadFactory("test"));
+
+        logger.debug("a message to trigger writer creation");
+
+        // we'll need to spin until the writer thread has been created
+        MockCloudWatchWriter writer = appender.getMockWriter();
+        for (int ii = 0 ; ii < 30 ; ii++)
+        {
+            if (writer.writerThread == null)
+                Thread.sleep(100);
+        }
+        assertNotNull("writer thread created", writer.writerThread);
+
+        // the run() method should save the thread and exit immediately; if not the test will hang
+        writer.writerThread.join();
+
+        assertNotNull("writer has shutdown hook", writer.shutdownHook);
+        assertFalse("writer has not yet been stopped", writer.stopped);
+        assertEquals("cleanup has not yet been called", 0, writer.cleanupInvocationCount);
+
+        writer.shutdownHook.start();
+        writer.shutdownHook.join();
+
+        assertTrue("writer has been stopped", writer.stopped);
+
+        // a real LogWriter will call cleanup being stopped; we'll assume logwriter tests cover that
     }
 
 

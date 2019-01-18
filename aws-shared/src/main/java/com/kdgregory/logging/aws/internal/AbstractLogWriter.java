@@ -61,6 +61,10 @@ implements LogWriter
     // updated by stop()
     private volatile long shutdownTime = NEVER_SHUTDOWN;
 
+    // this is set when shutdown hooks are in effect, so that the writer
+    // can remove it as part of cleanup
+    private volatile Thread shutdownHook;
+
     // this is intended for testing
     private volatile int batchCount;
 
@@ -153,6 +157,13 @@ implements LogWriter
     public void setDiscardAction(DiscardAction value)
     {
         messageQueue.setDiscardAction(value);
+    }
+
+
+    @Override
+    public void setShutdownHook(Thread shutdownHook)
+    {
+        this.shutdownHook = shutdownHook;
     }
 
 
@@ -251,6 +262,22 @@ implements LogWriter
     public void cleanup()
     {
         stopAWSClient();
+
+        if (shutdownHook != null)
+        {
+            try
+            {
+                Runtime.getRuntime().removeShutdownHook(shutdownHook);
+            }
+            catch (Exception ignored)
+            {
+                // we expect an IllegalThreadStateException
+            }
+            finally
+            {
+                shutdownHook = null;
+            }
+        }
     }
 
 //----------------------------------------------------------------------------

@@ -21,6 +21,7 @@ import com.kdgregory.logback.testhelpers.TestableLogbackInternalLogger;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.common.LogWriter;
+import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.factories.ThreadFactory;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.testhelpers.InlineThreadFactory;
@@ -47,6 +48,17 @@ extends CloudWatchAppender<ILoggingEvent>
         setThreadFactory(new InlineThreadFactory());
         setWriterFactory(new MockCloudWatchWriterFactory());
         logger = new TestableLogbackInternalLogger(this);
+    }
+
+
+    // since Logback initializes when the appender is created, we can't switch thread factories
+    // after the fact; as a work-around, this configuration parameter will use the default
+    public void setUseDefaultThreadFactory(boolean enabled)
+    {
+        if (enabled)
+        {
+            setThreadFactory(new DefaultThreadFactory("test"));
+        }
     }
 
 

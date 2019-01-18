@@ -34,6 +34,7 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterFactory;
 import com.kdgregory.logging.common.LogMessage;
+import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.common.util.MessageQueue;
 import com.kdgregory.logging.testhelpers.TestingException;
@@ -1038,5 +1039,37 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         internalLogger.assertInternalDebugLog("using existing .* group: argle",
                                               "using existing .* stream: bargle");
         internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testShutdownHook() throws Exception
+    {
+        // this is the only test for shutdown hooks: it's part of the abstract writer functionality
+        // so doesn't need to be replicated (TODO - we need TestAbstractLogWriter)
+
+        // we can't actually test a shutdown hook, so we have to assume that it's called as expected
+        // nor can we test the behavior of removing a shutdown hook during shutdown
+
+        // since createWriter() uses a thread factory that doesn't install a shutdown hook, we need
+        // to explicitly create the writer
+
+        writer = (CloudWatchLogWriter)mock.newWriterFactory().newLogWriter(config, stats, internalLogger);
+
+        new DefaultThreadFactory("test").startLoggingThread(writer, true, defaultUncaughtExceptionHandler);
+        assertTrue("writer running", writer.waitUntilInitialized(5000));
+
+        Thread writerThread = ClassUtil.getFieldValue(writer, "dispatchThread", Thread.class);
+        assertTrue("writer thread active", writerThread.isAlive());
+
+        Thread shutdownHook = ClassUtil.getFieldValue(writer, "shutdownHook", Thread.class);
+        assertNotNull("shutdown hook exists", shutdownHook);
+
+        shutdownHook.start();
+        shutdownHook.join();
+
+        assertFalse("writer thread no longer active", writerThread.isAlive());
+        assertNull("shutdown hook has been cleared on writer", ClassUtil.getFieldValue(writer, "shutdownHook", Thread.class));
+        assertFalse("shutdown hook has been deregistered in JVM", Runtime.getRuntime().removeShutdownHook(shutdownHook));
     }
 }

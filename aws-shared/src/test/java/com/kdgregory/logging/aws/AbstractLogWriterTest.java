@@ -115,10 +115,7 @@ public abstract class AbstractLogWriterTest
 
         new DefaultThreadFactory("test").startLoggingThread(writer, false, defaultUncaughtExceptionHandler);
 
-        if (writer.waitUntilInitialized(5000))
-            return;
-
-        fail("unable to initialize writer");
+        assertTrue("writer running", writer.waitUntilInitialized(5000));
     }
 
 

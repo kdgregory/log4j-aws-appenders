@@ -32,6 +32,7 @@ implements LogWriter
     public T config;
 
     public Thread writerThread;
+    public Thread shutdownHook;
 
     public List<LogMessage> messages = new ArrayList<LogMessage>();
     public LogMessage lastMessage;
@@ -71,6 +72,13 @@ implements LogWriter
     public void setDiscardAction(DiscardAction value)
     {
         this.config.discardAction = value;
+    }
+
+
+    @Override
+    public void setShutdownHook(Thread shutdownHook)
+    {
+        this.shutdownHook = shutdownHook;
     }
 
 

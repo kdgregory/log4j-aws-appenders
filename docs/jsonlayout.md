@@ -65,7 +65,7 @@ log4j.appender.example.layout=com.kdgregory.log4j.aws.JsonLayout
 log4j.appender.example.layout.appendNewlines=true
 log4j.appender.example.layout.enableHostname=true
 log4j.appender.example.layout.enableLocation=true
-log4j.appender.example.layout.tags=applicationName=Example,env={sysprop:env},runDate={date}
+log4j.appender.example.layout.tags=applicationName=Example,env={sysprop:env:dev},runDate={date}
 ```
 
 Will produce lines of output that look like this (assuming that the application is invoked with `-Denv=prod`):

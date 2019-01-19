@@ -17,8 +17,8 @@ Variable            | Description
 `aws:accountId`     | AWS account ID. This exists to support SNS topic ARNs, probably not useful elsewhere.
 `ec2:instanceId`    | EC2 instance ID; see below.
 `ec2:region`        | Region where the current instance is running; see below.
-`env:XXX`           | Environment variable `XXX`
-`sysprop:XXX`       | System property `XXX`
+`env:XXX`           | Environment variable `XXX`; see below for complete syntax.
+`sysprop:XXX`       | System property `XXX`; see below for complete syntax.
 
 If unable to replace a substitution variable, the tag will be left in place. This could happen due
 to a bogus or unclosed tag, or an unresolvable system property or environment variable.
@@ -29,6 +29,11 @@ connectivity or properly configured credentials these will fail.
 The `ec2` substitutions retrieve their information from the EC2 metadata service. Using these variables
 in any other environment will result in a (long) wait as the SDK tries to make an HTTP request to the
 non-existent endpoint.
+
+The `env` and `sysprop` substitutions have two forms: `env:VARNAME` (or `sysprop:VARNAME`) and
+`env:VARNAME:DEFAULT` (ditto for sysprops). For example, if the environment variable `FOO` is
+undefined, then the first form (`env:FOO`) will result in `{env:FOO}` in the output. Using the
+form `env:FOO:bar` will succeed, resulting in `bar` in the output.
 
 Note that a particular destination may not accept all of the characters produced by a substitution,
 and the appenders will not initialize that happens. As a general rule you should limit substituted

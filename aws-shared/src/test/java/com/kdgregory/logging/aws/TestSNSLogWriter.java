@@ -24,6 +24,7 @@ import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
+import static net.sf.kdgcommons.test.NumericAsserts.*;
 
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.*;
@@ -737,13 +738,22 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         // this test is the only place that we expicitly test shutdown logic, to avoid cluttering
         // the "operation" tests; it's otherwise identical to the "by name" test
 
+        // it actually tests functionality in AbstractAppender, but I've replicated for all concrete
+        // subclasses simply because it's a key piece of functionality
+
         config.topicName = TEST_TOPIC_NAME;
         createWriter();
+
+        assertEquals("after creation, shutdown time should be infinite", Long.MAX_VALUE, getShutdownTime());
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
 
         // the immediate stop should interrupt waitForMessage, but there's no guarantee
         writer.stop();
+
+        long now = System.currentTimeMillis();
+        long shutdownTime = getShutdownTime();
+        assertInRange("after stop(), shutdown time should be based on batch delay", now, now + config.batchDelay + 100, shutdownTime);
 
         // the batch should still be processed
         mock.allowWriterThread();
@@ -752,6 +762,11 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("publish: arn",                TEST_TOPIC_ARN,     mock.lastPublishArn);
         assertEquals("publish: subject",            null,               mock.lastPublishSubject);
         assertEquals("publish: body",               "message one",      mock.lastPublishMessage);
+
+        // another call to stop should be ignored -- sleep to ensure times would be different
+        Thread.sleep(100);
+        writer.stop();
+        assertEquals("second call to stop() should be no-op", shutdownTime, getShutdownTime());
 
         joinWriterThread();
 

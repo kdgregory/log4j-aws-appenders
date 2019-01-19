@@ -37,6 +37,9 @@ public abstract class AbstractLogWriter
 >
 implements LogWriter
 {
+    // flag value for shutdownTime
+    private final static long NEVER_SHUTDOWN = Long.MAX_VALUE;
+
     // these three are provided to constructor, used both here and in subclass
     protected ConfigType config;
     protected StatsType stats;
@@ -56,7 +59,11 @@ implements LogWriter
     private volatile boolean initializationComplete;
 
     // updated by stop()
-    private volatile long shutdownTime = Long.MAX_VALUE;
+    private volatile long shutdownTime = NEVER_SHUTDOWN;
+
+    // this is set when shutdown hooks are in effect, so that the writer
+    // can remove it as part of cleanup
+    private volatile Thread shutdownHook;
 
     // this is intended for testing
     private volatile int batchCount;
@@ -154,6 +161,13 @@ implements LogWriter
 
 
     @Override
+    public void setShutdownHook(Thread shutdownHook)
+    {
+        this.shutdownHook = shutdownHook;
+    }
+
+
+    @Override
     public void addMessage(LogMessage message)
     {
         // we're going to assume that the appender has already checked this, and
@@ -232,6 +246,10 @@ implements LogWriter
     @Override
     public void stop()
     {
+        // if someone else already called stop then we shouldn't do it again
+        if (shutdownTime != NEVER_SHUTDOWN)
+            return;
+
         shutdownTime = System.currentTimeMillis() + config.batchDelay;
         if (dispatchThread != null)
         {
@@ -244,6 +262,22 @@ implements LogWriter
     public void cleanup()
     {
         stopAWSClient();
+
+        if (shutdownHook != null)
+        {
+            try
+            {
+                Runtime.getRuntime().removeShutdownHook(shutdownHook);
+            }
+            catch (Exception ignored)
+            {
+                // we expect an IllegalThreadStateException
+            }
+            finally
+            {
+                shutdownHook = null;
+            }
+        }
     }
 
 //----------------------------------------------------------------------------

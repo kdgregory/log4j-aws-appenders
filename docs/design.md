@@ -15,11 +15,11 @@ These are the primary design constraints:
 
 To meet these constraints, the appender creates a separate thread for communication with the service,
 along with a concurrent queue to hold appended messages. When the logging framework calls `append()`,
-the appender converts the passed event into a  textual representation, verifies that it conforms to
+the appender converts the passed event into a textual representation, verifies that it conforms to
 limitations imposed by the service, and adds it to the queue.
 
 The writer runs on a separate thread (created when the appender is initialized) reading that queue
-and  attempting to batch together messages into a single request. Once it has a batch (based either
+and attempting to batch together messages into a single request. Once it has a batch (based either
 on size or a configurable timeout) it attempts to write the entire batch to the service.
 
 The writer thread handles most exceptions internally, reporting them via [JMX](jmx.md) and requeing
@@ -62,7 +62,7 @@ low volume. And it will leave more messages unwritten if the program shuts down 
 all messages to be sent.
 
 The user can control message batching via the `batchDelay` configuration variable, which specifies
-the number of milliseconds that the writer will wait after reading  the first message in a batch.
+the number of milliseconds that the writer will wait after reading the first message in a batch.
 The writer sends the batch either once the timer expires or the service-defined batch size limit is
 reached. Then it blocks, waiting for a message to start the next batch.
 
@@ -79,7 +79,7 @@ even the standard `FileAppender` is not guaranteed to save all messages, because
 buffered in memory before they're actually written to the disk.
 
 
-## Synchronous Mode
+### Synchronous Mode
 
 While batching and asynchronous delivery is the most efficient way to send messages, it is not
 appropriate when the background thread does not have the opportunity to run, as with a [short-duration
@@ -93,3 +93,25 @@ to slowing down the invoking thread (perhaps significantly, in the case where it
 destination), it _does not guarantee delivery_. There is still the possibility of an exception during
 the send, which will requeue the message(s) for later deliver (which might never happen).
 
+
+### Shutdown Hooks
+
+One other case where batching and background operation is a problem is at application shutdown,
+especially for short-running applications. The writer thread is a daemon thread: it will not
+prevent the application from shutting down when all of the non-daemon threads (normally just
+the main thread) exit. However, we want to avoid losing any messages that were still in the
+queue at shutdown.
+
+To avoid this problem, the appenders install a [shutdown hook](https://docs.oracle.com/javase/8/docs/api/java/lang/Runtime.html#addShutdownHook-java.lang.Thread-)
+when they start the writer thread. This hook calls the writer's `stop()` method, and then
+joins to the writer thread, delaying shutdown until that thread finishes (which will take
+another `batchDelay` milliseconds).
+
+Note that this still does not guarantee all messages will be delivered: aside from persistent
+errors writing to the destination, the JVM may not remain running long enough for shutdown
+hooks to complete. This is particularly likely in the case where the operating system is itself
+shutting down (ie, a scale-in operation): the OS typically gives applications a short window
+to gracefully shut themselves down, then sends a SIGKILL to forcibly terminate them.
+
+If you do not want this shutdown hook, you can set the `useShutdownHook` configuration parameter
+to `false`. I can't see any good reason to do this, which is why it's `true` by default.

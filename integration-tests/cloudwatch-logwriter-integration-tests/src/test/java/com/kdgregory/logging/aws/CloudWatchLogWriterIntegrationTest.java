@@ -118,7 +118,7 @@ public class CloudWatchLogWriterIntegrationTest
         factory = new CloudWatchWriterFactory();
         writer = (CloudWatchLogWriter)factory.newLogWriter(config, stats, internalLogger);
 
-        new DefaultThreadFactory("test").startLoggingThread(writer, null);
+        new DefaultThreadFactory("test").startLoggingThread(writer, false, null);
     }
 
 

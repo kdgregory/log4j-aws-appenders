@@ -107,11 +107,12 @@ extends AppenderSkeleton
     protected long                  batchDelay;
     protected int                   discardThreshold;
     protected DiscardAction         discardAction;
-    protected volatile RotationMode rotationMode = RotationMode.none;
+    protected volatile RotationMode rotationMode;
     protected volatile long         rotationInterval;
     protected AtomicInteger         sequence;
     protected String                clientFactory;
     protected String                clientEndpoint;
+    protected boolean               useShutdownHook;
 
 //----------------------------------------------------------------------------
 //  Constructor
@@ -136,6 +137,7 @@ extends AppenderSkeleton
         rotationMode = RotationMode.none;
         rotationInterval = -1;
         sequence = new AtomicInteger();
+        useShutdownHook = true;
     }
 
 //----------------------------------------------------------------------------
@@ -418,6 +420,25 @@ extends AppenderSkeleton
         return clientEndpoint;
     }
 
+
+    /**
+     *  Controls whether the appender will use a shutdown hook to wait for the
+     *  writer thread to stop. By default this is <code>true</code>.
+     */
+    public void setUseShutdownHook(boolean value)
+    {
+        this.useShutdownHook = value;
+    }
+
+
+    /**
+     *  Returns the current synchronous mode setting.
+     */
+    public boolean getUseShutdownHook()
+    {
+        return this.useShutdownHook;
+    }
+
 //----------------------------------------------------------------------------
 //  Other accessors
 //----------------------------------------------------------------------------
@@ -575,7 +596,7 @@ extends AppenderSkeleton
                 }
                 else
                 {
-                    threadFactory.startLoggingThread(writer, new UncaughtExceptionHandler()
+                    threadFactory.startLoggingThread(writer, useShutdownHook, new UncaughtExceptionHandler()
                     {
                         @Override
                         public void uncaughtException(Thread t, Throwable ex)

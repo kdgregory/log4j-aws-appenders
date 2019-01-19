@@ -36,13 +36,37 @@ public class DefaultThreadFactory implements ThreadFactory
 
 
     @Override
-    public void startLoggingThread(LogWriter writer, UncaughtExceptionHandler exceptionHandler)
+    public void startLoggingThread(final LogWriter writer, boolean useShutdownHook, UncaughtExceptionHandler exceptionHandler)
     {
-        Thread writerThread = new Thread(writer);
+        final Thread writerThread = new Thread(writer);
         writerThread.setName("com-kdgregory-aws-logwriter-" + appenderName + "-" + threadNumber.getAndIncrement());
         writerThread.setPriority(Thread.NORM_PRIORITY);
         writerThread.setDaemon(true);
         writerThread.setUncaughtExceptionHandler(exceptionHandler);
+
+        if (useShutdownHook)
+        {
+            Thread shutdownHook = new Thread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    writer.stop();
+                    try
+                    {
+                        writerThread.join();
+                    }
+                    catch (InterruptedException e)
+                    {
+                        // we've done our best, que sera sera
+                    }
+                }
+            });
+            shutdownHook.setName(writerThread.getName() + "-shutdownHook");
+            writer.setShutdownHook(shutdownHook);
+            Runtime.getRuntime().addShutdownHook(shutdownHook);
+        }
+
         writerThread.start();
     }
 }

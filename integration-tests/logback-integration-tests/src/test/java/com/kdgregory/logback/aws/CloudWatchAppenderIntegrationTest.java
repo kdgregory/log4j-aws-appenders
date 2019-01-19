@@ -276,7 +276,7 @@ public class CloudWatchAppenderIntegrationTest
         (new MessageWriter(testLogger, numMessages)).run();
 
         localLogger.info("first batch of messages written; sleeping to give writer chance to run");
-        Thread.sleep(1000);
+        Thread.sleep(3000);
 
         testHelper.assertMessages(logStreamName, numMessages);
 
@@ -286,7 +286,7 @@ public class CloudWatchAppenderIntegrationTest
         (new MessageWriter(testLogger, numMessages)).run();
 
         localLogger.info("second batch of messages written; sleeping to give writer chance to run");
-        Thread.sleep(2000);
+        Thread.sleep(3000);
 
         // the original batch of messages will be gone, so we can assert the new batch was written
         testHelper.assertMessages(logStreamName, numMessages);

@@ -72,12 +72,13 @@ public class TestSNSAppender
 
         assertTrue("autoCreate",                                            appender.getAutoCreate());
         assertEquals("subject",             "This is a test",               appender.getSubject());
-        assertFalse("synchronous mode",                                         appender.getSynchronous());
+        assertFalse("synchronous mode",                                     appender.getSynchronous());
         assertEquals("batch delay",         1L,                             appender.getBatchDelay());
         assertEquals("discard threshold",   123,                            appender.getDiscardThreshold());
         assertEquals("discard action",      "newest",                       appender.getDiscardAction());
         assertEquals("client factory",      "com.example.Foo.bar",          appender.getClientFactory());
         assertEquals("client endpoint",     "sns.us-east-2.amazonaws.com",  appender.getClientEndpoint());
+        assertFalse("use shutdown hook",                                    appender.getUseShutdownHook());
     }
 
 
@@ -92,12 +93,13 @@ public class TestSNSAppender
 
         assertFalse("autoCreate",                                           appender.getAutoCreate());
         assertEquals("subject",             null,                           appender.getSubject());
-        assertFalse("synchronous mode",                                         appender.getSynchronous());
+        assertFalse("synchronous mode",                                     appender.getSynchronous());
         assertEquals("batch delay",         1L,                             appender.getBatchDelay());
         assertEquals("discard threshold",   1000,                           appender.getDiscardThreshold());
         assertEquals("discard action",      "oldest",                       appender.getDiscardAction());
         assertEquals("client factory",      null,                           appender.getClientFactory());
         assertEquals("client endpoint",     null,                           appender.getClientEndpoint());
+        assertTrue("use shutdown hook",                                     appender.getUseShutdownHook());
     }
 
 

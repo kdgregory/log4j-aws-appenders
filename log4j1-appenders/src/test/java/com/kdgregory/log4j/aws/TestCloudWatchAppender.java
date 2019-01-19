@@ -95,6 +95,7 @@ public class TestCloudWatchAppender
         assertEquals("discard action",      "newest",                       appender.getDiscardAction());
         assertEquals("client factory",      "com.example.Foo.bar",          appender.getClientFactory());
         assertEquals("client endpoint",     "logs.us-west-2.amazonaws.com", appender.getClientEndpoint());
+        assertFalse("use shutdown hook",                                    appender.getUseShutdownHook());
     }
 
 
@@ -116,6 +117,7 @@ public class TestCloudWatchAppender
         assertEquals("discard action",      "oldest",                       appender.getDiscardAction());
         assertEquals("client factory",      null,                           appender.getClientFactory());
         assertEquals("client endpoint",     null,                           appender.getClientEndpoint());
+        assertTrue("use shutdown hook",                                     appender.getUseShutdownHook());
     }
 
 

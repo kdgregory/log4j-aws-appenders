@@ -47,6 +47,14 @@ extends Runnable
      *  has been reached.
      */
     void setDiscardAction(DiscardAction value);
+    
+    
+    /**
+     *  Used when shutdown hooks are in effect, so that the writer can remove that hook
+     *  during cleanup. See {@link com.kdgregory.logging.common.factories.DefaultThreadFactory}
+     *  for an example.
+     */
+    void setShutdownHook(Thread shutdownHook);
 
 
     /**

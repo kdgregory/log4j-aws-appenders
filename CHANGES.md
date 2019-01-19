@@ -8,6 +8,8 @@
   ([#73](https://github.com/kdgregory/log4j-aws-appenders/issues/73))
 * Add a shutdown hook to avoid losing queued messages when the main thread exits.
   ([#35](https://github.com/kdgregory/log4j-aws-appenders/issues/35))
+* Remove internal retries from `KinesisLogWriter`.
+  ([#77](https://github.com/kdgregory/log4j-aws-appenders/issues/77))
 
 ## 2.1.1 (2019-01-06)
 

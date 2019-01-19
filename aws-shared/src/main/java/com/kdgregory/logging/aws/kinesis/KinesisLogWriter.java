@@ -53,9 +53,6 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
     // and the number of milliseconds that we wait between tries
     private final static long STREAM_ACTIVE_SLEEP = 250;
 
-    // this controls the number of times that we retry a send
-    private final static int SEND_RETRY_LIMIT = 3;
-
     // this controls the number of times that we attempt to create a stream
     private final static int CREATE_RETRY_LIMIT = 12;
 
@@ -325,35 +322,30 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
     {
         List<Integer> failures = new ArrayList<Integer>(request.getRecords().size());
 
-        for (int attempt = 0 ; attempt < SEND_RETRY_LIMIT ; attempt++)
+        try
         {
-            try
+            PutRecordsResult response = client.putRecords(request);
+            int ii = 0;
+            for (PutRecordsResultEntry entry : response.getRecords())
             {
-                PutRecordsResult response = client.putRecords(request);
-                int ii = 0;
-                for (PutRecordsResultEntry entry : response.getRecords())
+                if (entry.getErrorCode() != null)
                 {
-                    if (entry.getErrorCode() != null)
-                    {
-                        failures.add(Integer.valueOf(ii));
-                    }
-                    ii++;
+                    failures.add(Integer.valueOf(ii));
                 }
-                return failures;
+                ii++;
             }
-            catch (ResourceNotFoundException ex)
-            {
-                reportError("failed to send batch: stream " + request.getStreamName() + " no longer exists", null);
-                break;
-            }
-            catch (Exception ex)
-            {
-                reportError("failed to send batch", ex);
-                Utils.sleepQuietly(250 * (attempt + 1));
-            }
+            return failures;
+        }
+        catch (ResourceNotFoundException ex)
+        {
+            reportError("failed to send batch: stream " + request.getStreamName() + " no longer exists", null);
+        }
+        catch (Exception ex)
+        {
+            reportError("failed to send batch", ex);
         }
 
-        // after an uncorrected exception requeing might seem pointless, but we'll do it anyway
+        // drop-through from exception handler; all messages in batch must be requeued
         for (int ii = 0 ; ii < request.getRecords().size() ; ii++)
         {
             failures.add(Integer.valueOf(ii));

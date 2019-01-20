@@ -12,8 +12,11 @@ the default client constructors. However, these constructors have a few limitati
   by a different AWS account.
 
 To work around these limitations, the appenders give you several configuration parameters that
-change how the appender creates its service client. The appender tries each of the following
-creation mechanisms, in order:
+change how the appender creates and configures its service client.
+
+## Client Creation
+
+The appender tries each of the following creation mechanisms, in order:
 
 1. If you specified the `clientFactory` configuration parameter, this appender will attempt to
    invoke it via reflection. This parameter is the fully-qualified name (eg,
@@ -21,21 +24,30 @@ creation mechanisms, in order:
    return the client. This is primarily useful if you need to provide explicit credentials to
    the client.
 2. If you're using an SDK that supports client factories, the appender will invoke the correct
-   `defaultClient()` method via reflection. These methods in turn use a series of mechanisms
-   to find the correct credentials and region.
+   factory method via reflection. These methods in turn use a series of mechanisms to find the
+   correct credentials and region.
 3. If you're using an older SDK, the appender will invoke the default client constructor.
 
-If you're stuck with the third case, but are not running in the `us-east-1` region, you have
-two further options:
 
-* You can specify the client endpoint using the `clientEndpoint` configuration parameter;
-  see the [AWS docs](https://docs.aws.amazon.com/general/latest/gr/rande.html) for a list
-  of endpoint names. This parameter is primarily intended for applications that must use
-  an older AWS SDK version but want to log outside the `us-east-1` region. For example, to
-  direct Kinesis logging to a stream in the `us-west-1` region:
+## Endpoint Configuration
 
-  ```
-  log4j.appender.kinesis.clientEndpoint=kinesis.us-west-1.amazonaws.com
-  ```
-* Provide the `AWS_REGION` environment variable. However, be aware that older SDKs do not
-  recognize all current regions, so may fail to initialize.
+The client constructors are hardcoded to use the `us-east-1` region; if you run in a different
+region you will need to change that. The appenders try the following, in order:
+
+1. If the `clientEndpoint` configuration parameter is defined, the appender calls `setEndpoint()`
+   with that value. Endpoints for CloudWatch Logs are defined
+   [here](https://docs.aws.amazon.com/general/latest/gr/rande.html#cwl_region), Kinesis
+   [here](https://docs.aws.amazon.com/general/latest/gr/rande.html#ak_region), and SNS
+   [here](https://docs.aws.amazon.com/general/latest/gr/rande.html#sns_region). Setting the
+   endpoint is the best option for an older SDK, because regions are hardcoded into the SDK.
+2. If the `clientRegion` configuration parameter is defined, the appender calls `setRegion()
+   with that value. Note that this uses a lookup against a predefined region enum, so may
+   only be used with regions explicitly supported by your AWS SDK version.
+3. If the `AWS_REGION` environment variable is defined, the appender calls `setRegion()`
+   with that value. Note that this uses a lookup against a predefined region enum, so may
+   only be used with regions explicitly supported by your AWS SDK version.
+
+The `clientRegion` configuration parameter may also be used with service clients created via
+the SDK factory methods. This is only necessary if you want to direct logging output to a
+different region than the one where you're running: by default the client builders use a
+region provider to get the current region.

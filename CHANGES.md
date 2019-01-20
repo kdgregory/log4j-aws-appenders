@@ -2,12 +2,14 @@
 
 ## 2.1.2 (TBD)
 
+* Add a shutdown hook to avoid losing queued messages when the main thread exits.
+  ([#35](https://github.com/kdgregory/log4j-aws-appenders/issues/35))
 * Enable synchonous operation of log-writer, to avoid losing messages in Lambda
   or other limited-runtime environments. See [docs](docs/design.md#synchronous-mode)
   for more information.
   ([#73](https://github.com/kdgregory/log4j-aws-appenders/issues/73))
-* Add a shutdown hook to avoid losing queued messages when the main thread exits.
-  ([#35](https://github.com/kdgregory/log4j-aws-appenders/issues/35))
+* Allow configuring client region when creating client with SDK builder.
+  ([#74](https://github.com/kdgregory/log4j-aws-appenders/issues/74))
 * Allow "env" and "sysprop" substitutions to provide a default value.
   ([#75](https://github.com/kdgregory/log4j-aws-appenders/issues/75))
 * Remove internal retries from `KinesisLogWriter`.

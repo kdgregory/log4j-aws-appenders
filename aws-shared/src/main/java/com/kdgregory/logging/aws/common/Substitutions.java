@@ -192,7 +192,9 @@ public class Substitutions
             return input;
 
         String[] parts = rawPropName.split(":");
-        String propValue = System.getProperty(parts[0]);
+        String propValue = parts[0].length() == 0
+                         ? null
+                         : System.getProperty(parts[0]);
         if ((propValue == null) && (parts.length == 2))
             propValue = parts[1];
 
@@ -210,7 +212,9 @@ public class Substitutions
             return input;
 
         String[] parts = rawPropName.split(":");
-        String propValue = System.getenv(parts[0]);
+        String propValue = parts[0].length() == 0
+                         ? null
+                         : System.getenv(parts[0]);
         if ((propValue == null) && (parts.length == 2))
             propValue = parts[1];
 

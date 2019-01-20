@@ -153,9 +153,17 @@ public class TestSubstitutions
     @Test
     public void testEnvar() throws Exception  {
         Substitutions subs = new Substitutions(TEST_DATE, 0);
+
+        // happy paths
         assertEquals(System.getenv("HOME"),     subs.perform("{env:HOME}"));
-        assertEquals("{env:frobulator}",        subs.perform("{env:frobulator}"));
         assertEquals("zippy",                   subs.perform("{env:frobulator:zippy}"));
+
+        // sad paths
+        assertEquals("{env:frobulator}",        subs.perform("{env:frobulator}"));
+        assertEquals("{env:frobulator:}",       subs.perform("{env:frobulator:}"));
+
+        // this is probably not what the user wanted, but it's how defaults work
+        assertEquals("frobulator",              subs.perform("{env::frobulator}"));
     }
 
 
@@ -166,9 +174,17 @@ public class TestSubstitutions
         System.setProperty("TestSubstitutions.testSysprop", value);
 
         Substitutions subs = new Substitutions(TEST_DATE, 0);
-        assertEquals(value,                     subs.perform("{sysprop:TestSubstitutions.testSysprop}"));
-        assertEquals("{sysprop:frobulator}",    subs.perform("{sysprop:frobulator}"));
-        assertEquals("zippy",                   subs.perform("{sysprop:frobulator:zippy}"));
+
+        // happy paths
+        assertEquals(value,                         subs.perform("{sysprop:TestSubstitutions.testSysprop}"));
+        assertEquals("zippy",                       subs.perform("{sysprop:frobulator:zippy}"));
+
+        // sad paths
+        assertEquals("{sysprop:frobulator}",        subs.perform("{sysprop:frobulator}"));
+        assertEquals("{sysprop:frobulator:}",       subs.perform("{sysprop:frobulator:}"));
+
+        // again, probably not what was wanted
+        assertEquals("frobulator",                  subs.perform("{sysprop::frobulator}"));
     }
 
 

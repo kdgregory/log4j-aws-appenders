@@ -32,3 +32,8 @@ Log levels are randomly assigned: 65% DEBUG, 20% INFO, 10% WARN, and 5% ERROR.
 
 To spawn more threads, give the number of desired threads as a command-line argument. Kill the
 program to stop logging.
+
+The Kinesis output demonstrates configuration of `JsonLayout` tags, including a system property
+with default value. To change from the "dev" environment, define the system property "environment":
+
+    java -Denvironment=prod -jar target/log4j1-aws-appenders-example-*.jar

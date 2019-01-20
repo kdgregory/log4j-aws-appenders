@@ -19,7 +19,7 @@
         <layout class="com.kdgregory.logback.aws.JsonLayout">
             <enableHostname>true</enableHostname>
             <enableLocation>true</enableLocation>
-            <tags>applicationName=Logback-WebApp,runDate={date}</tags>
+            <tags>applicationName=Logback-WebApp,runDate={date},environment={env:deployment:dev}</tags>
         </layout>
     </appender>
 

@@ -187,11 +187,16 @@ public class Substitutions
      */
     private String substituteSysprop(String input)
     {
-        String propName = extractPropName("sysprop", input);
-        if (propName == null)
+        String rawPropName = extractPropName("sysprop", input);
+        if (rawPropName == null)
             return input;
 
-        return substitute("{" + "sysprop" + ":" + propName + "}", System.getProperty(propName), input);
+        String[] parts = rawPropName.split(":");
+        String propValue = System.getProperty(parts[0]);
+        if ((propValue == null) && (parts.length == 2))
+            propValue = parts[1];
+
+        return substitute("{" + "sysprop" + ":" + rawPropName + "}", propValue, input);
     }
 
 
@@ -200,11 +205,16 @@ public class Substitutions
      */
     private String substituteEnvar(String input)
     {
-        String propName = extractPropName("env", input);
-        if (propName == null)
+        String rawPropName = extractPropName("env", input);
+        if (rawPropName == null)
             return input;
 
-        return substitute("{" + "env" + ":" + propName + "}", System.getenv(propName), input);
+        String[] parts = rawPropName.split(":");
+        String propValue = System.getenv(parts[0]);
+        if ((propValue == null) && (parts.length == 2))
+            propValue = parts[1];
+
+        return substitute("{" + "env" + ":" + rawPropName + "}", propValue, input);
     }
 
 

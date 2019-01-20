@@ -153,8 +153,9 @@ public class TestSubstitutions
     @Test
     public void testEnvar() throws Exception  {
         Substitutions subs = new Substitutions(TEST_DATE, 0);
-        assertEquals(System.getenv("HOME"), subs.perform("{env:HOME}"));
-        assertEquals("{env:frobulator}", subs.perform("{env:frobulator}"));
+        assertEquals(System.getenv("HOME"),     subs.perform("{env:HOME}"));
+        assertEquals("{env:frobulator}",        subs.perform("{env:frobulator}"));
+        assertEquals("zippy",                   subs.perform("{env:frobulator:zippy}"));
     }
 
 
@@ -165,8 +166,9 @@ public class TestSubstitutions
         System.setProperty("TestSubstitutions.testSysprop", value);
 
         Substitutions subs = new Substitutions(TEST_DATE, 0);
-        assertEquals(value,                  subs.perform("{sysprop:TestSubstitutions.testSysprop}"));
-        assertEquals("{sysprop:frobulator}", subs.perform("{sysprop:frobulator}"));
+        assertEquals(value,                     subs.perform("{sysprop:TestSubstitutions.testSysprop}"));
+        assertEquals("{sysprop:frobulator}",    subs.perform("{sysprop:frobulator}"));
+        assertEquals("zippy",                   subs.perform("{sysprop:frobulator:zippy}"));
     }
 
 

@@ -70,15 +70,15 @@ public class TestSNSAppender
         assertEquals("topicName",           "example",                      appender.getTopicName());
         assertEquals("topicArn",            null,                           appender.getTopicArn());
 
-        assertTrue("autoCreate",                                            appender.getAutoCreate());
         assertEquals("subject",             "This is a test",               appender.getSubject());
-        assertFalse("synchronous mode",                                     appender.getSynchronous());
+        assertTrue("autoCreate",                                            appender.getAutoCreate());
         assertEquals("batch delay",         1L,                             appender.getBatchDelay());
         assertEquals("discard threshold",   123,                            appender.getDiscardThreshold());
         assertEquals("discard action",      "newest",                       appender.getDiscardAction());
-        assertEquals("client factory",      "com.example.Foo.bar",          appender.getClientFactory());
-        assertEquals("client endpoint",     "sns.us-east-2.amazonaws.com",  appender.getClientEndpoint());
+        assertEquals("client region",       "us-west-1",                    appender.getClientRegion());
+        assertEquals("client endpoint",     "sns.us-west-2.amazonaws.com",  appender.getClientEndpoint());
         assertFalse("use shutdown hook",                                    appender.getUseShutdownHook());
+        assertFalse("synchronous mode",                                     appender.getSynchronous());
     }
 
 
@@ -91,15 +91,16 @@ public class TestSNSAppender
         assertEquals("topicName",           null,                           appender.getTopicName());
         assertEquals("topicArn",            "arn-example",                  appender.getTopicArn());
 
-        assertFalse("autoCreate",                                           appender.getAutoCreate());
         assertEquals("subject",             null,                           appender.getSubject());
-        assertFalse("synchronous mode",                                     appender.getSynchronous());
+        assertFalse("autoCreate",                                           appender.getAutoCreate());
         assertEquals("batch delay",         1L,                             appender.getBatchDelay());
         assertEquals("discard threshold",   1000,                           appender.getDiscardThreshold());
         assertEquals("discard action",      "oldest",                       appender.getDiscardAction());
         assertEquals("client factory",      null,                           appender.getClientFactory());
+        assertEquals("client region",       null,                           appender.getClientRegion());
         assertEquals("client endpoint",     null,                           appender.getClientEndpoint());
         assertTrue("use shutdown hook",                                     appender.getUseShutdownHook());
+        assertFalse("synchronous mode",                                     appender.getSynchronous());
     }
 
 

@@ -86,16 +86,17 @@ public class TestKinesisAppender
         initialize("testConfiguration");
 
         assertEquals("stream name",         "argle-{bargle}",                   appender.getStreamName());
+        assertEquals("partition key",       "foo-{date}",                       appender.getPartitionKey());
         assertTrue("autoCreate",                                                appender.isAutoCreate());
         assertEquals("shard count",         7,                                  appender.getShardCount());
         assertEquals("retention period",    48,                                 appender.getRetentionPeriod());
-        assertEquals("partition key",       "foo-{date}",                       appender.getPartitionKey());
-        assertFalse("synchronous mode",                                         appender.getSynchronous());
         assertEquals("batch delay",         1234L,                              appender.getBatchDelay());
         assertEquals("discard threshold",   54321,                              appender.getDiscardThreshold());
         assertEquals("discard action",      "newest",                           appender.getDiscardAction());
         assertEquals("client factory",      "com.example.Foo.bar",              appender.getClientFactory());
-        assertEquals("client endpoint",     "kinesis.us-west-1.amazonaws.com",  appender.getClientEndpoint());
+        assertEquals("client region",       "us-west-1",                        appender.getClientRegion());
+        assertEquals("client endpoint",     "kinesis.us-west-2.amazonaws.com",  appender.getClientEndpoint());
+        assertFalse("synchronous mode",                                         appender.getSynchronous());
         assertFalse("use shutdown hook",                                        appender.getUseShutdownHook());
     }
 
@@ -110,12 +111,13 @@ public class TestKinesisAppender
         assertFalse("autoCreate",                                               appender.isAutoCreate());
         assertEquals("shard count",         1,                                  appender.getShardCount());
         assertEquals("retention period",    24,                                 appender.getRetentionPeriod());
-        assertFalse("synchronous mode",                                         appender.getSynchronous());
         assertEquals("batch delay",         2000L,                              appender.getBatchDelay());
         assertEquals("discard threshold",   10000,                              appender.getDiscardThreshold());
         assertEquals("discard action",      "oldest",                           appender.getDiscardAction());
         assertEquals("client factory",      null,                               appender.getClientFactory());
+        assertEquals("client region",       null,                               appender.getClientRegion());
         assertEquals("client endpoint",     null,                               appender.getClientEndpoint());
+        assertFalse("synchronous mode",                                         appender.getSynchronous());
         assertTrue("use shutdown hook",                                         appender.getUseShutdownHook());
     }
 

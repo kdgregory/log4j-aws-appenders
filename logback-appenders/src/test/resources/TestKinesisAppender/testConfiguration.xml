@@ -13,7 +13,8 @@
     <discardThreshold>54321</discardThreshold>
     <discardAction>newest</discardAction>
     <clientFactory>com.example.Foo.bar</clientFactory>
-    <clientEndpoint>kinesis.us-west-1.amazonaws.com</clientEndpoint>
+    <clientRegion>us-west-1</clientRegion>
+    <clientEndpoint>kinesis.us-west-2.amazonaws.com</clientEndpoint>
     <useShutdownHook>false</useShutdownHook>
     <layout class="ch.qos.logback.classic.PatternLayout">
       <pattern>%msg</pattern>

@@ -214,7 +214,7 @@ extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWrit
 
         return new KinesisWriterConfig(actualStreamName, actualPartitionKey,
                                        batchDelay, discardThreshold, discardAction,
-                                       clientFactory, clientEndpoint,
+                                       clientFactory, clientRegion, clientEndpoint,
                                        autoCreate, shardCount, retentionPeriod);
     }
 }

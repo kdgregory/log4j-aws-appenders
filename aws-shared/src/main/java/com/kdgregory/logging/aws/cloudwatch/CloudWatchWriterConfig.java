@@ -34,15 +34,16 @@ extends AbstractWriterConfig
      *                              message in batch.
      *  @param discardThreshold     Maximum number of messages to retain if unable to send.
      *  @param discardAction        What to do with unsent messages over the threshold.
-     *  @param clientFactoryMethod  Possibly-null FQN of a static method to create client.
-     *  @param clientEndpoint       Possibly-null endpoint for client.
+     *  @param clientFactoryMethod  Optional: fully-qualified name of a static method to create client.
+     *  @param clientRegion         Optional: explicit region for client (used with ctor and SDK builder).
+     *  @param clientEndpoint       Optional: explicit endpoint for client (only used with constructors).
      */
     public CloudWatchWriterConfig(
         String actualLogGroup, String actualLogStream,
         long batchDelay, int discardThreshold, DiscardAction discardAction,
-        String clientFactoryMethod, String clientEndpoint)
+        String clientFactoryMethod, String clientRegion, String clientEndpoint)
     {
-        super(batchDelay, discardThreshold, discardAction, clientFactoryMethod, clientEndpoint);
+        super(batchDelay, discardThreshold, discardAction, clientFactoryMethod, clientRegion, clientEndpoint);
 
         this.logGroupName = actualLogGroup;
         this.logStreamName = actualLogStream;

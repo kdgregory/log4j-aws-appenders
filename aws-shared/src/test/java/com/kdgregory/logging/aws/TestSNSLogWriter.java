@@ -96,6 +96,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
                 1000,                   // discardThreshold
                 DiscardAction.oldest,
                 null,                   // clientFactoryMethod
+                null,                   // clientRegion
                 null);                  // clientEndpoint
 
         stats = new SNSWriterStatistics();
@@ -726,7 +727,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("stats: topic ARN",                        TEST_TOPIC_ARN,             stats.getActualTopicArn());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
-                                              ".*created client from factory.*",
+                                              "creating client via factory.*" + config.clientFactoryMethod,
                                               "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }

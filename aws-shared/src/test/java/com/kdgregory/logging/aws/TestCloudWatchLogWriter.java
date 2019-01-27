@@ -92,6 +92,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             10000,                  // discard threshold
             DiscardAction.oldest,   // discard action
             null,                   // factory method
+            null,                   // region
             null);                  // endpoint
 
         stats = new CloudWatchWriterStatistics();
@@ -115,7 +116,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testConfiguration() throws Exception
     {
-        config = new CloudWatchWriterConfig("foo", "bar", 123, 456, DiscardAction.newest, "com.example.factory.Method", "us-west-1");
+        config = new CloudWatchWriterConfig("foo", "bar", 123, 456, DiscardAction.newest, "com.example.factory.Method", "us-west-1", "logs.us-west-1.amazonaws.com");
 
         writer = new CloudWatchLogWriter(config, stats, internalLogger, dummyClientFactory);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
@@ -123,6 +124,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("writer batch delay",                      123L,                   writer.getBatchDelay());
         assertEquals("message queue discard policy",            DiscardAction.newest,   messageQueue.getDiscardAction());
         assertEquals("message queue discard threshold",         456,                    messageQueue.getDiscardThreshold());
+
         assertEquals("stats: actual log group name",            "foo",                  stats.getActualLogGroupName());
         assertEquals("stats: actual log stream name",           "bar",                  stats.getActualLogStreamName());
     }
@@ -933,7 +935,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("stats: actual log stream name",           "bargle",                       stats.getActualLogStreamName());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
-                                              ".*created client from factory.*" + getClass().getName() + ".*",
+                                              "creating client via factory.*" + config.clientFactoryMethod,
                                               "using existing .* group: argle",
                                               "using existing .* stream: bargle",
                                               "log writer initialization complete.*");

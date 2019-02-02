@@ -36,13 +36,6 @@ extends AbstractWriterConfig
      *  @param streamName           Name of the stream where messages will be written.
      *  @param partitionKey         Partition key for messages written to stream. If blank
      *                              we'll generate a random partition key for each message.
-     *  @param batchDelay           Number of milliseconds to wait for messages to be
-     *                              ready to send.
-     *  @param discardThreshold     Maximum number of messages to retain if unable to send.
-     *  @param discardAction        What to do with unsent messages over the threshold.
-     *  @param clientFactoryMethod  Optional: fully-qualified name of a static method to create client.
-     *  @param clientRegion         Optional: explicit region for client (used with ctor and SDK builder).
-     *  @param clientEndpoint       Optional: explicit endpoint for client (only used with constructors).
      *  @param autoCreate           If true, stream will be created if it doesn't already
      *                              exist. If false, writer will fail to start.
      *  @param shardCount           Number of shards to use when creating the stream
@@ -50,12 +43,19 @@ extends AbstractWriterConfig
      *  @param retentionPeriod      Retention period to use when creating the stream
      *                              (ignored if stream already exists); null indicates
      *                              use the default retention period.
+     *  @param batchDelay           Number of milliseconds to wait for messages to be
+     *                              ready to send.
+     *  @param discardThreshold     Maximum number of messages to retain if unable to send.
+     *  @param discardAction        What to do with unsent messages over the threshold.
+     *  @param clientFactoryMethod  Optional: fully-qualified name of a static method to create client.
+     *  @param clientRegion         Optional: explicit region for client (used with ctor and SDK builder).
+     *  @param clientEndpoint       Optional: explicit endpoint for client (only used with constructors).
      */
     public KinesisWriterConfig(
         String streamName, String partitionKey,
+        boolean autoCreate, int shardCount, Integer retentionPeriod,
         long batchDelay, int discardThreshold, DiscardAction discardAction,
-        String clientFactoryMethod, String clientRegion, String clientEndpoint,
-        boolean autoCreate, int shardCount, Integer retentionPeriod)
+        String clientFactoryMethod, String clientRegion, String clientEndpoint)
     {
         super(batchDelay, discardThreshold, discardAction, clientFactoryMethod, clientRegion, clientEndpoint);
 

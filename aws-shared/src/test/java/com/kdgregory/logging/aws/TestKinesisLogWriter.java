@@ -95,14 +95,14 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         config = new KinesisWriterConfig(
             DEFAULT_STREAM_NAME,
             DEFAULT_PARTITION_KEY,
-            100,                            // batchDelay
-            10000,                          // discardThreshold
-            DiscardAction.oldest,
-            null,                           // clientFactoryMethod
-            null,                           // clientRegion
-            null,                           // clientEndpoint
-            false,                          // autoCreate
-            0,                              // shardCount,
+            false,                            // batchDelay
+            0,                          // discardThreshold
+            null,
+            100,                           // clientFactoryMethod
+            10000,                           // clientRegion
+            DiscardAction.oldest,                           // clientEndpoint
+            null,                          // autoCreate
+            null,                              // shardCount,
             null);                          // retentionPeriod
 
         stats = new KinesisWriterStatistics();
@@ -131,14 +131,14 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         config = new KinesisWriterConfig(
             DEFAULT_STREAM_NAME,
             DEFAULT_PARTITION_KEY,
-            123,                            // batchDelay
-            456,                            // discardThreshold
-            DiscardAction.newest,
-            null,                           // clientFactoryMethod
-            null,                           // clientRegion
-            null,                           // clientEndpoint
-            false,                          // autoCreate
-            0,                              // shardCount,
+            false,                            // batchDelay
+            0,                            // discardThreshold
+            null,
+            123,                           // clientFactoryMethod
+            456,                           // clientRegion
+            DiscardAction.newest,                           // clientEndpoint
+            null,                          // autoCreate
+            null,                              // shardCount,
             null);                          // retentionPeriod
 
         writer = new KinesisLogWriter(config, stats, internalLogger, dummyClientFactory);

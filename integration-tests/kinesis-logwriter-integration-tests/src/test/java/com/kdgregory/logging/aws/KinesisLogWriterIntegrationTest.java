@@ -170,7 +170,7 @@ public class KinesisLogWriterIntegrationTest
 
         stats = new KinesisWriterStatistics();
         internalLogger = new TestableInternalLogger();
-        config = new KinesisWriterConfig(testHelper.getStreamName(), "{random}", 250, 10000, DiscardAction.oldest, factoryMethod, region, endpoint, true, 1, null);
+        config = new KinesisWriterConfig(testHelper.getStreamName(), "{random}", true, 1, null, 250, 10000, DiscardAction.oldest, factoryMethod, region, endpoint);
         factory = new KinesisWriterFactory();
         writer = (KinesisLogWriter)factory.newLogWriter(config, stats, internalLogger);
 

@@ -210,8 +210,8 @@ extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWrit
         actualPartitionKey = subs.perform(partitionKey);
 
         return new KinesisWriterConfig(actualStreamName, actualPartitionKey,
+                                       autoCreate, shardCount, retentionPeriod,
                                        batchDelay, discardThreshold, discardAction,
-                                       clientFactory, clientRegion, clientEndpoint,
-                                       autoCreate, shardCount, retentionPeriod);
+                                       clientFactory, clientRegion, clientEndpoint);
     }
 }

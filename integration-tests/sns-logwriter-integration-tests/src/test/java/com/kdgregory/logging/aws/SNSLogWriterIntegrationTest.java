@@ -168,7 +168,7 @@ public class SNSLogWriterIntegrationTest
 
         stats = new SNSWriterStatistics();
         internalLogger = new TestableInternalLogger();
-        config = new SNSWriterConfig(testHelper.getTopicName(), null, true, "integration test", 10000, DiscardAction.oldest, factoryMethod, region, endpoint);
+        config = new SNSWriterConfig(testHelper.getTopicName(), null, "integration test", true, 10000, DiscardAction.oldest, factoryMethod, region, endpoint);
         factory = new SNSWriterFactory();
         writer = (SNSLogWriter)factory.newLogWriter(config, stats, internalLogger);
 

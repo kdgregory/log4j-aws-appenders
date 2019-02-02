@@ -109,6 +109,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     protected volatile long             rotationInterval;
     protected AtomicInteger             sequence;
     protected String                    clientFactory;
+    protected String                    clientRegion;
     protected String                    clientEndpoint;
     protected boolean                   useShutdownHook;
 
@@ -396,6 +397,24 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     public String getClientFactory()
     {
         return clientFactory;
+    }
+
+
+    /**
+     *  Sets the service region. This is only used for clients created by SDK
+     *  builders and dirct constructors, not for clients created by a user
+     *  implemented client factory. Not that the region must be supported by
+     *  the current SDK version.
+     */
+    public void setClientRegion(String value)
+    {
+        this.clientRegion = value;
+    }
+
+
+    public String getClientRegion()
+    {
+        return clientRegion;
     }
 
 

@@ -291,6 +291,44 @@ public class SNSAppenderIntegrationTest
         localLogger.info("finished");
     }
 
+
+    @Test
+    public void testAlternateRegion() throws Exception
+    {
+        final int numMessages = 11;
+
+        init("testAlternateRegion", false);
+        localLogger.info("starting");
+
+        // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
+        //         if that is your default, then the test will fail
+        AmazonSNS altSNSclient = AmazonSNSClientBuilder.standard().withRegion("us-east-2").build();
+        AmazonSQS altSQSclient = AmazonSQSClientBuilder.standard().withRegion("us-east-2").build();
+        SNSTestHelper altTestHelper = new SNSTestHelper(testHelper, altSNSclient, altSQSclient);
+
+        Logger testLogger = Logger.getLogger("TestLogger");
+        SNSAppender appender = (SNSAppender)testLogger.getAppender("test");
+        SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
+
+        localLogger.info("writing messages");
+        (new MessageWriter(testLogger, numMessages)).run();
+
+        localLogger.info("waiting for writer initialization to finish");
+        CommonTestHelper.waitUntilWriterInitialized(appender, SNSLogWriter.class, 30000);
+
+        assertNotEmpty("topic was created",                  altTestHelper.lookupTopic());
+        assertNull("topic does not exist in default region", testHelper.lookupTopic());
+
+        assertEquals("actual topic name, from statistics",  altTestHelper.getTopicName(),      appenderStats.getActualTopicName());
+        assertEquals("actual topic ARN, from statistics",   altTestHelper.getTopicARN(),       appenderStats.getActualTopicArn());
+
+        // no queue attached to this topic so we can't read messages directly
+
+        CommonTestHelper.waitUntilMessagesSent(appenderStats, numMessages, 30000);
+
+        localLogger.info("finished");
+    }
+
 //----------------------------------------------------------------------------
 //  Helpers
 //----------------------------------------------------------------------------

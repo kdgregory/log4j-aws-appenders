@@ -25,8 +25,6 @@ import static org.junit.Assert.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.sf.kdgcommons.collections.CollectionUtil;
-
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.*;
 
@@ -39,6 +37,10 @@ import com.amazonaws.services.logs.model.*;
  */
 public class CloudWatchTestHelper
 {
+    private final static long WAIT_FOR_READY_TIMEOUT_MS     = 60000;
+    private final static long WAIT_FOR_DELETED_TIMEOUT_MS   = 60000;
+    private final static long RETRIEVE_TIMEOUT_MS           =  4000;
+
     private Logger localLogger = LoggerFactory.getLogger(getClass());
 
     private AWSLogs client;
@@ -102,14 +104,16 @@ public class CloudWatchTestHelper
         localLogger.debug("retrieving messages from {}", logStreamName);
 
         ensureLogStreamAvailable(logStreamName);
+
         GetLogEventsRequest request = new GetLogEventsRequest()
                               .withLogGroupName(logGroupName)
                               .withLogStreamName(logStreamName)
                               .withStartFromHead(Boolean.TRUE);
 
-        // once you've read all outstanding messages, the request will return the same token
-        // so we try to read at least one response, and repeat until the token doesn't change
+        // sequence tokens stop changing when we're at the end of the stream; we add
+        // a minimum timeout to give the best chance of finding something
 
+        long timeoutAt = System.currentTimeMillis() + RETRIEVE_TIMEOUT_MS;
         String prevToken = "";
         String nextToken = "";
         do
@@ -120,7 +124,7 @@ public class CloudWatchTestHelper
             nextToken = response.getNextForwardToken();
             request.setNextToken(nextToken);
             Thread.sleep(500);
-        } while (! prevToken.equals(nextToken));
+        } while ((System.currentTimeMillis() < timeoutAt) || (! prevToken.equals(nextToken)));
 
         localLogger.debug("retrieved {} messages from {}", result.size(), logStreamName);
 
@@ -138,27 +142,15 @@ public class CloudWatchTestHelper
     {
         localLogger.debug("waiting for stream {} to be available", logStreamName);
 
-        for (int ii = 0 ; ii < 60 ; ii++)
+        long timeoutAt = System.currentTimeMillis() + WAIT_FOR_READY_TIMEOUT_MS;
+        while (System.currentTimeMillis() < timeoutAt)
         {
-            try
-            {
-                DescribeLogStreamsRequest reqest = new DescribeLogStreamsRequest()
-                                                   .withLogGroupName(logGroupName)
-                                                   .withLogStreamNamePrefix(logStreamName);
-                DescribeLogStreamsResult response = client.describeLogStreams(reqest);
-                List<LogStream> streams = response.getLogStreams();
-                if ((streams != null) && (streams.size() > 0))
-                {
-                    return;
-                }
-            }
-            catch (ResourceNotFoundException ignored)
-            {
-                // this indicates that the log group isn't available
-            }
+            if (isLogStreamAvailable(logStreamName))
+                return;
+
             Thread.sleep(1000);
         }
-        fail("stream \"" + logGroupName + "/" + logStreamName + "\" wasn't ready within 60 seconds");
+        fail("stream \"" + logGroupName + "/" + logStreamName + "\" wasn't ready within " + WAIT_FOR_READY_TIMEOUT_MS/1000 + " seconds");
     }
 
 
@@ -181,7 +173,8 @@ public class CloudWatchTestHelper
             return;
         }
 
-        for (int ii = 0 ; ii < 60 ; ii++)
+        long timeoutAt = System.currentTimeMillis() + WAIT_FOR_DELETED_TIMEOUT_MS;
+        while (System.currentTimeMillis() < timeoutAt)
         {
             DescribeLogGroupsRequest request = new DescribeLogGroupsRequest().withLogGroupNamePrefix(logGroupName);
             DescribeLogGroupsResult response = client.describeLogGroups(request);
@@ -191,7 +184,7 @@ public class CloudWatchTestHelper
             }
             Thread.sleep(1000);
         }
-        fail("log group\"" + logGroupName + "\" still exists after 60 seconds");
+        fail("log group\"" + logGroupName + "\" still exists after " + WAIT_FOR_DELETED_TIMEOUT_MS / 1000 + " seconds");
     }
 
 
@@ -204,15 +197,36 @@ public class CloudWatchTestHelper
         localLogger.debug("deleting log stream {}", logStreamName);
 
         client.deleteLogStream(new DeleteLogStreamRequest().withLogGroupName(logGroupName).withLogStreamName(logStreamName));
+
         boolean stillExists = true;
-        for (int ii = 0 ; ii < 60 && stillExists ; ii++)
+        long timeoutAt = System.currentTimeMillis() + WAIT_FOR_DELETED_TIMEOUT_MS;
+        while (stillExists && (System.currentTimeMillis() < timeoutAt))
         {
-            DescribeLogStreamsResult describeResult = client.describeLogStreams(
-                                                            new DescribeLogStreamsRequest()
-                                                            .withLogGroupName(logGroupName)
-                                                            .withLogStreamNamePrefix(logStreamName));
-            stillExists = CollectionUtil.isNotEmpty(describeResult.getLogStreams());
+            stillExists = isLogStreamAvailable(logStreamName);
         }
         assertFalse("stream was removed", stillExists);
+    }
+
+
+    /**
+     *  Determines whether the named log stream is available.
+     */
+    public boolean isLogStreamAvailable(String logStreamName)
+    {
+        List<LogStream> streams = null;
+        try
+        {
+            DescribeLogStreamsRequest reqest = new DescribeLogStreamsRequest()
+                                               .withLogGroupName(logGroupName)
+                                               .withLogStreamNamePrefix(logStreamName);
+            DescribeLogStreamsResult response = client.describeLogStreams(reqest);
+            streams = response.getLogStreams();
+        }
+        catch (ResourceNotFoundException ignored)
+        {
+            // this indicates that the log group isn't available, so fall through
+        }
+
+        return ((streams != null) && (streams.size() > 0));
     }
 }

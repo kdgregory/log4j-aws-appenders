@@ -99,6 +99,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
             10000,                          // discardThreshold
             DiscardAction.oldest,
             null,                           // clientFactoryMethod
+            null,                           // clientRegion
             null,                           // clientEndpoint
             false,                          // autoCreate
             0,                              // shardCount,
@@ -131,9 +132,10 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
             DEFAULT_STREAM_NAME,
             DEFAULT_PARTITION_KEY,
             123,                            // batchDelay
-            456,                          // discardThreshold
+            456,                            // discardThreshold
             DiscardAction.newest,
             null,                           // clientFactoryMethod
+            null,                           // clientRegion
             null,                           // clientEndpoint
             false,                          // autoCreate
             0,                              // shardCount,
@@ -784,7 +786,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("stats: actual stream name",               DEFAULT_STREAM_NAME,        stats.getActualStreamName());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
-                                              ".*created client from factory.*",
+                                              "creating client via factory.*" + config.clientFactoryMethod,
                                               "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }

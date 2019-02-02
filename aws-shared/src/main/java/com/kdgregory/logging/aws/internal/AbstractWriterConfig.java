@@ -25,6 +25,7 @@ public class AbstractWriterConfig
     public volatile int discardThreshold;
     public volatile DiscardAction discardAction;
     public String clientFactoryMethod;
+    public String clientRegion;
     public String clientEndpoint;
 
     /**
@@ -32,17 +33,19 @@ public class AbstractWriterConfig
      *                              message in batch. May be updated while running.
      *  @param discardThreshold     Maximum number of messages to retain if unable to send.
      *  @param discardAction        What to do with unsent messages over the threshold.
-     *  @param clientFactoryMethod  Possibly-null FQN of a static method to create client.
-     *  @param clientEndpoint       Possibly-null endpoint for client.
+     *  @param clientFactoryMethod  Optional: fully-qualified name of a static method to create client.
+     *  @param clientRegion         Optional: explicit region for client (used with ctor and SDK builder).
+     *  @param clientEndpoint       Optional: explicit endpoint for client (only used with constructors).
      */
     public AbstractWriterConfig(
         long batchDelay, int discardThreshold, DiscardAction discardAction,
-        String clientFactoryMethod, String clientEndpoint)
+        String clientFactoryMethod, String clientRegion, String clientEndpoint)
     {
         this.batchDelay = batchDelay;
         this.discardThreshold = discardThreshold;
         this.discardAction = discardAction;
         this.clientFactoryMethod = clientFactoryMethod;
+        this.clientRegion = clientRegion;
         this.clientEndpoint = clientEndpoint;
     }
 }

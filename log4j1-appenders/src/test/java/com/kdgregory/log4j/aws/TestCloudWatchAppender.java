@@ -86,7 +86,6 @@ public class TestCloudWatchAppender
 
         assertEquals("log group name",      "argle",                        appender.getLogGroup());
         assertEquals("log stream name",     "bargle",                       appender.getLogStream());
-        assertFalse("synchronous mode",                                     appender.getSynchronous());
         assertEquals("batch delay",         9876L,                          appender.getBatchDelay());
         assertEquals("sequence",            2,                              appender.getSequence());
         assertEquals("rotation mode",       "interval",                     appender.getRotationMode());
@@ -94,7 +93,9 @@ public class TestCloudWatchAppender
         assertEquals("discard threshold",   12345,                          appender.getDiscardThreshold());
         assertEquals("discard action",      "newest",                       appender.getDiscardAction());
         assertEquals("client factory",      "com.example.Foo.bar",          appender.getClientFactory());
+        assertEquals("client region",       "us-west-1",                    appender.getClientRegion());
         assertEquals("client endpoint",     "logs.us-west-2.amazonaws.com", appender.getClientEndpoint());
+        assertFalse("synchronous mode",                                     appender.getSynchronous());
         assertFalse("use shutdown hook",                                    appender.getUseShutdownHook());
     }
 
@@ -108,7 +109,6 @@ public class TestCloudWatchAppender
         assertNull("log group name",                                        appender.getLogGroup());
 
         assertEquals("log stream name",     "{startupTimestamp}",           appender.getLogStream());
-        assertFalse("synchronous mode",                                     appender.getSynchronous());
         assertEquals("batch delay",         2000L,                          appender.getBatchDelay());
         assertEquals("sequence",            0,                              appender.getSequence());
         assertEquals("rotation mode",       "none",                         appender.getRotationMode());
@@ -116,7 +116,9 @@ public class TestCloudWatchAppender
         assertEquals("discard threshold",   10000,                          appender.getDiscardThreshold());
         assertEquals("discard action",      "oldest",                       appender.getDiscardAction());
         assertEquals("client factory",      null,                           appender.getClientFactory());
+        assertEquals("client region",       null,                           appender.getClientRegion());
         assertEquals("client endpoint",     null,                           appender.getClientEndpoint());
+        assertFalse("synchronous mode",                                     appender.getSynchronous());
         assertTrue("use shutdown hook",                                     appender.getUseShutdownHook());
     }
 

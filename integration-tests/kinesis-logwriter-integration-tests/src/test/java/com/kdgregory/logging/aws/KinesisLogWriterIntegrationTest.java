@@ -20,11 +20,13 @@ import java.util.List;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import static org.junit.Assert.*;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.slf4j.Logger;
 
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
 
@@ -42,8 +44,12 @@ import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 
 public class KinesisLogWriterIntegrationTest
 {
-    // single client is shared by all tests
-    private static AmazonKinesis kinesisClient;
+    // single client is shared by all tests;
+    // note we're using actual client rather than interface
+    private static AmazonKinesisClient kinesisClient;
+
+    // this client is used for alternate-endpoint tests
+    private AmazonKinesisClient altClient;
 
     // this is for logging within the test
     private Logger localLogger = LoggerFactory.getLogger(getClass());
@@ -68,6 +74,7 @@ public class KinesisLogWriterIntegrationTest
         kinesisClient = new AmazonKinesisClient();
     }
 
+
     @After
     public void tearDown()
     {
@@ -75,6 +82,12 @@ public class KinesisLogWriterIntegrationTest
         {
             writer.stop();
         }
+
+        if (altClient != null)
+        {
+            altClient.shutdown();
+        }
+
         localLogger.info("finished");
         MDC.clear();
     }
@@ -88,7 +101,7 @@ public class KinesisLogWriterIntegrationTest
     {
         final int numMessages = 1001;
 
-        init("logwriter-smoketest");
+        init("logwriter-smoketest", kinesisClient, null, null, null);
 
         new MessageWriter(numMessages).run();
 
@@ -97,23 +110,67 @@ public class KinesisLogWriterIntegrationTest
         testHelper.assertRandomPartitionKeys(records, numMessages);
     }
 
+
+    @Test
+    public void testAlternateRegion() throws Exception
+    {
+        final int numMessages = 1001;
+
+        // default region for constructor is always us-east-1
+        altClient = new AmazonKinesisClient().withRegion(Regions.US_WEST_1);
+
+        init("logwriter-testAlternateRegion", altClient, null, "us-west-1", null);
+
+        new MessageWriter(numMessages).run();
+
+        List<RetrievedRecord> records = testHelper.retrieveAllMessages(numMessages);
+        testHelper.assertMessages(records, 1, numMessages);
+        testHelper.assertRandomPartitionKeys(records, numMessages);
+
+        assertNull("stream does not exist in default region",
+                   (new KinesisTestHelper(kinesisClient, "logwriter-testAlternateRegion")).describeStream());
+    }
+
+
+    @Test
+    public void testAlternateEndpoint() throws Exception
+    {
+        final int numMessages = 1001;
+
+        // the goal here is to verify that we can use a region that didn't exist when 1.11.0 came out
+        // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
+        //         if that is your default, then the test will fail
+        altClient = new AmazonKinesisClient().withEndpoint("kinesis.us-east-2.amazonaws.com");
+
+        init("logwriter-testAlternateEndpoint", altClient, null, null, "kinesis.us-east-2.amazonaws.com");
+
+        new MessageWriter(numMessages).run();
+
+        List<RetrievedRecord> records = testHelper.retrieveAllMessages(numMessages);
+        testHelper.assertMessages(records, 1, numMessages);
+        testHelper.assertRandomPartitionKeys(records, numMessages);
+
+        assertNull("stream does not exist in default region",
+                   (new KinesisTestHelper(kinesisClient, "logwriter-testAlternateEndpoint")).describeStream());
+    }
+
 //----------------------------------------------------------------------------
 //  Helpers
 //----------------------------------------------------------------------------
 
-    private void init(String testName)
+    private void init(String testName, AmazonKinesis client, String factoryMethod, String region, String endpoint)
     throws Exception
     {
         MDC.put("testName", testName);
         localLogger.info("starting");
 
-        testHelper = new KinesisTestHelper(kinesisClient, testName);
+        testHelper = new KinesisTestHelper(client, testName);
 
         testHelper.deleteStreamIfExists();
 
         stats = new KinesisWriterStatistics();
         internalLogger = new TestableInternalLogger();
-        config = new KinesisWriterConfig(testHelper.getStreamName(), "{random}", 250, 10000, DiscardAction.oldest, null, null, true, 1, null);
+        config = new KinesisWriterConfig(testHelper.getStreamName(), "{random}", 250, 10000, DiscardAction.oldest, factoryMethod, region, endpoint, true, 1, null);
         factory = new KinesisWriterFactory();
         writer = (KinesisLogWriter)factory.newLogWriter(config, stats, internalLogger);
 

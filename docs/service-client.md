@@ -31,23 +31,35 @@ The appender tries each of the following creation mechanisms, in order:
 
 ## Endpoint Configuration
 
-The client constructors are hardcoded to use the `us-east-1` region; if you run in a different
-region you will need to change that. The appenders try the following, in order:
+### Older SDKs
 
-1. If the `clientEndpoint` configuration parameter is defined, the appender calls `setEndpoint()`
-   with that value. Endpoints for CloudWatch Logs are defined
-   [here](https://docs.aws.amazon.com/general/latest/gr/rande.html#cwl_region), Kinesis
-   [here](https://docs.aws.amazon.com/general/latest/gr/rande.html#ak_region), and SNS
-   [here](https://docs.aws.amazon.com/general/latest/gr/rande.html#sns_region). Setting the
-   endpoint is the best option for an older SDK, because regions are hardcoded into the SDK.
-2. If the `clientRegion` configuration parameter is defined, the appender calls `setRegion()
-   with that value. Note that this uses a lookup against a predefined region enum, so may
-   only be used with regions explicitly supported by your AWS SDK version.
-3. If the `AWS_REGION` environment variable is defined, the appender calls `setRegion()`
-   with that value. Note that this uses a lookup against a predefined region enum, so may
-   only be used with regions explicitly supported by your AWS SDK version.
+The service-client constructors always default to the `us-east-1` region. If you're running with
+and older SDK and want to change the region that the appenders use for logging, you have three
+options (these are tried in order):
 
-The `clientRegion` configuration parameter may also be used with service clients created via
-the SDK factory methods. This is only necessary if you want to direct logging output to a
-different region than the one where you're running: by default the client builders use a
-region provider to get the current region.
+1. Define the `clientEndpoint` configuration parameter. This specifies an explicit hostname,
+   and is the preferred approach due to the limitations of specifying a region. Endpoints for
+   CloudWatch Logs are listed [here](https://docs.aws.amazon.com/general/latest/gr/rande.html#cwl_region),
+   Kinesis [here](https://docs.aws.amazon.com/general/latest/gr/rande.html#ak_region),
+   and SNS [here](https://docs.aws.amazon.com/general/latest/gr/rande.html#sns_region).
+2. Define the `clientRegion` configuration parameter. Beware, however, that supported
+   regions are hardcoded into the SDK, and most of the current regions didn't exist
+   when the early 1.11.x SDKs were released.
+3. Define the `AWS_REGION` environment variable. This has the same limitations as the
+   `clientRegion` configuration parameter.
+
+### Newer SDKs
+
+The AWS "builder" classes use a [region provider chain](https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/regions/AwsRegionProviderChain.html)
+to identify the service endpoint they should use: this chain will look at environment variables,
+user configuration, and (for deployments on EC2 or Lambda) the region where the application is
+running.
+
+While this is sufficient for most applications, you may want to centralize your logging in a
+specific region. To support this, you can use the `clientRegion` configuration parameter.
+Beware, however, that not all regions may be supported by your version of the SDK; you may
+need to upgrade.
+
+The `clientEndpoint` configuration parameter is not supported for builder-created service
+clients because endpoint configuration of those clients requires an additional "signing
+region" parameter.

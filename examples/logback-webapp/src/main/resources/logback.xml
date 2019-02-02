@@ -2,7 +2,7 @@
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{ISO8601} %-5level [%thread] %logger{24} - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -10,7 +10,7 @@
         <logGroup>AppenderExample</logGroup>
         <logStream>WebApp-{date}-{hostname}-{pid}</logStream>
         <layout class="ch.qos.logback.classic.PatternLayout">
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{ISO8601} %-5level [%thread] %logger{24} - %msg%n</pattern>
         </layout>
     </appender>
 
@@ -27,7 +27,7 @@
         <topicName>AppenderExample</topicName>
         <subject>Error from logging example</subject>
         <layout class="ch.qos.logback.classic.PatternLayout">
-            <pattern>%d{HH:mm:ss.SSS} %logger{36} - %msg%n</pattern>
+            <pattern>%d{ISO8601} %-5level [%thread] %logger{24} - %msg%n</pattern>
         </layout>
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>ERROR</level>

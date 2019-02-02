@@ -52,3 +52,59 @@ backwards compatible.
 Any other classes, particularly those under packages named `internal`, may change arbitrarily
 and should not be relied-upon by user code. This caveat also applies to all test classes and
 packages.
+
+
+## Cleaning up after integration tests
+
+The integration tests create AWS resources but do not delete them; this is intentional, to
+support post-mortem debugging. However, some of those resources incur a per-hour charge,
+and in general you don't want to have a lot of unused/untagged resources in your account.
+
+Assuming that you're using Bash, you can clean up these reources with this script. It
+assumes that you're running in the `us-east-1` region; if you're running elsewhere,
+add your region to the list in the first line.
+
+**Beware:** these snippets delete all resources with "IntegrationTest" in their name.
+If you're creating your own test resources, they may be deleted as well.
+
+```
+#!/bin/bash
+
+echo "CloudWatch Logs"
+for r in 'us-east-1' 'us-east-2' 'us-west-1' 'us-west-2' ; \
+    do for g in $(aws logs describe-log-groups --region $r --query 'logGroups[].logGroupName' | grep IntegrationTest | sed -e 's/[ ",]*//g') ; \
+        do echo $r " - " $g ; \
+        aws logs delete-log-group --region $r --log-group-name $g ; \
+    done ; \
+done
+
+echo "Kinesis"
+for r in 'us-east-1' 'us-east-2' 'us-west-1' 'us-west-2' ; \
+    do for s in $(aws kinesis list-streams --region $r --output text | grep IntegrationTest | awk '{print $2}') ; \
+        do echo $r " - " $s ; \
+        aws kinesis delete-stream --region $r --stream-name $s ; \
+    done ; \
+done
+
+echo "SNS"
+for r in 'us-east-1' 'us-east-2' 'us-west-1' 'us-west-2' ; \
+    do for t in $(aws sns list-topics --region $r --output text | grep IntegrationTest | awk '{print $2}') ; \
+        do echo $r " - " $t ; \
+        aws sns delete-topic --region $r --topic-arn $t ; \
+    done ; \
+done
+
+for r in 'us-east-1' 'us-east-2' 'us-west-1' 'us-west-2' ; \
+    do for s in $(aws sns list-subscriptions --region $r --query 'Subscriptions[].SubscriptionArn' | grep IntegrationTest | sed -e 's/[ ",]*//g') ; \
+        do echo $r " - " $s ; \
+        aws sns unsubscribe --region $r --subscription-arn $s ; \
+    done ; \
+done
+
+for r in 'us-east-1' 'us-east-2' 'us-west-1' 'us-west-2' ; \
+    do for q in $(aws sqs list-queues --region $r | grep IntegrationTest | sed -e 's/[ ",]*//g') ; \
+        do echo $r " - " $q ; \
+        aws sqs delete-queue --region $r --queue-url $q ; \
+    done ; \
+done
+```

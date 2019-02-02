@@ -1,6 +1,6 @@
 # Change History
 
-## 2.1.2 (TBD)
+## 2.2.0 (TBD)
 
 * Add a shutdown hook to avoid losing queued messages when the main thread exits.
   ([#35](https://github.com/kdgregory/log4j-aws-appenders/issues/35))

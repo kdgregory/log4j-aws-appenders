@@ -90,8 +90,7 @@ public class CloudWatchAppenderIntegrationTest
 
         (new MessageWriter(testLogger, numMessages)).run();
 
-        localLogger.info("all messages written; sleeping to give writers chance to run");
-        Thread.sleep(3000);
+        localLogger.info("all messages written");
 
         testHelper.assertMessages(LOGSTREAM_BASE + "-1", rotationCount);
         testHelper.assertMessages(LOGSTREAM_BASE + "-2", rotationCount);
@@ -142,8 +141,7 @@ public class CloudWatchAppenderIntegrationTest
         };
         MessageWriter.runOnThreads(writers);
 
-        localLogger.info("all threads started; sleeping to give writer chance to run");
-        Thread.sleep(3000);
+        localLogger.info("all threads started");
 
         testHelper.assertMessages(LOGSTREAM_BASE + "-1", rotationCount);
         testHelper.assertMessages(LOGSTREAM_BASE + "-2", rotationCount);
@@ -169,8 +167,7 @@ public class CloudWatchAppenderIntegrationTest
             new MessageWriter(Logger.getLogger("TestLogger2"), messagesPerThread),
             new MessageWriter(Logger.getLogger("TestLogger3"), messagesPerThread));
 
-        localLogger.info("all threads started; sleeping to give writer chance to run");
-        Thread.sleep(3000);
+        localLogger.info("all threads started");
 
         testHelper.assertMessages(LOGSTREAM_BASE + "-1", messagesPerThread);
         testHelper.assertMessages(LOGSTREAM_BASE + "-2", messagesPerThread);
@@ -213,8 +210,7 @@ public class CloudWatchAppenderIntegrationTest
             new MessageWriter(Logger.getLogger("TestLogger4"), messagesPerThread),
             new MessageWriter(Logger.getLogger("TestLogger5"), messagesPerThread));
 
-        localLogger.info("all threads started; sleeping to give writer chance to run");
-        Thread.sleep(30000);    // sleep determined experimentally
+        localLogger.info("all threads started");
 
         testHelper.assertMessages(LOGSTREAM_BASE, messagesPerThread * 20);
 
@@ -253,7 +249,7 @@ public class CloudWatchAppenderIntegrationTest
     @Test
     public void testLogstreamDeletionAndRecreation() throws Exception
     {
-        final int numMessages      = 100;
+        final int numMessages = 100;
 
         init("testLogstreamDeletionAndRecreation");
         localLogger.info("starting");
@@ -263,8 +259,7 @@ public class CloudWatchAppenderIntegrationTest
 
         (new MessageWriter(testLogger, numMessages)).run();
 
-        localLogger.info("first batch of messages written; sleeping to give writer chance to run");
-        Thread.sleep(3000);
+        localLogger.info("first batch of messages written");
 
         testHelper.assertMessages(LOGSTREAM_BASE, numMessages);
 
@@ -273,8 +268,7 @@ public class CloudWatchAppenderIntegrationTest
 
         (new MessageWriter(testLogger, numMessages)).run();
 
-        localLogger.info("second batch of messages written; sleeping to give writer chance to run");
-        Thread.sleep(3000);
+        localLogger.info("second batch of messages written");
 
         // the original batch of messages will be gone, so we can assert the new batch was written
         testHelper.assertMessages(LOGSTREAM_BASE, numMessages);
@@ -284,9 +278,38 @@ public class CloudWatchAppenderIntegrationTest
         localLogger.info("finished");
     }
 
+
+    @Test
+    public void testAlternateRegion() throws Exception
+    {
+        final int numMessages = 1001;
+
+        init("testAlternateRegion");
+        localLogger.info("starting");
+
+        // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
+        //         if that is your default, then the test will fail
+        AWSLogs altClient = AWSLogsClientBuilder.standard().withRegion("us-east-2").build();
+        CloudWatchTestHelper altTestHelper = new CloudWatchTestHelper(altClient, "AppenderIntegrationTest-testAlternateRegion");
+
+        Logger testLogger = Logger.getLogger("TestLogger");
+        CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test");
+
+        (new MessageWriter(testLogger, numMessages)).run();
+
+        localLogger.info("all messages written");
+
+        altTestHelper.assertMessages(LOGSTREAM_BASE, numMessages);
+        assertFalse("logstream does not exist in default region", testHelper.isLogStreamAvailable(LOGSTREAM_BASE));
+
+        assertEquals("stats: messages written",  numMessages,  appender.getAppenderStatistics().getMessagesSent());
+
+        localLogger.info("finished");
+    }
+
 //----------------------------------------------------------------------------
-//  Tests for synchronous operation -- this is common code, so will only be
-//  tested with the CloudWatch client
+//  Tests for synchronous operation -- this is handled in AbstractAppender,
+//  so only needs to be tested for one appender type
 //----------------------------------------------------------------------------
 
     @Test
@@ -303,10 +326,6 @@ public class CloudWatchAppenderIntegrationTest
         (new MessageWriter(testLogger, 1)).run();
 
         assertEquals("number of messages recorded in stats", 1, appender.getAppenderStatistics().getMessagesSent());
-
-        // with just a single message the logstream may not show the message right away
-        // so we'll do a sleep (better would be to change the retrieval code?)
-        Thread.sleep(2000);
 
         testHelper.assertMessages(LOGSTREAM_BASE, 1);
     }
@@ -336,14 +355,12 @@ public class CloudWatchAppenderIntegrationTest
         };
         MessageWriter.runOnThreads(writers);
 
-        localLogger.info("all threads started; sleeping to give writer chance to run");
-        Thread.sleep(3000);
+        localLogger.info("all threads started");
 
         assertEquals("number of messages recorded in stats", messagesPerThread * 5, appender.getAppenderStatistics().getMessagesSent());
 
         testHelper.assertMessages(LOGSTREAM_BASE, messagesPerThread * 5);
     }
-
 
 //----------------------------------------------------------------------------
 //  Helpers

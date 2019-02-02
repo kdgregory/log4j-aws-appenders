@@ -239,6 +239,32 @@ public class KinesisAppenderIntegrationTest
         localLogger.info("finished");
     }
 
+
+    @Test
+    public void testAlternateRegion() throws Exception
+    {
+        final int numMessages = 1001;
+
+        init("testAlternateRegion");
+        localLogger.info("starting");
+
+        // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
+        //         if that is your default, then the test will fail
+        AmazonKinesis altClient = AmazonKinesisClientBuilder.standard().withRegion("us-east-2").build();
+        KinesisTestHelper altTestHelper = new KinesisTestHelper(altClient, "testAlternateRegion");
+        altTestHelper.deleteStreamIfExists();
+
+        localLogger.info("writing messages");
+        Logger testLogger = Logger.getLogger("TestLogger");
+        (new MessageWriter(testLogger, numMessages)).run();
+
+        localLogger.info("reading messages");
+        List<RetrievedRecord> messages = altTestHelper.retrieveAllMessages(numMessages);
+
+        testHelper.assertMessages(messages, 1, numMessages);
+        assertNull("stream does not exist in default region", testHelper.describeStream());
+    }
+
 //----------------------------------------------------------------------------
 //  Helpers
 //----------------------------------------------------------------------------

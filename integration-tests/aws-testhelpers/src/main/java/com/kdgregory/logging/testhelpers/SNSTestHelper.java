@@ -62,6 +62,9 @@ public class SNSTestHelper
     private String queueUrl;
 
 
+    /**
+     *  Default constructor.
+     */
     public SNSTestHelper(AmazonSNS snsClient, AmazonSQS sqsClient)
     {
         this.snsClient = snsClient;
@@ -71,6 +74,20 @@ public class SNSTestHelper
         resourceName = "SNSAppenderIntegrationTest-" + runId;
 
         System.setProperty("SNSAppenderIntegrationTest.resourceName", resourceName);
+    }
+
+
+    /**
+     *  Constructor for cross-region tests, which copies run ID and resource name
+     *  from another instance.
+     */
+    public SNSTestHelper(SNSTestHelper that, AmazonSNS snsClient, AmazonSQS sqsClient)
+    {
+        this.snsClient = snsClient;
+        this.sqsClient = sqsClient;
+
+        this.runId = that.runId;
+        this.resourceName = that.resourceName;
     }
 
 

@@ -32,10 +32,10 @@ import com.kdgregory.logging.common.util.InternalLogger;
 public class TestableInternalLogger
 implements InternalLogger
 {
-    private List<String> debugMessages = new ArrayList<String>();
-    private List<String> warnMessages = new ArrayList<String>();
-    private List<String> errorMessages = new ArrayList<String>();
-    private List<Throwable> errorExceptions = new ArrayList<Throwable>();
+    public List<String> debugMessages = new ArrayList<String>();
+    public List<String> warnMessages = new ArrayList<String>();
+    public List<String> errorMessages = new ArrayList<String>();
+    public List<Throwable> errorExceptions = new ArrayList<Throwable>();
 
 
     @Override

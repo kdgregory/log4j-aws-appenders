@@ -16,6 +16,7 @@ package com.kdgregory.log4j.aws;
 
 import java.net.URL;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -48,8 +49,8 @@ public class CloudWatchAppenderIntegrationTest
 
     private CloudWatchTestHelper testHelper;
 
-    // this will be set by init() after the logging framework has been initialized
-    private Logger localLogger;
+    // initialized here, and again by init() after the logging framework has been initialized
+    private Logger localLogger = LogManager.getLogger(getClass());
 
     // this is only set by smoketest
     private static boolean localFactoryUsed;
@@ -68,8 +69,16 @@ public class CloudWatchAppenderIntegrationTest
     @Before
     public void setUp()
     {
-        MDC.clear();
+        // this won't be updated by most tests
         localFactoryUsed = false;
+    }
+
+
+    @After
+    public void tearDown()
+    {
+        localLogger.info("finished");
+        MDC.clear();
     }
 
 //----------------------------------------------------------------------------
@@ -83,7 +92,6 @@ public class CloudWatchAppenderIntegrationTest
         final int rotationCount   = 333;
 
         init("smoketest");
-        localLogger.info("starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
         CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test");
@@ -115,8 +123,6 @@ public class CloudWatchAppenderIntegrationTest
 
         appender.setBatchDelay(1234L);
         assertEquals("batch delay", 1234L, lastWriter.getBatchDelay());
-
-        localLogger.info("finished");
     }
 
 
@@ -127,7 +133,6 @@ public class CloudWatchAppenderIntegrationTest
         final int rotationCount     = 300;
 
         init("testMultipleThreadsSingleAppender");
-        localLogger.info("starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
 
@@ -149,8 +154,6 @@ public class CloudWatchAppenderIntegrationTest
         testHelper.assertMessages(LOGSTREAM_BASE + "-4", (messagesPerThread * writers.length) % rotationCount);
 
         assertFalse("client factory should not have been invoked", localFactoryUsed);
-
-        localLogger.info("finished");
     }
 
 
@@ -160,7 +163,6 @@ public class CloudWatchAppenderIntegrationTest
         final int messagesPerThread = 1000;
 
         init("testMultipleThreadsMultipleAppendersDifferentDestinations");
-        localLogger.info("starting");
 
         MessageWriter.runOnThreads(
             new MessageWriter(Logger.getLogger("TestLogger1"), messagesPerThread),
@@ -174,8 +176,6 @@ public class CloudWatchAppenderIntegrationTest
         testHelper.assertMessages(LOGSTREAM_BASE + "-3", messagesPerThread);
 
         assertFalse("client factory should not have been invoked", localFactoryUsed);
-
-        localLogger.info("finished");
     }
 
 
@@ -186,7 +186,6 @@ public class CloudWatchAppenderIntegrationTest
         final int messagesPerThread = 1000;
 
         init("testMultipleThreadsMultipleAppendersSameDestination");
-        localLogger.info("starting");
 
         MessageWriter.runOnThreads(
             new MessageWriter(Logger.getLogger("TestLogger1"), messagesPerThread),
@@ -241,8 +240,6 @@ public class CloudWatchAppenderIntegrationTest
 
         // we shouldn't be seeing any other errors, so fail the test if we do
         assertNull("stats: last error (was: " + lastErrorMessage + ")", lastErrorMessage);
-
-        localLogger.info("finished");
     }
 
 
@@ -252,7 +249,6 @@ public class CloudWatchAppenderIntegrationTest
         final int numMessages = 100;
 
         init("testLogstreamDeletionAndRecreation");
-        localLogger.info("starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
         CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test");
@@ -274,8 +270,6 @@ public class CloudWatchAppenderIntegrationTest
         testHelper.assertMessages(LOGSTREAM_BASE, numMessages);
 
         assertTrue("statistics has error message", appender.getAppenderStatistics().getLastErrorMessage().contains("log stream missing"));
-
-        localLogger.info("finished");
     }
 
 
@@ -285,7 +279,6 @@ public class CloudWatchAppenderIntegrationTest
         final int numMessages = 1001;
 
         init("testAlternateRegion");
-        localLogger.info("starting");
 
         // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
         //         if that is your default, then the test will fail
@@ -303,8 +296,6 @@ public class CloudWatchAppenderIntegrationTest
         assertFalse("logstream does not exist in default region", testHelper.isLogStreamAvailable(LOGSTREAM_BASE));
 
         assertEquals("stats: messages written",  numMessages,  appender.getAppenderStatistics().getMessagesSent());
-
-        localLogger.info("finished");
     }
 
 //----------------------------------------------------------------------------
@@ -316,7 +307,6 @@ public class CloudWatchAppenderIntegrationTest
     public void testSynchronousModeSingleThread() throws Exception
     {
         init("testSynchronousModeSingleThread");
-        localLogger.info("starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
         CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test");
@@ -338,7 +328,6 @@ public class CloudWatchAppenderIntegrationTest
         final int messagesPerThread = 10;
 
         init("testSynchronousModeMultiThread");
-        localLogger.info("starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
         CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test");
@@ -403,6 +392,9 @@ public class CloudWatchAppenderIntegrationTest
      */
     public void init(String testName) throws Exception
     {
+        MDC.put("testName", testName);
+        localLogger.info("starting");
+
         testHelper = new CloudWatchTestHelper(cloudwatchClient, "AppenderIntegrationTest-" + testName);
         testHelper.deleteLogGroupIfExists();
 
@@ -412,8 +404,6 @@ public class CloudWatchAppenderIntegrationTest
 
         LogManager.resetConfiguration();
         PropertyConfigurator.configure(config);
-
-        MDC.put("testName", testName);
 
         localLogger = Logger.getLogger(getClass());
     }

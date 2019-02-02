@@ -18,6 +18,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -46,8 +47,8 @@ public class KinesisAppenderIntegrationTest
 
     KinesisTestHelper testHelper;
 
-    // this will be set by init() after the logging framework has been initialized
-    private Logger localLogger;
+    // initialized here, and again by init() after the logging framework has been initialized
+    private Logger localLogger = LogManager.getLogger(getClass());
 
     // this is only set by smoketest
     private static boolean localFactoryUsed;
@@ -66,8 +67,16 @@ public class KinesisAppenderIntegrationTest
     @Before
     public void setUp()
     {
-        MDC.clear();
+        // this won't be updated by most tests
         localFactoryUsed = false;
+    }
+
+
+    @After
+    public void tearDown()
+    {
+        localLogger.info("finished");
+        MDC.clear();
     }
 
 //----------------------------------------------------------------------------
@@ -83,7 +92,6 @@ public class KinesisAppenderIntegrationTest
         final int numMessages = 1001;
 
         init("smoketest");
-        localLogger.info("starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
         KinesisAppender appender = (KinesisAppender)testLogger.getAppender("test");
@@ -102,8 +110,6 @@ public class KinesisAppenderIntegrationTest
         assertTrue("client factory should have been invoked", localFactoryUsed);
 
         testHelper.assertStats(appender.getAppenderStatistics(), numMessages);
-
-        localLogger.info("finished");
     }
 
 
@@ -113,7 +119,6 @@ public class KinesisAppenderIntegrationTest
         int messagesPerThread = 500;
 
         init("testMultipleThreadsSingleAppender");
-        localLogger.info("starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
 
@@ -142,8 +147,6 @@ public class KinesisAppenderIntegrationTest
         testHelper.assertRetentionPeriod(24);
 
         assertFalse("client factory should not have been invoked", localFactoryUsed);
-
-        localLogger.info("finished");
     }
 
 
@@ -153,7 +156,6 @@ public class KinesisAppenderIntegrationTest
         int messagesPerThread = 500;
 
         init("testMultipleThreadsMultipleAppendersDistinctPartitions");
-        localLogger.info("starting");
 
         Logger testLogger1 = Logger.getLogger("TestLogger1");
         Logger testLogger2 = Logger.getLogger("TestLogger2");
@@ -185,8 +187,6 @@ public class KinesisAppenderIntegrationTest
         testHelper.assertRetentionPeriod(24);
 
         assertFalse("client factory should not have been invoked", localFactoryUsed);
-
-        localLogger.info("finished");
     }
 
 
@@ -196,7 +196,6 @@ public class KinesisAppenderIntegrationTest
         final int numMessages = 250;
 
         init("testRandomPartitionKeys");
-        localLogger.info("starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
 
@@ -208,8 +207,6 @@ public class KinesisAppenderIntegrationTest
         testHelper.assertShardCount(2);
         testHelper.assertMessages(messages, 1, numMessages);
         testHelper.assertRandomPartitionKeys(messages, numMessages);
-
-        localLogger.info("finished");
     }
 
 
@@ -220,7 +217,6 @@ public class KinesisAppenderIntegrationTest
         final int numMessages = 1001;
 
         init("testFailsIfNoStreamPresent");
-        localLogger.info("starting");
 
         Logger testLogger = Logger.getLogger("TestLogger");
         KinesisAppender appender = (KinesisAppender)testLogger.getAppender("test");
@@ -235,8 +231,6 @@ public class KinesisAppenderIntegrationTest
             "initialization message did not indicate missing stream (was \"" + initializationMessage + "\")",
             ".*stream.*" + streamName + ".* not exist .*",
             initializationMessage);
-
-        localLogger.info("finished");
     }
 
 
@@ -246,7 +240,6 @@ public class KinesisAppenderIntegrationTest
         final int numMessages = 1001;
 
         init("testAlternateRegion");
-        localLogger.info("starting");
 
         // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
         //         if that is your default, then the test will fail
@@ -307,6 +300,9 @@ public class KinesisAppenderIntegrationTest
     public void init(String testName)
     throws Exception
     {
+        MDC.put("testName", testName);
+        localLogger.info("starting");
+
         testHelper = new KinesisTestHelper(kinesisClient, testName);
         testHelper.deleteStreamIfExists();
 
@@ -316,8 +312,6 @@ public class KinesisAppenderIntegrationTest
 
         LogManager.resetConfiguration();
         PropertyConfigurator.configure(config);
-
-        MDC.put("testName", testName);
 
         localLogger = Logger.getLogger(getClass());
     }

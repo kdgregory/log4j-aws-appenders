@@ -3,12 +3,18 @@
 
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d [%thread] %-5level %logger{0} - %mdc{testName}: %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS}  %-5level - %mdc{testName}: %msg%n</pattern>
         </encoder>
     </appender>
 
     <root level="info">
         <appender-ref ref="console" />
     </root>
+
+    <root level="info">
+        <appender-ref ref="console" />
+    </root>
+
+    <logger name="com.kdgregory" level="debug"/>
 
 </configuration>

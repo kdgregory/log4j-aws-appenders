@@ -360,6 +360,8 @@ public class CloudWatchAppenderIntegrationTest
         AWSLogs altClient = AWSLogsClientBuilder.standard().withRegion("us-east-2").build();
         CloudWatchTestHelper altTestHelper = new CloudWatchTestHelper(altClient, "AppenderIntegrationTest-testAlternateRegion");
 
+        altTestHelper.deleteLogGroupIfExists();
+
         ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
         CloudWatchAppender<ILoggingEvent> appender = (CloudWatchAppender<ILoggingEvent>)testLogger.getAppender("test");
 

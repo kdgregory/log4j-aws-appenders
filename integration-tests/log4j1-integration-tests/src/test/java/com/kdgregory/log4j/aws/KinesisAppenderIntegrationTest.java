@@ -303,6 +303,7 @@ public class KinesisAppenderIntegrationTest
         //         if that is your default, then the test will fail
         AmazonKinesis altClient = AmazonKinesisClientBuilder.standard().withRegion("us-east-2").build();
         KinesisTestHelper altTestHelper = new KinesisTestHelper(altClient, "testAlternateRegion");
+
         altTestHelper.deleteStreamIfExists();
 
         localLogger.info("writing messages");

@@ -54,6 +54,64 @@ public class KinesisAppenderIntegrationTest
     private static boolean localFactoryUsed;
 
 //----------------------------------------------------------------------------
+//  Helpers
+//----------------------------------------------------------------------------
+
+    /**
+     *  Logger-specific implementation of utility class.
+     */
+    private static class MessageWriter
+    extends com.kdgregory.logging.testhelpers.MessageWriter
+    {
+        private Logger logger;
+
+        public MessageWriter(Logger logger, int numMessages)
+        {
+            super(numMessages);
+            this.logger = logger;
+        }
+
+        @Override
+        protected void writeLogMessage(String message)
+        {
+            logger.debug(message);
+        }
+    }
+
+
+    /**
+     *  Factory method called by smoketest
+     */
+    public static AmazonKinesis createClient()
+    {
+        localFactoryUsed = true;
+        return AmazonKinesisClientBuilder.defaultClient();
+    }
+
+
+    /**
+     *  Loads the test-specific Log4J configuration and resets the environment.
+     */
+    public void init(String testName)
+    throws Exception
+    {
+        MDC.put("testName", testName);
+        localLogger.info("starting");
+
+        testHelper = new KinesisTestHelper(kinesisClient, testName);
+        testHelper.deleteStreamIfExists();
+
+        String propertiesName = "KinesisAppenderIntegrationTest/" + testName + ".properties";
+        URL config = ClassLoader.getSystemResource(propertiesName);
+        assertNotNull("missing configuration: " + propertiesName, config);
+
+        LogManager.resetConfiguration();
+        PropertyConfigurator.configure(config);
+
+        localLogger = Logger.getLogger(getClass());
+    }
+
+//----------------------------------------------------------------------------
 //  JUnit Scaffolding
 //----------------------------------------------------------------------------
 
@@ -256,63 +314,5 @@ public class KinesisAppenderIntegrationTest
 
         testHelper.assertMessages(messages, 1, numMessages);
         assertNull("stream does not exist in default region", testHelper.describeStream());
-    }
-
-//----------------------------------------------------------------------------
-//  Helpers
-//----------------------------------------------------------------------------
-
-    /**
-     *  Logger-specific implementation of utility class.
-     */
-    private static class MessageWriter
-    extends com.kdgregory.logging.testhelpers.MessageWriter
-    {
-        private Logger logger;
-
-        public MessageWriter(Logger logger, int numMessages)
-        {
-            super(numMessages);
-            this.logger = logger;
-        }
-
-        @Override
-        protected void writeLogMessage(String message)
-        {
-            logger.debug(message);
-        }
-    }
-
-
-    /**
-     *  Factory method called by smoketest
-     */
-    public static AmazonKinesis createClient()
-    {
-        localFactoryUsed = true;
-        return AmazonKinesisClientBuilder.defaultClient();
-    }
-
-
-    /**
-     *  Loads the test-specific Log4J configuration and resets the environment.
-     */
-    public void init(String testName)
-    throws Exception
-    {
-        MDC.put("testName", testName);
-        localLogger.info("starting");
-
-        testHelper = new KinesisTestHelper(kinesisClient, testName);
-        testHelper.deleteStreamIfExists();
-
-        String propertiesName = "KinesisAppenderIntegrationTest/" + testName + ".properties";
-        URL config = ClassLoader.getSystemResource(propertiesName);
-        assertNotNull("missing configuration: " + propertiesName, config);
-
-        LogManager.resetConfiguration();
-        PropertyConfigurator.configure(config);
-
-        localLogger = Logger.getLogger(getClass());
     }
 }

@@ -60,6 +60,44 @@ public class CloudWatchLogWriterIntegrationTest
     private CloudWatchWriterFactory factory;
     private CloudWatchLogWriter writer;
 
+//----------------------------------------------------------------------------
+//  Helpers
+//----------------------------------------------------------------------------
+
+    private void init(String testName, AWSLogs client, String factoryMethod, String region, String endpoint)
+    throws Exception
+    {
+        MDC.put("testName", testName);
+        localLogger.info("starting");
+
+        testHelper = new CloudWatchTestHelper(client, LOGGROUP_NAME);
+
+        testHelper.deleteLogGroupIfExists();
+
+        config = new CloudWatchWriterConfig(LOGGROUP_NAME, testName, 250, 10000, DiscardAction.oldest, factoryMethod, region, endpoint);
+        stats = new CloudWatchWriterStatistics();
+        internalLogger = new TestableInternalLogger();
+        factory = new CloudWatchWriterFactory();
+        writer = (CloudWatchLogWriter)factory.newLogWriter(config, stats, internalLogger);
+
+        new DefaultThreadFactory("test").startLoggingThread(writer, false, null);
+    }
+
+
+    private class MessageWriter
+    extends com.kdgregory.logging.testhelpers.MessageWriter
+    {
+        public MessageWriter(int numMessages)
+        {
+            super(numMessages);
+        }
+
+        @Override
+        protected void writeLogMessage(String message)
+        {
+            writer.addMessage(new LogMessage(System.currentTimeMillis(), message));
+        }
+    }
 
 //----------------------------------------------------------------------------
 //  JUnit Scaffolding
@@ -144,44 +182,5 @@ public class CloudWatchLogWriterIntegrationTest
 
         assertFalse("stream does not exist in default region",
                     new CloudWatchTestHelper(cloudwatchClient, LOGGROUP_NAME).isLogStreamAvailable("testAlternateEndpoint"));
-    }
-
-//----------------------------------------------------------------------------
-//  Helpers
-//----------------------------------------------------------------------------
-
-    private void init(String testName, AWSLogs client, String factoryMethod, String region, String endpoint)
-    throws Exception
-    {
-        MDC.put("testName", testName);
-        localLogger.info("starting");
-
-        testHelper = new CloudWatchTestHelper(client, LOGGROUP_NAME);
-
-        testHelper.deleteLogGroupIfExists();
-
-        config = new CloudWatchWriterConfig(LOGGROUP_NAME, testName, 250, 10000, DiscardAction.oldest, factoryMethod, region, endpoint);
-        stats = new CloudWatchWriterStatistics();
-        internalLogger = new TestableInternalLogger();
-        factory = new CloudWatchWriterFactory();
-        writer = (CloudWatchLogWriter)factory.newLogWriter(config, stats, internalLogger);
-
-        new DefaultThreadFactory("test").startLoggingThread(writer, false, null);
-    }
-
-
-    private class MessageWriter
-    extends com.kdgregory.logging.testhelpers.MessageWriter
-    {
-        public MessageWriter(int numMessages)
-        {
-            super(numMessages);
-        }
-
-        @Override
-        protected void writeLogMessage(String message)
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), message));
-        }
     }
 }

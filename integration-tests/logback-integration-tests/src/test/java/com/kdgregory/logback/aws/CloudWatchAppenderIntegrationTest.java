@@ -58,6 +58,68 @@ public class CloudWatchAppenderIntegrationTest
     private static boolean localFactoryUsed;
 
 //----------------------------------------------------------------------------
+//  Helpers
+//----------------------------------------------------------------------------
+
+    /**
+     *  Logger-specific implementation of utility class.
+     */
+    private static class MessageWriter
+    extends com.kdgregory.logging.testhelpers.MessageWriter
+    {
+        private Logger logger;
+
+        public MessageWriter(Logger logger, int numMessages)
+        {
+            super(numMessages);
+            this.logger = logger;
+        }
+
+        @Override
+        protected void writeLogMessage(String message)
+        {
+            logger.debug(message);
+        }
+    }
+
+
+    /**
+     *  This function is used as a client factory by the smoketest.
+     */
+    public static AWSLogs createClient()
+    {
+        localFactoryUsed = true;
+        return AWSLogsClientBuilder.defaultClient();
+    }
+
+
+    /**
+     *  Loads the test-specific Logback configuration and resets the environment.
+     */
+    public void init(String testName) throws Exception
+    {
+        MDC.put("testName", testName);
+        localLogger.info("starting");
+
+        testHelper = new CloudWatchTestHelper(cloudwatchClient, "AppenderIntegrationTest-" + testName);
+
+        // this has to happen before the logger is initialized or we have a race condition
+        testHelper.deleteLogGroupIfExists();
+
+        String propertiesName = "CloudWatchAppenderIntegrationTest/" + testName + ".xml";
+        URL config = ClassLoader.getSystemResource(propertiesName);
+        assertNotNull("missing configuration: " + propertiesName, config);
+
+        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
+        context.reset();
+        JoranConfigurator configurator = new JoranConfigurator();
+        configurator.setContext(context);
+        configurator.doConfigure(config);
+
+        localLogger = LoggerFactory.getLogger(getClass());
+    }
+
+//----------------------------------------------------------------------------
 //  JUnit Scaffolding
 //----------------------------------------------------------------------------
 
@@ -360,67 +422,5 @@ public class CloudWatchAppenderIntegrationTest
         assertEquals("number of messages recorded in stats", messagesPerThread * 5, appender.getAppenderStatistics().getMessagesSent());
 
         testHelper.assertMessages(LOGSTREAM_BASE, messagesPerThread * 5);
-    }
-
-//----------------------------------------------------------------------------
-//  Helpers
-//----------------------------------------------------------------------------
-
-    /**
-     *  Logger-specific implementation of utility class.
-     */
-    private static class MessageWriter
-    extends com.kdgregory.logging.testhelpers.MessageWriter
-    {
-        private Logger logger;
-
-        public MessageWriter(Logger logger, int numMessages)
-        {
-            super(numMessages);
-            this.logger = logger;
-        }
-
-        @Override
-        protected void writeLogMessage(String message)
-        {
-            logger.debug(message);
-        }
-    }
-
-
-    /**
-     *  This function is used as a client factory by the smoketest.
-     */
-    public static AWSLogs createClient()
-    {
-        localFactoryUsed = true;
-        return AWSLogsClientBuilder.defaultClient();
-    }
-
-
-    /**
-     *  Loads the test-specific Logback configuration and resets the environment.
-     */
-    public void init(String testName) throws Exception
-    {
-        MDC.put("testName", testName);
-        localLogger.info("starting");
-
-        testHelper = new CloudWatchTestHelper(cloudwatchClient, "AppenderIntegrationTest-" + testName);
-
-        // this has to happen before the logger is initialized or we have a race condition
-        testHelper.deleteLogGroupIfExists();
-
-        String propertiesName = "CloudWatchAppenderIntegrationTest/" + testName + ".xml";
-        URL config = ClassLoader.getSystemResource(propertiesName);
-        assertNotNull("missing configuration: " + propertiesName, config);
-
-        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
-        context.reset();
-        JoranConfigurator configurator = new JoranConfigurator();
-        configurator.setContext(context);
-        configurator.doConfigure(config);
-
-        localLogger = LoggerFactory.getLogger(getClass());
     }
 }

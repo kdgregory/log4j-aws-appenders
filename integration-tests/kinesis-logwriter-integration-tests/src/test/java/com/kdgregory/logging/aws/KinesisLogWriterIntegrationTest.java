@@ -62,6 +62,44 @@ public class KinesisLogWriterIntegrationTest
     private KinesisWriterFactory factory;
     private KinesisLogWriter writer;
 
+//----------------------------------------------------------------------------
+//  Helpers
+//----------------------------------------------------------------------------
+
+    private void init(String testName, AmazonKinesis client, String factoryMethod, String region, String endpoint)
+    throws Exception
+    {
+        MDC.put("testName", testName);
+        localLogger.info("starting");
+
+        testHelper = new KinesisTestHelper(client, testName);
+
+        testHelper.deleteStreamIfExists();
+
+        stats = new KinesisWriterStatistics();
+        internalLogger = new TestableInternalLogger();
+        config = new KinesisWriterConfig(testHelper.getStreamName(), "{random}", true, 1, null, 250, 10000, DiscardAction.oldest, factoryMethod, region, endpoint);
+        factory = new KinesisWriterFactory();
+        writer = (KinesisLogWriter)factory.newLogWriter(config, stats, internalLogger);
+
+        new DefaultThreadFactory("test").startLoggingThread(writer, false, null);
+    }
+
+
+    private class MessageWriter
+    extends com.kdgregory.logging.testhelpers.MessageWriter
+    {
+        public MessageWriter(int numMessages)
+        {
+            super(numMessages);
+        }
+
+        @Override
+        protected void writeLogMessage(String message)
+        {
+            writer.addMessage(new LogMessage(System.currentTimeMillis(), message));
+        }
+    }
 
 //----------------------------------------------------------------------------
 //  JUnit Scaffolding
@@ -152,44 +190,5 @@ public class KinesisLogWriterIntegrationTest
 
         assertNull("stream does not exist in default region",
                    (new KinesisTestHelper(kinesisClient, "logwriter-testAlternateEndpoint")).describeStream());
-    }
-
-//----------------------------------------------------------------------------
-//  Helpers
-//----------------------------------------------------------------------------
-
-    private void init(String testName, AmazonKinesis client, String factoryMethod, String region, String endpoint)
-    throws Exception
-    {
-        MDC.put("testName", testName);
-        localLogger.info("starting");
-
-        testHelper = new KinesisTestHelper(client, testName);
-
-        testHelper.deleteStreamIfExists();
-
-        stats = new KinesisWriterStatistics();
-        internalLogger = new TestableInternalLogger();
-        config = new KinesisWriterConfig(testHelper.getStreamName(), "{random}", true, 1, null, 250, 10000, DiscardAction.oldest, factoryMethod, region, endpoint);
-        factory = new KinesisWriterFactory();
-        writer = (KinesisLogWriter)factory.newLogWriter(config, stats, internalLogger);
-
-        new DefaultThreadFactory("test").startLoggingThread(writer, false, null);
-    }
-
-
-    private class MessageWriter
-    extends com.kdgregory.logging.testhelpers.MessageWriter
-    {
-        public MessageWriter(int numMessages)
-        {
-            super(numMessages);
-        }
-
-        @Override
-        protected void writeLogMessage(String message)
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), message));
-        }
     }
 }

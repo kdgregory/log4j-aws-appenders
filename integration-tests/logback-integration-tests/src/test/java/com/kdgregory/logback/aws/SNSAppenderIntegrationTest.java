@@ -61,6 +61,71 @@ public class SNSAppenderIntegrationTest
     private static boolean localFactoryUsed;
 
 //----------------------------------------------------------------------------
+//  Helpers
+//----------------------------------------------------------------------------
+
+    /**
+     *  Logger-specific implementation of utility class.
+     */
+    private static class MessageWriter
+    extends com.kdgregory.logging.testhelpers.MessageWriter
+    {
+        private Logger logger;
+
+        public MessageWriter(Logger logger, int numMessages)
+        {
+            super(numMessages);
+            this.logger = logger;
+        }
+
+        @Override
+        protected void writeLogMessage(String message)
+        {
+            logger.debug(message);
+        }
+    }
+
+
+    /**
+     *  This function is used as a client factory by the smoketest.
+     */
+    public static AmazonSNS createClient()
+    {
+        localFactoryUsed = true;
+        return AmazonSNSClientBuilder.defaultClient();
+    }
+
+
+    /**
+     *  Loads the test-specific Log4J configuration and resets the environment.
+     */
+    public void init(String testName, boolean createTopic) throws Exception
+    {
+        MDC.put("testName", testName);
+        localLogger.info("starting");
+
+        testHelper = new SNSTestHelper(snsClient, sqsClient);
+
+        // if we're going to create the topic we must do it before initializing the logging system
+        if (createTopic)
+        {
+            testHelper.createTopicAndQueue();
+        }
+
+        String propertiesName = "SNSAppenderIntegrationTest/" + testName + ".xml";
+        URL config = ClassLoader.getSystemResource(propertiesName);
+        assertNotNull("missing configuration: " + propertiesName, config);
+
+        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
+        context.reset();
+        JoranConfigurator configurator = new JoranConfigurator();
+        configurator.setContext(context);
+        configurator.doConfigure(config);
+
+        localLogger = LoggerFactory.getLogger(getClass());
+    }
+
+//----------------------------------------------------------------------------
 //  JUnit Scaffolding
 //----------------------------------------------------------------------------
 
@@ -304,70 +369,5 @@ public class SNSAppenderIntegrationTest
         // no queue attached to this topic so we can't read messages directly
 
         CommonTestHelper.waitUntilMessagesSent(appenderStats, numMessages, 30000);
-    }
-
-//----------------------------------------------------------------------------
-//  Helpers
-//----------------------------------------------------------------------------
-
-    /**
-     *  Logger-specific implementation of utility class.
-     */
-    private static class MessageWriter
-    extends com.kdgregory.logging.testhelpers.MessageWriter
-    {
-        private Logger logger;
-
-        public MessageWriter(Logger logger, int numMessages)
-        {
-            super(numMessages);
-            this.logger = logger;
-        }
-
-        @Override
-        protected void writeLogMessage(String message)
-        {
-            logger.debug(message);
-        }
-    }
-
-
-    /**
-     *  This function is used as a client factory by the smoketest.
-     */
-    public static AmazonSNS createClient()
-    {
-        localFactoryUsed = true;
-        return AmazonSNSClientBuilder.defaultClient();
-    }
-
-
-    /**
-     *  Loads the test-specific Log4J configuration and resets the environment.
-     */
-    public void init(String testName, boolean createTopic) throws Exception
-    {
-        MDC.put("testName", testName);
-        localLogger.info("starting");
-
-        testHelper = new SNSTestHelper(snsClient, sqsClient);
-
-        // if we're going to create the topic we must do it before initializing the logging system
-        if (createTopic)
-        {
-            testHelper.createTopicAndQueue();
-        }
-
-        String propertiesName = "SNSAppenderIntegrationTest/" + testName + ".xml";
-        URL config = ClassLoader.getSystemResource(propertiesName);
-        assertNotNull("missing configuration: " + propertiesName, config);
-
-        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
-        context.reset();
-        JoranConfigurator configurator = new JoranConfigurator();
-        configurator.setContext(context);
-        configurator.doConfigure(config);
-
-        localLogger = LoggerFactory.getLogger(getClass());
     }
 }

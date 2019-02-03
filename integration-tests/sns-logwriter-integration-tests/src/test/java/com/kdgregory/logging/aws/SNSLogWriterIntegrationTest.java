@@ -61,6 +61,44 @@ public class SNSLogWriterIntegrationTest
     private SNSWriterFactory factory;
     private SNSLogWriter writer;
 
+//----------------------------------------------------------------------------
+//  Helpers
+//----------------------------------------------------------------------------
+
+    private void init(String testName, AmazonSNS snsClient, AmazonSQS sqsClient, String factoryMethod, String region, String endpoint)
+    throws Exception
+    {
+        MDC.put("testName", testName);
+        localLogger.info("starting");
+
+        testHelper = new SNSTestHelper(snsClient, sqsClient);
+
+        testHelper.createTopicAndQueue();
+
+        stats = new SNSWriterStatistics();
+        internalLogger = new TestableInternalLogger();
+        config = new SNSWriterConfig(testHelper.getTopicName(), null, "integration test", true, 10000, DiscardAction.oldest, factoryMethod, region, endpoint);
+        factory = new SNSWriterFactory();
+        writer = (SNSLogWriter)factory.newLogWriter(config, stats, internalLogger);
+
+        new DefaultThreadFactory("test").startLoggingThread(writer, false, null);
+    }
+
+
+    private class MessageWriter
+    extends com.kdgregory.logging.testhelpers.MessageWriter
+    {
+        public MessageWriter(int numMessages)
+        {
+            super(numMessages);
+        }
+
+        @Override
+        protected void writeLogMessage(String message)
+        {
+            writer.addMessage(new LogMessage(System.currentTimeMillis(), message));
+        }
+    }
 
 //----------------------------------------------------------------------------
 //  JUnit Scaffolding
@@ -150,44 +188,5 @@ public class SNSLogWriterIntegrationTest
 
         assertNull("topic does not exist in default region",
                    (new SNSTestHelper(testHelper, defaultSNSclient, defaultSQSclient)).lookupTopic());
-    }
-
-//----------------------------------------------------------------------------
-//  Helpers
-//----------------------------------------------------------------------------
-
-    private void init(String testName, AmazonSNS snsClient, AmazonSQS sqsClient, String factoryMethod, String region, String endpoint)
-    throws Exception
-    {
-        MDC.put("testName", testName);
-        localLogger.info("starting");
-
-        testHelper = new SNSTestHelper(snsClient, sqsClient);
-
-        testHelper.createTopicAndQueue();
-
-        stats = new SNSWriterStatistics();
-        internalLogger = new TestableInternalLogger();
-        config = new SNSWriterConfig(testHelper.getTopicName(), null, "integration test", true, 10000, DiscardAction.oldest, factoryMethod, region, endpoint);
-        factory = new SNSWriterFactory();
-        writer = (SNSLogWriter)factory.newLogWriter(config, stats, internalLogger);
-
-        new DefaultThreadFactory("test").startLoggingThread(writer, false, null);
-    }
-
-
-    private class MessageWriter
-    extends com.kdgregory.logging.testhelpers.MessageWriter
-    {
-        public MessageWriter(int numMessages)
-        {
-            super(numMessages);
-        }
-
-        @Override
-        protected void writeLogMessage(String message)
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), message));
-        }
     }
 }

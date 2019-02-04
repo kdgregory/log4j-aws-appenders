@@ -15,6 +15,7 @@
 package com.kdgregory.log4j.aws;
 
 import java.net.URL;
+import java.util.Arrays;
 
 import org.junit.After;
 import org.junit.Before;
@@ -28,7 +29,6 @@ import org.apache.log4j.MDC;
 import org.apache.log4j.PropertyConfigurator;
 
 import net.sf.kdgcommons.lang.ClassUtil;
-import net.sf.kdgcommons.lang.ObjectUtil;
 import static net.sf.kdgcommons.test.NumericAsserts.*;
 
 import com.amazonaws.services.logs.AWSLogs;
@@ -37,6 +37,7 @@ import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.testhelpers.CloudWatchTestHelper;
+import com.kdgregory.logging.testhelpers.CommonTestHelper;
 
 
 public class CloudWatchAppenderIntegrationTest
@@ -59,9 +60,7 @@ public class CloudWatchAppenderIntegrationTest
 //  Helpers
 //----------------------------------------------------------------------------
 
-    /**
-     *  Logger-specific implementation of utility class.
-     */
+    // TODO - move into stand-alone class, share between all ITs in module
     private static class MessageWriter
     extends com.kdgregory.logging.testhelpers.MessageWriter
     {
@@ -77,6 +76,24 @@ public class CloudWatchAppenderIntegrationTest
         protected void writeLogMessage(String message)
         {
             logger.debug(message);
+        }
+    }
+
+
+    /**
+     *  Retrieves and holds a logger instance and related objects.
+     */
+    public static class LoggerInfo
+    {
+        public Logger logger;
+        public CloudWatchAppender appender;
+        public CloudWatchWriterStatistics stats;
+
+        public LoggerInfo(String loggerName, String appenderName)
+        {
+            logger = Logger.getLogger(loggerName);
+            appender = (CloudWatchAppender)logger.getAppender(appenderName);
+            stats = appender.getAppenderStatistics();
         }
     }
 
@@ -150,12 +167,12 @@ public class CloudWatchAppenderIntegrationTest
 
         init("smoketest");
 
-        Logger testLogger = Logger.getLogger("TestLogger");
-        CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test");
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
-        (new MessageWriter(testLogger, numMessages)).run();
+        (new MessageWriter(loggerInfo.logger, numMessages)).run();
 
-        localLogger.info("all messages written");
+        localLogger.info("waiting for logger");
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo.stats, numMessages, 30000);
 
         testHelper.assertMessages(LOGSTREAM_BASE + "-1", rotationCount);
         testHelper.assertMessages(LOGSTREAM_BASE + "-2", rotationCount);
@@ -164,21 +181,19 @@ public class CloudWatchAppenderIntegrationTest
 
         assertTrue("client factory should have been invoked", localFactoryUsed);
 
-        CloudWatchWriterStatistics appenderStats = appender.getAppenderStatistics();
-        assertEquals("stats: actual log group name",    "AppenderIntegrationTest-smoketest",    appenderStats.getActualLogGroupName());
-        assertEquals("stats: actual log stream name",   LOGSTREAM_BASE + "-4",                  appenderStats.getActualLogStreamName());
-        assertEquals("stats: messages written",         numMessages,                            appenderStats.getMessagesSent());
+        assertEquals("stats: actual log group name",    "AppenderIntegrationTest-smoketest",    loggerInfo.stats.getActualLogGroupName());
+        assertEquals("stats: actual log stream name",   LOGSTREAM_BASE + "-4",                  loggerInfo.stats.getActualLogStreamName());
+        assertEquals("stats: messages written",         numMessages,                            loggerInfo.stats.getMessagesSent());
 
-        // with four writers running concurrently, we can't say which wrote the last batch
-        // so will just verify that the stats are updated
-        assertInRange("stats: messages in last batch",  1, rotationCount,                       appenderStats.getMessagesSentLastBatch());
+        // with four writers running concurrently, we can't say which wrote the last batch, so we'll test a range of values
+        assertInRange("stats: messages in last batch",  1, rotationCount,                       loggerInfo.stats.getMessagesSentLastBatch());
 
-        CloudWatchLogWriter lastWriter = ClassUtil.getFieldValue(appender, "writer", CloudWatchLogWriter.class);
+        CloudWatchLogWriter lastWriter = ClassUtil.getFieldValue(loggerInfo.appender, "writer", CloudWatchLogWriter.class);
         assertEquals("number of batches for last writer", 1, lastWriter.getBatchCount());
 
         // while we're here, verify some more of the plumbing
 
-        appender.setBatchDelay(1234L);
+        loggerInfo.appender.setBatchDelay(1234L);
         assertEquals("batch delay", 1234L, lastWriter.getBatchDelay());
     }
 
@@ -191,19 +206,20 @@ public class CloudWatchAppenderIntegrationTest
 
         init("testMultipleThreadsSingleAppender");
 
-        Logger testLogger = Logger.getLogger("TestLogger");
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
         MessageWriter[] writers = new MessageWriter[]
         {
-            new MessageWriter(testLogger, messagesPerThread),
-            new MessageWriter(testLogger, messagesPerThread),
-            new MessageWriter(testLogger, messagesPerThread),
-            new MessageWriter(testLogger, messagesPerThread),
-            new MessageWriter(testLogger, messagesPerThread)
+            new MessageWriter(loggerInfo.logger, messagesPerThread),
+            new MessageWriter(loggerInfo.logger, messagesPerThread),
+            new MessageWriter(loggerInfo.logger, messagesPerThread),
+            new MessageWriter(loggerInfo.logger, messagesPerThread),
+            new MessageWriter(loggerInfo.logger, messagesPerThread)
         };
         MessageWriter.runOnThreads(writers);
 
-        localLogger.info("all threads started");
+        localLogger.info("waiting for logger");
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo.stats, messagesPerThread * 5, 30000);
 
         testHelper.assertMessages(LOGSTREAM_BASE + "-1", rotationCount);
         testHelper.assertMessages(LOGSTREAM_BASE + "-2", rotationCount);
@@ -221,12 +237,19 @@ public class CloudWatchAppenderIntegrationTest
 
         init("testMultipleThreadsMultipleAppendersDifferentDestinations");
 
-        MessageWriter.runOnThreads(
-            new MessageWriter(Logger.getLogger("TestLogger1"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger2"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger3"), messagesPerThread));
+        LoggerInfo loggerInfo1 = new LoggerInfo("TestLogger1", "test1");
+        LoggerInfo loggerInfo2 = new LoggerInfo("TestLogger2", "test2");
+        LoggerInfo loggerInfo3 = new LoggerInfo("TestLogger3", "test3");
 
-        localLogger.info("all threads started");
+        MessageWriter.runOnThreads(
+            new MessageWriter(loggerInfo1.logger, messagesPerThread),
+            new MessageWriter(loggerInfo2.logger, messagesPerThread),
+            new MessageWriter(loggerInfo3.logger, messagesPerThread));
+
+        localLogger.info("waiting for loggers");
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo1.stats, messagesPerThread, 30000);
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo2.stats, messagesPerThread, 30000);
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo3.stats, messagesPerThread, 30000);
 
         testHelper.assertMessages(LOGSTREAM_BASE + "-1", messagesPerThread);
         testHelper.assertMessages(LOGSTREAM_BASE + "-2", messagesPerThread);
@@ -244,29 +267,44 @@ public class CloudWatchAppenderIntegrationTest
 
         init("testMultipleThreadsMultipleAppendersSameDestination");
 
-        MessageWriter.runOnThreads(
-            new MessageWriter(Logger.getLogger("TestLogger1"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger2"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger3"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger4"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger5"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger1"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger2"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger3"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger4"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger5"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger1"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger2"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger3"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger4"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger5"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger1"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger2"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger3"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger4"), messagesPerThread),
-            new MessageWriter(Logger.getLogger("TestLogger5"), messagesPerThread));
+        LoggerInfo loggerInfo1 = new LoggerInfo("TestLogger1", "test1");
+        LoggerInfo loggerInfo2 = new LoggerInfo("TestLogger2", "test2");
+        LoggerInfo loggerInfo3 = new LoggerInfo("TestLogger3", "test3");
+        LoggerInfo loggerInfo4 = new LoggerInfo("TestLogger4", "test4");
+        LoggerInfo loggerInfo5 = new LoggerInfo("TestLogger5", "test5");
 
-        localLogger.info("all threads started");
+        MessageWriter.runOnThreads(
+            new MessageWriter(loggerInfo1.logger, messagesPerThread),
+            new MessageWriter(loggerInfo2.logger, messagesPerThread),
+            new MessageWriter(loggerInfo3.logger, messagesPerThread),
+            new MessageWriter(loggerInfo4.logger, messagesPerThread),
+            new MessageWriter(loggerInfo5.logger, messagesPerThread),
+            new MessageWriter(loggerInfo1.logger, messagesPerThread),
+            new MessageWriter(loggerInfo2.logger, messagesPerThread),
+            new MessageWriter(loggerInfo3.logger, messagesPerThread),
+            new MessageWriter(loggerInfo4.logger, messagesPerThread),
+            new MessageWriter(loggerInfo5.logger, messagesPerThread),
+            new MessageWriter(loggerInfo1.logger, messagesPerThread),
+            new MessageWriter(loggerInfo2.logger, messagesPerThread),
+            new MessageWriter(loggerInfo3.logger, messagesPerThread),
+            new MessageWriter(loggerInfo4.logger, messagesPerThread),
+            new MessageWriter(loggerInfo5.logger, messagesPerThread),
+            new MessageWriter(loggerInfo1.logger, messagesPerThread),
+            new MessageWriter(loggerInfo2.logger, messagesPerThread),
+            new MessageWriter(loggerInfo3.logger, messagesPerThread),
+            new MessageWriter(loggerInfo4.logger, messagesPerThread),
+            new MessageWriter(loggerInfo5.logger, messagesPerThread));
+
+        localLogger.info("waiting for loggers");
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo1.stats, messagesPerThread * 4, 30000);
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo2.stats, messagesPerThread * 4, 30000);
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo3.stats, messagesPerThread * 4, 30000);
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo4.stats, messagesPerThread * 4, 30000);
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo5.stats, messagesPerThread * 4, 30000);
+
+        // even after waiting until the stats say we've written everything, the read won't succeed
+        // if we try it immediately ... so we sleep, while CloudWatch puts everything in its place
+        Thread.sleep(10000);
 
         testHelper.assertMessages(LOGSTREAM_BASE, messagesPerThread * 20);
 
@@ -274,17 +312,24 @@ public class CloudWatchAppenderIntegrationTest
         int messagesDiscardedFromStats = 0;
         int raceRetriesFromStats = 0;
         int unrecoveredRaceRetriesFromStats = 0;
-        String lastErrorMessage = null;
-        for (int appenderNumber = 1 ; appenderNumber <= 5 ; appenderNumber++)
+        boolean raceReportedInStats = false;
+        String lastNonRaceErrorFromStats = null;
+
+        for (LoggerInfo info : Arrays.asList(loggerInfo1, loggerInfo2, loggerInfo3, loggerInfo4, loggerInfo5))
         {
-            Logger testLogger = Logger.getLogger("TestLogger" + appenderNumber);
-            CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test" + appenderNumber);
-            CloudWatchWriterStatistics stats = appender.getAppenderStatistics();
-            messageCountFromStats += stats.getMessagesSent();
-            messagesDiscardedFromStats += stats.getMessagesDiscarded();
-            raceRetriesFromStats += stats.getWriterRaceRetries();
-            unrecoveredRaceRetriesFromStats += stats.getUnrecoveredWriterRaceRetries();
-            lastErrorMessage = ObjectUtil.defaultValue(stats.getLastErrorMessage(), lastErrorMessage);
+            messageCountFromStats           += info.stats.getMessagesSent();
+            messagesDiscardedFromStats      += info.stats.getMessagesDiscarded();
+            raceRetriesFromStats            += info.stats.getWriterRaceRetries();
+            unrecoveredRaceRetriesFromStats += info.stats.getUnrecoveredWriterRaceRetries();
+
+            String lastErrorMessage = info.stats.getLastErrorMessage();
+            if (lastErrorMessage != null)
+            {
+                if (lastErrorMessage.contains("InvalidSequenceTokenException"))
+                    raceReportedInStats = true;
+                else
+                    lastNonRaceErrorFromStats = lastErrorMessage;
+            }
         }
 
         assertEquals("stats: message count",        messagesPerThread * 20, messageCountFromStats);
@@ -295,38 +340,38 @@ public class CloudWatchAppenderIntegrationTest
 //        assertTrue("stats: race retries",                       raceRetriesFromStats > 0);
 //        assertEquals("stats: all race retries recovered",   0,  unrecoveredRaceRetriesFromStats);
 
-        // we shouldn't be seeing any other errors, so fail the test if we do
-        assertNull("stats: last error (was: " + lastErrorMessage + ")", lastErrorMessage);
+        assertNull("stats: last error (was: " + lastNonRaceErrorFromStats + ")", lastNonRaceErrorFromStats);
     }
 
 
     @Test
     public void testLogstreamDeletionAndRecreation() throws Exception
     {
-        final int numMessages = 100;
+        final int numMessages       = 100;
+        final String logStreamName  = LOGSTREAM_BASE + "-1";
 
         init("testLogstreamDeletionAndRecreation");
 
-        Logger testLogger = Logger.getLogger("TestLogger");
-        CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test");
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
-        (new MessageWriter(testLogger, numMessages)).run();
+        localLogger.info("writing first batch");
+        (new MessageWriter(loggerInfo.logger, numMessages)).run();
 
-        localLogger.info("first batch of messages written");
-
-        testHelper.assertMessages(LOGSTREAM_BASE, numMessages);
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo.stats, numMessages, 30000);
+        testHelper.assertMessages(logStreamName, numMessages);
 
         localLogger.info("deleting stream");
-        testHelper.deleteLogStream(LOGSTREAM_BASE);
+        testHelper.deleteLogStream(logStreamName);
 
-        (new MessageWriter(testLogger, numMessages)).run();
-
-        localLogger.info("second batch of messages written");
+        localLogger.info("writing second batch");
+        (new MessageWriter(loggerInfo.logger, numMessages)).run();
 
         // the original batch of messages will be gone, so we can assert the new batch was written
-        testHelper.assertMessages(LOGSTREAM_BASE, numMessages);
 
-        assertTrue("statistics has error message", appender.getAppenderStatistics().getLastErrorMessage().contains("log stream missing"));
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo.stats, numMessages, 30000);
+        testHelper.assertMessages(logStreamName, numMessages);
+
+        assertTrue("statistics has error message", loggerInfo.stats.getLastErrorMessage().contains("log stream missing"));
     }
 
 
@@ -337,6 +382,8 @@ public class CloudWatchAppenderIntegrationTest
 
         init("testAlternateRegion");
 
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
+
         // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
         //         if that is your default, then the test will fail
         AWSLogs altClient = AWSLogsClientBuilder.standard().withRegion("us-east-2").build();
@@ -344,17 +391,13 @@ public class CloudWatchAppenderIntegrationTest
 
         altTestHelper.deleteLogGroupIfExists();
 
-        Logger testLogger = Logger.getLogger("TestLogger");
-        CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test");
+        (new MessageWriter(loggerInfo.logger, numMessages)).run();
 
-        (new MessageWriter(testLogger, numMessages)).run();
-
-        localLogger.info("all messages written");
+        localLogger.info("waiting for logger");
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo.stats, numMessages, 30000);
 
         altTestHelper.assertMessages(LOGSTREAM_BASE, numMessages);
         assertFalse("logstream does not exist in default region", testHelper.isLogStreamAvailable(LOGSTREAM_BASE));
-
-        assertEquals("stats: messages written",  numMessages,  appender.getAppenderStatistics().getMessagesSent());
     }
 
 //----------------------------------------------------------------------------
@@ -367,15 +410,14 @@ public class CloudWatchAppenderIntegrationTest
     {
         init("testSynchronousModeSingleThread");
 
-        Logger testLogger = Logger.getLogger("TestLogger");
-        CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test");
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
-        localLogger.info("writing first message");
+        localLogger.info("writing message");
+        (new MessageWriter(loggerInfo.logger, 1)).run();
 
-        (new MessageWriter(testLogger, 1)).run();
+        assertEquals("number of messages recorded in stats", 1, loggerInfo.stats.getMessagesSent());
 
-        assertEquals("number of messages recorded in stats", 1, appender.getAppenderStatistics().getMessagesSent());
-
+        // no need to wait, the message should be there as soon as we call
         testHelper.assertMessages(LOGSTREAM_BASE, 1);
     }
 
@@ -388,24 +430,21 @@ public class CloudWatchAppenderIntegrationTest
 
         init("testSynchronousModeMultiThread");
 
-        Logger testLogger = Logger.getLogger("TestLogger");
-        CloudWatchAppender appender = (CloudWatchAppender)testLogger.getAppender("test");
-
-        localLogger.info("writing messages");
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
         MessageWriter[] writers = new MessageWriter[]
         {
-            new MessageWriter(testLogger, messagesPerThread),
-            new MessageWriter(testLogger, messagesPerThread),
-            new MessageWriter(testLogger, messagesPerThread),
-            new MessageWriter(testLogger, messagesPerThread),
-            new MessageWriter(testLogger, messagesPerThread)
+            new MessageWriter(loggerInfo.logger, messagesPerThread),
+            new MessageWriter(loggerInfo.logger, messagesPerThread),
+            new MessageWriter(loggerInfo.logger, messagesPerThread),
+            new MessageWriter(loggerInfo.logger, messagesPerThread),
+            new MessageWriter(loggerInfo.logger, messagesPerThread)
         };
         MessageWriter.runOnThreads(writers);
 
-        localLogger.info("all threads started");
+        // all messages should be written when the threads complete
 
-        assertEquals("number of messages recorded in stats", messagesPerThread * 5, appender.getAppenderStatistics().getMessagesSent());
+        assertEquals("number of messages recorded in stats", messagesPerThread * 5, loggerInfo.stats.getMessagesSent());
 
         testHelper.assertMessages(LOGSTREAM_BASE, messagesPerThread * 5);
     }

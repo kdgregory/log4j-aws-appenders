@@ -36,6 +36,7 @@ import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.testhelpers.CloudWatchTestHelper;
+import com.kdgregory.logging.testhelpers.CommonTestHelper;
 import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 
 
@@ -141,6 +142,7 @@ public class CloudWatchLogWriterIntegrationTest
 
         new MessageWriter(numMessages).run();
 
+        CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
         testHelper.assertMessages("smoketest", numMessages);
     }
 
@@ -157,6 +159,7 @@ public class CloudWatchLogWriterIntegrationTest
 
         new MessageWriter(numMessages).run();
 
+        CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
         testHelper.assertMessages("testAlternateRegion", numMessages);
 
         assertFalse("stream does not exist in default region",
@@ -178,6 +181,7 @@ public class CloudWatchLogWriterIntegrationTest
 
         new MessageWriter(numMessages).run();
 
+        CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
         testHelper.assertMessages("testAlternateEndpoint", numMessages);
 
         assertFalse("stream does not exist in default region",

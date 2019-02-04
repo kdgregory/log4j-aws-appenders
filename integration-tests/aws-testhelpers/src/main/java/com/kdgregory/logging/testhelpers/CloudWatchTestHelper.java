@@ -95,6 +95,13 @@ public class CloudWatchTestHelper
 
     /**
      *  Reads all messages from a stream.
+     *  <p>
+     *  I've discovered that GetLogEvents retrieves messages in-order by time. If a
+     *  message is written to the stream with a timestamp that's earlier than those
+     *  you've already read, you won't see it. As a result, CloudWatch tests need
+     *  to spin on the stats until they see all messages were written, before trying
+     *  to read any messages (this was a particular problem with the many-threads
+     *  test).
      */
     public LinkedHashSet<OutputLogEvent> retrieveAllMessages(String logStreamName)
     throws Exception

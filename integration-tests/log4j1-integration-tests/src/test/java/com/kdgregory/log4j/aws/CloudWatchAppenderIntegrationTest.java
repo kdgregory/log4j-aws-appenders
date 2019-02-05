@@ -347,8 +347,10 @@ public class CloudWatchAppenderIntegrationTest
     @Test
     public void testLogstreamDeletionAndRecreation() throws Exception
     {
-        final int numMessages       = 100;
-        final String logStreamName  = LOGSTREAM_BASE + "-1";
+        // note: we configure the stream to use a sequence number, but it shouldn't change
+        //       during this test: we re-create the stream, not the writer
+        final String streamName  = LOGSTREAM_BASE + "-1";
+        final int numMessages    = 100;
 
         init("testLogstreamDeletionAndRecreation");
 
@@ -358,20 +360,22 @@ public class CloudWatchAppenderIntegrationTest
         (new MessageWriter(loggerInfo.logger, numMessages)).run();
 
         CommonTestHelper.waitUntilMessagesSent(loggerInfo.stats, numMessages, 30000);
-        testHelper.assertMessages(logStreamName, numMessages);
+        testHelper.assertMessages(streamName, numMessages);
 
         localLogger.info("deleting stream");
-        testHelper.deleteLogStream(logStreamName);
+        testHelper.deleteLogStream(streamName);
 
         localLogger.info("writing second batch");
         (new MessageWriter(loggerInfo.logger, numMessages)).run();
 
         // the original batch of messages will be gone, so we can assert the new batch was written
+        // however, the writer doesn't change so the stats will keep increasing
 
-        CommonTestHelper.waitUntilMessagesSent(loggerInfo.stats, numMessages, 30000);
-        testHelper.assertMessages(logStreamName, numMessages);
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo.stats, numMessages * 2, 30000);
+        testHelper.assertMessages(streamName, numMessages);
 
-        assertTrue("statistics has error message", loggerInfo.stats.getLastErrorMessage().contains("log stream missing"));
+        assertEquals("all messages reported in stats",  numMessages * 2, loggerInfo.stats.getMessagesSent());
+        assertTrue("statistics has error message",      loggerInfo.stats.getLastErrorMessage().contains("log stream missing"));
     }
 
 

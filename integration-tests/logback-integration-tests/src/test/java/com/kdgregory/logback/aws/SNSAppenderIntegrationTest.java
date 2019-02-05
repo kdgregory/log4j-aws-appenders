@@ -40,6 +40,7 @@ import org.slf4j.MDC;
 
 import net.sf.kdgcommons.lang.StringUtil;
 
+import com.kdgregory.logback.aws.testhelpers.MessageWriter;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.testhelpers.SNSTestHelper;
@@ -63,28 +64,6 @@ public class SNSAppenderIntegrationTest
 //----------------------------------------------------------------------------
 //  Helpers
 //----------------------------------------------------------------------------
-
-    /**
-     *  Logger-specific implementation of utility class.
-     */
-    private static class MessageWriter
-    extends com.kdgregory.logging.testhelpers.MessageWriter
-    {
-        private Logger logger;
-
-        public MessageWriter(Logger logger, int numMessages)
-        {
-            super(numMessages);
-            this.logger = logger;
-        }
-
-        @Override
-        protected void writeLogMessage(String message)
-        {
-            logger.debug(message);
-        }
-    }
-
 
     /**
      *  This function is used as a client factory by the smoketest.

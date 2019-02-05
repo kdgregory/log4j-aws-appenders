@@ -37,6 +37,7 @@ import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 
+import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.testhelpers.SNSTestHelper;
@@ -60,28 +61,6 @@ public class SNSAppenderIntegrationTest
 //----------------------------------------------------------------------------
 //  Helpers
 //----------------------------------------------------------------------------
-
-    /**
-     *  Logger-specific implementation of utility class.
-     */
-    private static class MessageWriter
-    extends com.kdgregory.logging.testhelpers.MessageWriter
-    {
-        private Logger logger;
-
-        public MessageWriter(Logger logger, int numMessages)
-        {
-            super(numMessages);
-            this.logger = logger;
-        }
-
-        @Override
-        protected void writeLogMessage(String message)
-        {
-            logger.debug(message);
-        }
-    }
-
 
     /**
      *  The static client factory used by smoketestByArn()

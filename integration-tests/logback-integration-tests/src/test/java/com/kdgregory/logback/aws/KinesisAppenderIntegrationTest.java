@@ -27,6 +27,7 @@ import static org.junit.Assert.*;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 
+import com.kdgregory.logback.aws.testhelpers.MessageWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.testhelpers.KinesisTestHelper;
 import com.kdgregory.logging.testhelpers.CommonTestHelper;
@@ -59,28 +60,6 @@ public class KinesisAppenderIntegrationTest
 //----------------------------------------------------------------------------
 //  Helpers
 //----------------------------------------------------------------------------
-
-    /**
-     *  Logger-specific implementation of utility class.
-     */
-    private static class MessageWriter
-    extends com.kdgregory.logging.testhelpers.MessageWriter
-    {
-        private Logger logger;
-
-        public MessageWriter(Logger logger, int numMessages)
-        {
-            super(numMessages);
-            this.logger = logger;
-        }
-
-        @Override
-        protected void writeLogMessage(String message)
-        {
-            logger.debug(message);
-        }
-    }
-
 
     /**
      *  Factory method called by smoketest

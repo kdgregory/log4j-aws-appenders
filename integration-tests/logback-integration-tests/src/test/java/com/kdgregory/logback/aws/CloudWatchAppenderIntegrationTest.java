@@ -37,6 +37,7 @@ import org.slf4j.MDC;
 import net.sf.kdgcommons.lang.ClassUtil;
 import static net.sf.kdgcommons.test.NumericAsserts.*;
 
+import com.kdgregory.logback.aws.testhelpers.MessageWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.testhelpers.CloudWatchTestHelper;
@@ -62,26 +63,6 @@ public class CloudWatchAppenderIntegrationTest
 //----------------------------------------------------------------------------
 //  Helpers
 //----------------------------------------------------------------------------
-
-    // TODO - move into stand-alone class, share between all ITs in module
-    private static class MessageWriter
-    extends com.kdgregory.logging.testhelpers.MessageWriter
-    {
-        private Logger logger;
-
-        public MessageWriter(Logger logger, int numMessages)
-        {
-            super(numMessages);
-            this.logger = logger;
-        }
-
-        @Override
-        protected void writeLogMessage(String message)
-        {
-            logger.debug(message);
-        }
-    }
-
 
     /**
      *  Retrieves and holds a logger instance and related objects.

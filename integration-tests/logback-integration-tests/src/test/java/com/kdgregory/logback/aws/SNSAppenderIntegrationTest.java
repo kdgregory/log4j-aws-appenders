@@ -66,6 +66,24 @@ public class SNSAppenderIntegrationTest
 //----------------------------------------------------------------------------
 
     /**
+     *  Retrieves and holds a logger instance and related objects.
+     */
+    public static class LoggerInfo
+    {
+        public ch.qos.logback.classic.Logger logger;
+        public SNSAppender<ILoggingEvent> appender;
+        public SNSWriterStatistics stats;
+
+        public LoggerInfo(String loggerName, String appenderName)
+        {
+            logger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger(loggerName);
+            appender = (SNSAppender<ILoggingEvent>)logger.getAppender(appenderName);
+            stats = appender.getAppenderStatistics();
+        }
+    }
+
+
+    /**
      *  This function is used as a client factory by the smoketest.
      */
     public static AmazonSNS createClient()
@@ -142,11 +160,9 @@ public class SNSAppenderIntegrationTest
 
         init("smoketestByArn", true);
 
-        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
-        SNSAppender<ILoggingEvent> appender = (SNSAppender<ILoggingEvent>)testLogger.getAppender("test");
-        SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
-        (new MessageWriter(testLogger, numMessages)).run();
+        (new MessageWriter(loggerInfo.logger, numMessages)).run();
 
         localLogger.info("reading messages");
         List<String> messages = testHelper.retrieveMessages(numMessages);
@@ -154,9 +170,9 @@ public class SNSAppenderIntegrationTest
         assertEquals("number of messages", numMessages, messages.size());
         testHelper.assertMessageContent(messages);
 
-        assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),   appenderStats.getActualTopicName());
-        assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       appenderStats.getActualTopicArn());
-        assertEquals("messages written, from stats",        numMessages,                    appenderStats.getMessagesSent());
+        assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),      loggerInfo.stats.getActualTopicName());
+        assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       loggerInfo.stats.getActualTopicArn());
+        assertEquals("messages written, from stats",        numMessages,                    loggerInfo.stats.getMessagesSent());
 
         assertTrue("client factory should have been invoked", localFactoryUsed);
     }
@@ -169,13 +185,9 @@ public class SNSAppenderIntegrationTest
 
         init("smoketestByName", true);
 
-        testHelper.createTopicAndQueue();
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
-        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
-        SNSAppender<ILoggingEvent> appender = (SNSAppender<ILoggingEvent>)testLogger.getAppender("test");
-        SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
-
-        (new MessageWriter(testLogger, numMessages)).run();
+        (new MessageWriter(loggerInfo.logger, numMessages)).run();
 
         localLogger.info("reading messages");
         List<String> messages = testHelper.retrieveMessages(numMessages);
@@ -183,9 +195,9 @@ public class SNSAppenderIntegrationTest
         assertEquals("number of messages", numMessages, messages.size());
         testHelper.assertMessageContent(messages, "Example");
 
-        assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),   appenderStats.getActualTopicName());
-        assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       appenderStats.getActualTopicArn());
-        assertEquals("messages written, from stats",        numMessages,                    appenderStats.getMessagesSent());
+        assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),      loggerInfo.stats.getActualTopicName());
+        assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       loggerInfo.stats.getActualTopicArn());
+        assertEquals("messages written, from stats",        numMessages,                    loggerInfo.stats.getMessagesSent());
 
         assertFalse("client factory should not have been invoked", localFactoryUsed);
     }
@@ -198,26 +210,24 @@ public class SNSAppenderIntegrationTest
 
         init("testTopicMissingAutoCreate", false);
 
-        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
-        SNSAppender<ILoggingEvent> appender = (SNSAppender<ILoggingEvent>)testLogger.getAppender("test");
-        SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
         localLogger.info("waiting for writer initialization to finish");
-        CommonTestHelper.waitUntilWriterInitialized(appender, SNSLogWriter.class, 30000);
+        CommonTestHelper.waitUntilWriterInitialized(loggerInfo.appender, SNSLogWriter.class, 30000);
 
         assertNotEmpty("topic was created", testHelper.lookupTopic());
 
-        assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),      appenderStats.getActualTopicName());
-        assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       appenderStats.getActualTopicArn());
+        assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),      loggerInfo.stats.getActualTopicName());
+        assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       loggerInfo.stats.getActualTopicArn());
 
         // even though we trust initialization, we'll still write messages
 
         localLogger.info("writing messages");
-        (new MessageWriter(testLogger, numMessages)).run();
+        (new MessageWriter(loggerInfo.logger, numMessages)).run();
 
         // no queue attached to this topic so we can't read messages directly
 
-        CommonTestHelper.waitUntilMessagesSent(appenderStats, numMessages, 30000);
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo.stats, numMessages, 30000);
     }
 
 
@@ -226,9 +236,7 @@ public class SNSAppenderIntegrationTest
     {
         init("testTopicMissingNoAutoCreate", false);
 
-        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
-        SNSAppender<ILoggingEvent> appender = (SNSAppender<ILoggingEvent>)testLogger.getAppender("test");
-        SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
         // if we can't create the topic then initialization fails, so we'll spin looking for
         // an error to be reported via statistics
@@ -236,7 +244,7 @@ public class SNSAppenderIntegrationTest
         String errorMessage = "";
         for (int ii = 0 ; ii < 60 ; ii++)
         {
-            errorMessage = appenderStats.getLastErrorMessage();
+            errorMessage = loggerInfo.stats.getLastErrorMessage();
             if (! StringUtil.isEmpty(errorMessage))
                 break;
             Thread.sleep(1000);
@@ -246,8 +254,8 @@ public class SNSAppenderIntegrationTest
 
         assertNull("topic was not created", testHelper.lookupTopic());
 
-        assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),      appenderStats.getActualTopicName());
-        assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       appenderStats.getActualTopicArn());
+        assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),      loggerInfo.stats.getActualTopicName());
+        assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       loggerInfo.stats.getActualTopicArn());
     }
 
 
@@ -260,13 +268,11 @@ public class SNSAppenderIntegrationTest
 
         init("testMultiThread", true);
 
-        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
-        SNSAppender<ILoggingEvent> appender = (SNSAppender<ILoggingEvent>)testLogger.getAppender("test");
-        SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
         for (int ii = 0 ; ii < numThreads ; ii++)
         {
-            new Thread(new MessageWriter(testLogger, numMessages)).start();
+            new Thread(new MessageWriter(loggerInfo.logger, numMessages)).start();
         }
 
         localLogger.info("reading messages");
@@ -275,9 +281,9 @@ public class SNSAppenderIntegrationTest
         assertEquals("number of messages", totalMessages, messages.size());
         testHelper.assertMessageContent(messages, "Example");
 
-        assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),      appenderStats.getActualTopicName());
-        assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       appenderStats.getActualTopicArn());
-        assertEquals("messages written, from stats",        totalMessages,                  appenderStats.getMessagesSent());
+        assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),      loggerInfo.stats.getActualTopicName());
+        assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       loggerInfo.stats.getActualTopicArn());
+        assertEquals("messages written, from stats",        totalMessages,                  loggerInfo.stats.getMessagesSent());
     }
 
 
@@ -290,15 +296,11 @@ public class SNSAppenderIntegrationTest
 
         init("testMultiAppender", true);
 
-        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
+        LoggerInfo loggerInfo1 = new LoggerInfo("TestLogger", "test1");
+        LoggerInfo loggerInfo2 = new LoggerInfo("TestLogger", "test2");
 
-        SNSAppender<ILoggingEvent> appender1 = (SNSAppender<ILoggingEvent>)testLogger.getAppender("test1");
-        SNSWriterStatistics stats1 = appender1.getAppenderStatistics();
-
-        SNSAppender<ILoggingEvent> appender2 = (SNSAppender<ILoggingEvent>)testLogger.getAppender("test2");
-        SNSWriterStatistics stats2 = appender2.getAppenderStatistics();
-
-        (new MessageWriter(testLogger, numMessages)).run();
+        // same logger regardless of which info object we use
+        (new MessageWriter(loggerInfo1.logger, numMessages)).run();
 
         localLogger.info("reading messages");
         List<String> messages = testHelper.retrieveMessages(totalMessages);
@@ -306,13 +308,13 @@ public class SNSAppenderIntegrationTest
         assertEquals("number of messages", totalMessages, messages.size());
         testHelper.assertMessageContent(messages, "Example1", "Example2");
 
-        assertEquals("actual topic name, appender1, from statistics",   testHelper.getTopicName(),      stats1.getActualTopicName());
-        assertEquals("actual topic ARN, appender1, from statistics",    testHelper.getTopicARN(),       stats1.getActualTopicArn());
-        assertEquals("messages written, appender1, from stats",         numMessages,                    stats1.getMessagesSent());
+        assertEquals("actual topic name, appender1, from statistics",   testHelper.getTopicName(),      loggerInfo1.stats.getActualTopicName());
+        assertEquals("actual topic ARN, appender1, from statistics",    testHelper.getTopicARN(),       loggerInfo1.stats.getActualTopicArn());
+        assertEquals("messages written, appender1, from stats",         numMessages,                    loggerInfo1.stats.getMessagesSent());
 
-        assertEquals("actual topic name, appender2, from statistics",   testHelper.getTopicName(),      stats2.getActualTopicName());
-        assertEquals("actual topic ARN, appender2, from statistics",    testHelper.getTopicARN(),       stats2.getActualTopicArn());
-        assertEquals("messages written, appender2, from stats",         numMessages,                    stats2.getMessagesSent());
+        assertEquals("actual topic name, appender2, from statistics",   testHelper.getTopicName(),      loggerInfo2.stats.getActualTopicName());
+        assertEquals("actual topic ARN, appender2, from statistics",    testHelper.getTopicARN(),       loggerInfo2.stats.getActualTopicArn());
+        assertEquals("messages written, appender2, from stats",         numMessages,                    loggerInfo2.stats.getMessagesSent());
     }
 
 
@@ -323,30 +325,28 @@ public class SNSAppenderIntegrationTest
 
         init("testAlternateRegion", false);
 
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
+
         // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
         //         if that is your default, then the test will fail
         AmazonSNS altSNSclient = AmazonSNSClientBuilder.standard().withRegion("us-east-2").build();
         AmazonSQS altSQSclient = AmazonSQSClientBuilder.standard().withRegion("us-east-2").build();
         SNSTestHelper altTestHelper = new SNSTestHelper(testHelper, altSNSclient, altSQSclient);
 
-        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
-        SNSAppender<ILoggingEvent> appender = (SNSAppender<ILoggingEvent>)testLogger.getAppender("test");
-        SNSWriterStatistics appenderStats = appender.getAppenderStatistics();
-
         localLogger.info("waiting for writer initialization to finish");
-        CommonTestHelper.waitUntilWriterInitialized(appender, SNSLogWriter.class, 30000);
+        CommonTestHelper.waitUntilWriterInitialized(loggerInfo.appender, SNSLogWriter.class, 30000);
 
         assertNotEmpty("topic was created",                  altTestHelper.lookupTopic());
         assertNull("topic does not exist in default region", testHelper.lookupTopic());
 
-        assertEquals("actual topic name, from statistics",  altTestHelper.getTopicName(),      appenderStats.getActualTopicName());
-        assertEquals("actual topic ARN, from statistics",   altTestHelper.getTopicARN(),       appenderStats.getActualTopicArn());
+        assertEquals("actual topic name, from statistics",  altTestHelper.getTopicName(),      loggerInfo.stats.getActualTopicName());
+        assertEquals("actual topic ARN, from statistics",   altTestHelper.getTopicARN(),       loggerInfo.stats.getActualTopicArn());
 
         localLogger.info("writing messages");
-        (new MessageWriter(testLogger, numMessages)).run();
+        (new MessageWriter(loggerInfo.logger, numMessages)).run();
 
         // no queue attached to this topic so we can't read messages directly
 
-        CommonTestHelper.waitUntilMessagesSent(appenderStats, numMessages, 30000);
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo.stats, numMessages, 30000);
     }
 }

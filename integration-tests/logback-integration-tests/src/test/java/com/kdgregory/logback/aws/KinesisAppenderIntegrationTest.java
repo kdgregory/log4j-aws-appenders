@@ -29,6 +29,7 @@ import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 
 import com.kdgregory.logback.aws.testhelpers.MessageWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.testhelpers.KinesisTestHelper;
 import com.kdgregory.logging.testhelpers.CommonTestHelper;
 import com.kdgregory.logging.testhelpers.KinesisTestHelper.RetrievedRecord;
@@ -60,6 +61,24 @@ public class KinesisAppenderIntegrationTest
 //----------------------------------------------------------------------------
 //  Helpers
 //----------------------------------------------------------------------------
+
+    /**
+     *  Retrieves and holds a logger instance and related objects.
+     */
+    public static class LoggerInfo
+    {
+        public ch.qos.logback.classic.Logger logger;
+        public KinesisAppender<ILoggingEvent> appender;
+        public KinesisWriterStatistics stats;
+
+        public LoggerInfo(String loggerName, String appenderName)
+        {
+            logger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger(loggerName);
+            appender = (KinesisAppender<ILoggingEvent>)logger.getAppender(appenderName);
+            stats = appender.getAppenderStatistics();
+        }
+    }
+
 
     /**
      *  Factory method called by smoketest
@@ -134,10 +153,9 @@ public class KinesisAppenderIntegrationTest
 
         init("smoketest");
 
-        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
-        KinesisAppender<ILoggingEvent> appender = (KinesisAppender<ILoggingEvent>)testLogger.getAppender("test");
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
-        (new MessageWriter(testLogger, numMessages)).run();
+        (new MessageWriter(loggerInfo.logger, numMessages)).run();
 
         localLogger.info("reading messages");
         List<RetrievedRecord> messages = testHelper.retrieveAllMessages(numMessages);
@@ -150,7 +168,7 @@ public class KinesisAppenderIntegrationTest
 
         assertTrue("client factory should have been invoked", localFactoryUsed);
 
-        testHelper.assertStats(appender.getAppenderStatistics(), numMessages);
+        testHelper.assertStats(loggerInfo.stats, numMessages);
     }
 
 
@@ -161,15 +179,15 @@ public class KinesisAppenderIntegrationTest
 
         init("testMultipleThreadsSingleAppender");
 
-        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
         MessageWriter[] writers = new MessageWriter[]
         {
-            new MessageWriter(testLogger, messagesPerThread),
-            new MessageWriter(testLogger, messagesPerThread),
-            new MessageWriter(testLogger, messagesPerThread),
-            new MessageWriter(testLogger, messagesPerThread),
-            new MessageWriter(testLogger, messagesPerThread)
+            new MessageWriter(loggerInfo.logger, messagesPerThread),
+            new MessageWriter(loggerInfo.logger, messagesPerThread),
+            new MessageWriter(loggerInfo.logger, messagesPerThread),
+            new MessageWriter(loggerInfo.logger, messagesPerThread),
+            new MessageWriter(loggerInfo.logger, messagesPerThread)
         };
 
         MessageWriter.runOnThreads(writers);
@@ -198,18 +216,18 @@ public class KinesisAppenderIntegrationTest
 
         init("testMultipleThreadsMultipleAppendersDistinctPartitions");
 
-        Logger testLogger1 = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger1");
-        Logger testLogger2 = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger2");
-        Logger testLogger3 = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger3");
+        LoggerInfo loggerInfo1 = new LoggerInfo("TestLogger1", "test1");
+        LoggerInfo loggerInfo2 = new LoggerInfo("TestLogger2", "test2");
+        LoggerInfo loggerInfo3 = new LoggerInfo("TestLogger3", "test3");
 
         MessageWriter[] writers = new MessageWriter[]
         {
-            new MessageWriter(testLogger1, messagesPerThread),
-            new MessageWriter(testLogger2, messagesPerThread),
-            new MessageWriter(testLogger3, messagesPerThread),
-            new MessageWriter(testLogger1, messagesPerThread),
-            new MessageWriter(testLogger2, messagesPerThread),
-            new MessageWriter(testLogger3, messagesPerThread)
+            new MessageWriter(loggerInfo1.logger, messagesPerThread),
+            new MessageWriter(loggerInfo2.logger, messagesPerThread),
+            new MessageWriter(loggerInfo3.logger, messagesPerThread),
+            new MessageWriter(loggerInfo1.logger, messagesPerThread),
+            new MessageWriter(loggerInfo2.logger, messagesPerThread),
+            new MessageWriter(loggerInfo3.logger, messagesPerThread)
         };
 
         MessageWriter.runOnThreads(writers);
@@ -238,9 +256,9 @@ public class KinesisAppenderIntegrationTest
 
         init("testRandomPartitionKeys");
 
-        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
-        (new MessageWriter(testLogger, numMessages)).run();
+        (new MessageWriter(loggerInfo.logger, numMessages)).run();
 
         localLogger.info("reading messages");
         List<RetrievedRecord> messages = testHelper.retrieveAllMessages(numMessages);
@@ -259,14 +277,13 @@ public class KinesisAppenderIntegrationTest
 
         init("testFailsIfNoStreamPresent");
 
-        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
-        KinesisAppender<ILoggingEvent> appender = (KinesisAppender<ILoggingEvent>)testLogger.getAppender("test");
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
-        (new MessageWriter(testLogger, numMessages)).run();
+        (new MessageWriter(loggerInfo.logger, numMessages)).run();
 
         localLogger.info("waiting for writer initialization to finish");
-        CommonTestHelper.waitUntilWriterInitialized(appender, KinesisLogWriter.class, 10000);
-        String initializationMessage = appender.getAppenderStatistics().getLastErrorMessage();
+        CommonTestHelper.waitUntilWriterInitialized(loggerInfo.appender, KinesisLogWriter.class, 10000);
+        String initializationMessage = loggerInfo.stats.getLastErrorMessage();
 
         StringAsserts.assertRegex(
             "initialization message did not indicate missing stream (was \"" + initializationMessage + "\")",
@@ -282,6 +299,8 @@ public class KinesisAppenderIntegrationTest
 
         init("testAlternateRegion");
 
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
+
         // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
         //         if that is your default, then the test will fail
         AmazonKinesis altClient = AmazonKinesisClientBuilder.standard().withRegion("us-east-2").build();
@@ -289,10 +308,8 @@ public class KinesisAppenderIntegrationTest
 
         altTestHelper.deleteStreamIfExists();
 
-        ch.qos.logback.classic.Logger testLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("TestLogger");
-
         localLogger.info("writing messages");
-        (new MessageWriter(testLogger, numMessages)).run();
+        (new MessageWriter(loggerInfo.logger, numMessages)).run();
 
         localLogger.info("reading messages");
         List<RetrievedRecord> messages = altTestHelper.retrieveAllMessages(numMessages);

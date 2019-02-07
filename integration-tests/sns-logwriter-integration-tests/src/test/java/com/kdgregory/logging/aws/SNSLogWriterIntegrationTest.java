@@ -25,6 +25,9 @@ import static org.junit.Assert.*;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import net.sf.kdgcommons.lang.ClassUtil;
+
 import org.slf4j.Logger;
 
 import com.amazonaws.regions.Regions;
@@ -46,9 +49,16 @@ import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 
 public class SNSLogWriterIntegrationTest
 {
-    // these clients are shared by all tests
-    private static AmazonSNSClient defaultSNSclient;
-    private static AmazonSQSClient defaultSQSclient;
+    // "helper" clients are shared by all tests
+    private static AmazonSNSClient helperSNSclient;
+    private static AmazonSQSClient helperSQSclient;
+
+    // these are created by the "alternate region" tests
+    private AmazonSNSClient altSNSclient;
+    private AmazonSQSClient altSQSclient;
+
+    // this client is used in testFactoryMethod(), should be null everywhere else
+    private static AmazonSNSClient factoryClient;
 
     // this is for logging within the test
     private Logger localLogger = LoggerFactory.getLogger(getClass());
@@ -100,6 +110,13 @@ public class SNSLogWriterIntegrationTest
         }
     }
 
+
+    public static AmazonSNSClient staticClientFactory()
+    {
+        factoryClient = new AmazonSNSClient();
+        return factoryClient;
+    }
+
 //----------------------------------------------------------------------------
 //  JUnit Scaffolding
 //----------------------------------------------------------------------------
@@ -108,8 +125,8 @@ public class SNSLogWriterIntegrationTest
     public static void beforeClass()
     {
         // constructor because we're running against 1.11.0
-        defaultSNSclient = new AmazonSNSClient();
-        defaultSQSclient = new AmazonSQSClient();
+        helperSNSclient = new AmazonSNSClient();
+        helperSQSclient = new AmazonSQSClient();
     }
 
     @After
@@ -119,6 +136,23 @@ public class SNSLogWriterIntegrationTest
         {
             writer.stop();
         }
+
+        if (altSNSclient != null)
+        {
+            altSNSclient.shutdown();
+        }
+
+        if (altSQSclient != null)
+        {
+            altSQSclient.shutdown();
+        }
+
+        if (factoryClient != null)
+        {
+            factoryClient.shutdown();
+            factoryClient = null;
+        }
+
         localLogger.info("finished");
         MDC.clear();
     }
@@ -132,7 +166,7 @@ public class SNSLogWriterIntegrationTest
     {
         final int numMessages = 11;
 
-        init("logwriter-smoketest", defaultSNSclient, defaultSQSclient, null, null, null);
+        init("smoketest", helperSNSclient, helperSQSclient, null, null, null);
 
         new MessageWriter(numMessages).run();
 
@@ -144,15 +178,34 @@ public class SNSLogWriterIntegrationTest
 
 
     @Test
+    public void testFactoryMethod() throws Exception
+    {
+        final int numMessages = 11;
+
+        init("testFactoryMethod", helperSNSclient, helperSQSclient,  getClass().getName() + ".staticClientFactory", null, null);
+
+        new MessageWriter(numMessages).run();
+
+        List<String> messages = testHelper.retrieveMessages(numMessages);
+
+        assertEquals("number of messages", numMessages, messages.size());
+        testHelper.assertMessageContent(messages, "integration test");
+
+        assertNotNull("factory method was called", factoryClient);
+        assertSame("factory-created client used by writer", factoryClient, ClassUtil.getFieldValue(writer, "client", AmazonSNS.class));
+    }
+
+
+    @Test
     public void testAlternateRegion() throws Exception
     {
         final int numMessages = 11;
 
         // default region for constructor is always us-east-1
-        AmazonSNSClient altSNSclient = new AmazonSNSClient().withRegion(Regions.US_WEST_1);
-        AmazonSQSClient altSQSclient = new AmazonSQSClient().withRegion(Regions.US_WEST_1);
+        altSNSclient = new AmazonSNSClient().withRegion(Regions.US_WEST_1);
+        altSQSclient = new AmazonSQSClient().withRegion(Regions.US_WEST_1);
 
-        init("logwriter-testAlternateRegion", altSNSclient, altSQSclient, null, "us-west-1", null);
+        init("testAlternateRegion", altSNSclient, altSQSclient, null, "us-west-1", null);
 
         new MessageWriter(numMessages).run();
 
@@ -162,7 +215,7 @@ public class SNSLogWriterIntegrationTest
         testHelper.assertMessageContent(messages, "integration test");
 
         assertNull("topic does not exist in default region",
-                   (new SNSTestHelper(testHelper, defaultSNSclient, defaultSQSclient)).lookupTopic());
+                   (new SNSTestHelper(testHelper, helperSNSclient, helperSQSclient)).lookupTopic());
     }
 
 
@@ -174,10 +227,10 @@ public class SNSLogWriterIntegrationTest
         // the goal here is to verify that we can use a region that didn't exist when 1.11.0 came out
         // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
         //         if that is your default, then the test will fail
-        AmazonSNSClient altSNSclient = new AmazonSNSClient().withEndpoint("sns.us-east-2.amazonaws.com");
-        AmazonSQSClient altSQSclient = new AmazonSQSClient().withEndpoint("sqs.us-east-2.amazonaws.com");
+        altSNSclient = new AmazonSNSClient().withEndpoint("sns.us-east-2.amazonaws.com");
+        altSQSclient = new AmazonSQSClient().withEndpoint("sqs.us-east-2.amazonaws.com");
 
-        init("logwriter-testAlternateEndpoint", altSNSclient, altSQSclient, null, null, "sns.us-east-2.amazonaws.com");
+        init("testAlternateEndpoint", altSNSclient, altSQSclient, null, null, "sns.us-east-2.amazonaws.com");
 
         new MessageWriter(numMessages).run();
 
@@ -187,6 +240,6 @@ public class SNSLogWriterIntegrationTest
         testHelper.assertMessageContent(messages, "integration test");
 
         assertNull("topic does not exist in default region",
-                   (new SNSTestHelper(testHelper, defaultSNSclient, defaultSQSclient)).lookupTopic());
+                   (new SNSTestHelper(testHelper, helperSNSclient, helperSQSclient)).lookupTopic());
     }
 }

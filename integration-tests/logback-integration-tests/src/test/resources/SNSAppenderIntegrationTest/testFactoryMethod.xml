@@ -6,15 +6,11 @@
         </encoder>
     </appender>
 
-    <appender name="test" class="com.kdgregory.logback.aws.CloudWatchAppender">
-        <logGroup>AppenderIntegrationTest-smoketest</logGroup>
-        <logStream>AppenderTest-{sequence}</logStream>
-        <batchDelay>500</batchDelay>
-        <rotationMode>count</rotationMode>
-        <rotationInterval>333</rotationInterval>
-        <sequence>1</sequence>
+    <appender name="test" class="com.kdgregory.logback.aws.SNSAppender">
+        <topicArn>{sysprop:SNSAppenderIntegrationTest.topicArn}</topicArn>
+        <clientFactory>com.kdgregory.logback.aws.SNSAppenderIntegrationTest.createClient</clientFactory>
         <layout class="ch.qos.logback.classic.PatternLayout">
-            <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
+            <pattern>%msg</pattern>
         </layout>
     </appender>
 

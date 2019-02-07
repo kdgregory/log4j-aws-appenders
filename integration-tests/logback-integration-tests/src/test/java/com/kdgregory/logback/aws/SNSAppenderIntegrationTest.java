@@ -20,7 +20,6 @@ import java.net.URL;
 import java.util.List;
 
 import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -38,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
 
 import com.kdgregory.logback.aws.testhelpers.MessageWriter;
@@ -50,16 +50,16 @@ import com.kdgregory.logging.testhelpers.CommonTestHelper;
 public class SNSAppenderIntegrationTest
 {
     // these clients are shared by all tests
-    private static AmazonSNS snsClient;
-    private static AmazonSQS sqsClient;
+    private static AmazonSNS helperSNSclient;
+    private static AmazonSQS helperSQSclient;
+
+    // this one is used solely by the static factory test
+    private static AmazonSNS factoryClient;
 
     private SNSTestHelper testHelper;
 
     // initialized here, and again by init() after the logging framework has been initialized
     private Logger localLogger = LoggerFactory.getLogger(getClass());
-
-    // this is only set by smoketest
-    private static boolean localFactoryUsed;
 
 //----------------------------------------------------------------------------
 //  Helpers
@@ -84,12 +84,12 @@ public class SNSAppenderIntegrationTest
 
 
     /**
-     *  This function is used as a client factory by the smoketest.
+     *  Called by writer in testFactoryMethod().
      */
     public static AmazonSNS createClient()
     {
-        localFactoryUsed = true;
-        return AmazonSNSClientBuilder.defaultClient();
+        factoryClient = AmazonSNSClientBuilder.defaultClient();
+        return factoryClient;
     }
 
 
@@ -101,7 +101,7 @@ public class SNSAppenderIntegrationTest
         MDC.put("testName", testName);
         localLogger.info("starting");
 
-        testHelper = new SNSTestHelper(snsClient, sqsClient);
+        testHelper = new SNSTestHelper(helperSNSclient, helperSQSclient);
 
         // if we're going to create the topic we must do it before initializing the logging system
         if (createTopic)
@@ -129,22 +129,20 @@ public class SNSAppenderIntegrationTest
     @BeforeClass
     public static void beforeClass()
     {
-        snsClient = AmazonSNSClientBuilder.defaultClient();
-        sqsClient = AmazonSQSClientBuilder.defaultClient();
-    }
-
-
-    @Before
-    public void setUp()
-    {
-        // this won't be updated by most tests
-        localFactoryUsed = false;
+        helperSNSclient = AmazonSNSClientBuilder.defaultClient();
+        helperSQSclient = AmazonSQSClientBuilder.defaultClient();
     }
 
 
     @After
     public void tearDown()
     {
+        if (factoryClient != null)
+        {
+            factoryClient.shutdown();
+            factoryClient = null;
+        }
+
         localLogger.info("finished");
         MDC.clear();
     }
@@ -174,7 +172,7 @@ public class SNSAppenderIntegrationTest
         assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       loggerInfo.stats.getActualTopicArn());
         assertEquals("messages written, from stats",        numMessages,                    loggerInfo.stats.getMessagesSent());
 
-        assertTrue("client factory should have been invoked", localFactoryUsed);
+        assertNull("factory should not have been used to create client", factoryClient);
     }
 
 
@@ -199,7 +197,7 @@ public class SNSAppenderIntegrationTest
         assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       loggerInfo.stats.getActualTopicArn());
         assertEquals("messages written, from stats",        numMessages,                    loggerInfo.stats.getMessagesSent());
 
-        assertFalse("client factory should not have been invoked", localFactoryUsed);
+        assertNull("factory should not have been used to create client", factoryClient);
     }
 
 
@@ -315,6 +313,29 @@ public class SNSAppenderIntegrationTest
         assertEquals("actual topic name, appender2, from statistics",   testHelper.getTopicName(),      loggerInfo2.stats.getActualTopicName());
         assertEquals("actual topic ARN, appender2, from statistics",    testHelper.getTopicARN(),       loggerInfo2.stats.getActualTopicArn());
         assertEquals("messages written, appender2, from stats",         numMessages,                    loggerInfo2.stats.getMessagesSent());
+    }
+
+
+    @Test
+    public void testFactoryMethod() throws Exception
+    {
+        final int numMessages = 11;
+
+        init("testFactoryMethod", true);
+
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
+
+        (new MessageWriter(loggerInfo.logger, numMessages)).run();
+
+        localLogger.info("reading messages");
+        List<String> messages = testHelper.retrieveMessages(numMessages);
+
+        assertEquals("number of messages", numMessages, messages.size());
+        testHelper.assertMessageContent(messages);
+
+        SNSLogWriter writer = ClassUtil.getFieldValue(loggerInfo.appender, "writer", SNSLogWriter.class);
+        AmazonSNS actualClient = ClassUtil.getFieldValue(writer, "client", AmazonSNS.class);
+        assertSame("factory should have been used to create client", factoryClient, actualClient);
     }
 
 

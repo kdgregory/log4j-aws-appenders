@@ -18,7 +18,6 @@ import java.net.URL;
 import java.util.Arrays;
 
 import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -43,19 +42,19 @@ import com.kdgregory.logging.testhelpers.CommonTestHelper;
 
 public class CloudWatchAppenderIntegrationTest
 {
-    // single client is shared by all tests
-    private static AWSLogs cloudwatchClient;
-
-    // CHANGE THESE IF YOU CHANGE THE CONFIG
+    // CHANGE THIS IF YOU CHANGE THE CONFIG
     private final static String LOGSTREAM_BASE  = "AppenderTest";
+
+    // this client is shared by all tests
+    private static AWSLogs helperClient;
+
+    // this one is used solely by the static factory test
+    private static AWSLogs factoryClient;
 
     private CloudWatchTestHelper testHelper;
 
     // initialized here, and again by init() after the logging framework has been initialized
     private Logger localLogger = LogManager.getLogger(getClass());
-
-    // this is only set by smoketest
-    private static boolean localFactoryUsed;
 
 //----------------------------------------------------------------------------
 //  Helpers
@@ -80,12 +79,12 @@ public class CloudWatchAppenderIntegrationTest
 
 
     /**
-     *  This function is used as a client factory by the smoketest.
+     *  This function is used by testFactoryMethod().
      */
     public static AWSLogs createClient()
     {
-        localFactoryUsed = true;
-        return AWSLogsClientBuilder.defaultClient();
+        factoryClient = AWSLogsClientBuilder.defaultClient();
+        return factoryClient;
     }
 
 
@@ -97,7 +96,7 @@ public class CloudWatchAppenderIntegrationTest
         MDC.put("testName", testName);
         localLogger.info("starting");
 
-        testHelper = new CloudWatchTestHelper(cloudwatchClient, "AppenderIntegrationTest-" + testName);
+        testHelper = new CloudWatchTestHelper(helperClient, "AppenderIntegrationTest-" + testName);
         testHelper.deleteLogGroupIfExists();
 
         String propertiesName = "CloudWatchAppenderIntegrationTest/" + testName + ".properties";
@@ -117,21 +116,19 @@ public class CloudWatchAppenderIntegrationTest
     @BeforeClass
     public static void beforeClass()
     {
-        cloudwatchClient = AWSLogsClientBuilder.defaultClient();
-    }
-
-
-    @Before
-    public void setUp()
-    {
-        // this won't be updated by most tests
-        localFactoryUsed = false;
+        helperClient = AWSLogsClientBuilder.defaultClient();
     }
 
 
     @After
     public void tearDown()
     {
+        if (factoryClient != null)
+        {
+            factoryClient.shutdown();
+            factoryClient = null;
+        }
+
         localLogger.info("finished");
         MDC.clear();
     }
@@ -160,7 +157,7 @@ public class CloudWatchAppenderIntegrationTest
         testHelper.assertMessages(LOGSTREAM_BASE + "-3", rotationCount);
         testHelper.assertMessages(LOGSTREAM_BASE + "-4", numMessages % rotationCount);
 
-        assertTrue("client factory should have been invoked", localFactoryUsed);
+        assertNull("factory should not have been used to create client", factoryClient);
 
         assertEquals("stats: actual log group name",    "AppenderIntegrationTest-smoketest",    loggerInfo.stats.getActualLogGroupName());
         assertEquals("stats: actual log stream name",   LOGSTREAM_BASE + "-4",                  loggerInfo.stats.getActualLogStreamName());
@@ -206,8 +203,6 @@ public class CloudWatchAppenderIntegrationTest
         testHelper.assertMessages(LOGSTREAM_BASE + "-2", rotationCount);
         testHelper.assertMessages(LOGSTREAM_BASE + "-3", rotationCount);
         testHelper.assertMessages(LOGSTREAM_BASE + "-4", (messagesPerThread * writers.length) % rotationCount);
-
-        assertFalse("client factory should not have been invoked", localFactoryUsed);
     }
 
 
@@ -235,8 +230,6 @@ public class CloudWatchAppenderIntegrationTest
         testHelper.assertMessages(LOGSTREAM_BASE + "-1", messagesPerThread);
         testHelper.assertMessages(LOGSTREAM_BASE + "-2", messagesPerThread);
         testHelper.assertMessages(LOGSTREAM_BASE + "-3", messagesPerThread);
-
-        assertFalse("client factory should not have been invoked", localFactoryUsed);
     }
 
 
@@ -357,6 +350,29 @@ public class CloudWatchAppenderIntegrationTest
 
         assertEquals("all messages reported in stats",  numMessages * 2, loggerInfo.stats.getMessagesSent());
         assertTrue("statistics has error message",      loggerInfo.stats.getLastErrorMessage().contains("log stream missing"));
+    }
+
+
+    @Test
+    public void testFactoryMethod() throws Exception
+    {
+        final int numMessages     = 1001;
+
+        init("testFactoryMethod");
+
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
+
+        (new MessageWriter(loggerInfo.logger, numMessages)).run();
+
+        localLogger.info("waiting for logger");
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo.stats, numMessages, 30000);
+
+        testHelper.assertMessages(LOGSTREAM_BASE, numMessages);
+
+        CloudWatchLogWriter writer = ClassUtil.getFieldValue(loggerInfo.appender, "writer", CloudWatchLogWriter.class);
+        AWSLogs writerClient = ClassUtil.getFieldValue(writer, "client", AWSLogs.class);
+
+        assertSame("factory should have been used to create client", factoryClient, writerClient);
     }
 
 

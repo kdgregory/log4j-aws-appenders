@@ -14,14 +14,17 @@
 
 package com.kdgregory.logging.aws;
 
-
 import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import net.sf.kdgcommons.lang.ClassUtil;
+
 import org.slf4j.Logger;
 
 import com.amazonaws.regions.Regions;
@@ -44,11 +47,14 @@ public class CloudWatchLogWriterIntegrationTest
 {
     private final static String LOGGROUP_NAME = "CloudWatchLogWriterIntegrationTest";
 
-    // single client is shared by all tests
-    private static AWSLogsClient cloudwatchClient;
+    // single "helper" client that's shared by all tests
+    private static AWSLogsClient helperClient;
 
-    // except for this one, which is only used by "not the default domain" tests
+    // this one is created by the "alternate region" tests
     private AWSLogsClient altClient;
+
+    // this client is used in testFactoryMethod(), should be null everywhere else
+    private static AWSLogs factoryClient;
 
     // this is for logging within the test
     private Logger localLogger = LoggerFactory.getLogger(getClass());
@@ -100,6 +106,13 @@ public class CloudWatchLogWriterIntegrationTest
         }
     }
 
+
+    public static AWSLogs staticClientFactory()
+    {
+        factoryClient = new AWSLogsClient();
+        return factoryClient;
+    }
+
 //----------------------------------------------------------------------------
 //  JUnit Scaffolding
 //----------------------------------------------------------------------------
@@ -108,21 +121,34 @@ public class CloudWatchLogWriterIntegrationTest
     public static void beforeClass()
     {
         // constructor because we're running against 1.11.0
-        cloudwatchClient = new AWSLogsClient();
+        helperClient = new AWSLogsClient();
+    }
+
+
+    @Before
+    public void setUp()
+    {
+        factoryClient = null;
     }
 
 
     @After
     public void tearDown()
     {
+        if (writer != null)
+        {
+            writer.stop();
+        }
+
         if (altClient != null)
         {
             altClient.shutdown();
         }
 
-        if (writer != null)
+        if (factoryClient != null)
         {
-            writer.stop();
+            factoryClient.shutdown();
+            factoryClient = null;
         }
 
         localLogger.info("finished");
@@ -138,12 +164,30 @@ public class CloudWatchLogWriterIntegrationTest
     {
         final int numMessages = 1001;
 
-        init("smoketest", cloudwatchClient, null, null, null);
+        init("smoketest", helperClient, null, null, null);
 
         new MessageWriter(numMessages).run();
 
         CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
         testHelper.assertMessages("smoketest", numMessages);
+        assertNull("static factory method not called", factoryClient);
+    }
+
+
+    @Test
+    public void testFactoryMethod() throws Exception
+    {
+        final int numMessages = 1001;
+
+        init("testFactoryMethod", helperClient, getClass().getName() + ".staticClientFactory", null, null);
+
+        new MessageWriter(numMessages).run();
+
+        CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
+        testHelper.assertMessages("testFactoryMethod", numMessages);
+
+        assertNotNull("factory method was called", factoryClient);
+        assertSame("factory-created client used by writer", factoryClient, ClassUtil.getFieldValue(writer, "client", AWSLogs.class));
     }
 
 
@@ -163,7 +207,7 @@ public class CloudWatchLogWriterIntegrationTest
         testHelper.assertMessages("testAlternateRegion", numMessages);
 
         assertFalse("stream does not exist in default region",
-                    new CloudWatchTestHelper(cloudwatchClient, LOGGROUP_NAME).isLogStreamAvailable("testAlternateRegion"));
+                    new CloudWatchTestHelper(helperClient, LOGGROUP_NAME).isLogStreamAvailable("testAlternateRegion"));
     }
 
 
@@ -185,6 +229,6 @@ public class CloudWatchLogWriterIntegrationTest
         testHelper.assertMessages("testAlternateEndpoint", numMessages);
 
         assertFalse("stream does not exist in default region",
-                    new CloudWatchTestHelper(cloudwatchClient, LOGGROUP_NAME).isLogStreamAvailable("testAlternateEndpoint"));
+                    new CloudWatchTestHelper(helperClient, LOGGROUP_NAME).isLogStreamAvailable("testAlternateEndpoint"));
     }
 }

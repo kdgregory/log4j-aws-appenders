@@ -397,7 +397,7 @@ public class TestDefaultClientFactory
         {
             assertEndpointRegion(client, "us-east-1");  // should revert to default
             logger.assertInternalDebugLog("creating client via constructor");
-            logger.assertInternalErrorLog();
+            logger.assertInternalErrorLog("unsupported/invalid region.*" + region);
         }
         else
         {

@@ -316,16 +316,17 @@ public class KinesisAppenderIntegrationTest
     {
         final int numMessages = 1001;
 
-        init("testAlternateRegion");
-
-        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
-
         // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
         //         if that is your default, then the test will fail
         AmazonKinesis altClient = AmazonKinesisClientBuilder.standard().withRegion("us-east-2").build();
         KinesisTestHelper altTestHelper = new KinesisTestHelper(altClient, "testAlternateRegion");
 
+        // have to delete any eisting stream before initializing logger
         altTestHelper.deleteStreamIfExists();
+
+        init("testAlternateRegion");
+
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
         localLogger.info("writing messages");
         (new MessageWriter(loggerInfo.logger, numMessages)).run();

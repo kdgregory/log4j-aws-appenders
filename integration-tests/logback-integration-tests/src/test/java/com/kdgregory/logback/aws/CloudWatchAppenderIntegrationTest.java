@@ -391,16 +391,17 @@ public class CloudWatchAppenderIntegrationTest
     {
         final int numMessages = 1001;
 
-        init("testAlternateRegion");
-
-        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
-
         // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
         //         if this is your default, then the test will fail
         AWSLogs altClient = AWSLogsClientBuilder.standard().withRegion("us-east-2").build();
         CloudWatchTestHelper altTestHelper = new CloudWatchTestHelper(altClient, "AppenderIntegrationTest-testAlternateRegion");
 
+        // have to delete any eisting log group before initializing logger
         altTestHelper.deleteLogGroupIfExists();
+
+        init("testAlternateRegion");
+
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
         (new MessageWriter(loggerInfo.logger, numMessages)).run();
 

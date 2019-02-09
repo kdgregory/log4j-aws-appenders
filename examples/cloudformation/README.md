@@ -44,9 +44,42 @@ Things to know:
   running the example and verify that all components have been deleted.
 
 
-## Kinesis Firehose
+## SNS
 
-[This template](kinesis-firehose.json) creates the following resources:
+[This template](sns.json) creates the following resources:
+
+* An SNS topic named "AppenderExample" that is the destination for log output.
+* An IAM managed policy named "AppenderExampleSNSWriter" that grants access to create and
+  write to the SNS topic. Enable this policy for any application that uses the SNS appender.
+* An IAM managed policy named "AppenderExampleSNSSubscriber" that grants access to subscribe
+  to the SNS topic. This is not used by the example but is here as a base for your own SNS
+  policies.
+
+Things to know:
+
+* The SNS topic is created with an email subscription. You will be able to change the email
+  address during stack creation; by default it's [logging-example@mailinator.com](https://www.mailinator.com/v3/index.jsp?zone=public&query=logging-example#/#inboxpane).
+  Messages sent to this address are deleted within a few hours, but are publicly available
+  to anyone with the link.
+* You must explicit confirm this subscription to receive messages. SNS sends a confirmation
+  email immediately after the topic is created, and there's a link that you must click to
+  confirm the subscription.
+
+
+## Application Role
+
+[This template](application_role.json) creates an EC2 role and instance profile that reference
+the "writer" policies for all of the preceding templates. This can be used as-is to run the
+example programs, or as a base for your own application roles.
+
+* The role is named "AppenderExampleRole"
+* The instance profile is named "AppenderExampleInstanceProfile"
+
+
+## Logging Pipeline
+
+[This template](logging-pipeline.json) builds on the Kinesis template to create a complete
+logging pipeline:
 
 * An ElasticSearch domain named "logging-example" that is the ultimate destination for log
   output. This is a `t2.small.elasticsearch` instance with 16 GB of storage, which is enough
@@ -74,25 +107,3 @@ Things to know:
 * The example ElasticSearch cluster provides open access to the world. This makes it easy to use,
   as you don't need to manage security groups or IAM permissions, but it is inappropriate for
   production use.
-
-
-## SNS
-
-[This template](sns.json) creates the following resources:
-
-* An SNS topic named "AppenderExample" that is the destination for log output.
-* An IAM managed policy named "AppenderExampleSNSWriter" that grants access to create and
-  write to the SNS topic. Enable this policy for any application that uses the SNS appender.
-* An IAM managed policy named "AppenderExampleSNSSubscriber" that grants access to subscribe
-  to the SNS topic. This is not used by the example but is here as a base for your own SNS
-  policies.
-
-Things to know:
-
-* The SNS topic is created with an email subscription. You will be able to change the email
-  address during stack creation; by default it's [logging-example@mailinator.com](https://www.mailinator.com/v3/index.jsp?zone=public&query=logging-example#/#inboxpane).
-  Messages sent to this address are deleted within a few hours, but are publicly available
-  to anyone with the link.
-* You must explicit confirm this subscription to receive messages. SNS sends a confirmation
-  email immediately after the topic is created, and there's a link that you must click to
-  confirm the subscription.

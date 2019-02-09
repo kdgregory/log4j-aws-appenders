@@ -1,0 +1,34 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "CloudFormation template to create an EC2 application role and instance profile for the logging example",
+    "Resources": {
+        "ExampleRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": "AppenderExampleRole",
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": { "Service": "ec2.amazonaws.com" },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [ 
+                    { "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:policy/AppenderExampleCloudWatchWriter" },
+                    { "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:policy/AppenderExampleKinesisWriter" },
+                    { "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:policy/AppenderExampleSNSWriter" }
+                ]
+            }
+        },
+        "ExampleInstanceProfile" : {
+            "Type": "AWS::IAM::InstanceProfile",
+            "Properties": {
+                "InstanceProfileName":  "AppenderExampleInstanceProfile",
+                "Roles": [{ "Ref": "ExampleRole" }]
+            }
+        }
+    }
+}

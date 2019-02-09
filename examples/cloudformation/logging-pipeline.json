@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
-    "Description": "CloudFormation template to create Kinesis logging pipeline",
+    "Description": "CloudFormation template to create Kinesis-based logging pipeline",
     "Parameters": {
         "FailedRecordsBucket": {
             "Type": "String",

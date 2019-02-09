@@ -25,25 +25,29 @@
             "Type": "AWS::IAM::ManagedPolicy",
             "Properties": {
                 "ManagedPolicyName": "AppenderExampleSNSWriter",
-                "Description": "Allows logger to create/write the example SNS topic",
+                "Description": "Allows logger to write to the example SNS topic",
                 "PolicyDocument": {
                     "Version": "2012-10-17",
                     "Statement": [
                         {
                             "Effect": "Allow",
                             "Action": [
-                                "sns:CreateTopic",
-                                "sns:ListTopics",
+                                "sns:ListTopics"
+                            ],
+                            "Resource": "*"
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
                                 "sns:Publish"
                             ],
-                            "Resource":
-                                { "Fn::Sub": "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:*" }
-                        }
+                            "Resource": { "Ref": "SNSTopic" }
+                        },
                     ]
                 }
             }
         },
-        "SNSWriterPolicy": {
+        "SNSSubscriberPolicy": {
             "Type": "AWS::IAM::ManagedPolicy",
             "Properties": {
                 "ManagedPolicyName": "AppenderExampleSNSSubscriber",
@@ -54,13 +58,18 @@
                         {
                             "Effect": "Allow",
                             "Action": [
-                                "sns:ListTopics",
+                                "sns:ListTopics"
+                            ],
+                            "Resource": "*"
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
                                 "sns:Subscribe",
                                 "sns:SetSubscriptionAttributes",
                                 "sns:Unsubscribe"
                             ],
-                            "Resource":
-                                { "Fn::Sub": "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:*" }
+                            "Resource": { "Ref": "SNSTopic" }
                         }
                     ]
                 }

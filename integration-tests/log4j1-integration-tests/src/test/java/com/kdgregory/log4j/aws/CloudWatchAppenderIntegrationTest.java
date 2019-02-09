@@ -418,7 +418,6 @@ public class CloudWatchAppenderIntegrationTest
 
         assertEquals("number of messages recorded in stats", 1, loggerInfo.stats.getMessagesSent());
 
-        // no need to wait, the message should be there as soon as we call
         testHelper.assertMessages(LOGSTREAM_BASE, 1);
     }
 
@@ -442,8 +441,6 @@ public class CloudWatchAppenderIntegrationTest
             new MessageWriter(loggerInfo.logger, messagesPerThread)
         };
         MessageWriter.runOnThreads(writers);
-
-        // all messages should be written when the threads complete
 
         assertEquals("number of messages recorded in stats", messagesPerThread * 5, loggerInfo.stats.getMessagesSent());
 

@@ -20,7 +20,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <aws-sdk.version>1.11.478</aws-sdk.version>
+        <aws-sdk.version>1.11.495</aws-sdk.version>
         <logback.version>1.2.0</logback.version>
 
         <plugin.compiler.version>3.1</plugin.compiler.version>

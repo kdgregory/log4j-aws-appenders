@@ -10,7 +10,7 @@
     <name>AWS Log Appenders - Examples</name>
 
     <description>
-        Parent POM to build all of the examples.
+        Driver POM to build the examples.
     </description>
 
     <modules>

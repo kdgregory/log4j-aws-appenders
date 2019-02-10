@@ -2,9 +2,13 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.kdgregory.logging</groupId>
+    <parent>
+        <groupId>com.kdgregory.logging</groupId>
+        <artifactId>parent</artifactId>
+        <version>2.1.2-SNAPSHOT</version>
+        <relativePath>../parent</relativePath>
+    </parent>
     <artifactId>aws-testhelpers</artifactId>
-    <version>2.1.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>AWS Integration Test Helpers</name>
@@ -15,52 +19,8 @@
         for independent production use.
     </description>
 
-    <url> https://github.com/kdgregory/log4j-aws-appenders </url>
-
-    <licenses>
-        <license>
-            <name>The Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        </license>
-    </licenses>
-
-    <developers>
-        <developer>
-            <name>Keith D Gregory</name>
-            <email>kdgregory@users.noreply.github.com</email>
-        </developer>
-    </developers>
-
-    <scm>
-        <connection>scm:git:https://github.com/kdgregory/log4j-aws-appenders.git</connection>
-        <developerConnection>scm:git:git@github.com:kdgregory/log4j-aws-appenders.git</developerConnection>
-        <url>https://github.com/kdgregory/log4j-aws-appenders</url>
-    </scm>
-
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-
-        <!-- note: do not update this lest we accidentally use newer APIs -->
-        <aws-sdk.version>1.11.0</aws-sdk.version>
-
-        <!-- classes may need to log, so we'll provide the SLF4J API and expect consumers to configure -->
-        <slf4j.version>1.7.25</slf4j.version>
-
-        <junit.version>4.10</junit.version>
-        <kdgcommons.version>1.0.16</kdgcommons.version>
-        <practicalxml.version>1.1.18</practicalxml.version>
-
-        <plugin.cobertura.version>2.7</plugin.cobertura.version>
-        <plugin.compiler.version>3.1</plugin.compiler.version>
-        <plugin.findbugs.version>3.0.5</plugin.findbugs.version>
-        <plugin.jar.version>3.1.0</plugin.jar.version>
-    </properties>
-
 
     <dependencies>
-
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
             <artifactId>aws-shared</artifactId>
@@ -119,33 +79,5 @@
             <version>${slf4j.version}</version>
         </dependency>
     </dependencies>
-
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>${plugin.compiler.version}</version>
-                <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
-                    <debug>true</debug>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>${plugin.jar.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 
 </project>

@@ -1,0 +1,37 @@
+<FindBugsFilter>
+
+    <Match>
+        <Class name='com.kdgregory.logging.aws.internal.AbstractLogWriter' />
+        <Field name='batchCount' />
+        <Bug pattern='VO_VOLATILE_INCREMENT' />
+        <!-- this field is exposed for testing; could be replaced by AtomicInteger but no need -->
+    </Match>
+
+    <Match>
+        <Class name='com.kdgregory.logging.aws.internal.AbstractWriterStatistics' />
+        <Method name='getLastErrorTimestamp' />
+        <Bug pattern='EI_EXPOSE_REP' />
+        <!-- this field is used for reporting; changing its internal state merely gives an inaccurate report -->
+    </Match>
+
+    <Match>
+        <Class name='com.kdgregory.logging.aws.internal.AbstractWriterStatistics' />
+        <Method name='getLastErrorTimestamp' />
+        <Bug pattern='EI_EXPOSE_REP' />
+        <!-- this field is used for reporting; changing its internal state merely gives an inaccurate report -->
+    </Match>
+
+    <Match>
+        <Class name='com.kdgregory.logging.common.LogMessage' />
+        <Bug pattern='EQ_COMPARETO_USE_OBJECT_EQUALS' />
+        <!-- we need to sort the objects by timestamp, retaining original order for objects with same timestamp; we never check equality -->
+    </Match>
+
+    <Match>
+        <Class name='com.kdgregory.logging.common.LogMessage' />
+        <Method name='getBytes' />
+        <Bug pattern='EI_EXPOSE_REP' />
+        <!-- instances of this class are not exposed outside the library, so no need to worry about exposing a byte array -->
+    </Match>
+
+</FindBugsFilter>

@@ -13,12 +13,12 @@ There are multiple projects in this repository:
 All sub-projects are built using [Apache Maven](http://maven.apache.org/). The build commands
 differ depending on project:
 
-* appenders (including aws-shared): `mvn clean install` run from the project root
-* examples: `mvn clean package` (see individual documentation for running)
-* integration tests: `mvn clean test`
+* appenders (including aws-shared): `mvn clean install` run from the project root.
+* examples: `mvn clean package` (see individual documentation for running the examples).
+* integration tests: `mvn clean test`.
 
-**Beware:** the integration tests and examples create resources and do not delete them. You
-will be charged for those resources, including a per-hour charge for the Kinesis streams.
+**Beware:** the integration tests and examples create AWS resources and do not delete them.
+You will be charged for those resources, including a per-hour charge for the Kinesis streams.
 To avoid charges, be sure to delete all resources when they're no longer needed.
 
 
@@ -52,6 +52,34 @@ may be considered a single feature). If you want to see the individual commits t
 a branch, you can look at the closed PR.
 
 Each "release" version is tagged with `release-MAJOR.MINOR.PATCH`.
+
+
+## Parent versus Driver POMs
+
+Each of the builds listed above -- appenders, integration tests, and examples -- uses a "driver"
+POM that triggers the sub-project builds. This is not a "parent" POM: it is not referenced by
+the sub-projects, and does not contain any project-wide definitions. The primary goal of these
+driver POMs is to be able to build projects that require the same set of build commands (eg,
+"install" for the libraries, versus "package" for the examples).
+
+There is a parent POM, which provides plugin configuration and version properties that are used
+throughout the project (other than the examples, which I want to be stand-alone).
+
+This split between driver and parent can lead to some strange behaviors. For example, while
+you can run `mvn install` from the project root, you can't run `mvn site` because the test
+helpers (which need to be installed before the integration tests run) doesn't provide site
+configuration.
+
+
+## Code coverage (or lack thereof)
+
+The library builds are configured to use the Cobertura code coverage tool. It appears to work
+successfully for the `aws-shared` directory, but generates a report indicating 0% coverage for
+the Log4J and Logback appenders library. It's unclear to me why this is happening: there aren't
+any errors in the build log, it shows Cobertura instrumenting classes before running tests, and
+then running again to generate the report.
+
+I will dig into this for a later release; for now, I consider all coverage numbers suspect.
 
 
 ## AWS permissions needed for integration tests

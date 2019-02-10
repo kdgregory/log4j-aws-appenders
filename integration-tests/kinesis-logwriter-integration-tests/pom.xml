@@ -2,9 +2,13 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.kdgregory.logging</groupId>
+    <parent>
+        <groupId>com.kdgregory.logging</groupId>
+        <artifactId>parent</artifactId>
+        <version>2.1.2-SNAPSHOT</version>
+        <relativePath/>
+    </parent>
     <artifactId>kinesis-logwriter-integration-tests</artifactId>
-    <version>2.1.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>KinesisLogWriter Integration Tests</name>
@@ -12,47 +16,6 @@
     <description>
         Tests the Kinesis back-end in isolation.
     </description>
-
-    <url> https://github.com/kdgregory/log4j-aws-appenders </url>
-
-    <licenses>
-        <license>
-            <name>The Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        </license>
-    </licenses>
-
-    <developers>
-        <developer>
-            <name>Keith D Gregory</name>
-            <email>kdgregory@users.noreply.github.com</email>
-        </developer>
-    </developers>
-
-    <scm>
-        <connection>scm:git:https://github.com/kdgregory/log4j-aws-appenders.git</connection>
-        <developerConnection>scm:git:git@github.com:kdgregory/log4j-aws-appenders.git</developerConnection>
-        <url>https://github.com/kdgregory/log4j-aws-appenders</url>
-    </scm>
-
-
-    <properties>
-        <!-- build configuration props, because Maven can't pick a sensible default -->
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-
-        <!-- note: this version chosen to ensure that we use client constructors -->
-        <aws-sdk.version>1.11.0</aws-sdk.version>
-
-        <junit.version>4.10</junit.version>
-        <log4j.version>1.2.17</log4j.version>
-        <kdgcommons.version>1.0.16</kdgcommons.version>
-        <practicalxml.version>1.1.19</practicalxml.version>
-        <slf4j.version>1.7.25</slf4j.version>
-
-        <plugin.compiler.version>3.1</plugin.compiler.version>
-        <plugin.surefire.version>2.12.4</plugin.surefire.version>
-    </properties>
 
 
     <dependencies>
@@ -122,31 +85,4 @@
         </dependency>
     </dependencies>
 
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>${plugin.compiler.version}</version>
-                <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
-                    <debug>true</debug>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${plugin.surefire.version}</version>
-                <configuration>
-                    <includes>
-                        <include>**/*IntegrationTest.java</include>
-                    </includes>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
 </project>
-

@@ -10,7 +10,7 @@
     <name>AWS Log Appenders - Integration Tests</name>
 
     <description>
-        Parent POM to build all of the integration tests.
+        Driver POM to build the integration tests.
     </description>
 
     <modules>

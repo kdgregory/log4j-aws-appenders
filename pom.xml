@@ -3,17 +3,18 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.kdgregory.logging</groupId>
-    <artifactId>parent</artifactId>
+    <artifactId>root</artifactId>
     <version>2.1.2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>AWS Log Appenders</name>
+    <name>AWS Log Appenders Root Build</name>
 
     <description>
-        Parent POM, used only to manage sub-project builds.
+        Driver POM for root level build.
     </description>
 
     <modules>
+        <module>parent</module>
         <module>aws-shared</module>
         <module>log4j1-appenders</module>
         <module>logback-appenders</module>

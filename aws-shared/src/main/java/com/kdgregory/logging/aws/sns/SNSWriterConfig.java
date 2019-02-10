@@ -34,8 +34,8 @@ extends AbstractWriterConfig
     /**
      *  @param  topicName           Identifies the destination topic by name; may be null.
      *  @param  topicArn            Identifies the destination topic by ARN; may be null.
-     *  @param  autoCreate          Flag to indicate topic should be created if it doesn't exist.
      *  @param  subject             The subject to be applied to outgoing messages; blank disables.
+     *  @param  autoCreate          Flag to indicate topic should be created if it doesn't exist.
      *  @param  discardThreshold    The maximum number of messages that will be retained in the queue.
      *  @param  discardAction       Controls how messages are discarded from the queue to remain within threshold.
      *  @param  clientFactoryMethod Optional: fully-qualified name of a static method to create client.
@@ -43,7 +43,7 @@ extends AbstractWriterConfig
      *  @param  clientEndpoint      Optional: explicit endpoint for client (only used with constructors).
      */
     public SNSWriterConfig(
-        String topicName, String topicArn, boolean autoCreate, String subject,
+        String topicName, String topicArn, String subject, boolean autoCreate,
         int discardThreshold, DiscardAction discardAction,
         String clientFactoryMethod, String clientRegion, String clientEndpoint)
     {

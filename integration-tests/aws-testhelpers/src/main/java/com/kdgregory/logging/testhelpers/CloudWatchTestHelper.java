@@ -14,8 +14,8 @@
 
 package com.kdgregory.logging.testhelpers;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -39,7 +39,8 @@ public class CloudWatchTestHelper
 {
     private final static long WAIT_FOR_READY_TIMEOUT_MS     = 60000;
     private final static long WAIT_FOR_DELETED_TIMEOUT_MS   = 60000;
-    private final static long RETRIEVE_TIMEOUT_MS           =  4000;
+
+    private final static int RETRIEVE_RETRY_COUNT           = 5;
 
     private Logger localLogger = LoggerFactory.getLogger(getClass());
 
@@ -65,7 +66,7 @@ public class CloudWatchTestHelper
      */
     public int assertMessages(String logStreamName, int expectedMessageCount) throws Exception
     {
-        LinkedHashSet<OutputLogEvent> events = retrieveAllMessages(logStreamName);
+        List<OutputLogEvent> events = retrieveAllMessages(logStreamName, expectedMessageCount);
 
         assertEquals("number of events in " + logStreamName, expectedMessageCount, events.size());
 
@@ -95,39 +96,50 @@ public class CloudWatchTestHelper
 
     /**
      *  Reads all messages from a stream.
+     *  <p>
+     *  To work around eventual consistency, you can pass in an expected message
+     *  count, and the function will make several attempts to read that number of
+     *  messages, with a sleep in the middle. To read whatever's available, pass 0.
      */
-    public LinkedHashSet<OutputLogEvent> retrieveAllMessages(String logStreamName)
+    public List<OutputLogEvent> retrieveAllMessages(String logStreamName, int expectedMessageCount)
     throws Exception
     {
-        LinkedHashSet<OutputLogEvent> result = new LinkedHashSet<OutputLogEvent>();
+        List<OutputLogEvent> result = new ArrayList<OutputLogEvent>();
 
         localLogger.debug("retrieving messages from {}", logStreamName);
 
         ensureLogStreamAvailable(logStreamName);
 
-        GetLogEventsRequest request = new GetLogEventsRequest()
-                              .withLogGroupName(logGroupName)
-                              .withLogStreamName(logStreamName)
-                              .withStartFromHead(Boolean.TRUE);
-
-        // sequence tokens stop changing when we're at the end of the stream; we add
-        // a minimum timeout to give the best chance of finding something
-
-        long timeoutAt = System.currentTimeMillis() + RETRIEVE_TIMEOUT_MS;
-        String prevToken = "";
-        String nextToken = "";
-        do
+        for (int retry = 0 ; retry < RETRIEVE_RETRY_COUNT ; retry++)
         {
-            prevToken = nextToken;
-            GetLogEventsResult response = client.getLogEvents(request);
-            result.addAll(response.getEvents());
-            nextToken = response.getNextForwardToken();
-            request.setNextToken(nextToken);
-            Thread.sleep(500);
-        } while ((System.currentTimeMillis() < timeoutAt) || (! prevToken.equals(nextToken)));
+            result.clear();
+
+            GetLogEventsRequest request = new GetLogEventsRequest()
+                                  .withLogGroupName(logGroupName)
+                                  .withLogStreamName(logStreamName)
+                                  .withStartFromHead(Boolean.TRUE);
+
+            // sequence tokens stop changing when we're at the end of the stream
+            String prevToken = "";
+            String nextToken = "";
+
+            do
+            {
+                prevToken = nextToken;
+                GetLogEventsResult response = client.getLogEvents(request);
+                result.addAll(response.getEvents());
+                nextToken = response.getNextForwardToken();
+                request.setNextToken(nextToken);
+                Thread.sleep(500);
+            } while (! prevToken.equals(nextToken));
+
+            if ((expectedMessageCount == 0) || (result.size() >= expectedMessageCount))
+                break;
+
+            Thread.sleep(2000);
+        }
 
         localLogger.debug("retrieved {} messages from {}", result.size(), logStreamName);
-
         return result;
     }
 

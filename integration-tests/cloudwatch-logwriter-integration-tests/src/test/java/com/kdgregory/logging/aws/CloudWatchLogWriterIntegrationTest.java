@@ -14,14 +14,17 @@
 
 package com.kdgregory.logging.aws;
 
-
 import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import net.sf.kdgcommons.lang.ClassUtil;
+
 import org.slf4j.Logger;
 
 import com.amazonaws.regions.Regions;
@@ -36,6 +39,7 @@ import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.testhelpers.CloudWatchTestHelper;
+import com.kdgregory.logging.testhelpers.CommonTestHelper;
 import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 
 
@@ -43,11 +47,14 @@ public class CloudWatchLogWriterIntegrationTest
 {
     private final static String LOGGROUP_NAME = "CloudWatchLogWriterIntegrationTest";
 
-    // single client is shared by all tests
-    private static AWSLogsClient cloudwatchClient;
+    // single "helper" client that's shared by all tests
+    private static AWSLogsClient helperClient;
 
-    // except for this one, which is only used by "not the default domain" tests
+    // this one is created by the "alternate region" tests
     private AWSLogsClient altClient;
+
+    // this client is used in testFactoryMethod(), should be null everywhere else
+    private static AWSLogs factoryClient;
 
     // this is for logging within the test
     private Logger localLogger = LoggerFactory.getLogger(getClass());
@@ -59,92 +66,6 @@ public class CloudWatchLogWriterIntegrationTest
     private CloudWatchWriterConfig config;
     private CloudWatchWriterFactory factory;
     private CloudWatchLogWriter writer;
-
-
-//----------------------------------------------------------------------------
-//  JUnit Scaffolding
-//----------------------------------------------------------------------------
-
-    @BeforeClass
-    public static void beforeClass()
-    {
-        // constructor because we're running against 1.11.0
-        cloudwatchClient = new AWSLogsClient();
-    }
-
-
-    @After
-    public void tearDown()
-    {
-        if (altClient != null)
-        {
-            altClient.shutdown();
-        }
-
-        if (writer != null)
-        {
-            writer.stop();
-        }
-
-        localLogger.info("finished");
-        MDC.clear();
-    }
-
-//----------------------------------------------------------------------------
-//  Tests
-//----------------------------------------------------------------------------
-
-    @Test
-    public void smoketest() throws Exception
-    {
-        final int numMessages = 1001;
-
-        init("smoketest", cloudwatchClient, null, null, null);
-
-        new MessageWriter(numMessages).run();
-
-        testHelper.assertMessages("smoketest", numMessages);
-    }
-
-
-    @Test
-    public void testAlternateRegion() throws Exception
-    {
-        final int numMessages = 1001;
-
-        // default region for constructor is always us-east-1
-        altClient = new AWSLogsClient().withRegion(Regions.US_WEST_1);
-
-        init("testAlternateRegion", altClient, null, "us-west-1", null);
-
-        new MessageWriter(numMessages).run();
-
-        testHelper.assertMessages("testAlternateRegion", numMessages);
-
-        assertFalse("stream does not exist in default region",
-                    new CloudWatchTestHelper(cloudwatchClient, LOGGROUP_NAME).isLogStreamAvailable("testAlternateRegion"));
-    }
-
-
-    @Test
-    public void testAlternateEndpoint() throws Exception
-    {
-        final int numMessages = 1001;
-
-        // the goal here is to verify that we can use a region that didn't exist when 1.11.0 came out
-        // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
-        //         if that is your default, then the test will fail
-        altClient = new AWSLogsClient().withEndpoint("logs.us-east-2.amazonaws.com");
-
-        init("testAlternateEndpoint", altClient, null, null, "logs.us-east-2.amazonaws.com");
-
-        new MessageWriter(numMessages).run();
-
-        testHelper.assertMessages("testAlternateEndpoint", numMessages);
-
-        assertFalse("stream does not exist in default region",
-                    new CloudWatchTestHelper(cloudwatchClient, LOGGROUP_NAME).isLogStreamAvailable("testAlternateEndpoint"));
-    }
 
 //----------------------------------------------------------------------------
 //  Helpers
@@ -183,5 +104,131 @@ public class CloudWatchLogWriterIntegrationTest
         {
             writer.addMessage(new LogMessage(System.currentTimeMillis(), message));
         }
+    }
+
+
+    public static AWSLogs staticClientFactory()
+    {
+        factoryClient = new AWSLogsClient();
+        return factoryClient;
+    }
+
+//----------------------------------------------------------------------------
+//  JUnit Scaffolding
+//----------------------------------------------------------------------------
+
+    @BeforeClass
+    public static void beforeClass()
+    {
+        // constructor because we're running against 1.11.0
+        helperClient = new AWSLogsClient();
+    }
+
+
+    @Before
+    public void setUp()
+    {
+        factoryClient = null;
+    }
+
+
+    @After
+    public void tearDown()
+    {
+        if (writer != null)
+        {
+            writer.stop();
+        }
+
+        if (altClient != null)
+        {
+            altClient.shutdown();
+        }
+
+        if (factoryClient != null)
+        {
+            factoryClient.shutdown();
+            factoryClient = null;
+        }
+
+        localLogger.info("finished");
+        MDC.clear();
+    }
+
+//----------------------------------------------------------------------------
+//  Tests
+//----------------------------------------------------------------------------
+
+    @Test
+    public void smoketest() throws Exception
+    {
+        final int numMessages = 1001;
+
+        init("smoketest", helperClient, null, null, null);
+
+        new MessageWriter(numMessages).run();
+
+        CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
+        testHelper.assertMessages("smoketest", numMessages);
+        assertNull("static factory method not called", factoryClient);
+    }
+
+
+    @Test
+    public void testFactoryMethod() throws Exception
+    {
+        final int numMessages = 1001;
+
+        init("testFactoryMethod", helperClient, getClass().getName() + ".staticClientFactory", null, null);
+
+        new MessageWriter(numMessages).run();
+
+        CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
+        testHelper.assertMessages("testFactoryMethod", numMessages);
+
+        assertNotNull("factory method was called", factoryClient);
+        assertSame("factory-created client used by writer", factoryClient, ClassUtil.getFieldValue(writer, "client", AWSLogs.class));
+    }
+
+
+    @Test
+    public void testAlternateRegion() throws Exception
+    {
+        final int numMessages = 1001;
+
+        // default region for constructor is always us-east-1
+        altClient = new AWSLogsClient().withRegion(Regions.US_WEST_1);
+
+        init("testAlternateRegion", altClient, null, "us-west-1", null);
+
+        new MessageWriter(numMessages).run();
+
+        CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
+        testHelper.assertMessages("testAlternateRegion", numMessages);
+
+        assertFalse("stream does not exist in default region",
+                    new CloudWatchTestHelper(helperClient, LOGGROUP_NAME).isLogStreamAvailable("testAlternateRegion"));
+    }
+
+
+    @Test
+    public void testAlternateEndpoint() throws Exception
+    {
+        final int numMessages = 1001;
+
+        // the goal here is to verify that we can use a region that didn't exist when 1.11.0 came out
+        // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
+        //         if that is your default, then the test will fail
+        altClient = new AWSLogsClient().withEndpoint("logs.us-east-2.amazonaws.com");
+
+        init("testAlternateEndpoint", altClient, null, null, "logs.us-east-2.amazonaws.com");
+
+        new MessageWriter(numMessages).run();
+
+        CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
+        testHelper.assertMessages("testAlternateEndpoint", numMessages);
+
+        assertFalse("stream does not exist in default region",
+                    new CloudWatchTestHelper(helperClient, LOGGROUP_NAME).isLogStreamAvailable("testAlternateEndpoint"));
     }
 }

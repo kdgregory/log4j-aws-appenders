@@ -135,7 +135,7 @@ public abstract class AbstractWriterStatistics
     /**
      *  Sets the number of messages sent in the last batch.
      */
-    public synchronized void setMessagesSentLastBatch(int count)
+    public void setMessagesSentLastBatch(int count)
     {
         messagesSentLastBatch = count;
     }
@@ -150,7 +150,7 @@ public abstract class AbstractWriterStatistics
     /**
      *  Sets the number of messages requeued in the last batch.
      */
-    public synchronized void setMessagesRequeuedLastBatch(int count)
+    public void setMessagesRequeuedLastBatch(int count)
     {
         messagesRequeuedLastBatch = count;
     }

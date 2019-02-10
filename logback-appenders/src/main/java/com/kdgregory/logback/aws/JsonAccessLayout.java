@@ -513,10 +513,11 @@ extends AbstractJsonLayout<IAccessEvent>
     private static Map<String,Object> applyFilters(Map<String,?> source, boolean whitelistAll, Set<String> whitelist, Set<String> blacklist)
     {
         Map<String,Object> result = new TreeMap<String,Object>();
-        for (String key : source.keySet())
+        for (Map.Entry<String,?> entry : source.entrySet())
         {
+            String key = entry.getKey();
             if (include(key, whitelistAll, whitelist, blacklist))
-                result.put(key, flatten(source.get(key)));
+                result.put(key, flatten(entry.getValue()));
         }
         return result;
     }

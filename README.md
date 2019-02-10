@@ -75,7 +75,7 @@ The minimum supported dependency versions are:
   The appenders will work with all releases in the 1.11.x sequence. If you're using
   a version that has client builders, they will be used to create service clients;
   if not, the default client constructors will be used. For more information, see the
-  [FAQ](docs/faq.md#whats-with-client-builders-vs-contructors).
+  [FAQ](FAQ.md#whats-with-client-builders-vs-contructors).
 
 I have made an intentional effort to limit dependencies to the bare minimum. This
 has in some cases meant that I write internal implementations for functions that
@@ -86,7 +86,7 @@ are found in common libraries.
 
 [Release History](CHANGES.md)
 
-[Frequently Asked Questions](docs/faq.md)
+[Frequently Asked Questions](FAQ.md)
 
 [Design Documentation](docs/design.md)
 

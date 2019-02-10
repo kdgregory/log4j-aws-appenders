@@ -91,8 +91,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         config = new SNSWriterConfig(
                 null,                   // topicName
                 null,                   // topicArn
-                false,                  // autoCreate
-                null,                   // subject
+                null,                  // autoCreate
+                false,                   // subject
                 1000,                   // discardThreshold
                 DiscardAction.oldest,
                 null,                   // clientFactoryMethod

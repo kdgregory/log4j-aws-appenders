@@ -1,0 +1,10 @@
+<FindBugsFilter>
+
+    <Match>
+        <Class name='com.kdgregory.logback.aws.internal.AbstractAppender' />
+        <Field name='messagesSinceLastRotation' />
+        <Bug pattern='VO_VOLATILE_INCREMENT' />
+        <!-- this field is only updated within a synchronized context; it is exposed for testing -->
+    </Match>
+
+</FindBugsFilter>

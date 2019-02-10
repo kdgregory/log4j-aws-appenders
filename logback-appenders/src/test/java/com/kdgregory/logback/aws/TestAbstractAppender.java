@@ -206,6 +206,14 @@ public class TestAbstractAppender
 
         MockCloudWatchWriter writer = appender.getMockWriter();
 
+        // this test needs to spin on writer creation because the mock writer assumes it's not on a thread
+        for (int ii = 0 ; ii < 100 ; ii++)
+        {
+            if (writer.writerThread != null)
+                break;
+            Thread.sleep(100);
+        }
+
         assertNotNull("writer thread created", writer.writerThread);
 
         // the run() method should save the thread and exit immediately; if not the test will hang

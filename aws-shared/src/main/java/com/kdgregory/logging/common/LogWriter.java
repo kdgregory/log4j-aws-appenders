@@ -87,8 +87,7 @@ extends Runnable
 
 
     /**
-     *  Waits up to the specified amount of time for the writer to initialize. This
-     *  is intended to be called in non-synchronous mode, primarily for testing.
+     *  Waits up to the specified amount of time for the writer to initialize.
      *
      *  @return <code>true</code> if it initialized successfully, <code>false</code>
      *          if writer failed to initialize, the timeout expired, or the calling

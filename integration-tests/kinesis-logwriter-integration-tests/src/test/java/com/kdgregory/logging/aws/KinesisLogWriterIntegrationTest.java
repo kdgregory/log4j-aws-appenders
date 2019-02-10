@@ -24,6 +24,9 @@ import static org.junit.Assert.*;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import net.sf.kdgcommons.lang.ClassUtil;
+
 import org.slf4j.Logger;
 
 import com.amazonaws.regions.Regions;
@@ -44,12 +47,14 @@ import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 
 public class KinesisLogWriterIntegrationTest
 {
-    // single client is shared by all tests;
-    // note we're using actual client rather than interface
-    private static AmazonKinesisClient kinesisClient;
+    // single "helper" client that's shared by all tests
+    private static AmazonKinesisClient helperClient;
 
-    // this client is used for alternate-endpoint tests
+    // this one is created by the "alternate region" tests
     private AmazonKinesisClient altClient;
+
+    // this client is used in testFactoryMethod(), should be null everywhere else
+    private static AmazonKinesisClient factoryClient;
 
     // this is for logging within the test
     private Logger localLogger = LoggerFactory.getLogger(getClass());
@@ -62,6 +67,51 @@ public class KinesisLogWriterIntegrationTest
     private KinesisWriterFactory factory;
     private KinesisLogWriter writer;
 
+//----------------------------------------------------------------------------
+//  Helpers
+//----------------------------------------------------------------------------
+
+    private void init(String testName, AmazonKinesis client, String factoryMethod, String region, String endpoint)
+    throws Exception
+    {
+        MDC.put("testName", testName);
+        localLogger.info("starting");
+
+        testHelper = new KinesisTestHelper(client, testName);
+
+        testHelper.deleteStreamIfExists();
+
+        stats = new KinesisWriterStatistics();
+        internalLogger = new TestableInternalLogger();
+        config = new KinesisWriterConfig(testHelper.getStreamName(), "{random}", true, 1, null, 250, 10000, DiscardAction.oldest, factoryMethod, region, endpoint);
+        factory = new KinesisWriterFactory();
+        writer = (KinesisLogWriter)factory.newLogWriter(config, stats, internalLogger);
+
+        new DefaultThreadFactory("test").startLoggingThread(writer, false, null);
+    }
+
+
+    private class MessageWriter
+    extends com.kdgregory.logging.testhelpers.MessageWriter
+    {
+        public MessageWriter(int numMessages)
+        {
+            super(numMessages);
+        }
+
+        @Override
+        protected void writeLogMessage(String message)
+        {
+            writer.addMessage(new LogMessage(System.currentTimeMillis(), message));
+        }
+    }
+
+
+    public static AmazonKinesisClient staticClientFactory()
+    {
+        factoryClient = new AmazonKinesisClient();
+        return factoryClient;
+    }
 
 //----------------------------------------------------------------------------
 //  JUnit Scaffolding
@@ -71,7 +121,7 @@ public class KinesisLogWriterIntegrationTest
     public static void beforeClass()
     {
         // constructor because we're running against 1.11.0
-        kinesisClient = new AmazonKinesisClient();
+        helperClient = new AmazonKinesisClient();
     }
 
 
@@ -88,6 +138,12 @@ public class KinesisLogWriterIntegrationTest
             altClient.shutdown();
         }
 
+        if (factoryClient != null)
+        {
+            factoryClient.shutdown();
+            factoryClient = null;
+        }
+
         localLogger.info("finished");
         MDC.clear();
     }
@@ -101,13 +157,30 @@ public class KinesisLogWriterIntegrationTest
     {
         final int numMessages = 1001;
 
-        init("logwriter-smoketest", kinesisClient, null, null, null);
+        init("logwriter-smoketest", helperClient, null, null, null);
 
         new MessageWriter(numMessages).run();
 
         List<RetrievedRecord> records = testHelper.retrieveAllMessages(numMessages);
         testHelper.assertMessages(records, 1, numMessages);
         testHelper.assertRandomPartitionKeys(records, numMessages);
+    }
+
+
+    @Test
+    public void testFactoryMethod() throws Exception
+    {
+        final int numMessages = 1001;
+
+        init("testFactoryMethod", helperClient, getClass().getName() + ".staticClientFactory", null, null);
+
+        new MessageWriter(numMessages).run();
+
+        List<RetrievedRecord> records = testHelper.retrieveAllMessages(numMessages);
+        testHelper.assertMessages(records, 1, numMessages);
+
+        assertNotNull("factory method was called", factoryClient);
+        assertSame("factory-created client used by writer", factoryClient, ClassUtil.getFieldValue(writer, "client", AmazonKinesis.class));
     }
 
 
@@ -128,7 +201,7 @@ public class KinesisLogWriterIntegrationTest
         testHelper.assertRandomPartitionKeys(records, numMessages);
 
         assertNull("stream does not exist in default region",
-                   (new KinesisTestHelper(kinesisClient, "logwriter-testAlternateRegion")).describeStream());
+                   (new KinesisTestHelper(helperClient, "logwriter-testAlternateRegion")).describeStream());
     }
 
 
@@ -151,45 +224,6 @@ public class KinesisLogWriterIntegrationTest
         testHelper.assertRandomPartitionKeys(records, numMessages);
 
         assertNull("stream does not exist in default region",
-                   (new KinesisTestHelper(kinesisClient, "logwriter-testAlternateEndpoint")).describeStream());
-    }
-
-//----------------------------------------------------------------------------
-//  Helpers
-//----------------------------------------------------------------------------
-
-    private void init(String testName, AmazonKinesis client, String factoryMethod, String region, String endpoint)
-    throws Exception
-    {
-        MDC.put("testName", testName);
-        localLogger.info("starting");
-
-        testHelper = new KinesisTestHelper(client, testName);
-
-        testHelper.deleteStreamIfExists();
-
-        stats = new KinesisWriterStatistics();
-        internalLogger = new TestableInternalLogger();
-        config = new KinesisWriterConfig(testHelper.getStreamName(), "{random}", 250, 10000, DiscardAction.oldest, factoryMethod, region, endpoint, true, 1, null);
-        factory = new KinesisWriterFactory();
-        writer = (KinesisLogWriter)factory.newLogWriter(config, stats, internalLogger);
-
-        new DefaultThreadFactory("test").startLoggingThread(writer, false, null);
-    }
-
-
-    private class MessageWriter
-    extends com.kdgregory.logging.testhelpers.MessageWriter
-    {
-        public MessageWriter(int numMessages)
-        {
-            super(numMessages);
-        }
-
-        @Override
-        protected void writeLogMessage(String message)
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), message));
-        }
+                   (new KinesisTestHelper(helperClient, "logwriter-testAlternateEndpoint")).describeStream());
     }
 }

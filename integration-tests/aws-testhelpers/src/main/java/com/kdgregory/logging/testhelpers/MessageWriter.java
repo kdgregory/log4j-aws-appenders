@@ -19,6 +19,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  *  Writes a sequence of messages to the log. Will be invoked either inline
@@ -26,12 +29,14 @@ import java.util.regex.Pattern;
  */
 public abstract class MessageWriter implements Runnable
 {
-    // these are useful
+    // these are useful for other test code, so are public
     public final static String  REGEX   = ".*message on thread (\\d+): (\\d+)";
     public final static Pattern PATTERN = Pattern.compile(REGEX);
 
+    private Logger logger = LoggerFactory.getLogger(getClass());
 
     private int numMessages;
+
 
     public MessageWriter(int numMessages)
     {
@@ -42,13 +47,15 @@ public abstract class MessageWriter implements Runnable
     @Override
     public void run()
     {
+        long threadId = Thread.currentThread().getId();
+        logger.debug("writing {} messages on thread {}", numMessages, threadId);
         for (int ii = 0 ; ii < numMessages ; ii++)
         {
-            writeLogMessage("message on thread " + Thread.currentThread().getId() + ": " + ii);
+            writeLogMessage("message on thread " + threadId + ": " + ii);
         }
     }
-    
-    
+
+
     /**
      *  Subclasses override this method to write to the module-specific logger.
      */

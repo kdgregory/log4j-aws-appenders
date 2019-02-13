@@ -32,24 +32,24 @@
   If you're using a version of the SDK that supports client builders, the appenders will
   invoke them rather than the client constructor. If you're not, or want more control over
   the client configuration (such as running in `us-east-2` but writing logs to `us-east-1`),
-  the appenders give you several options; read [this](service-client.md).
+  the appenders give you several options; read [this](docs/service-client.md).
 
 ## What happens when the appender has an error?
 
   Each appender maintains an internal message queue, and will attempt to resend messages
   until that queue fills up. What happens after the queue fills depends on the [discard
-  policy](design.md#message-discard) that you've chosen; by default they drop the
+  policy](docs/design.md#message-discard) that you've chosen; by default they drop the
   oldest messages.
 
   All misbehaviors get logged using the framework's internal logger. See the [troubleshooting
-  doc](troubleshooting.md) for information on how to enable it.
+  doc](docs/troubleshooting.md) for information on how to enable it.
 
-  You can also enable [JMX](jmx.md), which will let you see the most recent error (if any)
+  You can also enable [JMX](docs/jmx.md), which will let you see the most recent error (if any)
   along with the time it happened and exception stack trace (if any).
 
 ## Is there any way to see how the appenders are configured in a running program?
 
-  This is also available via [JMX](jmx.md); the specific configuration steps
+  This is also available via [JMX](docs/jmx.md); the specific configuration steps
   depend on your logging framework.
 
 ## What are all these messages from `com.amazonaws` and `org.apache.http`?
@@ -80,14 +80,14 @@ log4j.logger.com.amazonaws=ERROR
    The AWS appenders use a background thread to perform their AWS calls, and this thread
    will remain running until the Log4J framework is explicitly shut down. To make this
    happen, you will need to add a context listener to your web-app, as described
-   [here](tomcat.md).
+   [here](docs/tomcat.md).
 
 ## I'm running on Lambda, why don't I see any log messages?
 
    This happens because the appenders use a background thread to batch messages, and [Lambda
    doesn't give that thread a chance to run](https://blog.kdgregory.com/2019/01/multi-threaded-programming-with-aws.html).
-   You can enable [synchronous mode](design.md#synchronous-mode) to mitigate this, but be aware
-   that it will slow down foreground execution and does not guarantee delivery.
+   You can enable [synchronous mode](docs/design.md#synchronous-mode) to mitigate this, but
+   be aware that it will slow down foreground execution and does not guarantee delivery.
 
 ## Can I contribute?
 

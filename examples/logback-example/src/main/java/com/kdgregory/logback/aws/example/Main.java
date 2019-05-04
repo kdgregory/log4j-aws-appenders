@@ -32,12 +32,13 @@ import com.kdgregory.logback.aws.StatisticsMBean;
  *  <pre>
  *      java -jar target/aws-appenders-example-1.0.0.jar NUM_THREADS
  *  </pre>
- *  Each thread will generate one message per second, writing a short message
- *  with a random number between 0 and 99. If the value is < 65, the message
- *  is logged at DEBUG level; if between 65 and 84, INFO; 85 to 95, WARN; and
- *  over 95 is ERROR.
- *  <p>
- *  Any non-example warnings will be logged to the console.
+ *  
+ *  Each thread will take a random walk, starting at the value 50 and moving up
+ *  or down by a small amount at each step. When the current value is in the
+ *  range 10..90, the program emits a debug log message. When in the range 0..9
+ *  or 91..100, it emits a warning message. If the value moves outside of the
+ *  range 0..100, the program emits an error message and resets the value to the
+ *  bound.
  *  <p>
  *  Terminate the program when you've seen enough messages written to the logs.
  */
@@ -71,6 +72,7 @@ public class Main
     implements Runnable
     {
         private Random rnd;
+        private int value = 50;
 
         public LogGeneratorRunnable(Random rnd)
         {
@@ -84,18 +86,33 @@ public class Main
             {
                 try
                 {
+                    updateValue();
                     Thread.sleep(1000);
-                    int value = rnd.nextInt(100);
-                    if (value < 65)
-                        logger.debug("value is " + value);
-                    else if (value < 85)
-                        logger.info("value is " + value);
-                    else if (value < 95)
-                        logger.warn("value is " + value);
-                    else
-                        logger.error("value is " + value);
                 }
                 catch (InterruptedException ignored) { /* */ }
+            }
+        }
+        
+        private void updateValue()
+        {
+            value += 2 - rnd.nextInt(5);
+            if (value < 0)
+            {
+                logger.error("value is " + value + "; was reset to 0");
+                value = 0;
+            }
+            else if (value > 100)
+            {
+                logger.error("value is " + value + "; was reset to 100");
+                value = 100;
+            }
+            else if ((value <= 10) || (value >= 90))
+            {
+                logger.warn("value is " + value);
+            }
+            else
+            {
+                logger.debug("value is " + value);
             }
         }
     }

@@ -1,5 +1,10 @@
 # Change History
 
+## 2.2.1 (unreleased)
+
+* Rewrote standalone examples to perform a random walk rather than just output
+  random values (more useful for presentations).
+
 ## 2.2.0 (2019-02-10)
 
 * Add a shutdown hook to avoid losing queued messages when the main thread exits.

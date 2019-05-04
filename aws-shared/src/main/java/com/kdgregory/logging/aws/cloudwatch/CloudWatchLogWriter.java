@@ -266,10 +266,16 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
 
         logger.debug("setting retention policy on " + config.logGroupName
                      + " to " + config.retentionPeriod + " days");
-        client.putRetentionPolicy(
-            new PutRetentionPolicyRequest(
-                config.logGroupName,
-                config.retentionPeriod));
+
+        try
+        {
+            client.putRetentionPolicy(
+                new PutRetentionPolicyRequest(config.logGroupName, config.retentionPeriod));
+        }
+        catch (Exception ex)
+        {
+            logger.error("failed to set retention policy on log group " + config.logGroupName, ex);
+        }
     }
 
 

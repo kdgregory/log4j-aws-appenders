@@ -319,13 +319,50 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putRetentionPolicy: group name",          "griffy",           mock.putRetentionPolicyGroupName);
         assertEquals("putRetentionPolicy: value",               3,                  mock.putRetentionPolicyValue.intValue());
 
-
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               "creating .* group: griffy",
                                               "setting retention policy on griffy to 3 days",
                                               "creating .* stream: zippy",
                                               "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testRetentionPolicyFailure() throws Exception
+    {
+        config.logGroupName = "griffy";
+        config.logStreamName = "zippy";
+        config.retentionPeriod = 3;
+
+        mock = new MockCloudWatchClient()
+        {
+            @Override
+            protected PutRetentionPolicyResult putRetentionPolicy(PutRetentionPolicyRequest request)
+            {
+                throw new RuntimeException("access denied");
+            }
+        };
+
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        mock.allowWriterThread();
+
+        // we should fail to set the policy, but still create the stream and write the message
+
+        assertEquals("createLogGroup: invocation count",        1,                  mock.createLogGroupInvocationCount);
+        assertEquals("putRetentionPolicy: invocation count",    1,                  mock.putRetentionPolicyInvocationCount);
+        assertEquals("createLogStream: invocation count",       1,                  mock.createLogStreamInvocationCount);
+        assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
+
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "creating .* group: griffy",
+                                              "setting retention policy on griffy to 3 days",
+                                              "creating .* stream: zippy",
+                                              "log writer initialization complete.*");
+        internalLogger.assertInternalErrorLog("failed to set retention policy.*griffy");
     }
 
 

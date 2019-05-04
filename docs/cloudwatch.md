@@ -88,7 +88,11 @@ the log streams that held those messages; you may end up with a lot of empty str
 Also be aware that you can't pick any arbitrary number of days for this parameter: the
 [CloudWatch API](: see https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutRetentionPolicy.html)
 lists allowable values, and the appender will check your configured value against the
-list.
+list. If you pick an incorrect value, an error will be logged and the setting will be
+ignored.
+
+If you don't have permission to set the retention policy, that will also be logged as
+an error and the setting ignored.
 
 
 ## LogStream rotation

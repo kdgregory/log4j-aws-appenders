@@ -31,10 +31,9 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 public class CloudWatchAppender<LogbackEventType>
 extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,CloudWatchWriterStatisticsMXBean,LogbackEventType>
 {
-    // appender-specific configuration variables
-
     private String  logGroup;
     private String  logStream;
+    private Integer retentionPeriod;
 
 
     public CloudWatchAppender()
@@ -99,6 +98,51 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
         return logStream;
     }
 
+
+    /**
+     *  Sets the retention period, in days, for auto-created log groups. Beware that AWS
+     *  limits the allowable values; see API documentation for details.
+     */
+    public void setRetentionPeriod(int value)
+    {
+        // per https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutRetentionPolicy.html
+        // as-of 2019-05-04
+        switch (value)
+        {
+            case 1 :
+            case 3 :
+            case 5 :
+            case 7 :
+            case 14 :
+            case 30 :
+            case 60 :
+            case 90 :
+            case 120 :
+            case 150 :
+            case 180 :
+            case 365 :
+            case 400 :
+            case 545 :
+            case 731 :
+            case 1827 :
+            case 3653 :
+                retentionPeriod = Integer.valueOf(value);
+                break;
+            default :
+                throw new IllegalArgumentException("invalid retention period; see AWS API for allowed values");
+        }
+    }
+
+
+    /**
+     *  Returns the current retention period; null indicates records will be
+     *  kept forever.
+     */
+    public Integer getRetentionPeriod()
+    {
+        return retentionPeriod;
+    }
+
 //----------------------------------------------------------------------------
 //  AbstractAppender overrides
 //----------------------------------------------------------------------------
@@ -127,7 +171,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
         String actualLogStream = subs.perform(logStream);
 
         return new CloudWatchWriterConfig(
-            actualLogGroup, actualLogStream, null,
+            actualLogGroup, actualLogStream, retentionPeriod,
             batchDelay, discardThreshold, discardAction,
             clientFactory, clientRegion, clientEndpoint);
     }

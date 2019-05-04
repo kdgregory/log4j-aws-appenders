@@ -2,6 +2,8 @@
 
 ## 2.2.1 (unreleased)
 
+* Allow configuring retention period when creating CloudWatch log group.
+  ([#87](https://github.com/kdgregory/log4j-aws-appenders/issues/87))
 * Rewrote standalone examples to perform a random walk rather than just output
   random values (more useful for presentations).
 * Example logging configuration requires AWS destinations to be explicitly

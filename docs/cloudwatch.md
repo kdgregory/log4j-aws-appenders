@@ -16,6 +16,7 @@ Name                | Description
 --------------------|----------------------------------------------------------------
 `logGroup`          | Name of the CloudWatch log group where messages are sent; may use [substitutions](substitutions.md). If this group doesn't exist it will be created. No default.
 `logStream`         | Name of the CloudWatch log stream where messages are sent; may use [substitutions](substitutions.md). If this stream doesn't exist it will be created. Defaults to `{startupTimestamp}`.
+`retentionPeriod`   | (optional) Specifies a non-default retention period for created CloudWatch log groups.
 `rotationMode`      | Controls whether auto-rotation is enabled. Values are `none`, `count`, `interval`, `hourly`, and `daily`; default is `none`. See below for more information.
 `rotationInterval`  | Used only for `count` and `interval` rotation modes: for the former, the number of messages, and for the latter, the number of milliseconds between rotations.
 `sequence`          | A value that is incremented each time the stream is rotated. Defaults to 0.
@@ -65,16 +66,29 @@ To use this appender you will need to grant the following IAM permissions:
 * `logs:DescribeLogGroups`
 * `logs:DescribeLogStreams`
 * `logs:PutLogEvents`
+* `logs:PutRetentionPolicy`
 
 
 ## LogGroup and LogStream management
 
-You typically use use a log-group name that is tied to an application. If you have a lot of applications,
-manually creating these groups would be onerous. Similarly, you will probably want stream names that
-are based on some runtime-specific parameter, such as the EC2 instance ID or date.
+In a large deployment, it would be onerous to manually create all the log groups and streams
+that you will need. Instead, this appender will automatically create groups and streams (and,
+unlike the Kinesis and SNS appenders, there is no way to disable this behavior).
 
-To support this use case, the appender automatically creates groups and streams as needed. It will also
-re-create a group and/or stream if it is deleted while the appender is running.
+As a best practice, log group names should usually identify the application, with log stream
+names that identify the instance of the application (typically some combination of hostname,
+process ID, and timestamp). However, if you're writing JSON output and using CloudWatch Logs
+Insights to analyze the data, you may find it more convenient to write all log streams under
+a single log group.
+
+You can specify an optional retention period for a newly-created log group. CloudWatch will
+automatically delete any older messages. Beware, however, that CloudWatch does _not_ delete
+the log streams that held those messages; you may end up with a lot of empty streams.
+
+Also be aware that you can't pick any arbitrary number of days for this parameter: the
+[CloudWatch API](: see https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutRetentionPolicy.html)
+lists allowable values, and the appender will check your configured value against the
+list.
 
 
 ## LogStream rotation

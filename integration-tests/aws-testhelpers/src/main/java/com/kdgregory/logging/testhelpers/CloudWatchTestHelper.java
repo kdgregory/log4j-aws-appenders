@@ -241,4 +241,21 @@ public class CloudWatchTestHelper
 
         return ((streams != null) && (streams.size() > 0));
     }
+
+
+    /**
+     *  Returns a description of the log group.
+     */
+    public LogGroup describeLogGroup()
+    {
+        DescribeLogGroupsRequest request = new DescribeLogGroupsRequest()
+                                           .withLogGroupNamePrefix(logGroupName);
+        DescribeLogGroupsResult response = client.describeLogGroups(request);
+        for (LogGroup group : response.getLogGroups())
+        {
+            if (group.getLogGroupName().equals(logGroupName))
+                return group;
+        }
+        throw new IllegalStateException("log group does not exist: " + logGroupName);
+    }
 }

@@ -33,7 +33,8 @@
                                 "logs:CreateLogGroup",
                                 "logs:CreateLogStream",
                                 "logs:DescribeLogStreams",
-                                "logs:PutLogEvents"
+                                "logs:PutLogEvents",
+                                "logs:PutRetentionPolicy"
                             ],
                             "Resource": [
                                 { "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogGroup}" },

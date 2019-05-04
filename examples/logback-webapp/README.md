@@ -6,9 +6,14 @@ J2EE app-server. It highlights several best practices, described [below](#featur
 
 ## Preparation
 
-You will need to create the Kinesis and SNS destinations; CloudWatch is created automatically.
-You can create them using the CloudFormation templates [here](../cloudformation), manually, or
-by enabling the auto-create feature on the appenders.
+Start by editing `src/main/resources/logback.xml`, to enable your desired appenders. This
+is a two-step process: first you have to uncomment the `<appender>` elements themselves,
+then you have to uncomment the references to those appenders in the "com.kdgregory"
+`<logger>` element. 
+
+If you enable Kinesis or SNS, you will also need to create the destinations; for CloudWatch
+Logs the destination is auto-created. You can create them using the CloudFormation templates
+[here](../cloudformation), manually, or by enabling the auto-create feature on the appenders.
 
 > *BEWARE!* You will be charged for all AWS services used by this example. I have tried to keep
   the costs minimal, and some services (such as CloudWatch) may be covered under a free tier.

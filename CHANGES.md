@@ -4,6 +4,9 @@
 
 * Rewrote standalone examples to perform a random walk rather than just output
   random values (more useful for presentations).
+* Example logging configuration requires AWS destinations to be explicitly
+  enabled (to avoid accidentally incurring AWS charges or creating unexpected
+  AWS resources).
 
 ## 2.2.0 (2019-02-10)
 

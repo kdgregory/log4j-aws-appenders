@@ -8,6 +8,8 @@
         </encoder>
     </appender>
 
+<!-- uncomment the appenders that you want to use
+
     <appender name="CLOUDWATCH" class="com.kdgregory.logback.aws.CloudWatchAppender">
         <logGroup>AppenderExample</logGroup>
         <logStream>Example-{date}-{hostname}-{pid}</logStream>
@@ -38,14 +40,18 @@
         </filter>
     </appender>
 
+-->
+
     <root level="warn">
         <appender-ref ref="CONSOLE" />
     </root>
 
-    <logger name="com.kdgregory.logback.aws.example" level="debug">
+    <logger name="com.kdgregory" level="debug">
+<!-- uncomment the appenders that you want to use
         <appender-ref ref="CLOUDWATCH" />
         <appender-ref ref="KINESIS" />
         <appender-ref ref="SNS" />
+-->
     </logger>
 
 </configuration>

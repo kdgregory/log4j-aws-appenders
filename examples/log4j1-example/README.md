@@ -7,9 +7,16 @@ and error messages to SNS.
 
 ## Preparation
 
-You will need to create the Kinesis and SNS destinations; CloudWatch is created automatically.
-You can create them using the CloudFormation templates [here](../cloudformation), manually, or
-by enabling the auto-create feature on the appenders.
+Start by editing `src/main/resources/log4j.properties`, adding your desired appenders to the
+"com.kdgregory" logger configuration. For example, to enable CloudWatch Logs output:
+
+```
+log4j.logger.com.kdgregory=DEBUG, cloudwatch
+```
+
+If you enable Kinesis or SNS, you will also need to create the destinations; for CloudWatch
+Logs the destination is auto-created. You can create them using the CloudFormation templates
+[here](../cloudformation), manually, or by enabling the auto-create feature on the appenders.
 
 > *BEWARE!* You will be charged for all AWS services used by this example. I have tried to keep
   the costs minimal, and some services (such as CloudWatch) may be covered under a free tier.

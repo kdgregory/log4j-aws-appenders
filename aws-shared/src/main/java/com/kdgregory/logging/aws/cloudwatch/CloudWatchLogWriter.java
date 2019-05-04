@@ -76,6 +76,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             {
                 logger.debug("creating CloudWatch log group: " + config.logGroupName);
                 createLogGroup();
+                optSetLogGroupRetentionPolicy();
             }
             else
             {
@@ -255,6 +256,20 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
                 Utils.sleepQuietly(250);
             }
         }
+    }
+
+
+    private void optSetLogGroupRetentionPolicy()
+    {
+        if (config.retentionPeriod == null)
+            return;
+
+        logger.debug("setting retention policy on " + config.logGroupName
+                     + " to " + config.retentionPeriod + " days");
+        client.putRetentionPolicy(
+            new PutRetentionPolicyRequest(
+                config.logGroupName,
+                config.retentionPeriod));
     }
 
 

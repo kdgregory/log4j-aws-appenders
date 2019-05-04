@@ -130,7 +130,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
         String actualLogStream  = subs.perform(logStream);
 
         return new CloudWatchWriterConfig(
-            actualLogGroup, actualLogStream,
+            actualLogGroup, actualLogStream, null,
             batchDelay, discardThreshold, discardAction,
             clientFactory, clientRegion, clientEndpoint);
     }

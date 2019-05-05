@@ -1,14 +1,13 @@
 # Change History
 
-## 2.2.1 (unreleased)
+## 2.2.1 (2019-05-05)
 
-* Allow configuring retention period when creating CloudWatch log group.
+* CloudWatch appender allows setting retention period when creating log group.
   ([#87](https://github.com/kdgregory/log4j-aws-appenders/issues/87))
 * Rewrote standalone examples to perform a random walk rather than just output
   random values (more useful for presentations).
-* Example logging configuration requires AWS destinations to be explicitly
-  enabled (to avoid accidentally incurring AWS charges or creating unexpected
-  AWS resources).
+* Logging configuration for examples now requires AWS appenders to be explicitly
+  enabled (to avoid accidental resource creation and unexpected charges).
 
 ## 2.2.0 (2019-02-10)
 

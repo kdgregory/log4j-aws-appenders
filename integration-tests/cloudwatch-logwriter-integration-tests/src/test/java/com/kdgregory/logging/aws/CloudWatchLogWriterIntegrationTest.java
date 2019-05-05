@@ -71,7 +71,7 @@ public class CloudWatchLogWriterIntegrationTest
 //  Helpers
 //----------------------------------------------------------------------------
 
-    private void init(String testName, AWSLogs client, String factoryMethod, String region, String endpoint)
+    private void init(String testName, Integer retentionPeriod, AWSLogs client, String factoryMethod, String region, String endpoint)
     throws Exception
     {
         MDC.put("testName", testName);
@@ -81,7 +81,7 @@ public class CloudWatchLogWriterIntegrationTest
 
         testHelper.deleteLogGroupIfExists();
 
-        config = new CloudWatchWriterConfig(LOGGROUP_NAME, testName, 250, 10000, DiscardAction.oldest, factoryMethod, region, endpoint);
+        config = new CloudWatchWriterConfig(LOGGROUP_NAME, testName, retentionPeriod, 250, 10000, DiscardAction.oldest, factoryMethod, region, endpoint);
         stats = new CloudWatchWriterStatistics();
         internalLogger = new TestableInternalLogger();
         factory = new CloudWatchWriterFactory();
@@ -164,13 +164,16 @@ public class CloudWatchLogWriterIntegrationTest
     {
         final int numMessages = 1001;
 
-        init("smoketest", helperClient, null, null, null);
+        init("smoketest", null, helperClient, null, null, null);
 
         new MessageWriter(numMessages).run();
 
         CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
         testHelper.assertMessages("smoketest", numMessages);
+
         assertNull("static factory method not called", factoryClient);
+
+        assertNull("retention period not set", testHelper.describeLogGroup().getRetentionInDays());
     }
 
 
@@ -179,7 +182,7 @@ public class CloudWatchLogWriterIntegrationTest
     {
         final int numMessages = 1001;
 
-        init("testFactoryMethod", helperClient, getClass().getName() + ".staticClientFactory", null, null);
+        init("testFactoryMethod", null, helperClient, getClass().getName() + ".staticClientFactory", null, null);
 
         new MessageWriter(numMessages).run();
 
@@ -199,7 +202,7 @@ public class CloudWatchLogWriterIntegrationTest
         // default region for constructor is always us-east-1
         altClient = new AWSLogsClient().withRegion(Regions.US_WEST_1);
 
-        init("testAlternateRegion", altClient, null, "us-west-1", null);
+        init("testAlternateRegion", null, altClient, null, "us-west-1", null);
 
         new MessageWriter(numMessages).run();
 
@@ -221,7 +224,7 @@ public class CloudWatchLogWriterIntegrationTest
         //         if that is your default, then the test will fail
         altClient = new AWSLogsClient().withEndpoint("logs.us-east-2.amazonaws.com");
 
-        init("testAlternateEndpoint", altClient, null, null, "logs.us-east-2.amazonaws.com");
+        init("testAlternateEndpoint", null, altClient, null, null, "logs.us-east-2.amazonaws.com");
 
         new MessageWriter(numMessages).run();
 
@@ -230,5 +233,18 @@ public class CloudWatchLogWriterIntegrationTest
 
         assertFalse("stream does not exist in default region",
                     new CloudWatchTestHelper(helperClient, LOGGROUP_NAME).isLogStreamAvailable("testAlternateEndpoint"));
+    }
+
+
+    @Test
+    public void testRetentionPeriod() throws Exception
+    {
+        init("testRetentionPeriod", 3, helperClient, null, null, null);
+
+        // will write a single message so that we have something to wait for
+        new MessageWriter(1).run();
+        CommonTestHelper.waitUntilMessagesSent(stats, 1, 30000);
+
+        assertEquals("retention period", 3, testHelper.describeLogGroup().getRetentionInDays().intValue());
     }
 }

@@ -5,6 +5,7 @@
   <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
     <logGroup>MyLog-{sysprop:TestCloudWatchAppender.testWriterInitialization}</logGroup>
     <logStream>MyStream-{date}-{bogus}</logStream>
+    <retentionPeriod>14</retentionPeriod>
     <batchDelay>9876</batchDelay>
     <discardThreshold>12345</discardThreshold>
     <discardAction>newest</discardAction>

@@ -88,6 +88,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         config = new CloudWatchWriterConfig(
             "argle",                // log group name
             "bargle",               // log stream name
+            null,                   // retention period
             100,                    // batch delay -- short enough to keep tests fast, long enough that we can write a lot of messages
             10000,                  // discard threshold
             DiscardAction.oldest,   // discard action
@@ -116,7 +117,11 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testConfiguration() throws Exception
     {
-        config = new CloudWatchWriterConfig("foo", "bar", 123, 456, DiscardAction.newest, "com.example.factory.Method", "us-west-1", "logs.us-west-1.amazonaws.com");
+        config = new CloudWatchWriterConfig("foo", "bar", 1, 123, 456, DiscardAction.newest, "com.example.factory.Method", "us-west-1", "logs.us-west-1.amazonaws.com");
+
+        assertEquals("log group name",                          "foo",                  config.logGroupName);
+        assertEquals("log stream name",                         "bar",                  config.logStreamName);
+        assertEquals("retention period",                        Integer.valueOf(1),     config.retentionPeriod);
 
         writer = new CloudWatchLogWriter(config, stats, internalLogger, dummyClientFactory);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
@@ -290,6 +295,74 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
                                               "creating .* stream: zippy",
                                               "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testRetentionPolicy() throws Exception
+    {
+        config.logGroupName = "griffy";
+        config.logStreamName = "zippy";
+        config.retentionPeriod = 3;
+
+        createWriter();
+
+        assertEquals("stats: actual log group name",            "griffy",           stats.getActualLogGroupName());
+        assertEquals("stats: actual log stream name",           "zippy",            stats.getActualLogStreamName());
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        mock.allowWriterThread();
+
+        // I'm going to assume that the describes and creates work as expected
+
+        assertEquals("putRetentionPolicy: invocation count",    1,                  mock.putRetentionPolicyInvocationCount);
+        assertEquals("putRetentionPolicy: group name",          "griffy",           mock.putRetentionPolicyGroupName);
+        assertEquals("putRetentionPolicy: value",               3,                  mock.putRetentionPolicyValue.intValue());
+
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "creating .* group: griffy",
+                                              "setting retention policy on griffy to 3 days",
+                                              "creating .* stream: zippy",
+                                              "log writer initialization complete.*");
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testRetentionPolicyFailure() throws Exception
+    {
+        config.logGroupName = "griffy";
+        config.logStreamName = "zippy";
+        config.retentionPeriod = 3;
+
+        mock = new MockCloudWatchClient()
+        {
+            @Override
+            protected PutRetentionPolicyResult putRetentionPolicy(PutRetentionPolicyRequest request)
+            {
+                throw new RuntimeException("access denied");
+            }
+        };
+
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        mock.allowWriterThread();
+
+        // we should fail to set the policy, but still create the stream and write the message
+
+        assertEquals("createLogGroup: invocation count",        1,                  mock.createLogGroupInvocationCount);
+        assertEquals("putRetentionPolicy: invocation count",    1,                  mock.putRetentionPolicyInvocationCount);
+        assertEquals("createLogStream: invocation count",       1,                  mock.createLogStreamInvocationCount);
+        assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
+
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "creating .* group: griffy",
+                                              "setting retention policy on griffy to 3 days",
+                                              "creating .* stream: zippy",
+                                              "log writer initialization complete.*");
+        internalLogger.assertInternalErrorLog("failed to set retention policy.*griffy");
     }
 
 

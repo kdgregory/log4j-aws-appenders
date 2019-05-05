@@ -86,6 +86,7 @@ public class TestCloudWatchAppender
 
         assertEquals("log group name",      "argle",                        appender.getLogGroup());
         assertEquals("log stream name",     "bargle",                       appender.getLogStream());
+        assertEquals("retention period",    7,                              appender.getRetentionPeriod());
         assertEquals("batch delay",         9876L,                          appender.getBatchDelay());
         assertEquals("sequence",            2,                              appender.getSequence());
         assertEquals("rotation mode",       "interval",                     appender.getRotationMode());
@@ -109,6 +110,7 @@ public class TestCloudWatchAppender
         assertNull("log group name",                                        appender.getLogGroup());
 
         assertEquals("log stream name",     "{startupTimestamp}",           appender.getLogStream());
+        assertEquals("retention period",    0,                              appender.getRetentionPeriod());
         assertEquals("batch delay",         2000L,                          appender.getBatchDelay());
         assertEquals("sequence",            0,                              appender.getSequence());
         assertEquals("rotation mode",       "none",                         appender.getRotationMode());
@@ -134,6 +136,7 @@ public class TestCloudWatchAppender
         assertEquals("batch delay",         0L,                             appender.getBatchDelay());
     }
 
+
     @Test
     public void testWriterInitialization() throws Exception
     {
@@ -151,6 +154,7 @@ public class TestCloudWatchAppender
 
         assertEquals("writer log group name",           "MyLog-example",                    writer.config.logGroupName);
         assertRegex("writer log stream name",           "MyStream-20\\d{6}-\\{bogus}",      writer.config.logStreamName);
+        assertEquals("writer retention period",         Integer.valueOf(14),                writer.config.retentionPeriod);
         assertEquals("writer batch delay",              9876L,                              writer.config.batchDelay);
         assertEquals("writer discard threshold",        12345,                              writer.config.discardThreshold);
         assertEquals("writer discard action",           DiscardAction.newest,               writer.config.discardAction);

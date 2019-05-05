@@ -460,4 +460,21 @@ public class CloudWatchAppenderIntegrationTest
 
         testHelper.assertMessages(LOGSTREAM_BASE, messagesPerThread * 5);
     }
+
+
+    @Test
+    public void testRetentionPeriod() throws Exception
+    {
+        init("testRetentionPeriod");
+
+        LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
+
+        // need to write a single message to ensure group/stream are created
+        (new MessageWriter(loggerInfo.logger, 1)).run();
+
+        localLogger.info("waiting for logger");
+        CommonTestHelper.waitUntilMessagesSent(loggerInfo.stats, 1, 30000);
+
+        assertEquals("retention period", 7, testHelper.describeLogGroup().getRetentionInDays().intValue());
+    }
 }

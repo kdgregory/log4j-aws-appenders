@@ -90,6 +90,7 @@ implements InvocationHandler
     public volatile int createLogGroupInvocationCount;
     public volatile int createLogStreamInvocationCount;
     public volatile int putLogEventsInvocationCount;
+    public volatile int putRetentionPolicyInvocationCount;
     public volatile int shutdownInvocationCount;
 
     // the name passed to the last createLogGroup request
@@ -101,6 +102,10 @@ implements InvocationHandler
 
     // the list of events passed to the most recent putLogEvents call
     public volatile List<InputLogEvent> mostRecentEvents = new ArrayList<InputLogEvent>();
+
+    // the last arguments passed to putRetentionPolicy
+    public volatile String putRetentionPolicyGroupName;
+    public volatile Integer putRetentionPolicyValue;
 
 
     /**
@@ -230,6 +235,15 @@ implements InvocationHandler
             createLogStreamStreamName = request.getLogStreamName();
             return createLogStream(request);
         }
+        else if (methodName.equals("putRetentionPolicy"))
+        {
+            putRetentionPolicyInvocationCount++;
+            PutRetentionPolicyRequest request = (PutRetentionPolicyRequest)args[0];
+            putRetentionPolicyGroupName = request.getLogGroupName();
+            putRetentionPolicyValue = request.getRetentionInDays();
+            return putRetentionPolicy(request);
+
+        }
         else if (methodName.equals("putLogEvents"))
         {
             putLogEventsInvocationCount++;
@@ -329,6 +343,13 @@ implements InvocationHandler
     {
         logStreamNames.add(request.getLogStreamName());
         return new CreateLogStreamResult();
+    }
+
+
+    // default implementation is successful, does nothing (invocation handler has recorded args)
+    protected PutRetentionPolicyResult putRetentionPolicy(PutRetentionPolicyRequest request)
+    {
+        return new PutRetentionPolicyResult();
     }
 
 

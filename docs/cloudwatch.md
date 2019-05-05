@@ -83,7 +83,8 @@ a single log group.
 
 You can specify an optional retention period for a newly-created log group. CloudWatch will
 automatically delete any older messages. Beware, however, that CloudWatch does _not_ delete
-the log streams that held those messages; you may end up with a lot of empty streams.
+the log streams that held those messages; you may end up with a lot of empty streams (to clean
+up those streams, you can use [this Lambda](https://github.com/kdgregory/aws-misc/tree/master/lambda/cloudwatch-log-cleanup)).
 
 Also be aware that you can't pick any arbitrary number of days for this parameter: the
 [CloudWatch API](: see https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutRetentionPolicy.html)

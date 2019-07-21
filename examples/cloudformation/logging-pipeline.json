@@ -2,14 +2,14 @@
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "CloudFormation template to create Kinesis-based logging pipeline",
     "Parameters": {
-        "FailedRecordsBucket": {
+        "ArchiveBucket": {
             "Type": "String",
-            "Description": "The bucket where failed log records will be stored"
+            "Description": "The bucket where log records will be archived"
         },
-        "FailedRecordsPrefix": {
+        "ArchivePrefix": {
             "Type": "String",
-            "Default": "log-upload-failures",
-            "Description": "Prefix within the bucket for failed log record storage"
+            "Default": "log-archive",
+            "Description": "Prefix within the bucket for log record archive"
         }
     },
     "Resources": {
@@ -78,14 +78,14 @@
                         "LogGroupName" : {"Ref": "FirehoseErrorLog"},
                         "LogStreamName" : "ES_Errors"
                     },
-                    "S3BackupMode": "FailedDocumentsOnly",
+                    "S3BackupMode": "AllDocuments",
                     "S3Configuration": {
-                        "BucketARN": {"Fn::Sub": "arn:aws:s3:::${FailedRecordsBucket}"},
+                        "BucketARN": {"Fn::Sub": "arn:aws:s3:::${ArchiveBucket}"},
                         "RoleARN": {"Fn::GetAtt": ["FirehoseDeliveryRole", "Arn"]},
-                        "Prefix": {"Ref": "FailedRecordsPrefix"},
+                        "Prefix": {"Ref": "ArchivePrefix"},
                         "BufferingHints": {
-                            "IntervalInSeconds": 60,
-                            "SizeInMBs": 5
+                            "IntervalInSeconds": 900,
+                            "SizeInMBs": 30
                         },
                         "CompressionFormat": "UNCOMPRESSED",
                         "CloudWatchLoggingOptions": {
@@ -143,8 +143,8 @@
                                         "s3:PutObject"
                                     ],
                                     "Resource": [
-                                        { "Fn::Sub": "arn:aws:s3:::${FailedRecordsBucket}" },
-                                        { "Fn::Sub": "arn:aws:s3:::${FailedRecordsBucket}/*" }
+                                        { "Fn::Sub": "arn:aws:s3:::${ArchiveBucket}" },
+                                        { "Fn::Sub": "arn:aws:s3:::${ArchiveBucket}/*" }
                                     ]
                                 },
                                 {

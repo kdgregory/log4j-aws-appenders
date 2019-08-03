@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion:               "2010-09-09"
+Description:                            "Creates a Kinesis stream for the logging examples, along with related roles"
+
+Parameters:
+
+  StreamName:
+    Description:                        "Name of the Kinesis stream"
+    Type:                               "String"
+    Default:                            "AppenderExample"
+
+Resources:
+
+  KinesisStream:
+    Type:                               "AWS::Kinesis::Stream"
+    Properties:
+      Name:                             !Ref StreamName
+      ShardCount:                       1
+
+  KinesisWriterPolicy:
+    Type:                               "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName:                !Sub "KinesisWriter-${StreamName}"
+      Description:                      "Allows logger to write the example Kinesis stream"
+      PolicyDocument:
+        Version:                        "2012-10-17"
+        Statement:
+          -
+            Effect:                     "Allow"
+            Action:
+              -                         "kinesis:CreateStream"
+              -                         "kinesis:DescribeStream"
+              -                         "kinesis:IncreaseStreamRetentionPeriod"
+              -                         "kinesis:PutRecords"
+            Resource:                   !GetAtt KinesisStream.Arn
+
+  KinesisReaderPolicy:
+    Type:                               "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName:                !Sub "KinesisReader-${StreamName}"
+      Description:                      "Allows reading the example Kinesis stream"
+      PolicyDocument:
+        Version:                        "2012-10-17"
+        Statement:
+          -
+            Effect:                     "Allow"
+            Action:
+              -                         "kinesis:DescribeStream"
+              -                         "kinesis:GetShardIterator"
+              -                         "kinesis:GetRecords"
+            Resource:                   !GetAtt KinesisStream.Arn

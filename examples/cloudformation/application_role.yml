@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion:               "2010-09-09"
+Description:                            "Creates an EC2-assumable role and instance policy that allows writing log destinations"
+
+Parameters:
+
+  RoleName:
+    Description:                        "The name to be given to the role"
+    Type:                               "String"
+    Default:                            "AppenderExample"
+
+  LogGroupName:
+    Description:                        "Name of the CloudWatch log group, blank if none"
+    Type:                               "String"
+    Default:                            "AppenderExample"
+
+  StreamName:
+    Description:                        "Name of the Kinesis stream, blank if none"
+    Type:                               "String"
+    Default:                            "AppenderExample"
+
+  TopicName:
+    Description:                        "The name of the SNS topic, blank if none"
+    Type:                               "String"
+    Default:                            "AppenderExample"
+
+Conditions:
+
+  EnableCloudWatch:                     !Not [ !Equals [ !Ref LogGroupName, "" ]]
+  EnableKinesis:                        !Not [ !Equals [ !Ref StreamName, "" ]]
+  EnableSNS:                            !Not [ !Equals [ !Ref TopicName, "" ]]
+
+
+Resources:
+
+  ApplicationRole:
+    Type:                               "AWS::IAM::Role"
+    Properties:
+      RoleName:                         !Ref RoleName
+      AssumeRolePolicyDocument:
+        Version:                        "2012-10-17"
+        Statement:
+          -
+            Effect:                     "Allow"
+            Principal:                  { "Service": "ec2.amazonaws.com" }
+            Action:                     "sts:AssumeRole"
+      ManagedPolicyArns:
+        -                               !If [ EnableCloudWatch, !Sub "arn:aws:iam::${AWS::AccountId}:policy/CloudWatchLogWriter-${LogGroupName}", !Ref "AWS::NoValue" ]
+        -                               !If [ EnableKinesis,    !Sub "arn:aws:iam::${AWS::AccountId}:policy/KinesisWriter-${StreamName}", !Ref "AWS::NoValue" ]
+        -                               !If [ EnableSNS,        !Sub "arn:aws:iam::${AWS::AccountId}:policy/SNSWriter-${TopicName}", !Ref "AWS::NoValue" ]
+
+  InstanceProfile:
+    Type:                               "AWS::IAM::InstanceProfile"
+    Properties:
+      InstanceProfileName:              !Sub ${RoleName}InstanceProfile
+      Roles:                            [ !Ref ApplicationRole ]

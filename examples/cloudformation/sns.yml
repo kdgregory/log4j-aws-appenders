@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion:               "2010-09-09"
+Description:                            "Creates a pre-subscribed topic for the logging examples, along with related roles"
+
+Parameters:
+
+  TopicName:
+    Description:                        "The name of the SNS topic"
+    Type:                               "String"
+    Default:                            "AppenderExample"
+
+  EmailAddress:
+    Description:                        "The email where logging messages will be sent"
+    Type:                               "String"
+    Default:                            "logging-example@mailinator.com"
+
+Resources:
+
+  SNSTopic:
+    Type:                               "AWS::SNS::Topic"
+    Properties:
+      TopicName:                        !Ref TopicName
+      Subscription:
+        -
+          Protocol:                     "email"
+          Endpoint:                     !Ref EmailAddress
+
+  SNSWriterPolicy:
+    Type:                               "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName:                !Sub "SNSWriter-${TopicName}"
+      Description:                      "Allows logger to find and write to example SNS topic"
+      PolicyDocument:
+        Version:                        "2012-10-17"
+        Statement:
+          -
+            Effect:                     "Allow"
+            Action:
+              -                         "sns:ListTopics"
+            Resource:                   "*"
+          -
+            Effect:                     "Allow"
+            Action:
+              -                         "sns:Publish"
+            Resource:                   !Ref SNSTopic
+
+  SNSReaderPolicy:
+    Type:                               "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName:                !Sub "SNSReader-${TopicName}"
+      Description:                      "Allows subscribing to the example SNS topic"
+      PolicyDocument:
+        Version:                        "2012-10-17"
+        Statement:
+          -
+            Effect:                     "Allow"
+            Action:
+              -                         "sns:ListTopics"
+            Resource:                   "*"
+          -
+            Effect:                     "Allow"
+            Action:
+              -                         "sns:Subscribe"
+              -                         "sns:SetSubscriptionAttributes"
+              -                         "sns:Unsubscribe"
+            Resource:                   !Ref SNSTopic

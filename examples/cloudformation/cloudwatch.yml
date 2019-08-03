@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion:               "2010-09-09"
+Description:                            "Creates a CloudWatch log group for the logging examples, along with related roles"
+
+Parameters:
+
+  LogGroupName:
+    Description:                        "Name of the log group"
+    Type:                               "String"
+    Default:                            "AppenderExample"
+
+Resources:
+
+  CloudWatchLogGroup:
+    Type:                               "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName:                     !Ref LogGroupName
+      RetentionInDays:                  1
+
+  CloudWatchWriterPolicy:
+    Type:                               "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName:                !Sub "CloudWatchLogWriter-${LogGroupName}"
+      Description:                      "Allows logger to create/write streams in example CloudWatch log group"
+      PolicyDocument:
+        Version:                        "2012-10-17"
+        Statement:
+          -
+            Effect:                     "Allow"
+            Action:
+              -                         "logs:DescribeLogGroups"
+            Resource:                   !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*"
+          -
+            Effect:                     "Allow"
+            Action:
+              -                         "logs:CreateLogGroup"
+              -                         "logs:CreateLogStream"
+              -                         "logs:DescribeLogStreams"
+              -                         "logs:PutLogEvents"
+              -                         "logs:PutRetentionPolicy"
+            Resource:                   
+              -                         !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogGroup}"
+              -                         !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogGroup}:*"
+
+  KinesisReaderPolicy:
+    Type:                               "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName:                !Sub "CloudWatchLogReader-${LogGroupName}"
+      Description:                      "Allows reading the example CloudWatch log group"
+      PolicyDocument:
+        Version:                        "2012-10-17"
+        Statement:
+          -
+            Effect:                     "Allow"
+            Action:
+              -                         "logs:DescribeLogGroups"
+            Resource:                   !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*"
+          -
+            Effect:                     "Allow"
+            Action:
+              -                         "logs:DescribeLogStreams"
+              -                         "logs:GetLogEvents"
+            Resource:                   !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogGroup}:*"

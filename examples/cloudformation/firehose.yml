@@ -1,0 +1,158 @@
+AWSTemplateFormatVersion:               "2010-09-09"
+Description:                            "Creates a Kinesis Firehose that reads log messages from a Kinesis stream and writes them to Elasticsearch"
+
+Parameters:
+
+  FirehoseName:
+    Description:                        "Name of the Firehose delivery stream"
+    Type:                               "String"
+    Default:                            "AppenderExample"
+
+  KinesisStreamName:
+    Description:                        "Name of the Kinesis stream where log messages are written"
+    Type:                               "String"
+    Default:                            "AppenderExample"
+
+  ElasticsearchDomainName:
+    Description:                        "Name of the Elasticsearch cluster"
+    Type:                               "String"
+    Default:                            "logging-example"
+
+  ArchiveBucket:
+    Description:                        "The bucket where log records will be archived"
+    Type:                               "String"
+
+  ArchivePrefix:
+    Description:                        "Prefix within the bucket for log record archive"
+    Type:                               "String"
+    Default:                            "log-archive"
+
+Resources:
+
+  FirehoseLogGroup:
+    Type:                               "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName:                     !Sub "${FirehoseName}-FirehoseErrors"
+      RetentionInDays:                  1
+
+  FirehoseESLogStream:
+    Type:                               "AWS::Logs::LogStream"
+    Properties:
+      LogGroupName:                     !Ref FirehoseLogGroup
+      LogStreamName:                    "Elasticsearch_Errors"
+
+  FirehoseS3LogStream:
+    Type:                               "AWS::Logs::LogStream"
+    Properties:
+      LogGroupName:                     !Ref FirehoseLogGroup
+      LogStreamName:                    "S3_Errors"
+
+  FirehoseDeliveryRole:
+    Type:                               "AWS::IAM::Role"
+    Properties:
+      RoleName:                         !Sub "${FirehoseName}-DeliveryRole"
+      AssumeRolePolicyDocument:
+        Version:                        "2012-10-17"
+        Statement:
+          Effect:                       "Allow"
+          Principal:
+            Service:                    "firehose.amazonaws.com"
+          Action:                       "sts:AssumeRole"
+          Condition:
+            StringEquals:
+              sts:ExternalId:           !Ref AWS::AccountId
+      Policies:
+        -
+          PolicyName:                   "S3"
+          PolicyDocument:
+            Version:                    "2012-10-17"
+            Statement:
+              Effect:                   "Allow"
+              Action:
+                -                       "s3:AbortMultipartUpload"
+                -                       "s3:GetBucketLocation"
+                -                       "s3:GetObject"
+                -                       "s3:ListBucket"
+                -                       "s3:ListBucketMultipartUploads"
+                -                       "s3:PutObject"
+              Resource:
+                -                       !Sub "arn:aws:s3:::${ArchiveBucket}"
+                -                       !Sub "arn:aws:s3:::${ArchiveBucket}/*"
+        -
+          PolicyName:                   "ElasticSearch"
+          PolicyDocument:
+            Version:                    "2012-10-17"
+            Statement:
+              Effect:                   "Allow"
+              Action:
+                -                       "es:DescribeElasticsearchDomain"
+                -                       "es:DescribeElasticsearchDomains"
+                -                       "es:DescribeElasticsearchDomainConfig"
+                -                       "es:ESHttpGet"
+                -                       "es:ESHttpPost"
+                -                       "es:ESHttpPut"
+              Resource:
+                -                       !Sub "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/${ElasticsearchDomainName}"
+                -                       !Sub "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/${ElasticsearchDomainName}/*"
+        -
+          PolicyName:                   "Kinesis"
+          PolicyDocument:
+            Version:                    "2012-10-17"
+            Statement:
+              Effect:                   "Allow"
+              Action:
+                -                       "kinesis:DescribeStream"
+                -                       "kinesis:GetShardIterator"
+                -                       "kinesis:GetRecords"
+              Resource:                 !Sub "arn:aws:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${KinesisStreamName}"
+        -
+          PolicyName:                   "Logging"
+          PolicyDocument:
+            Version:                    "2012-10-17"
+            Statement:
+              Effect:                   "Allow"
+              Action:
+                -                       "logs:Describe*"
+                -                       "logs:PutLogEvents"
+              Resource:
+                -                       !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${FirehoseLogGroup}"
+                -                       !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${FirehoseLogGroup}:*"
+
+
+  Firehose:
+    Type:                               "AWS::KinesisFirehose::DeliveryStream"
+    DependsOn:                          [ "FirehoseESLogStream", "FirehoseS3LogStream", "FirehoseDeliveryRole" ]
+    Properties:
+      DeliveryStreamName:               !Ref FirehoseName
+      DeliveryStreamType:               "KinesisStreamAsSource"
+      KinesisStreamSourceConfiguration:
+        KinesisStreamARN:               !Sub "arn:aws:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${KinesisStreamName}"
+        RoleARN:                        !GetAtt FirehoseDeliveryRole.Arn
+      ElasticsearchDestinationConfiguration:
+        DomainARN:                      !Sub "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/${ElasticsearchDomainName}"
+        IndexName:                      "application_logs"
+        IndexRotationPeriod:            "OneDay"
+        TypeName:                       "ApplicationLog"
+        RoleARN:                        !GetAtt FirehoseDeliveryRole.Arn
+        BufferingHints:
+          IntervalInSeconds:            60
+          SizeInMBs:                    5
+        RetryOptions:
+          DurationInSeconds:            300
+        CloudWatchLoggingOptions:
+          Enabled:                      true
+          LogGroupName:                 !Ref FirehoseLogGroup
+          LogStreamName:                !Ref FirehoseESLogStream
+        S3BackupMode:                   "AllDocuments"
+        S3Configuration:
+          BucketARN:                    !Sub "arn:aws:s3:::${ArchiveBucket}"
+          RoleARN:                      !GetAtt FirehoseDeliveryRole.Arn
+          Prefix:                       !Sub "${ArchivePrefix}/"
+          CompressionFormat:            "UNCOMPRESSED"
+          BufferingHints:
+            IntervalInSeconds:          900
+            SizeInMBs:                  30
+          CloudWatchLoggingOptions:
+            Enabled:                    true
+            LogGroupName:               !Ref FirehoseLogGroup
+            LogStreamName:              !Ref FirehoseS3LogStream

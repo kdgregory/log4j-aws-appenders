@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion:               "2010-09-09"
+Description:                            "A small Elasticsearch cluster that accessible from Firehose and specific end-user IPs"
+
+Parameters:
+  ElasticsearchDomainName:
+    Description:                        "Name of the Elasticsearch cluster"
+    Type:                               "String"
+    Default:                            "logging-example"
+  AllowedIPs:
+    Description:                        "Identifies the IP addresses that are allowed to access Elasticsearch/Kibana (leave blank for none)"
+    Type:                               "CommaDelimitedList"
+    Default:                            ""
+
+Resources:
+
+  ElasticSearchDomain:
+    Type:                               "AWS::Elasticsearch::Domain"
+    Properties:
+      DomainName:                       !Ref ElasticsearchDomainName
+      ElasticsearchVersion:             "5.5"
+      ElasticsearchClusterConfig:
+        InstanceType:                   "t2.small.elasticsearch"
+        InstanceCount:                  1
+        DedicatedMasterEnabled:         false
+        ZoneAwarenessEnabled:           false
+      EBSOptions:
+        EBSEnabled:                     true
+        VolumeType:                     "gp2"
+        VolumeSize:                     16
+      SnapshotOptions:
+        AutomatedSnapshotStartHour:     8
+      AdvancedOptions:                  {
+                                        "rest.action.multi.allow_explicit_index": "true"
+                                        }
+      AccessPolicies:
+        Version:                        "2012-10-17"
+        Statement:
+          -
+            Effect:                     "Allow"
+            Principal:                  { "AWS": !Sub "${AWS::AccountId}" }
+            Action:                     "es:*"
+            Resource:                   !Sub "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/${ElasticsearchDomainName}/*"
+          -
+            Effect:                     "Allow"
+            Principal:                  { "AWS": "*" }
+            Action:                     "es:*"
+            Resource:                   !Sub "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/${ElasticsearchDomainName}/*"
+            Condition:
+              IpAddress:
+                aws:SourceIp:           !Ref AllowedIPs

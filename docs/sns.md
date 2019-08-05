@@ -22,7 +22,7 @@ Name                | Description
 `topicArn`          | The ARN of the SNS topic that will receive messages; may use [substitutions](substitutions.md). No default value. See below for more information.
 `autoCreate`        | If present and "true", the topic will be created if it does not already exist. This may only be used when specifying topic by name, not ARN.
 `subject`           | If used, attaches a subject to each message sent; no default value. See below for more information.
-`synchonous`        | If `true`, the appender will operate in [synchronous mode](design.md#synchronous-mode), sending messages from the invoking thread on every call to `append()`.
+`synchronous`       | If `true`, the appender will operate in [synchronous mode](design.md#synchronous-mode), sending messages from the invoking thread on every call to `append()`.
 `discardThreshold`  | The threshold count for discarding messages; default is 10,000. See [design doc](design.md#message-discard) for more information.
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
 `clientFactory`     | Specifies the fully-qualified name of a static method that will be invoked to create the AWS service client. See the [service client doc](service-client.md#client-creation) for more information.

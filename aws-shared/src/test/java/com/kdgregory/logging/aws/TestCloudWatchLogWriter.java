@@ -89,6 +89,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             "argle",                // log group name
             "bargle",               // log stream name
             null,                   // retention period
+            false,                  // dedicated stream
             100,                    // batch delay -- short enough to keep tests fast, long enough that we can write a lot of messages
             10000,                  // discard threshold
             DiscardAction.oldest,   // discard action
@@ -117,11 +118,12 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testConfiguration() throws Exception
     {
-        config = new CloudWatchWriterConfig("foo", "bar", 1, 123, 456, DiscardAction.newest, "com.example.factory.Method", "us-west-1", "logs.us-west-1.amazonaws.com");
+        config = new CloudWatchWriterConfig("foo", "bar", 1, true, 123, 456, DiscardAction.newest, "com.example.factory.Method", "us-west-1", "logs.us-west-1.amazonaws.com");
 
         assertEquals("log group name",                          "foo",                  config.logGroupName);
         assertEquals("log stream name",                         "bar",                  config.logStreamName);
         assertEquals("retention period",                        Integer.valueOf(1),     config.retentionPeriod);
+        assertEquals("dedicated stream",                        true,                   config.dedicatedStream);
 
         writer = new CloudWatchLogWriter(config, stats, internalLogger, dummyClientFactory);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);

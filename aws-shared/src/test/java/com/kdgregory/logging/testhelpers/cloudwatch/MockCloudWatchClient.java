@@ -77,7 +77,7 @@ implements InvocationHandler
 
     // the sequence token used for putLogEvents(); start with arbitrary value to
     // verify that we're actually retrieving it from describe
-    protected int putLogEventsSequenceToken = (int)(System.currentTimeMillis() % 143);
+    public int putLogEventsSequenceToken = (int)(System.currentTimeMillis() % 143);
 
     // these semaphores coordinate the calls to PutLogEvents with the assertions
     // that we make in the main thread; note that both start unacquired

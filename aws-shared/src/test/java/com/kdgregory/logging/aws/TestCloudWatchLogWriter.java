@@ -593,6 +593,48 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
 
     @Test
+    public void testInvalidSequenceTokenExceptionWithDedicatedWriter() throws Exception
+    {
+        config.dedicatedWriter = true;
+        createWriter();
+
+        // this call will set the sequence token in the writer
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        mock.allowWriterThread();
+
+        assertEquals("describeLogStreams: invocation count",            2,                      mock.describeLogStreamsInvocationCount);
+        assertEquals("putLogEvents: invocation count",                  1,                      mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last message",                      "message one",          mock.mostRecentEvents.get(0).getMessage());
+
+        // this call should use the cached sequence token
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+        mock.allowWriterThread();
+
+        assertEquals("describeLogStreams: invocation count",            2,                      mock.describeLogStreamsInvocationCount);
+        assertEquals("putLogEvents: invocation count",                  2,                      mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last message",                      "message two",          mock.mostRecentEvents.get(0).getMessage());
+
+        // this will make the cached sequence token invalid
+        mock.putLogEventsSequenceToken += 7;
+
+        // which will require two calls to PutLogEvents
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message three"));
+        mock.allowWriterThread();
+        mock.allowWriterThread();
+
+        assertEquals("describeLogStreams: invocation count",            3,                      mock.describeLogStreamsInvocationCount);
+        assertEquals("putLogEvents: invocation count",                  4,                      mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last message",                      "message three",        mock.mostRecentEvents.get(0).getMessage());
+
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "using existing .* group: argle",
+                                              "using existing .* stream: bargle",
+                                              "log writer initialization complete.*");
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
     public void testUnrecoveredInvalidSequenceTokenException() throws Exception
     {
         mock = new MockCloudWatchClient()

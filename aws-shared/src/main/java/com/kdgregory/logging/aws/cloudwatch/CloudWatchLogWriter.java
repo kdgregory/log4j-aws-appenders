@@ -167,6 +167,8 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             }
             catch (InvalidSequenceTokenException ex)
             {
+                // force the token to be fetched next time through
+                sequenceToken = null;
                 stats.updateWriterRaceRetries();
                 Utils.sleepQuietly(100);
                 // continue retry loop

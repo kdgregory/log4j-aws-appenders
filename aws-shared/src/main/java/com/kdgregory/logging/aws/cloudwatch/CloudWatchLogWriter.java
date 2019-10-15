@@ -158,14 +158,6 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
 
         for (int ii = 0 ; ii < 5 ; ii++)
         {
-            // if we can't find the stream we'll try to re-create it
-//            if (stream == null)
-//            {
-//                reportError("log stream missing: " + config.logStreamName, null);
-//                ensureDestinationAvailable();
-//                return batch;
-//            }
-
             try
             {
                 request.setSequenceToken(getSequenceToken());
@@ -183,6 +175,12 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             {
                 reportError("received DataAlreadyAcceptedException, dropping batch", ex);
                 return Collections.emptyList();
+            }
+            catch (ResourceNotFoundException ex)
+            {
+                reportError("log stream missing: " + config.logStreamName, null);
+                ensureDestinationAvailable();
+                return batch;
             }
             catch (Exception ex)
             {
@@ -219,6 +217,9 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         }
         
         LogStream stream = findLogStream();
+        if (stream == null)
+            throw new ResourceNotFoundException("stream appears to have been deleted");
+        
         return stream.getUploadSequenceToken();
     }
 

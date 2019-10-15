@@ -247,15 +247,16 @@ implements InvocationHandler
         else if (methodName.equals("putLogEvents"))
         {
             putLogEventsInvocationCount++;
+            allowWriterThread.acquire();
             try
             {
-                allowWriterThread.acquire();
                 PutLogEventsRequest request = (PutLogEventsRequest)args[0];
+                if (! logGroupNames.contains(request.getLogGroupName()))
+                    throw new ResourceNotFoundException("no such log group: " + request.getLogGroupName());
+                if (! logStreamNames.contains(request.getLogStreamName()))
+                    throw new ResourceNotFoundException("no such log stream: " + request.getLogStreamName());
                 if (Integer.parseInt(request.getSequenceToken()) != putLogEventsSequenceToken)
-                {
-                    System.err.println("putLogEvents called with invalid sequence token: " + request.getSequenceToken());
-                    throw new IllegalArgumentException("putLogEvents called with invalid sequence token: " + request.getSequenceToken());
-                }
+                    throw new InvalidSequenceTokenException("was " + request.getSequenceToken() + " expected " + putLogEventsSequenceToken);
                 mostRecentEvents.clear();
                 mostRecentEvents.addAll(request.getLogEvents());
                 return putLogEvents(request);

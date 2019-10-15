@@ -6,6 +6,7 @@
     <logGroup>argle</logGroup>
     <logStream>bargle</logStream>
     <retentionPeriod>7</retentionPeriod>
+    <dedicatedWriter>true</dedicatedWriter>
     <synchronous>false</synchronous> <!-- explicitly set to default value -->
     <batchDelay>9876</batchDelay>
     <sequence>2</sequence>

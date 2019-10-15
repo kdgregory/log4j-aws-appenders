@@ -71,6 +71,7 @@ public class TestCloudWatchAppender
         assertEquals("log group name",      "argle",                        appender.getLogGroup());
         assertEquals("log stream name",     "bargle",                       appender.getLogStream());
         assertEquals("retention period",    Integer.valueOf(7),             appender.getRetentionPeriod());
+        assertTrue("dedicated writer",                                      appender.getDedicatedWriter());
         assertEquals("batch delay",         9876L,                          appender.getBatchDelay());
         assertEquals("sequence",            2,                              appender.getSequence());
         assertEquals("rotation mode",       "interval",                     appender.getRotationMode());
@@ -95,6 +96,7 @@ public class TestCloudWatchAppender
 
         assertEquals("log stream name",     "{startupTimestamp}",           appender.getLogStream());
         assertEquals("retention period",    null,                           appender.getRetentionPeriod());
+        assertFalse("dedicated writer",                                     appender.getDedicatedWriter());
         assertEquals("batch delay",         2000L,                          appender.getBatchDelay());
         assertEquals("sequence",            0,                              appender.getSequence());
         assertEquals("rotation mode",       "none",                         appender.getRotationMode());

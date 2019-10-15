@@ -32,6 +32,9 @@ import com.kdgregory.logging.common.util.InternalLogger;
 public class CloudWatchLogWriter
 extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSLogs>
 {
+    // this is used when we are a dedicated writer
+    private String sequenceToken;
+    
     public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger logger, ClientFactory<AWSLogs> clientFactory)
     {
         super(config, stats, logger, clientFactory);
@@ -155,20 +158,19 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
 
         for (int ii = 0 ; ii < 5 ; ii++)
         {
-            LogStream stream = findLogStream();
-
             // if we can't find the stream we'll try to re-create it
-            if (stream == null)
-            {
-                reportError("log stream missing: " + config.logStreamName, null);
-                ensureDestinationAvailable();
-                return batch;
-            }
+//            if (stream == null)
+//            {
+//                reportError("log stream missing: " + config.logStreamName, null);
+//                ensureDestinationAvailable();
+//                return batch;
+//            }
 
             try
             {
-                request.setSequenceToken(stream.getUploadSequenceToken());
-                client.putLogEvents(request);
+                request.setSequenceToken(getSequenceToken());
+                PutLogEventsResult response = client.putLogEvents(request);
+                sequenceToken = response.getNextSequenceToken();
                 return Collections.emptyList();
             }
             catch (InvalidSequenceTokenException ex)
@@ -206,6 +208,18 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             result.add(event);
         }
         return result;
+    }
+    
+    
+    private String getSequenceToken()
+    {
+        if (config.dedicatedWriter && (sequenceToken != null))
+        {
+            return sequenceToken;
+        }
+        
+        LogStream stream = findLogStream();
+        return stream.getUploadSequenceToken();
     }
 
 

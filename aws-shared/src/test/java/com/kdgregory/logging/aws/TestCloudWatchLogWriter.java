@@ -123,7 +123,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("log group name",                          "foo",                  config.logGroupName);
         assertEquals("log stream name",                         "bar",                  config.logStreamName);
         assertEquals("retention period",                        Integer.valueOf(1),     config.retentionPeriod);
-        assertEquals("dedicated stream",                        true,                   config.dedicatedStream);
+        assertEquals("dedicated stream",                        true,                   config.dedicatedWriter);
 
         writer = new CloudWatchLogWriter(config, stats, internalLogger, dummyClientFactory);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
@@ -365,6 +365,40 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
                                               "creating .* stream: zippy",
                                               "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog("failed to set retention policy.*griffy");
+    }
+
+
+    @Test
+    public void testDedicatedWriter() throws Exception
+    {
+        config.dedicatedWriter = true;
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        mock.allowWriterThread();
+
+        // will call describeLogGroups when checking group existence
+        // will call describeLogStreams when checking stream existence, as well as for the first putLogEvents
+
+        assertEquals("describeLogGroups: invocation count",     1,                  mock.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",    2,                  mock.describeLogStreamsInvocationCount);
+        assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message three"));
+        mock.allowWriterThread();
+
+        // these messages shouldn't require describe
+
+        assertEquals("describeLogGroups: invocation count",     1,                  mock.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",    2,                  mock.describeLogStreamsInvocationCount);
+        assertEquals("putLogEvents: invocation count",          2,                  mock.putLogEventsInvocationCount);
+
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "using existing .* group: argle",
+                                              "using existing .* stream: bargle",
+                                              "log writer initialization complete.*");
+        internalLogger.assertInternalErrorLog();
     }
 
 

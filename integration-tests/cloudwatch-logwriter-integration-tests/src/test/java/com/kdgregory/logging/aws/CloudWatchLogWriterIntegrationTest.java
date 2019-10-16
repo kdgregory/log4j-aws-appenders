@@ -60,6 +60,7 @@ public class CloudWatchLogWriterIntegrationTest
     private Logger localLogger = LoggerFactory.getLogger(getClass());
 
     // these are all assigned by init()
+    private String logGroupName;
     private CloudWatchTestHelper testHelper;
     private CloudWatchWriterStatistics stats;
     private TestableInternalLogger internalLogger;
@@ -71,24 +72,52 @@ public class CloudWatchLogWriterIntegrationTest
 //  Helpers
 //----------------------------------------------------------------------------
 
+    /**
+     *  Called at the beginning of most tests to create the test helper and
+     *  writer, and delete any previous log group.
+     */
     private void init(String testName, Integer retentionPeriod, AWSLogs client, String factoryMethod, String region, String endpoint)
+    throws Exception
+    {
+        initWithoutWriter(testName, client);
+        writer = createWriter(testName, false, retentionPeriod, factoryMethod, region, endpoint);
+    }
+
+
+    /**
+     *  Creates the test helper and initializes test member variables.
+     */
+    private void initWithoutWriter(String testName, AWSLogs client)
     throws Exception
     {
         MDC.put("testName", testName);
         localLogger.info("starting");
 
-        testHelper = new CloudWatchTestHelper(client, LOGGROUP_NAME);
+        logGroupName = getClass().getName() + "-" + testName;
 
+        testHelper = new CloudWatchTestHelper(client, logGroupName);
         testHelper.deleteLogGroupIfExists();
 
-        config = new CloudWatchWriterConfig(LOGGROUP_NAME, testName, retentionPeriod, 250, 10000, DiscardAction.oldest, factoryMethod, region, endpoint);
         stats = new CloudWatchWriterStatistics();
         internalLogger = new TestableInternalLogger();
         factory = new CloudWatchWriterFactory();
+    }
+
+
+    /**
+     *  Creates the logwriter and its execution thread.
+     */
+    private CloudWatchLogWriter createWriter(String testName, boolean dedicatedWriter, Integer retentionPeriod, String factoryMethod, String region, String endpoint)
+    throws Exception
+    {
+        config = new CloudWatchWriterConfig(logGroupName, testName, retentionPeriod, false, 250, 10000, DiscardAction.oldest, factoryMethod, region, endpoint);
         writer = (CloudWatchLogWriter)factory.newLogWriter(config, stats, internalLogger);
 
         new DefaultThreadFactory("test").startLoggingThread(writer, false, null);
+
+        return writer;
     }
+
 
 
     private class MessageWriter

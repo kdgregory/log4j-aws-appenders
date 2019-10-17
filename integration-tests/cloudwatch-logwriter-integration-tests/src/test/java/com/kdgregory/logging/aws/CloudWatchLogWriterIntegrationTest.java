@@ -14,6 +14,9 @@
 
 package com.kdgregory.logging.aws;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -93,7 +96,7 @@ public class CloudWatchLogWriterIntegrationTest
         MDC.put("testName", testName);
         localLogger.info("starting");
 
-        logGroupName = getClass().getName() + "-" + testName;
+        logGroupName = getClass().getSimpleName() + "-" + testName;
 
         testHelper = new CloudWatchTestHelper(client, logGroupName);
         testHelper.deleteLogGroupIfExists();
@@ -276,4 +279,48 @@ public class CloudWatchLogWriterIntegrationTest
 
         assertEquals("retention period", 3, testHelper.describeLogGroup().getRetentionInDays().intValue());
     }
+    
+    
+    @Test
+    public void testDedicatedWriter() throws Exception 
+    {
+        final int numWriters = 50;
+        final int numReps = 50;
+
+        initWithoutWriter("testDedicatedWriter", helperClient);
+        
+        List<CloudWatchLogWriter> writers = new ArrayList<CloudWatchLogWriter>(numWriters);
+        for (int ii = 0 ; ii < numWriters ; ii++)
+        {
+            localLogger.debug("creating writer {}", ii);
+            writers.add(createWriter("testDedicatedWriter-" + ii, false, null, null, null, null));
+        }
+        
+        for (int ii = 0 ; ii < numReps ; ii++)
+        {
+            localLogger.debug("writing message {}", ii);
+            LogMessage message = new LogMessage(System.currentTimeMillis(), String.format("message %d", ii));
+            for (CloudWatchLogWriter w : writers)
+            {
+                // the sleep is intended to ensure that the messages will end up
+                // in separate batches; in practice, with the background threads
+                // all runnable, it won't come back for three seconds or more
+                w.addMessage(message);
+                Thread.sleep(100);
+            }
+        }
+        
+        for (CloudWatchLogWriter w : writers)
+        {
+            w.stop();
+        }
+        
+        // FIXME - join on threads, remove this synchronized bloc
+        
+        synchronized (internalLogger)
+        {
+            System.err.println("logged error messages: " + internalLogger.errorMessages);
+        }
+    }
+    
 }

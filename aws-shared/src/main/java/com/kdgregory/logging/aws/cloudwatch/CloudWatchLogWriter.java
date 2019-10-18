@@ -33,14 +33,16 @@ import com.kdgregory.logging.common.util.InternalLogger;
 public class CloudWatchLogWriter
 extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSLogs>
 {
-    // how many times to retry throttled describes
-    private final static int DESCRIBE_RETRY_COUNT = 8;
+    // for retries, this is the initial wait time (with exponential backoff)
+    private final static int INITIAL_RETRY_DELAY = 100;
+    
+    // this is how long we'll wait to overcome throttled DescribeLogStreams
+    private final static int DESCRIBE_RETRY_TIMEOUT = 30 * 1000;
 
-    // how many times to retry sends if throttled or colliding sequence numbers
-    private final static int PUTRECORDS_RETRY_COUNT = 4;
-
-    // for retries, this is the initial wait time (we'll do exponential backoff)
-    private final static int BASE_RETRY_DELAY = 100;
+    // this is how long we'll wait to overcome colliding sequence numbers
+    // it's short to facilitate testing; in practice the batch would be
+    // immediately resubmitted
+    private final static int SEQNUM_RETRY_TIMEOUT = 3 * 1000;
 
     // this is used when we are a dedicated writer
     private String sequenceToken;
@@ -166,8 +168,9 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         // which we'll retry a few times before giving up because it should resolve
         // itself
 
-        long retryDelay = BASE_RETRY_DELAY;
-        for (int ii = 0 ; ii < PUTRECORDS_RETRY_COUNT ; ii++)
+        long retryDelay = INITIAL_RETRY_DELAY;
+        long timeoutAt = System.currentTimeMillis() + SEQNUM_RETRY_TIMEOUT;
+        while (System.currentTimeMillis() < timeoutAt)
         {
             try
             {
@@ -205,7 +208,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             retryDelay *= 2;
         }
 
-        reportError("received repeated InvalidSequenceTokenException responses -- increase batch delay?", null);
+        reportError("failed to send due to repeated InvalidSequenceTokenExceptions", null);
         stats.updateUnrecoveredWriterRaceRetries();
         return batch;
     }
@@ -334,8 +337,9 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
     // for clusters that are starting up, so we'll retry with exponential backoff
     private DescribeLogStreamsResult describeStreamsWithRetry(DescribeLogStreamsRequest request)
     {
-        long retryDelay = BASE_RETRY_DELAY;
-        for (int ii = 0 ; ii < DESCRIBE_RETRY_COUNT ; ii++)
+        long retryDelay = INITIAL_RETRY_DELAY;
+        long timeoutAt = System.currentTimeMillis() + DESCRIBE_RETRY_TIMEOUT;
+        while (System.currentTimeMillis() < timeoutAt)
         {
             try
             {
@@ -350,7 +354,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             Utils.sleepQuietly(retryDelay);
             retryDelay *= 2;
         }
-        throw new RuntimeException("DescribeLogStreams excessively throttled");
+        throw new RuntimeException("DescribeLogStreams has been throttled for " + DESCRIBE_RETRY_TIMEOUT + " ms");
     }
 
 

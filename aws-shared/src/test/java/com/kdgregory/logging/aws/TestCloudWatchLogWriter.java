@@ -650,15 +650,21 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
 
-        // I know that there will be 5 retry attempts before giving up, so will wait +1 times
+        // based on the current timeout settings I know that there will be 5 retry attempts
+        // ... although running on a slow machine there may be only 4
+
+        long start = System.currentTimeMillis();
         for (int ii = 0 ; ii < 6 ; ii++)
             mock.allowWriterThread();
+        long finish = System.currentTimeMillis();
+
+        assertTrue("waited for at least three seconds",                 (finish - start) >= 3000L);
 
         assertEquals("putLogEvents: invocation count",                  6,                      mock.putLogEventsInvocationCount);
         assertEquals("putLogEvents: last call #/messages",              1,                      mock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",                      "message one",          mock.mostRecentEvents.get(0).getMessage());
 
-        assertRegex("statistics: error message",                        ".*repeated InvalidSequenceTokenException.*",
+        assertRegex("statistics: error message",                        ".*repeated InvalidSequenceTokenExceptions.*",
                                                                         stats.getLastErrorMessage());
 
         // when running on a single-core CPU, this will occasionallly not report the most recent retry

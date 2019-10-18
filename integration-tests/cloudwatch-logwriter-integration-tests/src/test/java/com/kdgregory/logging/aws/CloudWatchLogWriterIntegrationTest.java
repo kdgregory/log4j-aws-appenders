@@ -72,7 +72,7 @@ public class CloudWatchLogWriterIntegrationTest
     private CloudWatchWriterConfig config;
     private CloudWatchWriterFactory factory;
     private CloudWatchLogWriter writer;
-    
+
     // tests that create multiple writers/threads will find them here
     private List<Thread> writerThreads = new ArrayList<Thread>();
     private List<CloudWatchLogWriter> writers = new ArrayList<CloudWatchLogWriter>();
@@ -120,16 +120,16 @@ public class CloudWatchLogWriterIntegrationTest
     throws Exception
     {
         config = new CloudWatchWriterConfig(logGroupName, testName, retentionPeriod, false, 250, 10000, DiscardAction.oldest, factoryMethod, region, endpoint);
-        
+
         writer = (CloudWatchLogWriter)factory.newLogWriter(config, stats, internalLogger);
         writers.add(writer);
 
         new DefaultThreadFactory("test")
         {
             @Override
-            protected Thread createThread(LogWriter writer, UncaughtExceptionHandler exceptionHandler)
+            protected Thread createThread(LogWriter logWriter, UncaughtExceptionHandler exceptionHandler)
             {
-                Thread thread = super.createThread(writer, exceptionHandler);
+                Thread thread = super.createThread(logWriter, exceptionHandler);
                 writerThreads.add(thread);
                 return thread;
             }
@@ -295,22 +295,22 @@ public class CloudWatchLogWriterIntegrationTest
 
         assertEquals("retention period", 3, testHelper.describeLogGroup().getRetentionInDays().intValue());
     }
-    
-    
+
+
     @Test
-    public void testDedicatedWriter() throws Exception 
+    public void testDedicatedWriter() throws Exception
     {
         final int numWriters = 10;
         final int numReps = 50;
 
         initWithoutWriter("testDedicatedWriter", helperClient);
-        
+
         for (int ii = 0 ; ii < numWriters ; ii++)
         {
             localLogger.debug("creating writer {}", ii);
             createWriter("testDedicatedWriter-" + ii, true, null, null, null, null);
         }
-        
+
         for (int ii = 0 ; ii < numReps ; ii++)
         {
             localLogger.debug("writing message {}", ii);
@@ -324,19 +324,10 @@ public class CloudWatchLogWriterIntegrationTest
                 Thread.sleep(100);
             }
         }
-        
-        for (CloudWatchLogWriter w : writers)
-        {
-            w.stop();
-        }
-        
-        for (Thread thread : writerThreads)
-        {
-            thread.join();
-        }
-        
-//        internalLogger.assertInternalErrorLog();
-        System.err.println("logged error messages: " + String.valueOf(internalLogger.errorExceptions).replace(", ", "\n"));
+
+        CommonTestHelper.waitUntilMessagesSent(stats, numWriters * numReps, 30000);
+
+        internalLogger.assertInternalErrorLog();
     }
-    
+
 }

@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.*;
 
@@ -32,9 +33,18 @@ import com.kdgregory.logging.common.util.InternalLogger;
 public class CloudWatchLogWriter
 extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSLogs>
 {
+    // how many times to retry throttled describes
+    private final static int DESCRIBE_RETRY_COUNT = 8;
+
+    // how many times to retry sends if throttled or colliding sequence numbers
+    private final static int PUTRECORDS_RETRY_COUNT = 4;
+
+    // for retries, this is the initial wait time (we'll do exponential backoff)
+    private final static int BASE_RETRY_DELAY = 100;
+
     // this is used when we are a dedicated writer
     private String sequenceToken;
-    
+
     public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger logger, ClientFactory<AWSLogs> clientFactory)
     {
         super(config, stats, logger, clientFactory);
@@ -156,7 +166,8 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         // which we'll retry a few times before giving up because it should resolve
         // itself
 
-        for (int ii = 0 ; ii < 5 ; ii++)
+        long retryDelay = BASE_RETRY_DELAY;
+        for (int ii = 0 ; ii < PUTRECORDS_RETRY_COUNT ; ii++)
         {
             try
             {
@@ -170,8 +181,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
                 // force the token to be fetched next time through
                 sequenceToken = null;
                 stats.updateWriterRaceRetries();
-                Utils.sleepQuietly(100);
-                // continue retry loop
+                // fall through
             }
             catch (DataAlreadyAcceptedException ex)
             {
@@ -189,6 +199,10 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
                 reportError("failed to send batch", ex);
                 return batch;
             }
+
+            // retryable errors come here
+            Utils.sleepQuietly(retryDelay);
+            retryDelay *= 2;
         }
 
         reportError("received repeated InvalidSequenceTokenException responses -- increase batch delay?", null);
@@ -209,19 +223,19 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         }
         return result;
     }
-    
-    
+
+
     private String getSequenceToken()
     {
         if (config.dedicatedWriter && (sequenceToken != null))
         {
             return sequenceToken;
         }
-        
+
         LogStream stream = findLogStream();
         if (stream == null)
             throw new ResourceNotFoundException("stream appears to have been deleted");
-        
+
         return stream.getUploadSequenceToken();
     }
 
@@ -304,7 +318,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         DescribeLogStreamsResult result;
         do
         {
-            result = client.describeLogStreams(request);
+            result = describeStreamsWithRetry(request);
             for (LogStream stream : result.getLogStreams())
             {
                 if (stream.getLogStreamName().equals(config.logStreamName))
@@ -313,6 +327,30 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             request.setNextToken(result.getNextToken());
         } while (result.getNextToken() != null);
         return null;
+    }
+
+
+    // DescribeLogStreams is limited to 5 operations per second, which causes problems
+    // for clusters that are starting up, so we'll retry with exponential backoff
+    private DescribeLogStreamsResult describeStreamsWithRetry(DescribeLogStreamsRequest request)
+    {
+        long retryDelay = BASE_RETRY_DELAY;
+        for (int ii = 0 ; ii < DESCRIBE_RETRY_COUNT ; ii++)
+        {
+            try
+            {
+                return client.describeLogStreams(request);
+            }
+            catch (AmazonServiceException ex)
+            {
+                if (! ex.getMessage().contains("ThrottlingException"))
+                    throw ex;
+                // otherwise fall through to retry
+            }
+            Utils.sleepQuietly(retryDelay);
+            retryDelay *= 2;
+        }
+        throw new RuntimeException("DescribeLogStreams excessively throttled");
     }
 
 

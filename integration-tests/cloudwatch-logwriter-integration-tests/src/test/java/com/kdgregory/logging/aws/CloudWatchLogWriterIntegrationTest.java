@@ -14,6 +14,7 @@
 
 package com.kdgregory.logging.aws;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,6 +40,7 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterFactory;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.common.LogMessage;
+import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.testhelpers.CloudWatchTestHelper;
@@ -70,6 +72,10 @@ public class CloudWatchLogWriterIntegrationTest
     private CloudWatchWriterConfig config;
     private CloudWatchWriterFactory factory;
     private CloudWatchLogWriter writer;
+    
+    // tests that create multiple writers/threads will find them here
+    private List<Thread> writerThreads = new ArrayList<Thread>();
+    private List<CloudWatchLogWriter> writers = new ArrayList<CloudWatchLogWriter>();
 
 //----------------------------------------------------------------------------
 //  Helpers
@@ -114,13 +120,23 @@ public class CloudWatchLogWriterIntegrationTest
     throws Exception
     {
         config = new CloudWatchWriterConfig(logGroupName, testName, retentionPeriod, false, 250, 10000, DiscardAction.oldest, factoryMethod, region, endpoint);
+        
         writer = (CloudWatchLogWriter)factory.newLogWriter(config, stats, internalLogger);
+        writers.add(writer);
 
-        new DefaultThreadFactory("test").startLoggingThread(writer, false, null);
+        new DefaultThreadFactory("test")
+        {
+            @Override
+            protected Thread createThread(LogWriter writer, UncaughtExceptionHandler exceptionHandler)
+            {
+                Thread thread = super.createThread(writer, exceptionHandler);
+                writerThreads.add(thread);
+                return thread;
+            }
+        }.startLoggingThread(writer, false, null);
 
         return writer;
     }
-
 
 
     private class MessageWriter
@@ -284,16 +300,15 @@ public class CloudWatchLogWriterIntegrationTest
     @Test
     public void testDedicatedWriter() throws Exception 
     {
-        final int numWriters = 50;
+        final int numWriters = 10;
         final int numReps = 50;
 
         initWithoutWriter("testDedicatedWriter", helperClient);
         
-        List<CloudWatchLogWriter> writers = new ArrayList<CloudWatchLogWriter>(numWriters);
         for (int ii = 0 ; ii < numWriters ; ii++)
         {
             localLogger.debug("creating writer {}", ii);
-            writers.add(createWriter("testDedicatedWriter-" + ii, false, null, null, null, null));
+            createWriter("testDedicatedWriter-" + ii, true, null, null, null, null);
         }
         
         for (int ii = 0 ; ii < numReps ; ii++)
@@ -315,12 +330,13 @@ public class CloudWatchLogWriterIntegrationTest
             w.stop();
         }
         
-        // FIXME - join on threads, remove this synchronized bloc
-        
-        synchronized (internalLogger)
+        for (Thread thread : writerThreads)
         {
-            System.err.println("logged error messages: " + internalLogger.errorMessages);
+            thread.join();
         }
+        
+//        internalLogger.assertInternalErrorLog();
+        System.err.println("logged error messages: " + String.valueOf(internalLogger.errorExceptions).replace(", ", "\n"));
     }
     
 }

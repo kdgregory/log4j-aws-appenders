@@ -89,6 +89,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             "argle",                // log group name
             "bargle",               // log stream name
             null,                   // retention period
+            false,                  // dedicated stream
             100,                    // batch delay -- short enough to keep tests fast, long enough that we can write a lot of messages
             10000,                  // discard threshold
             DiscardAction.oldest,   // discard action
@@ -117,11 +118,12 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testConfiguration() throws Exception
     {
-        config = new CloudWatchWriterConfig("foo", "bar", 1, 123, 456, DiscardAction.newest, "com.example.factory.Method", "us-west-1", "logs.us-west-1.amazonaws.com");
+        config = new CloudWatchWriterConfig("foo", "bar", 1, true, 123, 456, DiscardAction.newest, "com.example.factory.Method", "us-west-1", "logs.us-west-1.amazonaws.com");
 
         assertEquals("log group name",                          "foo",                  config.logGroupName);
         assertEquals("log stream name",                         "bar",                  config.logStreamName);
         assertEquals("retention period",                        Integer.valueOf(1),     config.retentionPeriod);
+        assertEquals("dedicated stream",                        true,                   config.dedicatedWriter);
 
         writer = new CloudWatchLogWriter(config, stats, internalLogger, dummyClientFactory);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
@@ -367,6 +369,40 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
 
     @Test
+    public void testDedicatedWriter() throws Exception
+    {
+        config.dedicatedWriter = true;
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        mock.allowWriterThread();
+
+        // will call describeLogGroups when checking group existence
+        // will call describeLogStreams when checking stream existence, as well as for the first putLogEvents
+
+        assertEquals("describeLogGroups: invocation count",     1,                  mock.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",    2,                  mock.describeLogStreamsInvocationCount);
+        assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message three"));
+        mock.allowWriterThread();
+
+        // these messages shouldn't require describe
+
+        assertEquals("describeLogGroups: invocation count",     1,                  mock.describeLogGroupsInvocationCount);
+        assertEquals("describeLogStreams: invocation count",    2,                  mock.describeLogStreamsInvocationCount);
+        assertEquals("putLogEvents: invocation count",          2,                  mock.putLogEventsInvocationCount);
+
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "using existing .* group: argle",
+                                              "using existing .* stream: bargle",
+                                              "log writer initialization complete.*");
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
     public void testPaginatedDescribes() throws Exception
     {
         // these two names are at the end of the default list
@@ -557,6 +593,48 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
 
     @Test
+    public void testInvalidSequenceTokenExceptionWithDedicatedWriter() throws Exception
+    {
+        config.dedicatedWriter = true;
+        createWriter();
+
+        // this call will set the sequence token in the writer
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        mock.allowWriterThread();
+
+        assertEquals("describeLogStreams: invocation count",            2,                      mock.describeLogStreamsInvocationCount);
+        assertEquals("putLogEvents: invocation count",                  1,                      mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last message",                      "message one",          mock.mostRecentEvents.get(0).getMessage());
+
+        // this call should use the cached sequence token
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+        mock.allowWriterThread();
+
+        assertEquals("describeLogStreams: invocation count",            2,                      mock.describeLogStreamsInvocationCount);
+        assertEquals("putLogEvents: invocation count",                  2,                      mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last message",                      "message two",          mock.mostRecentEvents.get(0).getMessage());
+
+        // this will make the cached sequence token invalid
+        mock.putLogEventsSequenceToken += 7;
+
+        // which will require two calls to PutLogEvents
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message three"));
+        mock.allowWriterThread();
+        mock.allowWriterThread();
+
+        assertEquals("describeLogStreams: invocation count",            3,                      mock.describeLogStreamsInvocationCount);
+        assertEquals("putLogEvents: invocation count",                  4,                      mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last message",                      "message three",        mock.mostRecentEvents.get(0).getMessage());
+
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "using existing .* group: argle",
+                                              "using existing .* stream: bargle",
+                                              "log writer initialization complete.*");
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
     public void testUnrecoveredInvalidSequenceTokenException() throws Exception
     {
         mock = new MockCloudWatchClient()
@@ -572,15 +650,21 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
 
-        // I know that there will be 5 retry attempts before giving up, so will wait +1 times
+        // based on the current timeout settings I know that there will be 5 retry attempts
+        // ... although running on a slow machine there may be only 4
+
+        long start = System.currentTimeMillis();
         for (int ii = 0 ; ii < 6 ; ii++)
             mock.allowWriterThread();
+        long finish = System.currentTimeMillis();
+
+        assertTrue("waited for at least three seconds",                 (finish - start) >= 3000L);
 
         assertEquals("putLogEvents: invocation count",                  6,                      mock.putLogEventsInvocationCount);
         assertEquals("putLogEvents: last call #/messages",              1,                      mock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",                      "message one",          mock.mostRecentEvents.get(0).getMessage());
 
-        assertRegex("statistics: error message",                        ".*repeated InvalidSequenceTokenException.*",
+        assertRegex("statistics: error message",                        ".*repeated InvalidSequenceTokenExceptions.*",
                                                                         stats.getLastErrorMessage());
 
         // when running on a single-core CPU, this will occasionallly not report the most recent retry

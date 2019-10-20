@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.*;
 
@@ -32,6 +33,20 @@ import com.kdgregory.logging.common.util.InternalLogger;
 public class CloudWatchLogWriter
 extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSLogs>
 {
+    // for retries, this is the initial wait time (with exponential backoff)
+    private final static int INITIAL_RETRY_DELAY = 100;
+    
+    // this is how long we'll wait to overcome throttled DescribeLogStreams
+    private final static int DESCRIBE_RETRY_TIMEOUT = 30 * 1000;
+
+    // this is how long we'll wait to overcome colliding sequence numbers
+    // it's short to facilitate testing; in practice the batch would be
+    // immediately resubmitted
+    private final static int SEQNUM_RETRY_TIMEOUT = 3 * 1000;
+
+    // this is used when we are a dedicated writer
+    private String sequenceToken;
+
     public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger logger, ClientFactory<AWSLogs> clientFactory)
     {
         super(config, stats, logger, clientFactory);
@@ -153,43 +168,47 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         // which we'll retry a few times before giving up because it should resolve
         // itself
 
-        for (int ii = 0 ; ii < 5 ; ii++)
+        long retryDelay = INITIAL_RETRY_DELAY;
+        long timeoutAt = System.currentTimeMillis() + SEQNUM_RETRY_TIMEOUT;
+        while (System.currentTimeMillis() < timeoutAt)
         {
-            LogStream stream = findLogStream();
-
-            // if we can't find the stream we'll try to re-create it
-            if (stream == null)
-            {
-                reportError("log stream missing: " + config.logStreamName, null);
-                ensureDestinationAvailable();
-                return batch;
-            }
-
             try
             {
-                request.setSequenceToken(stream.getUploadSequenceToken());
-                client.putLogEvents(request);
+                request.setSequenceToken(getSequenceToken());
+                PutLogEventsResult response = client.putLogEvents(request);
+                sequenceToken = response.getNextSequenceToken();
                 return Collections.emptyList();
             }
             catch (InvalidSequenceTokenException ex)
             {
+                // force the token to be fetched next time through
+                sequenceToken = null;
                 stats.updateWriterRaceRetries();
-                Utils.sleepQuietly(100);
-                // continue retry loop
+                // fall through
             }
             catch (DataAlreadyAcceptedException ex)
             {
                 reportError("received DataAlreadyAcceptedException, dropping batch", ex);
                 return Collections.emptyList();
             }
+            catch (ResourceNotFoundException ex)
+            {
+                reportError("log stream missing: " + config.logStreamName, null);
+                ensureDestinationAvailable();
+                return batch;
+            }
             catch (Exception ex)
             {
                 reportError("failed to send batch", ex);
                 return batch;
             }
+
+            // retryable errors come here
+            Utils.sleepQuietly(retryDelay);
+            retryDelay *= 2;
         }
 
-        reportError("received repeated InvalidSequenceTokenException responses -- increase batch delay?", null);
+        reportError("failed to send due to repeated InvalidSequenceTokenExceptions", null);
         stats.updateUnrecoveredWriterRaceRetries();
         return batch;
     }
@@ -206,6 +225,21 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             result.add(event);
         }
         return result;
+    }
+
+
+    private String getSequenceToken()
+    {
+        if (config.dedicatedWriter && (sequenceToken != null))
+        {
+            return sequenceToken;
+        }
+
+        LogStream stream = findLogStream();
+        if (stream == null)
+            throw new ResourceNotFoundException("stream appears to have been deleted");
+
+        return stream.getUploadSequenceToken();
     }
 
 
@@ -274,7 +308,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         }
         catch (Exception ex)
         {
-            logger.error("failed to set retention policy on log group " + config.logGroupName, ex);
+            reportError("failed to set retention policy on log group " + config.logGroupName, ex);
         }
     }
 
@@ -285,17 +319,50 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
                                             .withLogGroupName(config.logGroupName)
                                             .withLogStreamNamePrefix(config.logStreamName);
         DescribeLogStreamsResult result;
-        do
+        try
         {
-            result = client.describeLogStreams(request);
-            for (LogStream stream : result.getLogStreams())
+            do
             {
-                if (stream.getLogStreamName().equals(config.logStreamName))
-                    return stream;
-            }
-            request.setNextToken(result.getNextToken());
-        } while (result.getNextToken() != null);
+                result = describeStreamsWithRetry(request);
+                for (LogStream stream : result.getLogStreams())
+                {
+                    if (stream.getLogStreamName().equals(config.logStreamName))
+                        return stream;
+                }
+                request.setNextToken(result.getNextToken());
+            } while (result.getNextToken() != null);
+        }
+        catch (Exception ex)
+        {
+            reportError("unable to describe log stream", ex);
+        }
+        
         return null;
+    }
+
+
+    // DescribeLogStreams is limited to 5 operations per second, which causes problems
+    // for clusters that are starting up, so we'll retry with exponential backoff
+    private DescribeLogStreamsResult describeStreamsWithRetry(DescribeLogStreamsRequest request)
+    {
+        long retryDelay = INITIAL_RETRY_DELAY;
+        long timeoutAt = System.currentTimeMillis() + DESCRIBE_RETRY_TIMEOUT;
+        while (System.currentTimeMillis() < timeoutAt)
+        {
+            try
+            {
+                return client.describeLogStreams(request);
+            }
+            catch (AmazonServiceException ex)
+            {
+                if (! ex.getMessage().contains("ThrottlingException"))
+                    throw ex;
+                // otherwise fall through to retry
+            }
+            Utils.sleepQuietly(retryDelay);
+            retryDelay *= 2;
+        }
+        throw new RuntimeException("DescribeLogStreams has been throttled for " + DESCRIBE_RETRY_TIMEOUT + " ms");
     }
 
 

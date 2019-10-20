@@ -38,11 +38,7 @@ public class DefaultThreadFactory implements ThreadFactory
     @Override
     public void startLoggingThread(final LogWriter writer, boolean useShutdownHook, UncaughtExceptionHandler exceptionHandler)
     {
-        final Thread writerThread = new Thread(writer);
-        writerThread.setName("com-kdgregory-aws-logwriter-" + appenderName + "-" + threadNumber.getAndIncrement());
-        writerThread.setPriority(Thread.NORM_PRIORITY);
-        writerThread.setDaemon(true);
-        writerThread.setUncaughtExceptionHandler(exceptionHandler);
+        final Thread writerThread = createThread(writer, exceptionHandler);
 
         if (useShutdownHook)
         {
@@ -68,5 +64,20 @@ public class DefaultThreadFactory implements ThreadFactory
         }
 
         writerThread.start();
+    }
+
+
+    /**
+     *  Creates and initializes the thread. This can be overridden by tests that need
+     *  to work with the thread; in normal operation we just let it do its thing.
+     */
+    protected Thread createThread(LogWriter writer, UncaughtExceptionHandler exceptionHandler)
+    {
+        Thread writerThread = new Thread(writer);
+        writerThread.setName("com-kdgregory-aws-logwriter-" + appenderName + "-" + threadNumber.getAndIncrement());
+        writerThread.setPriority(Thread.NORM_PRIORITY);
+        writerThread.setDaemon(true);
+        writerThread.setUncaughtExceptionHandler(exceptionHandler);
+        return writerThread;
     }
 }

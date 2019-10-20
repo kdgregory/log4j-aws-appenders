@@ -11,6 +11,7 @@
     <appender name="CLOUDWATCH" class="com.kdgregory.logback.aws.CloudWatchAppender">
         <logGroup>AppenderExample</logGroup>
         <logStream>WebApp-{date}-{hostname}-{pid}</logStream>
+        <dedicatedWriter>true</dedicatedWriter>
         <layout class="ch.qos.logback.classic.PatternLayout">
             <pattern>%d{ISO8601} %-5level [%thread] %logger{24} - %msg%n</pattern>
         </layout>

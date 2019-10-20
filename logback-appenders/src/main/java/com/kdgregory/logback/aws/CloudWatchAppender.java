@@ -34,6 +34,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
     private String  logGroup;
     private String  logStream;
     private Integer retentionPeriod;
+    private boolean dedicatedWriter;
 
 
     public CloudWatchAppender()
@@ -143,6 +144,27 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
         return retentionPeriod;
     }
 
+
+    /**
+     *  Sets a flag indicating that this appender will be the only writer to
+     *  the stream. This allows the appender to cache the sequence token from
+     *  each write, rather than requesting the current token (which will be
+     *  throttled with large numbers of writers).
+     */
+    public void setDedicatedWriter(boolean value)
+    {
+        dedicatedWriter = value;
+    }
+
+
+    /**
+     *  Returns the flag indicating whether appender is a dedicated writer.
+     */
+    public boolean getDedicatedWriter()
+    {
+        return dedicatedWriter;
+    }
+
 //----------------------------------------------------------------------------
 //  AbstractAppender overrides
 //----------------------------------------------------------------------------
@@ -171,7 +193,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
         String actualLogStream = subs.perform(logStream);
 
         return new CloudWatchWriterConfig(
-            actualLogGroup, actualLogStream, retentionPeriod,
+            actualLogGroup, actualLogStream, retentionPeriod, dedicatedWriter,
             batchDelay, discardThreshold, discardAction,
             clientFactory, clientRegion, clientEndpoint);
     }

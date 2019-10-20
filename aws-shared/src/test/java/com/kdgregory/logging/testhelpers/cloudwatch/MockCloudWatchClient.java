@@ -77,7 +77,7 @@ implements InvocationHandler
 
     // the sequence token used for putLogEvents(); start with arbitrary value to
     // verify that we're actually retrieving it from describe
-    protected int putLogEventsSequenceToken = (int)(System.currentTimeMillis() % 143);
+    public int putLogEventsSequenceToken = (int)(System.currentTimeMillis() % 143);
 
     // these semaphores coordinate the calls to PutLogEvents with the assertions
     // that we make in the main thread; note that both start unacquired
@@ -247,15 +247,16 @@ implements InvocationHandler
         else if (methodName.equals("putLogEvents"))
         {
             putLogEventsInvocationCount++;
+            allowWriterThread.acquire();
             try
             {
-                allowWriterThread.acquire();
                 PutLogEventsRequest request = (PutLogEventsRequest)args[0];
+                if (! logGroupNames.contains(request.getLogGroupName()))
+                    throw new ResourceNotFoundException("no such log group: " + request.getLogGroupName());
+                if (! logStreamNames.contains(request.getLogStreamName()))
+                    throw new ResourceNotFoundException("no such log stream: " + request.getLogStreamName());
                 if (Integer.parseInt(request.getSequenceToken()) != putLogEventsSequenceToken)
-                {
-                    System.err.println("putLogEvents called with invalid sequence token: " + request.getSequenceToken());
-                    throw new IllegalArgumentException("putLogEvents called with invalid sequence token: " + request.getSequenceToken());
-                }
+                    throw new InvalidSequenceTokenException("was " + request.getSequenceToken() + " expected " + putLogEventsSequenceToken);
                 mostRecentEvents.clear();
                 mostRecentEvents.addAll(request.getLogEvents());
                 return putLogEvents(request);

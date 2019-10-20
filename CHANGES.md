@@ -1,5 +1,12 @@
 # Change History
 
+## 2.2.2 (2019-10-20)
+
+* CloudWatch appender now provides `dedicatedWriter` configuration parameter,
+  which tells the writer that it doesn't need to retain the latest sequence
+  number for each writes, reducing the likelihood of throttling.
+  ([#89](https://github.com/kdgregory/log4j-aws-appenders/issues/89))
+
 ## 2.2.1 (2019-05-05)
 
 * CloudWatch appender allows setting retention period when creating log group.

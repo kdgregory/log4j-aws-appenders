@@ -27,7 +27,7 @@ import com.kdgregory.logging.common.util.InternalLogger;
 
 /**
  *  An implementation of <code>InternalLogger</code> that retains messages for
- *  analysis by test code.
+ *  analysis by test code. Thread-safe for adding messages, but not for reading.
  */
 public class TestableInternalLogger
 implements InternalLogger
@@ -39,7 +39,7 @@ implements InternalLogger
 
 
     @Override
-    public void debug(String message)
+    public synchronized void debug(String message)
     {
         debugMessages.add(message);
     }
@@ -47,7 +47,7 @@ implements InternalLogger
 
 
     @Override
-    public void warn(String message)
+    public synchronized void warn(String message)
     {
         warnMessages.add(message);
     }
@@ -55,7 +55,7 @@ implements InternalLogger
 
 
     @Override
-    public void error(String message, Throwable ex)
+    public synchronized void error(String message, Throwable ex)
     {
         errorMessages.add(message);
         errorExceptions.add(ex);

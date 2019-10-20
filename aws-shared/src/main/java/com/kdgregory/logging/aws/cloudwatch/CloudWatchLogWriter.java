@@ -308,7 +308,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         }
         catch (Exception ex)
         {
-            logger.error("failed to set retention policy on log group " + config.logGroupName, ex);
+            reportError("failed to set retention policy on log group " + config.logGroupName, ex);
         }
     }
 
@@ -319,16 +319,24 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
                                             .withLogGroupName(config.logGroupName)
                                             .withLogStreamNamePrefix(config.logStreamName);
         DescribeLogStreamsResult result;
-        do
+        try
         {
-            result = describeStreamsWithRetry(request);
-            for (LogStream stream : result.getLogStreams())
+            do
             {
-                if (stream.getLogStreamName().equals(config.logStreamName))
-                    return stream;
-            }
-            request.setNextToken(result.getNextToken());
-        } while (result.getNextToken() != null);
+                result = describeStreamsWithRetry(request);
+                for (LogStream stream : result.getLogStreams())
+                {
+                    if (stream.getLogStreamName().equals(config.logStreamName))
+                        return stream;
+                }
+                request.setNextToken(result.getNextToken());
+            } while (result.getNextToken() != null);
+        }
+        catch (Exception ex)
+        {
+            reportError("unable to describe log stream", ex);
+        }
+        
         return null;
     }
 

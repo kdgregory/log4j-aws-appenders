@@ -16,7 +16,7 @@ Name                | Description
 --------------------|----------------------------------------------------------------
 `logGroup`          | Name of the CloudWatch log group where messages are sent; may use [substitutions](substitutions.md). If this group doesn't exist it will be created. No default.
 `logStream`         | Name of the CloudWatch log stream where messages are sent; may use [substitutions](substitutions.md). If this stream doesn't exist it will be created. Defaults to `{startupTimestamp}`.
-`dedicatedStream`   | If `true`, the appender assumes that it will be the only writer to the log stream, and will not retrieve sequence numbers before writing. Defaults to `false`. See below for more information.
+`dedicatedWriter`   | If `true`, the appender assumes that it will be the only writer to the log stream, and will not retrieve sequence numbers before writing. Defaults to `false`. See below for more information.
 `retentionPeriod`   | (optional) Specifies a non-default retention period for created CloudWatch log groups.
 `rotationMode`      | Controls whether auto-rotation is enabled. Values are `none`, `count`, `interval`, `hourly`, and `daily`; default is `none`. See below for more information.
 `rotationInterval`  | Used only for `count` and `interval` rotation modes: for the former, the number of messages, and for the latter, the number of milliseconds between rotations.
@@ -135,44 +135,36 @@ parameter, in concert with `rotationInterval`, controls how the appender switche
 
 ## InvalidSequenceTokenException and Logstream Throttling
 
-When calling `PutLogEvents` to write to CloudWatch Logs, you must provide a sequence token. This can
-either come from the response to a previous call to `PutLogEvents`, or be retrieved by calling
-`DescribeLogStreams`.
+When writing a batch of events to CloudWatch Logs, you must provide a sequence token. You
+get this token from either the response to the previous call to `PutLogEvents`, or by calling
+`DescribeLogStreams`. If possible, you want to avoid the latter, because it's limited to five
+calls per second. However, if you have multiple appenders writing to the same stream, it's the
+only way to ensure that you get the latest token.
 
-In the case where you have multiple writers to the same log stream, you have to retrieve a new
-sequence token before every write, to ensure that you're always using the latest token. However,
-this introduces a race condition: if writer A retrieves its sequence number but writer B writes
-a batch of events at the same time, writer A will receive `InvalidSequenceTokenException`.
+The original (pre-2.2.2) implementation of the appender would always perform this two step
+(describe then write) process, because it assumed that another appender might be writing to
+the same log stream. However, if you _did_ give each appender its own stream, this was
+unnecessary, and could result in throttling, especially when deploying a large cluster.
 
-This can happen in any deployment, but is more likely if large numbers of applications are writing to
-the same logstream. In the case of the appenders library, it is extremely likely if you start multiple
-writers at the same time, with the same batch delay (ie, with the same logging config). Which happens
-in Hadoop or Spark clusters.
+To resolve that problem, the `dedicatedWriter` configuration parameter was introduced in the
+2.2.2 release. If set to `true`, it tells the appender to retrieve the sequence token from the
+previous request, rather than describing the stream for each write.
 
-As with any batch-level error, the appender will try again. There will be no message loss unless the
-error happens so frequently that the appender fills its message queue (which is extremely unlikely,
-as any given process is likely to win the race). However, prior to release 2.0.1, the appender would
-report this exception as an error, which was distracting.
+> This parameter defaults to `false` for compatibility with previous releases. You should 
+  set it to `true` if you can.
 
-Since the 2.0.1 release, this exception is handled by retrying the batch after a short delay, without
-requeueing the messages. It does not report an error, although it does track the number of retries
-and reports that statistic via [JMX](jmx.md). This retry process also reduces the likelihood of the
-exception, as the retry delays will change the times that the appenders attempt to write to
-CloudWatch (ie, instead of all appenders writing at start + 2000 milliseconds, one will write at
-start + 2000, another will write at start + 2100, and so on).
+If you do have multiple writers, however, the two-step process is still necessary. And it has
+the possibility of a race condition: if two appenders write batches at the same time they might
+both get the same sequence token, but only one of the writes will succeed. As with any batch-level
+error, the appender will try again; there will be no message loss unless the error happens so
+frequently that the appender fills its message queue (which is extremely unlikely, as any given
+process is likely to win the race).
 
-However, if you have a large number of writers to the same stream you can still be throttled, because
-`DescribeLogStreams` is limited to five calls per second. Based on my experiments, this appears to be
-a "bucket and refill" limit: you have an initial unthrottled bucket of requests, and a refill rate of
-five per second. And while the bucket appears quite large (I was able to execute hundreds of
-near-concurrent requests before getting an exception), it will eventually be consumed.
+In releases prior to 2.0.1, the appender would report this situation as an error, which was
+distracting. Retries are now transparent, unless they happen repeatedly, in which case they'll
+be reported as a warning using the logging framework's internal logger (again, the batch is
+retried, so the messages won't be lost). Race retries and batches required due to repeated
+retries are also reported as logger statistics, available via JMX.
 
-To resolve this, you must give each appender its own stream, and set the `dedicatedStream` parameter 
-(added in release 2.2.2) to `true`. This parameter tells the appender that it will be the only writer
-on the stream, so it will retain the sequence token from `PutLogEvents` and not call `DescribeStreams`
-before each write (it will, however, retrieve the token if it discovers that there are other writers).
-
-Another alternative, and one that I think is better (albeit more expensive), is to use the Kinesis
-appender, which feeds a [logging pipeline](https://www.kdgregory.com/index.php?page=aws.loggingPipeline)
-that ends up in Elasticsearch. You can scale each part of that pipeline to match your needs, and
-attach arbitrary tags to the log entries using [JsonLayout](jsonlayout.md).
+If you do have a large number of writer races, you can either switch to a single stream per
+appender (preferred), or increase the batch delay so that writes happen less frequently.

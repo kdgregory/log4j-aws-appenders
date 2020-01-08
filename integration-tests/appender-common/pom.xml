@@ -9,22 +9,27 @@
     </parent>
 
     <groupId>com.kdgregory.logging.integration-test</groupId>
-    <artifactId>helpers</artifactId>
+    <artifactId>shared-appender</artifactId>
 
-    <name>Integration Test Helpers</name>
+    <name>Shared Appender Integration Tests</name>
 
     <description>
-        Utility methods for configuring and retrieving AWS services.
-        Supports integration tests for the AWS log library. Not intended
-        for independent production use.
+        Abstract integration tests to be subclassed by
+        framework-specific subclasses.
     </description>
+
+
+    <properties>
+        <!-- tests use the latest version of the SDK -->
+        <aws-sdk.version>1.11.495</aws-sdk.version>
+    </properties>
 
 
     <!-- note: no transitive dependencies; ensures consumer doesn't have hidden requirements -->
     <dependencies>
         <dependency>
-            <groupId>com.kdgregory.logging</groupId>
-            <artifactId>aws-shared</artifactId>
+            <groupId>com.kdgregory.logging.integration-test</groupId>
+            <artifactId>helpers</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
@@ -59,7 +64,7 @@
             <version>${aws-sdk.version}</version>
             <scope>provided</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

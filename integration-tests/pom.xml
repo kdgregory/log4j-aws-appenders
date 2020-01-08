@@ -18,6 +18,7 @@
         <module>logwriter-cloudwatch</module>
         <module>logwriter-kinesis</module>
         <module>logwriter-sns</module>
+        <module>appender-common</module>
         <module>appender-log4j</module>
         <module>appender-logback</module>
     </modules>

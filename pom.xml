@@ -18,7 +18,6 @@
         <module>aws-shared</module>
         <module>log4j1-appenders</module>
         <module>logback-appenders</module>
-        <module>integration-tests/aws-testhelpers</module>
     </modules>
 
 </project>

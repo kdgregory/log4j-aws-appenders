@@ -6,12 +6,12 @@
         <groupId>com.kdgregory.logging</groupId>
         <artifactId>parent</artifactId>
         <version>2.3.0-SNAPSHOT</version>
-        <relativePath/>
     </parent>
-    <artifactId>kinesis-logwriter-integration-tests</artifactId>
-    <packaging>jar</packaging>
 
-    <name>KinesisLogWriter Integration Tests</name>
+    <groupId>com.kdgregory.logging.integration-test</groupId>
+    <artifactId>logwriter-kinesis</artifactId>
+
+    <name>Kinesis LogWriter Integration Tests</name>
 
     <description>
         Tests the Kinesis back-end in isolation.
@@ -34,8 +34,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.kdgregory.logging</groupId>
-            <artifactId>aws-testhelpers</artifactId>
+            <groupId>com.kdgregory.logging.integration-test</groupId>
+            <artifactId>helpers</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

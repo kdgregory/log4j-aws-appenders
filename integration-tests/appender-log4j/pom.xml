@@ -8,14 +8,15 @@
         <version>2.3.0-SNAPSHOT</version>
         <relativePath/>
     </parent>
-    <artifactId>logback-aws-appenders-test</artifactId>
-    <packaging>jar</packaging>
 
-    <name>Logback Integration Tests</name>
+    <groupId>com.kdgregory.logging.integration-test</groupId>
+    <artifactId>log4j1-appender</artifactId>
+
+    <name>Log4J 1.x Appender Integration Tests</name>
 
     <description>
-        Integration tests for the Logback appenders.
-        Warning: These tests create resources on AWS and don't delete them.
+        Integration tests for the Log4J 1.x appenders. These tests create resources on
+        AWS and don't delete them.
     </description>
 
 
@@ -28,7 +29,7 @@
     <dependencies>
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
-            <artifactId>logback-aws-appenders</artifactId>
+            <artifactId>log4j1-aws-appenders</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -65,27 +66,15 @@
         </dependency>
 
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-            <version>${logback.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-access</artifactId>
-            <version>${logback.version}</version>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>${log4j.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>com.kdgregory.logging</groupId>
-            <artifactId>aws-testhelpers</artifactId>
+            <groupId>com.kdgregory.logging.integration-test</groupId>
+            <artifactId>helpers</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -105,6 +94,18 @@
             <groupId>net.sf.practicalxml</groupId>
             <artifactId>practicalxml</artifactId>
             <version>${practicalxml.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>${slf4j.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

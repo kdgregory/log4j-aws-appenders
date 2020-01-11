@@ -32,9 +32,10 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>com.kdgregory.logging.integration-test</groupId>
-            <artifactId>helpers</artifactId>
+            <artifactId>test-helpers</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

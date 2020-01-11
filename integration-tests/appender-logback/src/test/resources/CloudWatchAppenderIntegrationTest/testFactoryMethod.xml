@@ -10,7 +10,7 @@
         <logGroup>AppenderIntegrationTest-testFactoryMethod</logGroup>
         <logStream>AppenderTest</logStream>
         <batchDelay>500</batchDelay>
-        <clientFactory>com.kdgregory.logback.aws.CloudWatchAppenderIntegrationTest.createClient</clientFactory>
+        <clientFactory>com.kdgregory.logging.test.AbstractCloudWatchAppenderIntegrationTest.createClient</clientFactory>
         <layout class="ch.qos.logback.classic.PatternLayout">
             <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
         </layout>

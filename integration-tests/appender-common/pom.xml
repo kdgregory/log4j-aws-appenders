@@ -9,13 +9,12 @@
     </parent>
 
     <groupId>com.kdgregory.logging.integration-test</groupId>
-    <artifactId>shared-appender</artifactId>
+    <artifactId>appender-shared</artifactId>
 
-    <name>Shared Appender Integration Tests</name>
+    <name>Abstract Appender Integration Tests</name>
 
     <description>
-        Abstract integration tests to be subclassed by
-        framework-specific subclasses.
+        Abstract test classes to be subclassed by framework-specific tests.
     </description>
 
 
@@ -28,8 +27,14 @@
     <!-- note: no transitive dependencies; ensures consumer doesn't have hidden requirements -->
     <dependencies>
         <dependency>
+            <groupId>com.kdgregory.logging</groupId>
+            <artifactId>aws-shared</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>com.kdgregory.logging.integration-test</groupId>
-            <artifactId>helpers</artifactId>
+            <artifactId>test-helpers</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>

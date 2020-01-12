@@ -40,7 +40,6 @@ import com.kdgregory.logging.testhelpers.CloudWatchTestHelper;
 public class CloudWatchAppenderIntegrationTest
 extends AbstractCloudWatchAppenderIntegrationTest
 {
-
 //----------------------------------------------------------------------------
 //  Helpers
 //----------------------------------------------------------------------------
@@ -215,13 +214,5 @@ extends AbstractCloudWatchAppenderIntegrationTest
     {
         init("testSynchronousModeMultiThread");
         super.testSynchronousModeMultiThread(new LoggerInfo("TestLogger", "test"));
-    }
-
-
-    @Test
-    public void testRetentionPeriod() throws Exception
-    {
-        init("testRetentionPeriod");
-        super.testRetentionPeriod(new LoggerInfo("TestLogger", "test"));
     }
 }

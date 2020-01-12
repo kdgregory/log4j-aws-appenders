@@ -133,6 +133,8 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
 
         // while we're here, verify some more of the plumbing
 
+        assertEquals("retention period", 7, testHelper.describeLogGroup().getRetentionInDays().intValue());
+
         accessor.setBatchDelay(1234L);
         assertEquals("batch delay", 1234L, accessor.getWriter().getBatchDelay());
     }
@@ -366,19 +368,5 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         assertEquals("number of messages recorded in stats", messagesPerThread * 5, accessor.getStats().getMessagesSent());
 
         testHelper.assertMessages(LOGSTREAM_BASE, messagesPerThread * 5);
-    }
-
-
-    // TODO - this can be part of the smoketest
-    protected void testRetentionPeriod(LoggerAccessor accessor)
-    throws Exception
-    {
-        // need to write a single message to ensure group/stream are created
-        accessor.createMessageWriter(1).run();
-
-        localLogger.info("waiting for logger");
-        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), 1, 30000);
-
-        assertEquals("retention period", 7, testHelper.describeLogGroup().getRetentionInDays().intValue());
     }
 }

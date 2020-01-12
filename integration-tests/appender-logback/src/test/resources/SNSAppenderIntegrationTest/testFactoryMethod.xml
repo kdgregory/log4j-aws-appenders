@@ -8,7 +8,7 @@
 
     <appender name="test" class="com.kdgregory.logback.aws.SNSAppender">
         <topicArn>{sysprop:SNSAppenderIntegrationTest.topicArn}</topicArn>
-        <clientFactory>com.kdgregory.logback.aws.SNSAppenderIntegrationTest.createClient</clientFactory>
+        <clientFactory>com.kdgregory.logging.test.AbstractSNSAppenderIntegrationTest.createClient</clientFactory>
         <layout class="ch.qos.logback.classic.PatternLayout">
             <pattern>%msg</pattern>
         </layout>

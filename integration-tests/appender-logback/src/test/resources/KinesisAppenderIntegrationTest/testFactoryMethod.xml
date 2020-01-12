@@ -11,7 +11,7 @@
         <partitionKey>test</partitionKey>
         <batchDelay>500</batchDelay>
         <autoCreate>true</autoCreate>
-        <clientFactory>com.kdgregory.logback.aws.KinesisAppenderIntegrationTest.createClient</clientFactory>
+        <clientFactory>com.kdgregory.logging.test.AbstractKinesisAppenderIntegrationTest.createClient</clientFactory>
         <layout class="ch.qos.logback.classic.PatternLayout">
             <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
         </layout>

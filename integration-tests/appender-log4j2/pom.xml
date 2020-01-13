@@ -9,12 +9,12 @@
     </parent>
 
     <groupId>com.kdgregory.logging.integration-test</groupId>
-    <artifactId>appender-log4j1</artifactId>
+    <artifactId>appender-log4j2</artifactId>
 
-    <name>Log4J 1.x Appender Integration Tests</name>
+    <name>Log4J 2.x Appender Integration Tests</name>
 
     <description>
-        Integration tests for the Log4J 1.x appenders. These tests create resources on
+        Integration tests for the Log4J 2.x appenders. These tests create resources on
         AWS and don't delete them.
     </description>
 
@@ -28,21 +28,27 @@
     <dependencies>
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
-            <artifactId>log4j1-aws-appenders</artifactId>
+            <artifactId>log4j2-aws-appenders</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>${log4j1.version}</version>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${log4j2.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>${slf4j.version}</version>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j2.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${log4j2.version}</version>
             <scope>test</scope>
         </dependency>
 

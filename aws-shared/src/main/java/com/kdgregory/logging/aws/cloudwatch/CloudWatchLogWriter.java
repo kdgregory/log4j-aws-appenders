@@ -35,7 +35,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
 {
     // for retries, this is the initial wait time (with exponential backoff)
     private final static int INITIAL_RETRY_DELAY = 100;
-    
+
     // this is how long we'll wait to overcome throttled DescribeLogStreams
     private final static int DESCRIBE_RETRY_TIMEOUT = 30 * 1000;
 
@@ -91,7 +91,6 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             {
                 logger.debug("creating CloudWatch log group: " + config.logGroupName);
                 createLogGroup();
-                optSetLogGroupRetentionPolicy();
             }
             else
             {
@@ -273,7 +272,10 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
                 for (int ii = 0 ; ii < 300 ; ii++)
                 {
                     if (findLogGroup() != null)
+                    {
+                        optSetLogGroupRetentionPolicy();
                         return;
+                    }
                     else
                         Utils.sleepQuietly(100);
                 }
@@ -304,7 +306,8 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         try
         {
             client.putRetentionPolicy(
-                new PutRetentionPolicyRequest(config.logGroupName, config.retentionPeriod));
+                new PutRetentionPolicyRequest(
+                    config.logGroupName, config.retentionPeriod));
         }
         catch (Exception ex)
         {
@@ -336,7 +339,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         {
             reportError("unable to describe log stream", ex);
         }
-        
+
         return null;
     }
 

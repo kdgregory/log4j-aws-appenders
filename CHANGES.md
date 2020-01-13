@@ -1,5 +1,12 @@
 # Change History
 
+## 2.3.0 (TBD)
+
+* CloudWatchLogWriter: set retention policy in thread that successfully
+  created the log group (was executing from every thread, causing
+  spurious exceptions but otherwise succeeding).
+
+
 ## 2.2.2 (2019-10-20)
 
 * CloudWatch appender now provides `dedicatedWriter` configuration parameter,

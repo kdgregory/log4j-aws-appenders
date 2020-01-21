@@ -59,11 +59,6 @@ to ensure that your project includes necessary dependencies for your destination
 The minimum supported dependency versions are:
 
 * JDK: 1.7
-  The build script generates 1.6-compatible classfiles, and the appender code does
-  not rely on standard library classes/methods introduced after 1.6. However, it's
-  become increasingly difficult to set up a JDK 1.6 test environment, so I use 1.7
-  as a baseline. If you're still running 1.6 you should be able to use the library,
-  but really, it's time to upgrade your JVM.
 * Log4J 1.x: 1.2.16
   This is the first version that implements `LoggingEvent.getTimeStamp()`, which
   is needed to order messages when sending to AWS. It's been around since 2010,

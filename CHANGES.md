@@ -2,6 +2,12 @@
 
 ## 2.3.0 (TBD)
 
+* Support Log4J 2.x
+* Appenders are no longer usable with JRE 1.6. The
+  [documented](https://github.com/kdgregory/log4j-aws-appenders/blob/master/README.md#dependencies)
+  minimum JRE version has been 1.7 since the 2.0 release. However, the
+  classfiles were formerly compiled for 1.6 compatibility. The Log4J2
+  implementation, however, requires 1.7, so all build scripts were updated.
 * CloudWatchLogWriter: set retention policy in thread that successfully
   created the log group (was executing from every thread, causing
   spurious exceptions but otherwise succeeding).

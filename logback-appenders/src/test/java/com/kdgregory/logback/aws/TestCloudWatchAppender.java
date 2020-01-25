@@ -134,8 +134,6 @@ public class TestCloudWatchAppender
         assertEquals("configured log group name",   "MyLog-{sysprop:TestCloudWatchAppender.testWriterInitialization}",  appender.getLogGroup());
         assertEquals("configured log stream name",  "MyStream-{date}-{bogus}",                                          appender.getLogStream());
 
-        logger.debug("this triggers writer creation");
-
         MockCloudWatchWriter writer = appender.getMockWriter();
 
         assertEquals("writer log group name",           "MyLog-example",                    writer.config.logGroupName);

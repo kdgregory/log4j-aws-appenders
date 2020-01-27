@@ -3,11 +3,11 @@
   <root level="off"/>
 
   <appender name="SNS" class="com.kdgregory.logback.testhelpers.sns.TestableSNSAppender">
-    <topicName>example</topicName>
-    <synchronous>true</synchronous>
     <layout class="ch.qos.logback.classic.PatternLayout">
       <pattern>%msg</pattern>
     </layout>
+    <topicName>example</topicName>
+    <synchronous>true</synchronous>
   </appender>
 
   <logger name="com.kdgregory.logback.aws.TestSNSAppender" level="debug">

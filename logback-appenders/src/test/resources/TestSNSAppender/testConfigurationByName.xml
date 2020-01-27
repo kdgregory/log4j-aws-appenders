@@ -3,6 +3,9 @@
   <root level="off"/>
 
   <appender name="SNS" class="com.kdgregory.logback.testhelpers.sns.TestableSNSAppender">
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <pattern>%msg</pattern>
+    </layout>
     <topicName>example</topicName>
     <subject>This is a test</subject>
     <autoCreate>true</autoCreate>
@@ -13,9 +16,6 @@
     <clientRegion>us-west-1</clientRegion>
     <clientEndpoint>sns.us-west-2.amazonaws.com</clientEndpoint>
     <useShutdownHook>false</useShutdownHook>
-    <layout class="ch.qos.logback.classic.PatternLayout">
-      <pattern>%msg</pattern>
-    </layout>
   </appender>
 
   <logger name="com.kdgregory.logback.aws.TestSNSAppender" level="debug">

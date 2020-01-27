@@ -3,6 +3,9 @@
   <root level="off"/>
 
   <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <pattern>%msg</pattern>
+    </layout>
     <logGroup>argle</logGroup>
     <logStream>bargle</logStream>
     <retentionPeriod>7</retentionPeriod>
@@ -18,9 +21,6 @@
     <clientRegion>us-west-1</clientRegion>
     <clientEndpoint>logs.us-west-2.amazonaws.com</clientEndpoint>
     <useShutdownHook>false</useShutdownHook>
-    <layout class="ch.qos.logback.classic.PatternLayout">
-      <pattern>%msg</pattern>
-    </layout>
   </appender>
 
   <logger name="com.kdgregory.logback.aws.TestCloudWatchAppender" level="debug">

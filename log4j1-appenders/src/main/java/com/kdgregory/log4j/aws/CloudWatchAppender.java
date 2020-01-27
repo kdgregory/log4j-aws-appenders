@@ -19,6 +19,7 @@ import java.util.Date;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatisticsMXBean;
 import com.kdgregory.log4j.aws.internal.AbstractAppender;
+import com.kdgregory.logging.aws.cloudwatch.CloudWatchConstants;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterFactory;
 import com.kdgregory.logging.aws.common.Substitutions;
@@ -109,32 +110,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
      */
     public void setRetentionPeriod(int value)
     {
-        // values per https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutRetentionPolicy.html
-        // as-of 2019-05-04
-        switch (value)
-        {
-            case 1 :
-            case 3 :
-            case 5 :
-            case 7 :
-            case 14 :
-            case 30 :
-            case 60 :
-            case 90 :
-            case 120 :
-            case 150 :
-            case 180 :
-            case 365 :
-            case 400 :
-            case 545 :
-            case 731 :
-            case 1827 :
-            case 3653 :
-                retentionPeriod = Integer.valueOf(value);
-                break;
-            default :
-                throw new IllegalArgumentException("invalid retention period; see AWS API for allowed values");
-        }
+        this.retentionPeriod = CloudWatchConstants.validateRetentionPeriod(value);
     }
 
 

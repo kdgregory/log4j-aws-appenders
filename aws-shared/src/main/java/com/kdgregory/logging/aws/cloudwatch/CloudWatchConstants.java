@@ -53,4 +53,40 @@ public class CloudWatchConstants
      */
     public final static String ALLOWED_STREAM_NAME_REGEX = "[^:*]{1,512}";
 
+
+    /**
+     *  Validates proposed retention period, throwing if invalid.
+     */
+    public static Integer validateRetentionPeriod(Integer value)
+    {
+        // null means no retention period
+        if (value == null)
+            return value;
+
+        // values per https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutRetentionPolicy.html
+        // as-of 2019-05-04
+        switch (value.intValue())
+        {
+            case 1 :
+            case 3 :
+            case 5 :
+            case 7 :
+            case 14 :
+            case 30 :
+            case 60 :
+            case 90 :
+            case 120 :
+            case 150 :
+            case 180 :
+            case 365 :
+            case 400 :
+            case 545 :
+            case 731 :
+            case 1827 :
+            case 3653 :
+                return value;
+            default :
+                throw new IllegalArgumentException("invalid retention period: " + value + "; see AWS API for allowed values");
+        }
+    }
 }

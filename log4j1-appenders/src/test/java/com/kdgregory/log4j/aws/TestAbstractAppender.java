@@ -582,19 +582,14 @@ public class TestAbstractAppender
     @Test
     public void testInvalidDiscardAction() throws Exception
     {
-        initialize("testReconfigureDiscardProperties");
+        initialize("testInvalidDiscardAction");
 
         logger.debug("a message to trigger writer creation");
 
         MockCloudWatchWriter writer = appender.getMockWriter();
 
-        assertEquals("pre-update discard action, from appender",    DiscardAction.newest.toString(),    appender.getDiscardAction());
-        assertEquals("pre-update discard action, from writer",      DiscardAction.newest,               writer.config.discardAction);
-
-        appender.setDiscardAction("bogus");
-
-        assertEquals("post-update discard action, from appender",   DiscardAction.newest.toString(),    appender.getDiscardAction());
-        assertEquals("post-update discard action, from writer",     DiscardAction.newest,               writer.config.discardAction);
+        assertEquals("discard action, from appender",    DiscardAction.oldest.toString(),    appender.getDiscardAction());
+        assertEquals("discard action, from writer",      DiscardAction.oldest,               writer.config.discardAction);
 
         appenderInternalLogger.assertDebugLog();
         appenderInternalLogger.assertErrorLog("invalid discard action.*bogus.*");

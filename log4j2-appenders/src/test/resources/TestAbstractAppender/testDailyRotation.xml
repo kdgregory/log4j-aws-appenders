@@ -1,4 +1,4 @@
-<Configuration status="debug" packages="com.kdgregory.log4j2.testhelpers">
+<Configuration status="warn" packages="com.kdgregory.log4j2.testhelpers">
 
     <Appenders>
         <TestableCloudWatchAppender name="CLOUDWATCH">

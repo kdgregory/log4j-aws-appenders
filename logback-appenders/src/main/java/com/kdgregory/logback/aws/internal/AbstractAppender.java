@@ -607,7 +607,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
                             writer = null;
                         }
                     });
-                    
+
                     if (! writer.waitUntilInitialized(60000))
                     {
                         logger.error("writer initialization timed out", null);

@@ -12,24 +12,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logback.testhelpers.cloudwatch;
+package com.kdgregory.log4j2.testhelpers;
 
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.config.plugins.Plugin;
+import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
+
+import com.kdgregory.log4j2.aws.internal.CloudWatchAppenderConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
-import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.testhelpers.ThrowingWriterFactory;
 
 
 /**
  *  This class is used to test uncaught exception handling.
  */
+@Plugin(name = "ThrowingWriterCloudWatchAppender", category = "core", elementType = Appender.ELEMENT_TYPE)
 public class ThrowingWriterCloudWatchAppender
 extends TestableCloudWatchAppender
 {
-    public ThrowingWriterCloudWatchAppender()
+    @PluginBuilderFactory
+    public static ThrowingWriterCloudWatchAppenderBuilder newBuilder() {
+        return new ThrowingWriterCloudWatchAppenderBuilder();
+    }
+
+    
+    public static class ThrowingWriterCloudWatchAppenderBuilder
+    extends TestableCloudWatchAppenderBuilder
     {
-        super();
-        setThreadFactory(new DefaultThreadFactory("test"));
+        @Override
+        public ThrowingWriterCloudWatchAppender build()
+        {
+            return new ThrowingWriterCloudWatchAppender(getName(), this);
+        }
+    }
+    
+    
+    private ThrowingWriterCloudWatchAppender(String name, CloudWatchAppenderConfig config)
+    {
+        super(name, config, true);
         setWriterFactory(new ThrowingWriterFactory<CloudWatchWriterConfig,CloudWatchWriterStatistics>());
     }
 }

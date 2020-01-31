@@ -63,6 +63,9 @@ The minimum supported dependency versions are:
   This is the first version that implements `LoggingEvent.getTimeStamp()`, which
   is needed to order messages when sending to AWS. It's been around since 2010,
   so if you haven't upgraded already you should.
+* Log4J 2.x: 2.7
+  This version introduced the `LifeCycle2` interface, which is effectively a
+  breaking change for any appenders that derive from `AbstractAppender`.
 * Logback: 1.2.0
   This version is required to support `JsonAccessLayout`. If you don't use that,
   version 1.0.0 is sufficient.

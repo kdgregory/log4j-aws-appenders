@@ -26,13 +26,13 @@ import org.apache.logging.log4j.core.config.plugins.validation.constraints.Requi
 import com.kdgregory.log4j2.aws.internal.AbstractAppender;
 import com.kdgregory.log4j2.aws.internal.AbstractAppenderBuilder;
 import com.kdgregory.log4j2.aws.internal.CloudWatchAppenderConfig;
-import com.kdgregory.log4j2.aws.internal.Log4J2InternalLogger;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchConstants;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterFactory;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.common.Substitutions;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
+import com.kdgregory.logging.common.util.InternalLogger;
 import com.kdgregory.logging.common.util.RotationMode;
 
 
@@ -186,7 +186,7 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
 
     protected Integer retentionPeriod;
 
-    protected CloudWatchAppender(String name, CloudWatchAppenderConfig config, Log4J2InternalLogger internalLogger)
+    protected CloudWatchAppender(String name, CloudWatchAppenderConfig config, InternalLogger internalLogger)
     {
         super(
             name,

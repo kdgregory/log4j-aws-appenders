@@ -26,6 +26,7 @@ import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.ThreadFactory;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.common.util.InternalLogger;
 import com.kdgregory.logging.common.util.RotationMode;
 
 
@@ -48,7 +49,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
 
     // used for internal logging: we manage this and expose it to our subclasses
 
-    protected Log4J2InternalLogger internalLogger;
+    protected InternalLogger internalLogger;
 
     // the appender stats object; we keep the reference because we call writer factory
 
@@ -97,7 +98,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
         WriterFactory<WriterConfigType,AppenderStatsType> writerFactory,
         AppenderStatsType appenderStats,
         AppenderConfigType config,
-        Log4J2InternalLogger providedInternalLogger)
+        InternalLogger providedInternalLogger)
     {
         super(name, config.getFilter(), config.getLayout());
         this.config = config;
@@ -106,7 +107,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
         this.appenderStats = appenderStats;
         this.internalLogger = (providedInternalLogger != null)
                             ? providedInternalLogger
-                            : new Log4J2InternalLogger();
+                            : new Log4J2InternalLogger(this);
 
         this.sequence.set(config.getSequence());
 

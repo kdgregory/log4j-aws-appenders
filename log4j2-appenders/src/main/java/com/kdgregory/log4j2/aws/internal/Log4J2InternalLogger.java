@@ -14,30 +14,48 @@
 
 package com.kdgregory.log4j2.aws.internal;
 
+import org.apache.logging.log4j.status.StatusLogger;
+
 import com.kdgregory.logging.common.util.InternalLogger;
 
 
-// TODO - document
+/**
+ *  Logs messages from within the appender.
+ *
+ *  This class uses a mixture of built-in logging mechanisms: <code>StatusLogger</code>
+ *  for non-error conditions, and <code>ErrorHandler</code> for errors. The latter will
+ *  limit the number of repetitions of an error message, which is important if there's
+ *  a network or related problem that prevents sending messages.
+ */
 public class Log4J2InternalLogger
 implements InternalLogger
 {
-    // TODO - add a real constructor
-    
+    private AbstractAppender<?,?,?> appender;
+
+
+    public Log4J2InternalLogger(AbstractAppender<?,?,?> appender)
+    {
+        this.appender = appender;
+    }
+
+
     @Override
     public void debug(String message)
     {
-        // TODO - implement
+        StatusLogger.getLogger().debug(message);
     }
+
 
     @Override
     public void warn(String message)
     {
-        // TODO - implement
+        StatusLogger.getLogger().warn(message);
     }
+
 
     @Override
     public void error(String message, Throwable ex)
     {
-        // TODO - implement
+        appender.error(message, ex);
     }
 }

@@ -17,16 +17,15 @@ package com.kdgregory.log4j2.testhelpers;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kdgregory.log4j2.aws.internal.Log4J2InternalLogger;
+import com.kdgregory.logging.common.util.InternalLogger;
 import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 
 
 /**
- *  Mocks all operations of <code>Log4J2InternalLogger</code>, tracking log messages
- *  in lists.
+ *  Mocks all operations of <code>InternalLogger</code>, tracking log messages in lists.
  */
 public class TestableLog4J2InternalLogger
-extends Log4J2InternalLogger
+implements InternalLogger
 {
     public String appenderName;
 
@@ -48,7 +47,6 @@ extends Log4J2InternalLogger
     {
         warnMessages.add(message);
     }
-
 
 
     @Override

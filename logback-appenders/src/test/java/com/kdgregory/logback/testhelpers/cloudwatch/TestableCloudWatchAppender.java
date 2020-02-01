@@ -47,7 +47,7 @@ extends CloudWatchAppender<ILoggingEvent>
         super();
         setThreadFactory(new InlineThreadFactory());
         setWriterFactory(new MockCloudWatchWriterFactory());
-        logger = new TestableLogbackInternalLogger(this);
+        internalLogger = new TestableLogbackInternalLogger(this);
     }
 
 
@@ -95,7 +95,7 @@ extends CloudWatchAppender<ILoggingEvent>
 
     public TestableLogbackInternalLogger getInternalLogger()
     {
-        return (TestableLogbackInternalLogger)logger;
+        return (TestableLogbackInternalLogger)internalLogger;
     }
 
 

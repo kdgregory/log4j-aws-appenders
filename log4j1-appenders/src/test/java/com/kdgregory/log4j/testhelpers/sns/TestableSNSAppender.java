@@ -39,7 +39,7 @@ extends SNSAppender
         super();
         setThreadFactory(new InlineThreadFactory());
         setWriterFactory(new MockSNSWriterFactory());
-        logger = new TestableLog4JInternalLogger("");
+        internalLogger = new TestableLog4JInternalLogger("");
     }
 
     public void setThreadFactory(ThreadFactory threadFactory)
@@ -74,6 +74,6 @@ extends SNSAppender
 
     public TestableLog4JInternalLogger getInternalLogger()
     {
-        return (TestableLog4JInternalLogger)logger;
+        return (TestableLog4JInternalLogger)internalLogger;
     }
 }

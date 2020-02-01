@@ -46,7 +46,7 @@ extends CloudWatchAppender
         super();
         setThreadFactory(new InlineThreadFactory());
         setWriterFactory(new MockCloudWatchWriterFactory());
-        logger = new TestableLog4JInternalLogger("");
+        internalLogger = new TestableLog4JInternalLogger("");
     }
 
 
@@ -83,7 +83,7 @@ extends CloudWatchAppender
 
     public TestableLog4JInternalLogger getInternalLogger()
     {
-        return (TestableLog4JInternalLogger)logger;
+        return (TestableLog4JInternalLogger)internalLogger;
     }
 
 

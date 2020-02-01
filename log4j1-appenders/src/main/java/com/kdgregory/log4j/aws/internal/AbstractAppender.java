@@ -72,7 +72,7 @@ extends AppenderSkeleton
 
     // used for internal logging: we manage this and expose it to our subclasses
 
-    protected Log4JInternalLogger logger;
+    protected Log4JInternalLogger internalLogger;
 
     // the appender stats object; we keep the reference because we call writer factory
 
@@ -130,7 +130,7 @@ extends AppenderSkeleton
         this.appenderStats = appenderStats;
         this.appenderStatsMXBeanClass = appenderStatsMXBeanClass;
 
-        this.logger = new Log4JInternalLogger(getClass().getSimpleName());
+        this.internalLogger = new Log4JInternalLogger(getClass().getSimpleName());
 
         batchDelay = 2000;
         discardThreshold = 10000;
@@ -149,7 +149,7 @@ extends AppenderSkeleton
     public void setName(String name)
     {
         super.setName(name);
-        logger.setAppenderName(name);
+        internalLogger.setAppenderName(name);
     }
 
 //----------------------------------------------------------------------------
@@ -278,7 +278,7 @@ extends AppenderSkeleton
         DiscardAction tmpDiscardAction = DiscardAction.lookup(value);
         if (tmpDiscardAction == null)
         {
-            logger.error("invalid discard action: " + value, null);
+            internalLogger.error("invalid discard action: " + value, null);
             return;
         }
 
@@ -313,7 +313,7 @@ extends AppenderSkeleton
         if (newMode == null)
         {
             newMode = RotationMode.none;
-            logger.error("invalid rotation mode: " + value + ", setting to " + newMode, null);
+            internalLogger.error("invalid rotation mode: " + value + ", setting to " + newMode, null);
         }
         this.rotationMode = newMode;
     }
@@ -504,7 +504,7 @@ extends AppenderSkeleton
         }
         catch (Exception ex)
         {
-            logger.error("unable to apply layout", ex);
+            internalLogger.error("unable to apply layout", ex);
             return;
         }
 
@@ -514,7 +514,7 @@ extends AppenderSkeleton
         }
         catch (Exception ex)
         {
-            logger.error("unable to append event", ex);
+            internalLogger.error("unable to append event", ex);
         }
     }
 
@@ -608,7 +608,7 @@ extends AppenderSkeleton
         {
             try
             {
-                writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats, logger);
+                writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats, internalLogger);
                 if (synchronous)
                 {
                     writer.initialize();
@@ -620,7 +620,7 @@ extends AppenderSkeleton
                         @Override
                         public void uncaughtException(Thread t, Throwable ex)
                         {
-                            logger.error("unhandled exception in writer", ex);
+                            internalLogger.error("unhandled exception in writer", ex);
                             appenderStats.setLastError(null, ex);
                             writer = null;
                         }
@@ -639,7 +639,7 @@ extends AppenderSkeleton
             }
             catch (Exception ex)
             {
-                logger.error("exception while initializing writer", ex);
+                internalLogger.error("exception while initializing writer", ex);
             }
         }
     }
@@ -671,7 +671,7 @@ extends AppenderSkeleton
             }
             catch (Exception ex)
             {
-                logger.error("exception while shutting down writer", ex);
+                internalLogger.error("exception while shutting down writer", ex);
             }
 
             writer = null;
@@ -709,7 +709,7 @@ extends AppenderSkeleton
     {
         if (message == null)
         {
-            logger.error("internal error: message was null", null);
+            internalLogger.error("internal error: message was null", null);
             return;
         }
 
@@ -717,7 +717,7 @@ extends AppenderSkeleton
         {
             if (writer.isMessageTooLarge(message))
             {
-                logger.warn("attempted to append a message > AWS batch size; ignored");
+                internalLogger.warn("attempted to append a message > AWS batch size; ignored");
                 return;
             }
 
@@ -725,13 +725,13 @@ extends AppenderSkeleton
             if (shouldRotate(now))
             {
                 long secondsSinceLastRotation = (now - lastRotationTimestamp) / 1000;
-                logger.debug("rotating: messagesSinceLastRotation = " + messagesSinceLastRotation + ", secondsSinceLastRotation = " + secondsSinceLastRotation);
+                internalLogger.debug("rotating: messagesSinceLastRotation = " + messagesSinceLastRotation + ", secondsSinceLastRotation = " + secondsSinceLastRotation);
                 rotate();
             }
 
             if (writer == null)
             {
-                logger.error("appender not properly configured: writer is null", null);
+                internalLogger.error("appender not properly configured: writer is null", null);
             }
             else
             {

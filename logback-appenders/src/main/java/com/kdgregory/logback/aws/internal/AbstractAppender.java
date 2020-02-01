@@ -24,6 +24,7 @@ import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.ThreadFactory;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.common.util.InternalLogger;
 import com.kdgregory.logging.common.util.RotationMode;
 
 import ch.qos.logback.access.spi.IAccessEvent;
@@ -65,7 +66,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     protected WriterFactory<WriterConfigType,AppenderStatsType> writerFactory;
 
     // used for internal logging: we manage this and expose it to our subclasses
-    protected LogbackInternalLogger logger;
+    protected InternalLogger internalLogger;
 
     // the appender stats object; we keep the reference because we call writer factory
 
@@ -125,7 +126,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
         this.appenderStats = appenderStats;
         this.appenderStatsMXBeanClass = appenderStatsMXBeanClass;
 
-        this.logger = new LogbackInternalLogger(this);
+        this.internalLogger = new LogbackInternalLogger(this);
 
         batchDelay = 2000;
         discardThreshold = 10000;
@@ -279,7 +280,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
         DiscardAction tmpDiscardAction = DiscardAction.lookup(value);
         if (tmpDiscardAction == null)
         {
-            logger.error("invalid discard action: " + value, null);
+            internalLogger.error("invalid discard action: " + value, null);
             return;
         }
 
@@ -314,7 +315,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
         if (newMode == null)
         {
             newMode = RotationMode.none;
-            logger.error("invalid rotation mode: " + value + ", setting to " + newMode, null);
+            internalLogger.error("invalid rotation mode: " + value + ", setting to " + newMode, null);
         }
         this.rotationMode = newMode;
     }
@@ -516,7 +517,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     {
         if (! isStarted())
         {
-            logger.warn("append called before appender was started");
+            internalLogger.warn("append called before appender was started");
             return;
         }
 
@@ -533,7 +534,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
         }
         catch (Exception ex)
         {
-            logger.error("unable to apply layout", ex);
+            internalLogger.error("unable to apply layout", ex);
             return;
         }
 
@@ -543,7 +544,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
         }
         catch (Exception ex)
         {
-            logger.error("unable to append event", ex);
+            internalLogger.error("unable to append event", ex);
         }
     }
 
@@ -590,7 +591,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
         {
             try
             {
-                writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats, logger);
+                writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats, internalLogger);
                 if (synchronous)
                 {
                     writer.initialize();
@@ -602,7 +603,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
                         @Override
                         public void uncaughtException(Thread t, Throwable ex)
                         {
-                            logger.error("unhandled exception in writer", ex);
+                            internalLogger.error("unhandled exception in writer", ex);
                             appenderStats.setLastError(null, ex);
                             writer = null;
                         }
@@ -610,7 +611,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
 
                     if (! writer.waitUntilInitialized(60000))
                     {
-                        logger.error("writer initialization timed out", null);
+                        internalLogger.error("writer initialization timed out", null);
                     }
                 }
 
@@ -626,7 +627,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
             }
             catch (Exception ex)
             {
-                logger.error("exception while initializing writer", ex);
+                internalLogger.error("exception while initializing writer", ex);
             }
         }
     }
@@ -658,7 +659,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
             }
             catch (Exception ex)
             {
-                logger.error("exception while shutting down writer", ex);
+                internalLogger.error("exception while shutting down writer", ex);
             }
 
             writer = null;
@@ -696,7 +697,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     {
         if (message == null)
         {
-            logger.error("internal error: message was null", null);
+            internalLogger.error("internal error: message was null", null);
             return;
         }
 
@@ -704,7 +705,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
         {
             if (writer.isMessageTooLarge(message))
             {
-                logger.warn("attempted to append a message > AWS batch size; ignored");
+                internalLogger.warn("attempted to append a message > AWS batch size; ignored");
                 return;
             }
 
@@ -712,13 +713,13 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
             if (shouldRotate(now))
             {
                 long secondsSinceLastRotation = (now - lastRotationTimestamp) / 1000;
-                logger.debug("rotating: messagesSinceLastRotation = " + messagesSinceLastRotation + ", secondsSinceLastRotation = " + secondsSinceLastRotation);
+                internalLogger.debug("rotating: messagesSinceLastRotation = " + messagesSinceLastRotation + ", secondsSinceLastRotation = " + secondsSinceLastRotation);
                 rotate();
             }
 
             if (writer == null)
             {
-                logger.error("appender not properly configured: writer is null", null);
+                internalLogger.error("appender not properly configured: writer is null", null);
             }
             else
             {

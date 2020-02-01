@@ -17,6 +17,7 @@ package com.kdgregory.log4j2.testhelpers;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.Core;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
@@ -36,7 +37,7 @@ import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriterFactory;
 
 
-@Plugin(name = "TestableCloudWatchAppender", category = "core", elementType = Appender.ELEMENT_TYPE)
+@Plugin(name = "TestableCloudWatchAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class TestableCloudWatchAppender
 extends CloudWatchAppender
 {

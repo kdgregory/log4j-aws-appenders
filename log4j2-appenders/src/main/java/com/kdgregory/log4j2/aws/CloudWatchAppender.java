@@ -17,6 +17,7 @@ package com.kdgregory.log4j2.aws;
 import java.util.Date;
 
 import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.Core;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
@@ -35,7 +36,7 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.RotationMode;
 
 
-@Plugin(name = "CloudWatchAppender", category = "core", elementType = Appender.ELEMENT_TYPE)
+@Plugin(name = "CloudWatchAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class CloudWatchAppender
 extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,CloudWatchWriterConfig>
 {

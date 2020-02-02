@@ -30,6 +30,9 @@ import org.slf4j.MDC;
 
 import net.sf.kdgcommons.lang.ClassUtil;
 
+import com.amazonaws.services.logs.AWSLogs;
+import com.amazonaws.services.logs.AWSLogsClientBuilder;
+
 import com.kdgregory.logback.aws.testhelpers.MessageWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
@@ -202,8 +205,16 @@ extends AbstractCloudWatchAppenderIntegrationTest
     @Test
     public void testAlternateRegion() throws Exception
     {
+        // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
+        //         if that is your default, then the test will fail
+        AWSLogs altClient = AWSLogsClientBuilder.standard().withRegion("us-east-2").build();
+        CloudWatchTestHelper altTestHelper = new CloudWatchTestHelper(altClient, "AppenderIntegrationTest-testAlternateRegion");
+
+        // must delete existing group before logger initialization to avoid race condition
+        altTestHelper.deleteLogGroupIfExists();
+
         init("testAlternateRegion");
-        super.testAlternateRegion(new LoggerInfo("TestLogger", "test"));
+        super.testAlternateRegion(new LoggerInfo("TestLogger", "test"), altTestHelper);
     }
 
 //----------------------------------------------------------------------------

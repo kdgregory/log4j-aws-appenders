@@ -26,6 +26,10 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.test.AbstractCloudWatchAppenderIntegrationTest;
 import com.kdgregory.logging.testhelpers.CloudWatchTestHelper;
+
+import com.amazonaws.services.logs.AWSLogs;
+import com.amazonaws.services.logs.AWSLogsClientBuilder;
+
 import com.kdgregory.log4j2.aws.testhelpers.MessageWriter;
 
 import java.net.URI;
@@ -200,8 +204,16 @@ extends AbstractCloudWatchAppenderIntegrationTest
     @Test
     public void testAlternateRegion() throws Exception
     {
+        // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
+        //         if that is your default, then the test will fail
+        AWSLogs altClient = AWSLogsClientBuilder.standard().withRegion("us-east-2").build();
+        CloudWatchTestHelper altTestHelper = new CloudWatchTestHelper(altClient, "AppenderIntegrationTest-testAlternateRegion");
+
+        // must delete existing group before logger initialization to avoid race condition
+        altTestHelper.deleteLogGroupIfExists();
+
         init("testAlternateRegion");
-        super.testAlternateRegion(new LoggerInfo("TestLogger", "test"));
+        super.testAlternateRegion(new LoggerInfo("TestLogger", "test"), altTestHelper);
     }
 
 //----------------------------------------------------------------------------
@@ -223,6 +235,4 @@ extends AbstractCloudWatchAppenderIntegrationTest
         init("testSynchronousModeMultiThread");
         super.testSynchronousModeMultiThread(new LoggerInfo("TestLogger", "test"));
     }
-
-
 }

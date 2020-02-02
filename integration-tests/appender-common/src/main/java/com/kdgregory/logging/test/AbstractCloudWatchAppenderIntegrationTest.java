@@ -33,6 +33,11 @@ import com.kdgregory.logging.testhelpers.CommonTestHelper;
 import com.kdgregory.logging.testhelpers.MessageWriter;
 
 
+/**
+ *  This class contains all of the actual test code for the CloudWatch
+ *  integration tests. Subclass tests initialize the logging framework
+ *  and then call the like-named method here.
+ */
 public abstract class AbstractCloudWatchAppenderIntegrationTest
 {
     // CHANGE THIS IF YOU CHANGE THE CONFIG
@@ -99,7 +104,6 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
 
         localLogger.info("finished");
     }
-
 
 //----------------------------------------------------------------------------
 //  Test Bodies
@@ -288,7 +292,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         localLogger.info("deleting stream");
         testHelper.deleteLogStream(streamName);
 
-        localLogger.info("writing second batch");
+        localLogger.info("writing second batch (framework may report error)");
         accessor.createMessageWriter(numMessages).run();
 
         // the original batch of messages will be gone, so we can assert the new batch was written
@@ -320,17 +324,10 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
     }
 
 
-    protected void testAlternateRegion(LoggerAccessor accessor)
+    protected void testAlternateRegion(LoggerAccessor accessor, CloudWatchTestHelper altTestHelper)
     throws Exception
     {
         final int numMessages = 1001;
-
-        // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
-        //         if that is your default, then the test will fail
-        AWSLogs altClient = AWSLogsClientBuilder.standard().withRegion("us-east-2").build();
-        CloudWatchTestHelper altTestHelper = new CloudWatchTestHelper(altClient, "AppenderIntegrationTest-testAlternateRegion");
-
-        altTestHelper.deleteLogGroupIfExists();
 
         accessor.createMessageWriter(numMessages).run();
 

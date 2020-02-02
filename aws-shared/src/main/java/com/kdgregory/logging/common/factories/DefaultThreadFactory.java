@@ -74,7 +74,7 @@ public class DefaultThreadFactory implements ThreadFactory
     protected Thread createThread(LogWriter writer, UncaughtExceptionHandler exceptionHandler)
     {
         Thread writerThread = new Thread(writer);
-        writerThread.setName("com-kdgregory-aws-logwriter-" + appenderName + "-" + threadNumber.getAndIncrement());
+        writerThread.setName("com-kdgregory-aws-logwriter-" + appenderName + "-" + threadNumber.incrementAndGet());
         writerThread.setPriority(Thread.NORM_PRIORITY);
         writerThread.setDaemon(true);
         writerThread.setUncaughtExceptionHandler(exceptionHandler);

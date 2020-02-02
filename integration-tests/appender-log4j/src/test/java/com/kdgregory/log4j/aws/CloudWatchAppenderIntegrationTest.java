@@ -81,6 +81,12 @@ extends AbstractCloudWatchAppenderIntegrationTest
         }
 
         @Override
+        public boolean supportsConfigurationChanges()
+        {
+            return true;
+        }
+
+        @Override
         public void setBatchDelay(long value)
         {
             appender.setBatchDelay(value);

@@ -17,9 +17,8 @@ package com.kdgregory.logback.aws.testhelpers;
 import org.slf4j.Logger;
 
 
-
 /**
- *  Shared helper class for writing messages to Logback.
+ *  Helper class for writing test messages.
  */
 public class MessageWriter
 extends com.kdgregory.logging.testhelpers.MessageWriter

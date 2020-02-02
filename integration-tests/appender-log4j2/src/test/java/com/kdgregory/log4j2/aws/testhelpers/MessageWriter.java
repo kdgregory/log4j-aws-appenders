@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws.testhelpers;
+package com.kdgregory.log4j2.aws.testhelpers;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.core.Logger;
 
 
 /**

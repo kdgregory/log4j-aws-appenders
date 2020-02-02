@@ -1,0 +1,27 @@
+<Configuration status="warn" packages="com.kdgregory.log4j2.aws">
+
+    <Appenders>
+        <Console name="CONSOLE">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS}  %-5p - %X{testName}: %m%n" />
+        </Console>
+
+        <CloudWatchAppender name="test">
+            <PatternLayout pattern="[%t] %-5p %c - %m%n" />
+            <logGroup>AppenderIntegrationTest-testFactoryMethod</logGroup>
+            <logStream>AppenderTest</logStream>
+            <batchDelay>500</batchDelay>
+            <clientFactory>com.kdgregory.logging.test.AbstractCloudWatchAppenderIntegrationTest.createClient</clientFactory>
+        </CloudWatchAppender>
+    </Appenders>
+
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="CONSOLE" />
+        </Root>
+
+        <Logger name="TestLogger" level="debug" additivity="false">
+            <AppenderRef ref="test" />
+        </Logger>
+    </Loggers>
+
+</Configuration>

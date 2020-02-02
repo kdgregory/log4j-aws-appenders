@@ -12,29 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logback.aws;
+package com.kdgregory.log4j2.aws;
 
-import java.net.URL;
-
-import org.junit.After;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import static org.junit.Assert.*;
-
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
-import ch.qos.logback.classic.spi.ILoggingEvent;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import net.sf.kdgcommons.lang.ClassUtil;
 
-import com.kdgregory.logback.aws.testhelpers.MessageWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.test.AbstractCloudWatchAppenderIntegrationTest;
 import com.kdgregory.logging.testhelpers.CloudWatchTestHelper;
+import com.kdgregory.log4j2.aws.testhelpers.MessageWriter;
+
+import java.net.URI;
+
+import org.junit.After;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 
 public class CloudWatchAppenderIntegrationTest
@@ -50,14 +50,15 @@ extends AbstractCloudWatchAppenderIntegrationTest
     public static class LoggerInfo
     implements LoggerAccessor
     {
-        public ch.qos.logback.classic.Logger logger;
-        public CloudWatchAppender<ILoggingEvent> appender;
+        public Logger logger;
+        public CloudWatchAppender appender;
         public CloudWatchWriterStatistics stats;
 
         public LoggerInfo(String loggerName, String appenderName)
         {
-            logger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger(loggerName);
-            appender = (CloudWatchAppender<ILoggingEvent>)logger.getAppender(appenderName);
+            LoggerContext context = LoggerContext.getContext();
+            logger = context.getLogger(loggerName);
+            appender = (CloudWatchAppender)logger.getAppenders().get(appenderName);
             stats = appender.getAppenderStatistics();
         }
 
@@ -83,16 +84,15 @@ extends AbstractCloudWatchAppenderIntegrationTest
         @Override
         public boolean supportsConfigurationChanges()
         {
-            return true;
+            return false;
         }
 
         @Override
         public void setBatchDelay(long value)
         {
-            appender.setBatchDelay(value);
+            throw new IllegalStateException("can't reconfigure logger after initialization");
         }
     }
-
 
     /**
      *  Loads the test-specific Logback configuration and resets the environment.
@@ -107,16 +107,14 @@ extends AbstractCloudWatchAppenderIntegrationTest
         // this has to happen before the logger is initialized or we have a race condition
         testHelper.deleteLogGroupIfExists();
 
-        String propertiesName = "CloudWatchAppenderIntegrationTest/" + testName + ".xml";
-        URL config = ClassLoader.getSystemResource(propertiesName);
-        assertNotNull("missing configuration: " + propertiesName, config);
+        String propsName = "CloudWatchAppenderIntegrationTest/" + testName + ".xml";
+        URI config = ClassLoader.getSystemResource(propsName).toURI();
+        assertNotNull("was able to retrieve config", config);
 
-        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
-        context.reset();
-        JoranConfigurator configurator = new JoranConfigurator();
-        configurator.setContext(context);
-        configurator.doConfigure(config);
+        LoggerContext context = LoggerContext.getContext();
+        context.setConfigLocation(config);
 
+        // must reload after configuration
         localLogger = LoggerFactory.getLogger(getClass());
     }
 
@@ -140,7 +138,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
     }
 
 //----------------------------------------------------------------------------
-//  Tests
+//  Test Cases
 //----------------------------------------------------------------------------
 
     @Test
@@ -225,4 +223,6 @@ extends AbstractCloudWatchAppenderIntegrationTest
         init("testSynchronousModeMultiThread");
         super.testSynchronousModeMultiThread(new LoggerInfo("TestLogger", "test"));
     }
+
+
 }

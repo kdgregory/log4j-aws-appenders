@@ -64,6 +64,8 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         CloudWatchLogWriter getWriter() throws Exception;
         CloudWatchWriterStatistics getStats();
 
+        boolean supportsConfigurationChanges();
+
         void setBatchDelay(long value);
     }
 
@@ -135,8 +137,11 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
 
         assertEquals("retention period", 7, testHelper.describeLogGroup().getRetentionInDays().intValue());
 
-        accessor.setBatchDelay(1234L);
-        assertEquals("batch delay", 1234L, accessor.getWriter().getBatchDelay());
+        if (accessor.supportsConfigurationChanges())
+        {
+            accessor.setBatchDelay(1234L);
+            assertEquals("batch delay", 1234L, accessor.getWriter().getBatchDelay());
+        }
     }
 
 

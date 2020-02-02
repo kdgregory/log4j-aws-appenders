@@ -7,12 +7,12 @@
     </appender>
 
     <appender name="test" class="com.kdgregory.logback.aws.SNSAppender">
-        <topicName>{sysprop:SNSAppenderIntegrationTest.resourceName}</topicName>
-        <autoCreate>true</autoCreate>
-        <clientRegion>us-east-2</clientRegion>
         <layout class="ch.qos.logback.classic.PatternLayout">
             <pattern>%msg</pattern>
         </layout>
+        <topicName>{sysprop:SNSAppenderIntegrationTest.resourceName}</topicName>
+        <autoCreate>true</autoCreate>
+        <clientRegion>us-east-2</clientRegion>
     </appender>
 
     <root level="info">

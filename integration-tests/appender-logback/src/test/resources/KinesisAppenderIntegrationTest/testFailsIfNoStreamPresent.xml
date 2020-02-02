@@ -7,13 +7,13 @@
     </appender>
 
     <appender name="test" class="com.kdgregory.logback.aws.KinesisAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
+        </layout>
         <streamName>AppenderIntegrationTest-testFailsIfNoStreamPresent</streamName>
         <partitionKey>test</partitionKey>
         <batchDelay>500</batchDelay>
         <clientFactory>com.kdgregory.logback.aws.KinesisAppenderIntegrationTest.createClient</clientFactory>
-        <layout class="ch.qos.logback.classic.PatternLayout">
-            <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
-        </layout>
     </appender>
 
     <root level="info">

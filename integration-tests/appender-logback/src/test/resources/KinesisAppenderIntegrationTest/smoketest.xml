@@ -7,15 +7,15 @@
     </appender>
 
     <appender name="test" class="com.kdgregory.logback.aws.KinesisAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
+        </layout>
         <streamName>AppenderIntegrationTest-smoketest</streamName>
         <partitionKey>test</partitionKey>
         <batchDelay>500</batchDelay>
         <autoCreate>true</autoCreate>
         <shardCount>3</shardCount>
         <retentionPeriod>48</retentionPeriod>
-        <layout class="ch.qos.logback.classic.PatternLayout">
-            <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
-        </layout>
     </appender>
 
     <root level="info">

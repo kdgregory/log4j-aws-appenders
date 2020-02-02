@@ -7,19 +7,19 @@
     </appender>
 
     <appender name="test1" class="com.kdgregory.logback.aws.SNSAppender">
-        <topicName>{sysprop:SNSAppenderIntegrationTest.resourceName}</topicName>
-        <subject>Example1</subject>
         <layout class="ch.qos.logback.classic.PatternLayout">
             <pattern>%msg</pattern>
         </layout>
+        <topicName>{sysprop:SNSAppenderIntegrationTest.resourceName}</topicName>
+        <subject>Example1</subject>
     </appender>
 
     <appender name="test2" class="com.kdgregory.logback.aws.SNSAppender">
-        <topicName>{sysprop:SNSAppenderIntegrationTest.resourceName}</topicName>
-        <subject>Example2</subject>
         <layout class="ch.qos.logback.classic.PatternLayout">
             <pattern>%msg</pattern>
         </layout>
+        <topicName>{sysprop:SNSAppenderIntegrationTest.resourceName}</topicName>
+        <subject>Example2</subject>
     </appender>
 
     <root level="info">

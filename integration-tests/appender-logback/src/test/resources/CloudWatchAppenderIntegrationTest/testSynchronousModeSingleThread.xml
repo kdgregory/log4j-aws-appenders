@@ -7,13 +7,13 @@
     </appender>
 
     <appender name="test" class="com.kdgregory.logback.aws.CloudWatchAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
+        </layout>
         <logGroup>AppenderIntegrationTest-testSynchronousModeSingleThread</logGroup>
         <logStream>AppenderTest</logStream>
         <synchronous>true</synchronous>
         <batchDelay>300000</batchDelay> <!-- extremely long delay should hang test if synchronous not properly implemented -->
-        <layout class="ch.qos.logback.classic.PatternLayout">
-            <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
-        </layout>
     </appender>
 
     <root level="info">

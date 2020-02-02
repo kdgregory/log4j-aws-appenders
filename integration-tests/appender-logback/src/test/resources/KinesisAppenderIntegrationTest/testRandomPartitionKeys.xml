@@ -7,14 +7,14 @@
     </appender>
 
     <appender name="test" class="com.kdgregory.logback.aws.KinesisAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
+        </layout>
         <streamName>AppenderIntegrationTest-testRandomPartitionKeys</streamName>
         <partitionKey>{random}</partitionKey>
         <batchDelay>500</batchDelay>
         <autoCreate>true</autoCreate>
         <shardCount>2</shardCount>
-        <layout class="ch.qos.logback.classic.PatternLayout">
-            <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
-        </layout>
     </appender>
 
     <root level="info">

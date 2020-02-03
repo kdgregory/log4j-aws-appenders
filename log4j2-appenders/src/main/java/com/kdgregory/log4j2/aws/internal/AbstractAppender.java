@@ -430,7 +430,12 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
     }
 
 
-    private boolean shouldRotate(long now)
+    /**
+     *  Determines whether the appender should rotate its writer. This is called on every
+     *  append, so should be as performant as possible. Subclasses that don't rotate should
+     *  override and return false (Hotspot will quickly inline them).
+     */
+    protected boolean shouldRotate(long now)
     {
         switch (rotationMode)
         {

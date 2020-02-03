@@ -171,4 +171,11 @@ extends AbstractAppender<SNSWriterConfig,SNSWriterStatistics,SNSWriterStatistics
             actualTopicName, actualTopicArn, actualSubject, autoCreate,
             discardThreshold, discardAction, clientFactory, clientRegion, clientEndpoint);
     }
+
+
+    @Override
+    protected boolean shouldRotate(long now)
+    {
+        return false;
+    }
 }

@@ -217,4 +217,11 @@ extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWrit
                                        batchDelay, discardThreshold, discardAction,
                                        clientFactory, clientRegion, clientEndpoint);
     }
+
+
+    @Override
+    protected boolean shouldRotate(long now)
+    {
+        return false;
+    }
 }

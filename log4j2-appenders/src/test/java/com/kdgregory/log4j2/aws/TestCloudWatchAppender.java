@@ -50,7 +50,6 @@ public class TestCloudWatchAppender
         assertNotNull("was able to retrieve appender", appender);
     }
 
-
 //----------------------------------------------------------------------------
 //  Tests
 //----------------------------------------------------------------------------

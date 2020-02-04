@@ -1,0 +1,20 @@
+<Configuration status="debug" packages="com.kdgregory.log4j2.testhelpers">
+
+    <Appenders>
+        <TestableKinesisAppender name="KINESIS">
+            <PatternLayout pattern="%m" />
+            <streamName>argle-{bargle}</streamName>
+            <synchronous>true</synchronous>
+            <batchDelay>1234</batchDelay>
+        </TestableKinesisAppender>
+    </Appenders>
+
+    <Loggers>
+        <Root level="off">
+        </Root>
+        <Logger name="com.kdgregory.log4j2.aws.TestKinesisAppender" level="debug">
+            <AppenderRef ref="KINESIS" />
+        </Logger>
+    </Loggers>
+
+</Configuration>

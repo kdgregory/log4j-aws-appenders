@@ -24,6 +24,7 @@ import org.apache.logging.log4j.core.Layout;
  */
 public interface AbstractAppenderConfig
 {
+    String getName();
     Layout<String> getLayout();
     Filter getFilter();
 
@@ -32,7 +33,7 @@ public interface AbstractAppenderConfig
     int getSequence();
     String getRotationMode();
     long getRotationInterval();
-    
+
     long getBatchDelay();
     int getDiscardThreshold();
     String getDiscardAction();

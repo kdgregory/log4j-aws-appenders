@@ -1,0 +1,30 @@
+<Configuration status="debug" packages="com.kdgregory.log4j2.testhelpers">
+
+    <Appenders>
+        <TestableKinesisAppender name="KINESIS">
+            <PatternLayout pattern="%m" />
+            <streamName>argle-{bargle}</streamName>
+            <partitionKey>foo-{date}</partitionKey>
+            <autoCreate>true</autoCreate>
+            <shardCount>7</shardCount>
+            <retentionPeriod>48</retentionPeriod>
+            <synchronous>false</synchronous> <!-- explicitly set to default value -->
+            <batchDelay>1234</batchDelay>
+            <discardThreshold>54321</discardThreshold>
+            <discardAction>newest</discardAction>
+            <clientFactory>com.example.Foo.bar</clientFactory>
+            <clientRegion>us-west-1</clientRegion>
+            <clientEndpoint>kinesis.us-west-2.amazonaws.com</clientEndpoint>
+            <useShutdownHook>false</useShutdownHook>
+        </TestableKinesisAppender>
+    </Appenders>
+
+    <Loggers>
+        <Root level="off">
+        </Root>
+        <Logger name="com.kdgregory.log4j2.aws.TestKinesisAppender" level="debug">
+            <AppenderRef ref="KINESIS" />
+        </Logger>
+    </Loggers>
+
+</Configuration>

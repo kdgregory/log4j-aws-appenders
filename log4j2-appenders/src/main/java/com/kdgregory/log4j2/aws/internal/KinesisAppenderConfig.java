@@ -16,14 +16,15 @@ package com.kdgregory.log4j2.aws.internal;
 
 
 /**
- *  Defines the interface between the CloudWatchAppender's builder and the
+ *  Defines the interface between the KinesisAppender's builder and the
  *  appender itself.
  */
-public interface CloudWatchAppenderConfig
+public interface KinesisAppenderConfig
 extends AbstractAppenderConfig
 {
-    String getLogGroup();
-    String getLogStream();
+    String getStreamName();
+    String getPartitionKey();
+    boolean getAutoCreate();
+    int getShardCount();
     Integer getRetentionPeriod();
-    boolean isDedicatedWriter();
 }

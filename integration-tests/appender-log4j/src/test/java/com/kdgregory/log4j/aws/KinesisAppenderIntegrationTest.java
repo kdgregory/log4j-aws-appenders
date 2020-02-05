@@ -85,6 +85,12 @@ extends AbstractKinesisAppenderIntegrationTest
         }
 
         @Override
+        public boolean supportsConfigurationChanges()
+        {
+            return true;
+        }
+
+        @Override
         public String waitUntilWriterInitialized() throws Exception
         {
             CommonTestHelper.waitUntilWriterInitialized(appender, KinesisLogWriter.class, 10000);

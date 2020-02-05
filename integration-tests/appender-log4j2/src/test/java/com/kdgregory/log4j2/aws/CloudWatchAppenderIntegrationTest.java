@@ -14,6 +14,8 @@
 
 package com.kdgregory.log4j2.aws;
 
+import java.net.URI;
+
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 
@@ -31,8 +33,6 @@ import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 
 import com.kdgregory.log4j2.aws.testhelpers.MessageWriter;
-
-import java.net.URI;
 
 import org.junit.After;
 import org.junit.BeforeClass;

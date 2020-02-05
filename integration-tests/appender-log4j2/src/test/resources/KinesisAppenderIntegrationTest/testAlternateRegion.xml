@@ -1,0 +1,22 @@
+<Configuration status="debug" packages="com.kdgregory.log4j2">
+
+    <Appenders>
+        <KinesisAppender name="test">
+            <PatternLayout pattern="%d [%t] %-5p %c - %m%n" />
+            <streamName>AppenderIntegrationTest-testAlternateRegion</streamName>
+            <batchDelay>500</batchDelay>
+            <autoCreate>true</autoCreate>
+            <clientRegion>us-east-2</clientRegion>
+        </KinesisAppender>
+    </Appenders>
+
+    <Loggers>
+        <Root level="off">
+        </Root>
+
+        <Logger name="TestLogger" level="debug" additivity="false">
+            <AppenderRef ref="test" />
+        </Logger>
+    </Loggers>
+
+</Configuration>

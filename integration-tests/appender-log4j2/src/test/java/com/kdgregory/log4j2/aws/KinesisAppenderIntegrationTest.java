@@ -12,33 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logback.aws;
+package com.kdgregory.log4j2.aws;
 
-import java.net.URL;
+import java.net.URI;
 
-import org.junit.After;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import static org.junit.Assert.*;
-
-import com.amazonaws.services.kinesis.AmazonKinesis;
-import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
-
-import com.kdgregory.logback.aws.testhelpers.MessageWriter;
-import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
-import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
-import com.kdgregory.logging.test.AbstractKinesisAppenderIntegrationTest;
-import com.kdgregory.logging.testhelpers.KinesisTestHelper;
-import com.kdgregory.logging.testhelpers.CommonTestHelper;
-
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
-import ch.qos.logback.classic.spi.ILoggingEvent;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import net.sf.kdgcommons.lang.ClassUtil;
+
+import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
+import com.kdgregory.logging.test.AbstractKinesisAppenderIntegrationTest;
+import com.kdgregory.logging.testhelpers.CommonTestHelper;
+import com.kdgregory.logging.testhelpers.KinesisTestHelper;
+
+import com.amazonaws.services.kinesis.AmazonKinesis;
+import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
+
+import com.kdgregory.log4j2.aws.testhelpers.MessageWriter;
+
+import org.junit.After;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 
 public class KinesisAppenderIntegrationTest
@@ -50,19 +51,20 @@ extends AbstractKinesisAppenderIntegrationTest
 //----------------------------------------------------------------------------
 
     /**
-     *  Retrieves and holds a logger instance and related objects.
+     *  Holds a logger instance and related objects, to support assertions.
      */
     public static class LoggerInfo
     implements LoggerAccessor
     {
-        public ch.qos.logback.classic.Logger logger;
-        public KinesisAppender<ILoggingEvent> appender;
+        public Logger logger;
+        public KinesisAppender appender;
         public KinesisWriterStatistics stats;
 
         public LoggerInfo(String loggerName, String appenderName)
         {
-            logger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger(loggerName);
-            appender = (KinesisAppender<ILoggingEvent>)logger.getAppender(appenderName);
+            LoggerContext context = LoggerContext.getContext();
+            logger = context.getLogger(loggerName);
+            appender = (KinesisAppender)logger.getAppenders().get(appenderName);
             stats = appender.getAppenderStatistics();
         }
 
@@ -73,7 +75,8 @@ extends AbstractKinesisAppenderIntegrationTest
         }
 
         @Override
-        public KinesisLogWriter getWriter() throws Exception
+        public KinesisLogWriter getWriter()
+        throws Exception
         {
             return ClassUtil.getFieldValue(appender, "writer", KinesisLogWriter.class);
         }
@@ -98,7 +101,6 @@ extends AbstractKinesisAppenderIntegrationTest
         }
     }
 
-
     /**
      *  Loads the test-specific Logback configuration and resets the environment.
      */
@@ -112,16 +114,14 @@ extends AbstractKinesisAppenderIntegrationTest
         // this has to happen before the logger is initialized or we have a race condition
         testHelper.deleteStreamIfExists();
 
-        String propertiesName = "KinesisAppenderIntegrationTest/" + testName + ".xml";
-        URL config = ClassLoader.getSystemResource(propertiesName);
-        assertNotNull("missing configuration: " + propertiesName, config);
+        String propsName = "KinesisAppenderIntegrationTest/" + testName + ".xml";
+        URI config = ClassLoader.getSystemResource(propsName).toURI();
+        assertNotNull("was able to retrieve config", config);
 
-        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
-        context.reset();
-        JoranConfigurator configurator = new JoranConfigurator();
-        configurator.setContext(context);
-        configurator.doConfigure(config);
+        LoggerContext context = LoggerContext.getContext();
+        context.setConfigLocation(config);
 
+        // must reload after configuration
         localLogger = LoggerFactory.getLogger(getClass());
     }
 

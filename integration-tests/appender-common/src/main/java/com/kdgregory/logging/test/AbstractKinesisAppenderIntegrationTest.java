@@ -65,6 +65,8 @@ public abstract class AbstractKinesisAppenderIntegrationTest
         KinesisLogWriter getWriter() throws Exception;
         KinesisWriterStatistics getStats();
 
+        boolean supportsConfigurationChanges();
+
         String waitUntilWriterInitialized() throws Exception;
     }
 

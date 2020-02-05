@@ -13,7 +13,6 @@
         <streamName>AppenderIntegrationTest-testFailsIfNoStreamPresent</streamName>
         <partitionKey>test</partitionKey>
         <batchDelay>500</batchDelay>
-        <clientFactory>com.kdgregory.logback.aws.KinesisAppenderIntegrationTest.createClient</clientFactory>
     </appender>
 
     <root level="info">

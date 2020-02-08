@@ -1,0 +1,19 @@
+<Configuration status="debug" packages="com.kdgregory.log4j2.testhelpers">
+
+    <Appenders>
+        <TestableSNSAppender name="SNS">
+            <PatternLayout pattern="%m" />
+            <topicName>example</topicName>
+            <synchronous>true</synchronous>
+        </TestableSNSAppender>
+    </Appenders>
+
+    <Loggers>
+        <Root level="off">
+        </Root>
+        <Logger name="com.kdgregory.log4j2.aws.TestSNSAppender" level="debug">
+            <AppenderRef ref="SNS" />
+        </Logger>
+    </Loggers>
+
+</Configuration>

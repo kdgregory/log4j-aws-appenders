@@ -64,6 +64,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
     {
         MessageWriter createMessageWriter(int numMessages);
 
+        boolean supportsConfigurationChanges();
         String waitUntilWriterInitialized() throws Exception;
 
         SNSLogWriter getWriter() throws Exception;

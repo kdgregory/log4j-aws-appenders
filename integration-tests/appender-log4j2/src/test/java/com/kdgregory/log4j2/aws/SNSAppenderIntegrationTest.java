@@ -12,30 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.log4j.aws;
+package com.kdgregory.log4j2.aws;
 
-import java.net.URL;
+import java.net.URI;
+
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
+import net.sf.kdgcommons.lang.ClassUtil;
+
+import com.kdgregory.logging.aws.sns.SNSLogWriter;
+import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
+import com.kdgregory.logging.test.AbstractSNSAppenderIntegrationTest;
+import com.kdgregory.logging.testhelpers.CommonTestHelper;
+import com.kdgregory.logging.testhelpers.SNSTestHelper;
+
+import com.kdgregory.log4j2.aws.testhelpers.MessageWriter;
 
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
-
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.MDC;
-import org.apache.log4j.PropertyConfigurator;
-
-import org.slf4j.LoggerFactory;
-
-import net.sf.kdgcommons.lang.ClassUtil;
-
-import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
-import com.kdgregory.logging.aws.sns.SNSLogWriter;
-import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
-import com.kdgregory.logging.test.AbstractSNSAppenderIntegrationTest;
-import com.kdgregory.logging.testhelpers.SNSTestHelper;
-import com.kdgregory.logging.testhelpers.CommonTestHelper;
 
 
 public class SNSAppenderIntegrationTest
@@ -47,7 +48,7 @@ extends AbstractSNSAppenderIntegrationTest
 //----------------------------------------------------------------------------
 
     /**
-     *  Retrieves and holds a logger instance and related objects.
+     *  Holds a logger instance and related objects, to support assertions.
      */
     public static class LoggerInfo
     implements LoggerAccessor
@@ -58,8 +59,9 @@ extends AbstractSNSAppenderIntegrationTest
 
         public LoggerInfo(String loggerName, String appenderName)
         {
-            logger = Logger.getLogger(loggerName);
-            appender = (SNSAppender)logger.getAppender(appenderName);
+            LoggerContext context = LoggerContext.getContext();
+            logger = context.getLogger(loggerName);
+            appender = (SNSAppender)logger.getAppenders().get(appenderName);
             stats = appender.getAppenderStatistics();
         }
 
@@ -70,21 +72,8 @@ extends AbstractSNSAppenderIntegrationTest
         }
 
         @Override
-        public boolean supportsConfigurationChanges()
-        {
-            return true;
-        }
-
-        @Override
-        public String waitUntilWriterInitialized()
+        public SNSLogWriter getWriter()
         throws Exception
-        {
-            CommonTestHelper.waitUntilWriterInitialized(appender, SNSLogWriter.class, 30000);
-            return stats.getLastErrorMessage();
-        }
-
-        @Override
-        public SNSLogWriter getWriter() throws Exception
         {
             return ClassUtil.getFieldValue(appender, "writer", SNSLogWriter.class);
         }
@@ -94,32 +83,45 @@ extends AbstractSNSAppenderIntegrationTest
         {
             return stats;
         }
+
+        @Override
+        public boolean supportsConfigurationChanges()
+        {
+            return false;
+        }
+
+        @Override
+        public String waitUntilWriterInitialized() throws Exception
+        {
+            CommonTestHelper.waitUntilWriterInitialized(appender, SNSLogWriter.class, 10000);
+            return stats.getLastErrorMessage();
+        }
     }
 
-
     /**
-     *  Loads the test-specific Log4J configuration and resets the environment.
+     *  Loads the test-specific Logback configuration and resets the environment.
      */
-    public void init(String testName, boolean createTopic)
-    throws Exception
+    public void init(String testName, boolean createTopic) throws Exception
     {
         MDC.put("testName", testName);
         localLogger.info("starting");
 
         testHelper = new SNSTestHelper(helperSNSclient, helperSQSclient);
 
+        // if we're going to create the topic we must do it before initializing the logging system
         if (createTopic)
         {
             testHelper.createTopicAndQueue();
         }
 
-        String propertiesName = "SNSAppenderIntegrationTest/" + testName + ".properties";
-        URL config = ClassLoader.getSystemResource(propertiesName);
-        assertNotNull("missing configuration: " + propertiesName, config);
+        String propsName = "SNSAppenderIntegrationTest/" + testName + ".xml";
+        URI config = ClassLoader.getSystemResource(propsName).toURI();
+        assertNotNull("was able to retrieve config", config);
 
-        LogManager.resetConfiguration();
-        PropertyConfigurator.configure(config);
+        LoggerContext context = LoggerContext.getContext();
+        context.setConfigLocation(config);
 
+        // must reload after configuration
         localLogger = LoggerFactory.getLogger(getClass());
     }
 
@@ -143,7 +145,7 @@ extends AbstractSNSAppenderIntegrationTest
     }
 
 //----------------------------------------------------------------------------
-//  Testcases
+//  Tests
 //----------------------------------------------------------------------------
 
     @Test
@@ -176,9 +178,7 @@ extends AbstractSNSAppenderIntegrationTest
         init("testTopicMissingNoAutoCreate", false);
         LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
-        // sending a single message triggers writer creation
-        loggerInfo.createMessageWriter(1).run();
-
+        // initializing the logging framework triggers logger creation, no need to send a message
         super.testTopicMissingNoAutoCreate(loggerInfo);
     }
 

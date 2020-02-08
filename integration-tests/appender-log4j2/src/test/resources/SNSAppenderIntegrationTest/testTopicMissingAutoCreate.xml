@@ -1,0 +1,21 @@
+<Configuration status="debug" packages="com.kdgregory.log4j2">
+
+    <Appenders>
+        <SNSAppender name="test">
+            <PatternLayout pattern="%m" />
+            <topicName>{sysprop:SNSAppenderIntegrationTest.resourceName}</topicName>
+            <autoCreate>true</autoCreate>
+        </SNSAppender>
+    </Appenders>
+
+    <Loggers>
+        <Root level="off">
+        </Root>
+
+        <Logger name="TestLogger" level="debug" additivity="false">
+            <AppenderRef ref="test" />
+        </Logger>
+    </Loggers>
+
+</Configuration>
+

@@ -69,6 +69,12 @@ extends AbstractSNSAppenderIntegrationTest
         }
 
         @Override
+        public boolean supportsConfigurationChanges()
+        {
+            return true;
+        }
+
+        @Override
         public String waitUntilWriterInitialized()
         throws Exception
         {

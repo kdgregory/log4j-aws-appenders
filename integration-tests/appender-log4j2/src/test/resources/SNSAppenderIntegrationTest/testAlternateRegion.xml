@@ -1,4 +1,4 @@
-<Configuration status="debug" packages="com.kdgregory.log4j2">
+<Configuration status="warn" packages="com.kdgregory.log4j2">
 
     <Appenders>
         <SNSAppender name="test">

@@ -48,10 +48,19 @@ public class CloudWatchTestHelper
     private String logGroupName;
 
 
-    public CloudWatchTestHelper(AWSLogs client, String logGroupName)
+    public CloudWatchTestHelper(AWSLogs client, String baseLogGroupName, String testName)
     {
         this.client = client;
-        this.logGroupName = logGroupName;
+        this.logGroupName = baseLogGroupName + "-" + testName;
+    }
+
+
+    /**
+     *  Returns the constructed log group name.
+     */
+    public String getLogGroupName()
+    {
+        return logGroupName;
     }
 
 

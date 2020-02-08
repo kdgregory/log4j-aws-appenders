@@ -91,11 +91,11 @@ public class CloudWatchLogWriterIntegrationTest
         MDC.put("testName", testName);
         localLogger.info("starting");
 
-        logGroupName = getClass().getSimpleName() + "-" + testName;
-        logStreamName = testName;
-
-        testHelper = new CloudWatchTestHelper(client, logGroupName);
+        testHelper = new CloudWatchTestHelper(client, BASE_LOGGROUP_NAME, testName);
         testHelper.deleteLogGroupIfExists();
+
+        logGroupName = testHelper.getLogGroupName();
+        logStreamName = testName;
 
         stats = new CloudWatchWriterStatistics();
         internalLogger = new TestableInternalLogger();
@@ -269,7 +269,8 @@ public class CloudWatchLogWriterIntegrationTest
         testHelper.assertMessages(logStreamName, numMessages);
 
         assertFalse("stream does not exist in default region",
-                    new CloudWatchTestHelper(helperClient, BASE_LOGGROUP_NAME).isLogStreamAvailable("testAlternateRegion"));
+                    new CloudWatchTestHelper(helperClient, BASE_LOGGROUP_NAME, "testAlternateRegion")
+                        .isLogStreamAvailable(logStreamName));
     }
 
 
@@ -295,7 +296,8 @@ public class CloudWatchLogWriterIntegrationTest
         testHelper.assertMessages(logStreamName, numMessages);
 
         assertFalse("stream does not exist in default region",
-                    new CloudWatchTestHelper(helperClient, BASE_LOGGROUP_NAME).isLogStreamAvailable("testAlternateEndpoint"));
+                    new CloudWatchTestHelper(helperClient, BASE_LOGGROUP_NAME, "testAlternateEndpoint")
+                        .isLogStreamAvailable(logStreamName));
     }
 
 

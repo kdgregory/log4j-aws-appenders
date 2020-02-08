@@ -1,6 +1,10 @@
 <Configuration status="warn" packages="com.kdgregory.log4j2">
 
     <Appenders>
+        <Console name="CONSOLE">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS}  %-5p - %X{testName}: %m%n" />
+        </Console>
+
         <SNSAppender name="test">
             <PatternLayout pattern="%m" />
             <topicArn>{sysprop:SNSAppenderIntegrationTest.topicArn}</topicArn>
@@ -9,7 +13,8 @@
     </Appenders>
 
     <Loggers>
-        <Root level="off">
+        <Root level="info">
+            <AppenderRef ref="CONSOLE" />
         </Root>
 
         <Logger name="TestLogger" level="debug" additivity="false">

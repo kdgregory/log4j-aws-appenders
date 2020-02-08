@@ -1,6 +1,10 @@
 <Configuration status="warn" packages="com.kdgregory.log4j2">
 
     <Appenders>
+        <Console name="CONSOLE">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS}  %-5p - %X{testName}: %m%n" />
+        </Console>
+
         <KinesisAppender name="test1">
             <PatternLayout pattern="%d [%t] %-5p %c - %m%n" />
             <streamName>AppenderIntegrationTest-testMultipleThreadsMultipleAppendersDistinctPartitions</streamName>
@@ -9,7 +13,7 @@
             <autoCreate>true</autoCreate>
             <shardCount>2</shardCount>
         </KinesisAppender>
-        
+
         <KinesisAppender name="test2">
             <PatternLayout pattern="%d [%t] %-5p %c - %m%n" />
             <streamName>AppenderIntegrationTest-testMultipleThreadsMultipleAppendersDistinctPartitions</streamName>
@@ -18,7 +22,7 @@
             <autoCreate>true</autoCreate>
             <shardCount>2</shardCount>
         </KinesisAppender>
-        
+
         <KinesisAppender name="test3">
             <PatternLayout pattern="%d [%t] %-5p %c - %m%n" />
             <streamName>AppenderIntegrationTest-testMultipleThreadsMultipleAppendersDistinctPartitions</streamName>
@@ -30,7 +34,8 @@
     </Appenders>
 
     <Loggers>
-        <Root level="off">
+        <Root level="info">
+            <AppenderRef ref="CONSOLE" />
         </Root>
 
         <Logger name="TestLogger1" level="debug" additivity="false">

@@ -67,7 +67,7 @@ extends AbstractKinesisAppenderIntegrationTest
         }
 
         @Override
-        public MessageWriter createMessageWriter(int numMessages)
+        public MessageWriter newMessageWriter(int numMessages)
         {
             return new MessageWriter(logger, numMessages);
         }
@@ -82,12 +82,6 @@ extends AbstractKinesisAppenderIntegrationTest
         public KinesisWriterStatistics getStats()
         {
             return stats;
-        }
-
-        @Override
-        public boolean supportsConfigurationChanges()
-        {
-            return false;
         }
 
         @Override

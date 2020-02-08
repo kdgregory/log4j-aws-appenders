@@ -69,7 +69,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
         }
 
         @Override
-        public MessageWriter createMessageWriter(int numMessages)
+        public MessageWriter newMessageWriter(int numMessages)
         {
             return new MessageWriter(logger, numMessages);
         }

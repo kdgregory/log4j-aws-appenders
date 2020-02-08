@@ -64,15 +64,9 @@ extends AbstractSNSAppenderIntegrationTest
         }
 
         @Override
-        public MessageWriter createMessageWriter(int numMessages)
+        public MessageWriter newMessageWriter(int numMessages)
         {
             return new MessageWriter(logger, numMessages);
-        }
-
-        @Override
-        public boolean supportsConfigurationChanges()
-        {
-            return true;
         }
 
         @Override
@@ -177,7 +171,7 @@ extends AbstractSNSAppenderIntegrationTest
         LoggerInfo loggerInfo = new LoggerInfo("TestLogger", "test");
 
         // sending a single message triggers writer creation
-        loggerInfo.createMessageWriter(1).run();
+        loggerInfo.newMessageWriter(1).run();
 
         super.testTopicMissingNoAutoCreate(loggerInfo);
     }

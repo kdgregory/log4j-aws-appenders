@@ -60,13 +60,24 @@ public abstract class AbstractKinesisAppenderIntegrationTest
      */
     public interface LoggerAccessor
     {
-        MessageWriter createMessageWriter(int numMessages);
+        /**
+         *  Creates a new Messagewriter that will log to the tested appender.
+         */
+        MessageWriter newMessageWriter(int numMessages);
 
+        /**
+         *  Retrieves the current writer from the tested appender.
+         */
         KinesisLogWriter getWriter() throws Exception;
+
+        /**
+         *  Returns the statistics object associated with the tested appender.
+         */
         KinesisWriterStatistics getStats();
 
-        boolean supportsConfigurationChanges();
-
+        /**
+         *  Waits until the tested appender's writer has been initialized.
+         */
         String waitUntilWriterInitialized() throws Exception;
     }
 
@@ -109,7 +120,7 @@ public abstract class AbstractKinesisAppenderIntegrationTest
     {
         final int numMessages = 1001;
 
-        accessor.createMessageWriter(numMessages).run();
+        accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("reading messages");
         List<RetrievedRecord> messages = testHelper.retrieveAllMessages(numMessages);
@@ -133,11 +144,11 @@ public abstract class AbstractKinesisAppenderIntegrationTest
 
         MessageWriter[] writers = new MessageWriter[]
         {
-            accessor.createMessageWriter(messagesPerThread),
-            accessor.createMessageWriter(messagesPerThread),
-            accessor.createMessageWriter(messagesPerThread),
-            accessor.createMessageWriter(messagesPerThread),
-            accessor.createMessageWriter(messagesPerThread)
+            accessor.newMessageWriter(messagesPerThread),
+            accessor.newMessageWriter(messagesPerThread),
+            accessor.newMessageWriter(messagesPerThread),
+            accessor.newMessageWriter(messagesPerThread),
+            accessor.newMessageWriter(messagesPerThread)
         };
 
         MessageWriter.runOnThreads(writers);
@@ -164,12 +175,12 @@ public abstract class AbstractKinesisAppenderIntegrationTest
 
         MessageWriter[] writers = new MessageWriter[]
         {
-            accessors[0].createMessageWriter(messagesPerThread),
-            accessors[1].createMessageWriter(messagesPerThread),
-            accessors[2].createMessageWriter(messagesPerThread),
-            accessors[0].createMessageWriter(messagesPerThread),
-            accessors[1].createMessageWriter(messagesPerThread),
-            accessors[2].createMessageWriter(messagesPerThread),
+            accessors[0].newMessageWriter(messagesPerThread),
+            accessors[1].newMessageWriter(messagesPerThread),
+            accessors[2].newMessageWriter(messagesPerThread),
+            accessors[0].newMessageWriter(messagesPerThread),
+            accessors[1].newMessageWriter(messagesPerThread),
+            accessors[2].newMessageWriter(messagesPerThread),
         };
 
         MessageWriter.runOnThreads(writers);
@@ -194,7 +205,7 @@ public abstract class AbstractKinesisAppenderIntegrationTest
     {
         final int numMessages = 250;
 
-        accessor.createMessageWriter(numMessages).run();
+        accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("reading messages");
         List<RetrievedRecord> messages = testHelper.retrieveAllMessages(numMessages);
@@ -211,7 +222,7 @@ public abstract class AbstractKinesisAppenderIntegrationTest
         final String streamName = "AppenderIntegrationTest-testFailsIfNoStreamPresent";
         final int numMessages = 1001;
 
-        accessor.createMessageWriter(numMessages).run();
+        accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("waiting for writer initialization to finish");
         String initializationMessage = accessor.waitUntilWriterInitialized();
@@ -229,7 +240,7 @@ public abstract class AbstractKinesisAppenderIntegrationTest
         final int numMessages = 1001;
 
         localLogger.info("writing messages");
-        accessor.createMessageWriter(numMessages).run();
+        accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("reading messages");
         List<RetrievedRecord> messages = testHelper.retrieveAllMessages(numMessages);
@@ -251,7 +262,7 @@ public abstract class AbstractKinesisAppenderIntegrationTest
         final int numMessages = 1001;
 
         localLogger.info("writing messages");
-        accessor.createMessageWriter(numMessages).run();
+        accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("reading messages");
         List<RetrievedRecord> messages = altTestHelper.retrieveAllMessages(numMessages);

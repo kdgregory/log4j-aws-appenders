@@ -64,13 +64,30 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
      */
     public interface LoggerAccessor
     {
-        MessageWriter createMessageWriter(int numMessages);
+        /**
+         *  Creates a new Messagewriter that will log to the tested appender.
+         */
+        MessageWriter newMessageWriter(int numMessages);
 
+        /**
+         *  Retrieves the current writer from the tested appender.
+         */
         CloudWatchLogWriter getWriter() throws Exception;
+
+        /**
+         *  Returns the statistics object associated with the tested appender.
+         */
         CloudWatchWriterStatistics getStats();
 
+        /**
+         *  Identifies whether the appender supports post-creation config changes
+         *  (used in the smoketest).
+         */
         boolean supportsConfigurationChanges();
 
+        /**
+         *  Changes the appender's batch delay, iff if supports such changes.
+         */
         void setBatchDelay(long value);
     }
 
@@ -116,7 +133,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         final int numMessages     = 1001;
         final int rotationCount   = 333;
 
-        MessageWriter messageWriter = accessor.createMessageWriter(numMessages);
+        MessageWriter messageWriter = accessor.newMessageWriter(numMessages);
         messageWriter.run();
 
         localLogger.info("waiting for logger");
@@ -158,11 +175,11 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
 
         MessageWriter[] messageWriters = new MessageWriter[]
         {
-            accessor.createMessageWriter(messagesPerThread),
-            accessor.createMessageWriter(messagesPerThread),
-            accessor.createMessageWriter(messagesPerThread),
-            accessor.createMessageWriter(messagesPerThread),
-            accessor.createMessageWriter(messagesPerThread)
+            accessor.newMessageWriter(messagesPerThread),
+            accessor.newMessageWriter(messagesPerThread),
+            accessor.newMessageWriter(messagesPerThread),
+            accessor.newMessageWriter(messagesPerThread),
+            accessor.newMessageWriter(messagesPerThread)
         };
         MessageWriter.runOnThreads(messageWriters);
 
@@ -183,9 +200,9 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         final int messagesPerThread = 1000;
 
         MessageWriter.runOnThreads(
-            accessors[0].createMessageWriter(messagesPerThread),
-            accessors[1].createMessageWriter(messagesPerThread),
-            accessors[2].createMessageWriter(messagesPerThread));
+            accessors[0].newMessageWriter(messagesPerThread),
+            accessors[1].newMessageWriter(messagesPerThread),
+            accessors[2].newMessageWriter(messagesPerThread));
 
         localLogger.info("waiting for loggers");
         CommonTestHelper.waitUntilMessagesSent(accessors[0].getStats(), messagesPerThread, 30000);
@@ -206,26 +223,26 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         final int messagesPerThread = 1000;
 
         MessageWriter.runOnThreads(
-            accessors[0].createMessageWriter(messagesPerThread),
-            accessors[1].createMessageWriter(messagesPerThread),
-            accessors[2].createMessageWriter(messagesPerThread),
-            accessors[3].createMessageWriter(messagesPerThread),
-            accessors[4].createMessageWriter(messagesPerThread),
-            accessors[0].createMessageWriter(messagesPerThread),
-            accessors[1].createMessageWriter(messagesPerThread),
-            accessors[2].createMessageWriter(messagesPerThread),
-            accessors[3].createMessageWriter(messagesPerThread),
-            accessors[4].createMessageWriter(messagesPerThread),
-            accessors[0].createMessageWriter(messagesPerThread),
-            accessors[1].createMessageWriter(messagesPerThread),
-            accessors[2].createMessageWriter(messagesPerThread),
-            accessors[3].createMessageWriter(messagesPerThread),
-            accessors[4].createMessageWriter(messagesPerThread),
-            accessors[0].createMessageWriter(messagesPerThread),
-            accessors[1].createMessageWriter(messagesPerThread),
-            accessors[2].createMessageWriter(messagesPerThread),
-            accessors[3].createMessageWriter(messagesPerThread),
-            accessors[4].createMessageWriter(messagesPerThread));
+            accessors[0].newMessageWriter(messagesPerThread),
+            accessors[1].newMessageWriter(messagesPerThread),
+            accessors[2].newMessageWriter(messagesPerThread),
+            accessors[3].newMessageWriter(messagesPerThread),
+            accessors[4].newMessageWriter(messagesPerThread),
+            accessors[0].newMessageWriter(messagesPerThread),
+            accessors[1].newMessageWriter(messagesPerThread),
+            accessors[2].newMessageWriter(messagesPerThread),
+            accessors[3].newMessageWriter(messagesPerThread),
+            accessors[4].newMessageWriter(messagesPerThread),
+            accessors[0].newMessageWriter(messagesPerThread),
+            accessors[1].newMessageWriter(messagesPerThread),
+            accessors[2].newMessageWriter(messagesPerThread),
+            accessors[3].newMessageWriter(messagesPerThread),
+            accessors[4].newMessageWriter(messagesPerThread),
+            accessors[0].newMessageWriter(messagesPerThread),
+            accessors[1].newMessageWriter(messagesPerThread),
+            accessors[2].newMessageWriter(messagesPerThread),
+            accessors[3].newMessageWriter(messagesPerThread),
+            accessors[4].newMessageWriter(messagesPerThread));
 
         localLogger.info("waiting for loggers");
         for (LoggerAccessor accessor : accessors)
@@ -284,7 +301,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         final int numMessages    = 100;
 
         localLogger.info("writing first batch");
-        accessor.createMessageWriter(numMessages).run();
+        accessor.newMessageWriter(numMessages).run();
 
         CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
         testHelper.assertMessages(streamName, numMessages);
@@ -293,7 +310,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         testHelper.deleteLogStream(streamName);
 
         localLogger.info("writing second batch (framework may report error)");
-        accessor.createMessageWriter(numMessages).run();
+        accessor.newMessageWriter(numMessages).run();
 
         // the original batch of messages will be gone, so we can assert the new batch was written
         // however, the writer doesn't change so the stats will keep increasing
@@ -312,7 +329,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         // again, defined in configuration
         final int numMessages     = 1001;
 
-        accessor.createMessageWriter(numMessages).run();
+        accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("waiting for logger");
         CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
@@ -329,7 +346,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
     {
         final int numMessages = 1001;
 
-        accessor.createMessageWriter(numMessages).run();
+        accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("waiting for logger");
         CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
@@ -343,7 +360,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
     throws Exception
     {
         localLogger.info("writing message");
-        accessor.createMessageWriter(1).run();
+        accessor.newMessageWriter(1).run();
 
         assertEquals("number of messages recorded in stats", 1, accessor.getStats().getMessagesSent());
 
@@ -359,11 +376,11 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
 
         MessageWriter[] writers = new MessageWriter[]
         {
-            accessor.createMessageWriter(messagesPerThread),
-            accessor.createMessageWriter(messagesPerThread),
-            accessor.createMessageWriter(messagesPerThread),
-            accessor.createMessageWriter(messagesPerThread),
-            accessor.createMessageWriter(messagesPerThread)
+            accessor.newMessageWriter(messagesPerThread),
+            accessor.newMessageWriter(messagesPerThread),
+            accessor.newMessageWriter(messagesPerThread),
+            accessor.newMessageWriter(messagesPerThread),
+            accessor.newMessageWriter(messagesPerThread)
         };
         MessageWriter.runOnThreads(writers);
 

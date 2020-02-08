@@ -63,15 +63,9 @@ extends AbstractSNSAppenderIntegrationTest
         }
 
         @Override
-        public MessageWriter createMessageWriter(int numMessages)
+        public MessageWriter newMessageWriter(int numMessages)
         {
             return new MessageWriter(logger, numMessages);
-        }
-
-        @Override
-        public boolean supportsConfigurationChanges()
-        {
-            return true;
         }
 
         @Override
@@ -81,7 +75,6 @@ extends AbstractSNSAppenderIntegrationTest
             CommonTestHelper.waitUntilWriterInitialized(appender, SNSLogWriter.class, 30000);
             return stats.getLastErrorMessage();
         }
-
 
         @Override
         public SNSLogWriter getWriter() throws Exception

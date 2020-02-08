@@ -62,13 +62,25 @@ public abstract class AbstractSNSAppenderIntegrationTest
      */
     public interface LoggerAccessor
     {
-        MessageWriter createMessageWriter(int numMessages);
+        /**
+         *  Creates a new Messagewriter that will log to the tested appender.
+         */
+        MessageWriter newMessageWriter(int numMessages);
 
-        boolean supportsConfigurationChanges();
-        String waitUntilWriterInitialized() throws Exception;
-
+        /**
+         *  Retrieves the current writer from the tested appender.
+         */
         SNSLogWriter getWriter() throws Exception;
+
+        /**
+         *  Returns the statistics object associated with the tested appender.
+         */
         SNSWriterStatistics getStats();
+
+        /**
+         *  Waits until the tested appender's writer has been initialized.
+         */
+        String waitUntilWriterInitialized() throws Exception;
     }
 
 
@@ -114,7 +126,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
         final int numMessages = 11;
 
         localLogger.info("writing messages");
-        accessor.createMessageWriter(numMessages).run();
+        accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("reading messages");
         List<String> messages = testHelper.retrieveMessages(numMessages);
@@ -136,7 +148,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
         final int numMessages = 11;
 
         localLogger.info("writing messages");
-        accessor.createMessageWriter(numMessages).run();
+        accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("reading messages");
         List<String> messages = testHelper.retrieveMessages(numMessages);
@@ -158,7 +170,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
         final int numMessages = 11;
 
         localLogger.info("writing messages");
-        accessor.createMessageWriter(numMessages).run();
+        accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("waiting for writer initialization to finish");
         accessor.waitUntilWriterInitialized();
@@ -199,7 +211,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
 
         for (int ii = 0 ; ii < numThreads ; ii++)
         {
-            new Thread(accessor.createMessageWriter(numMessages)).start();
+            new Thread(accessor.newMessageWriter(numMessages)).start();
         }
 
         localLogger.info("reading messages");
@@ -222,7 +234,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
         final int totalMessages = numMessages * numAppenders;
 
         // same logger regardless of which info object we use
-        accessor1.createMessageWriter(numMessages).run();
+        accessor1.newMessageWriter(numMessages).run();
 
         localLogger.info("reading messages");
         List<String> messages = testHelper.retrieveMessages(totalMessages);
@@ -246,7 +258,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
         final int numMessages = 11;
 
         localLogger.info("writing messages");
-        accessor.createMessageWriter(numMessages).run();
+        accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("reading messages");
         List<String> messages = testHelper.retrieveMessages(numMessages);
@@ -273,7 +285,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
         SNSTestHelper altTestHelper = new SNSTestHelper(testHelper, altSNSclient, altSQSclient);
 
         localLogger.info("writing messages");
-        accessor.createMessageWriter(numMessages).run();
+        accessor.newMessageWriter(numMessages).run();
 
         // no queue attached to this topic so we can't read messages directly
         CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);

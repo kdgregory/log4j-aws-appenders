@@ -70,6 +70,7 @@ public class TestSNSAppender
         assertEquals("batch delay",         1L,                             appender.getConfig().getBatchDelay());
         assertEquals("discard threshold",   123,                            appender.getConfig().getDiscardThreshold());
         assertEquals("discard action",      "newest",                       appender.getConfig().getDiscardAction());
+        assertEquals("client factory",      "com.example.Foo.bar",          appender.getConfig().getClientFactory());
         assertEquals("client region",       "us-west-1",                    appender.getConfig().getClientRegion());
         assertEquals("client endpoint",     "sns.us-west-2.amazonaws.com",  appender.getConfig().getClientEndpoint());
         assertFalse("use shutdown hook",                                    appender.getConfig().isUseShutdownHook());
@@ -123,6 +124,7 @@ public class TestSNSAppender
                                      .setBatchDelay(9876L)                      // this is ignored
                                      .setDiscardThreshold(123)
                                      .setDiscardAction(DiscardAction.newest.name())
+                                     .setClientFactory("com.example.Foo.bar")
                                      .setClientRegion("us-west-1")
                                      .setClientEndpoint("sns.us-west-2.amazonaws.com")
                                      .setSynchronous(false)
@@ -141,6 +143,7 @@ public class TestSNSAppender
         assertEquals("batch delay",         1L,                             appender.getConfig().getBatchDelay());
         assertEquals("discard threshold",   123,                            appender.getConfig().getDiscardThreshold());
         assertEquals("discard action",      "newest",                       appender.getConfig().getDiscardAction());
+        assertEquals("client factory",      "com.example.Foo.bar",          appender.getConfig().getClientFactory());
         assertEquals("client region",       "us-west-1",                    appender.getConfig().getClientRegion());
         assertEquals("client endpoint",     "sns.us-west-2.amazonaws.com",  appender.getConfig().getClientEndpoint());
         assertFalse("use shutdown hook",                                    appender.getConfig().isUseShutdownHook());

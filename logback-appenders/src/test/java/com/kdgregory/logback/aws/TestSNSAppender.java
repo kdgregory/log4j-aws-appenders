@@ -75,6 +75,7 @@ public class TestSNSAppender
         assertEquals("batch delay",         1L,                             appender.getBatchDelay());
         assertEquals("discard threshold",   123,                            appender.getDiscardThreshold());
         assertEquals("discard action",      "newest",                       appender.getDiscardAction());
+        assertEquals("client factory",      "com.example.Foo.bar",          appender.getClientFactory());
         assertEquals("client region",       "us-west-1",                    appender.getClientRegion());
         assertEquals("client endpoint",     "sns.us-west-2.amazonaws.com",  appender.getClientEndpoint());
         assertFalse("use shutdown hook",                                    appender.getUseShutdownHook());

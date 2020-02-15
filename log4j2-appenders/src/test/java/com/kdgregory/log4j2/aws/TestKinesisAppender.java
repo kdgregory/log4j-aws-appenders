@@ -24,7 +24,9 @@ import java.net.URI;
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 
+import com.kdgregory.log4j2.aws.KinesisAppender.KinesisAppenderBuilder;
 import com.kdgregory.log4j2.testhelpers.TestableKinesisAppender;
+import com.kdgregory.log4j2.testhelpers.TestableKinesisAppender.TestableKinesisAppenderBuilder;
 import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriter;
 
@@ -105,6 +107,45 @@ public class TestKinesisAppender
 
         assertTrue("synchronous mode",                                          appender.getConfig().isSynchronous());
         assertEquals("batch delay",         0L,                                 appender.getConfig().getBatchDelay());
+    }
+
+
+    @Test
+    public void testManualConfiguration() throws Exception
+    {
+        KinesisAppenderBuilder builder = new TestableKinesisAppenderBuilder()
+                                         .setName("test")
+                                         .setStreamName("argle-{bargle}")
+                                         .setPartitionKey("foo-{date}")
+                                         .setAutoCreate(true)
+                                         .setShardCount(7)
+                                         .setRetentionPeriod(48)
+                                         .setBatchDelay(1234)
+                                         .setDiscardThreshold(54321)
+                                         .setDiscardAction(DiscardAction.newest.name())
+                                         .setClientFactory("com.example.Foo.bar")
+                                         .setClientRegion("us-west-1")
+                                         .setClientEndpoint("kinesis.us-west-2.amazonaws.com")
+                                         .setSynchronous(false)
+                                         .setUseShutdownHook(false);
+
+        appender = (TestableKinesisAppender)builder.build();
+
+        assertEquals("appender name",       "test",                             appender.getName());
+
+        assertEquals("stream name",         "argle-{bargle}",                   appender.getConfig().getStreamName());
+        assertEquals("partition key",       "foo-{date}",                       appender.getConfig().getPartitionKey());
+        assertTrue("autoCreate",                                                appender.getConfig().getAutoCreate());
+        assertEquals("shard count",         7,                                  appender.getConfig().getShardCount());
+        assertEquals("retention period",    Integer.valueOf(48),                appender.getConfig().getRetentionPeriod());
+        assertEquals("max delay",           1234L,                              appender.getConfig().getBatchDelay());
+        assertEquals("discard threshold",   54321,                              appender.getConfig().getDiscardThreshold());
+        assertEquals("discard action",      "newest",                           appender.getConfig().getDiscardAction());
+        assertEquals("client factory",      "com.example.Foo.bar",              appender.getConfig().getClientFactory());
+        assertEquals("client region",       "us-west-1",                        appender.getConfig().getClientRegion());
+        assertEquals("client endpoint",     "kinesis.us-west-2.amazonaws.com",  appender.getConfig().getClientEndpoint());
+        assertFalse("synchronous mode",                                         appender.getConfig().isSynchronous());
+        assertFalse("use shutdown hook",                                        appender.getConfig().isUseShutdownHook());
     }
 
 

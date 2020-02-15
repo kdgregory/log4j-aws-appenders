@@ -49,8 +49,8 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterConfig>
     }
 
     public static class SNSAppenderBuilder
-    extends AbstractAppenderBuilder<SNSAppender>
-    implements SNSAppenderConfig
+    extends AbstractAppenderBuilder<SNSAppenderBuilder>
+    implements SNSAppenderConfig, org.apache.logging.log4j.core.util.Builder<SNSAppender>
     {
         // this appender has different defaults than others, and while I could
         // have created an arg-taking constructor for AbstractAppenderBuilder,
@@ -59,7 +59,7 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterConfig>
         {
             setDiscardThreshold(1000);
         }
-        
+
         @PluginBuilderAttribute("name")
         @Required(message = "SNSAppender: no name provided")
         private String name;
@@ -70,9 +70,10 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterConfig>
             return name;
         }
 
-        public void setName(String value)
+        public SNSAppenderBuilder setName(String value)
         {
             this.name = value;
+            return this;
         }
 
         @PluginBuilderAttribute("topicName")
@@ -84,9 +85,10 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterConfig>
             return topicName;
         }
 
-        public void setTopicName(String value)
+        public SNSAppenderBuilder setTopicName(String value)
         {
             this.topicName = value;
+            return this;
         }
 
         @PluginBuilderAttribute("topicArn")
@@ -98,9 +100,10 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterConfig>
             return topicArn;
         }
 
-        public void setTopicArn(String value)
+        public SNSAppenderBuilder setTopicArn(String value)
         {
             this.topicArn = value;
+            return this;
         }
 
         @PluginBuilderAttribute("subject")
@@ -112,9 +115,10 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterConfig>
             return subject;
         }
 
-        public void setSubject(String value)
+        public SNSAppenderBuilder setSubject(String value)
         {
             this.subject = value;
+            return this;
         }
 
         @PluginBuilderAttribute("autoCreate")
@@ -126,9 +130,10 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterConfig>
             return autoCreate;
         }
 
-        public void setAutoCreate(boolean value)
+        public SNSAppenderBuilder setAutoCreate(boolean value)
         {
             this.autoCreate = value;
+            return this;
         }
 
         @Override

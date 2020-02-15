@@ -18,174 +18,195 @@ import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
-import org.apache.logging.log4j.core.util.Builder;
 
 import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.common.util.RotationMode;
 
 
 /**
- *  Manages the configuration elements that are common across appenders.
+ * Manages the configuration elements that are common across appenders.
  */
-public abstract class AbstractAppenderBuilder<T>
-implements Builder<T>, AbstractAppenderConfig
+public abstract class AbstractAppenderBuilder<T extends AbstractAppenderBuilder<T>>
+implements AbstractAppenderConfig
 {
-        @PluginElement("Layout")
-        private Layout<String> layout;
+    @PluginElement("Layout")
+    private Layout<String> layout;
 
-        @Override
-        public Layout<String> getLayout()
-        {
-            return layout;
-        }
+    @Override
+    public Layout<String> getLayout()
+    {
+        return layout;
+    }
 
-        public void setLayout(Layout<String> value)
-        {
-            this.layout = value;
-        }
+    public T setLayout(Layout<String> value)
+    {
+        this.layout = value;
+        return (T)this;
+    }
 
-        @PluginElement("Filter")
-        private Filter filter;
 
-        @Override
-        public Filter getFilter()
-        {
-            return filter;
-        }
+    @PluginElement("Filter")
+    private Filter filter;
 
-        public void setFilter(Filter value)
-        {
-            this.filter = value;
-        }
+    @Override
+    public Filter getFilter()
+    {
+        return filter;
+    }
 
-        @PluginBuilderAttribute("batchDelay")
-        private long batchDelay = 2000;
+    public T setFilter(Filter value)
+    {
+        this.filter = value;
+        return (T)this;
+    }
 
-        @Override
-        public long getBatchDelay()
-        {
-            return isSynchronous() ? 0 : batchDelay;
-        }
 
-        public void setBatchDelay(long value)
-        {
-            this.batchDelay = value;
-        }
+    @PluginBuilderAttribute("batchDelay")
+    private long batchDelay = 2000;
 
-        @PluginBuilderAttribute("discardThreshold")
-        private int discardThreshold = 10000;
+    @Override
+    public long getBatchDelay()
+    {
+        return isSynchronous() ? 0 : batchDelay;
+    }
 
-        @Override
-        public int getDiscardThreshold()
-        {
-            return discardThreshold;
-        }
+    public T setBatchDelay(long value)
+    {
+        this.batchDelay = value;
+        return (T)this;
+    }
 
-        public void setDiscardThreshold(int value)
-        {
-            this.discardThreshold = value;
-        }
 
-        @PluginBuilderAttribute("discardAction")
-        private String discardAction = DiscardAction.oldest.name();
+    @PluginBuilderAttribute("discardThreshold")
+    private int discardThreshold = 10000;
 
-        @Override
-        public String getDiscardAction()
-        {
-            return discardAction;
-        }
+    @Override
+    public int getDiscardThreshold()
+    {
+        return discardThreshold;
+    }
 
-        public void setDiscardAction(String value)
-        {
-            this.discardAction = value;
-        }
+    public T setDiscardThreshold(int value)
+    {
+        this.discardThreshold = value;
+        return (T)this;
+    }
 
-        @PluginBuilderAttribute("clientFactory")
-        private String clientFactoryMethod;
 
-        @Override
-        public String getClientFactory()
-        {
-            return clientFactoryMethod;
-        }
+    @PluginBuilderAttribute("discardAction")
+    private String discardAction = DiscardAction.oldest.name();
 
-        public void setClientFactory(String value)
-        {
-            this.clientFactoryMethod = value;
-        }
+    @Override
+    public String getDiscardAction()
+    {
+        return discardAction;
+    }
 
-        @PluginBuilderAttribute("clientRegion")
-        private String clientRegion;
+    public T setDiscardAction(String value)
+    {
+        this.discardAction = value;
+        return (T)this;
+    }
 
-        @Override
-        public String getClientRegion()
-        {
-            return clientRegion;
-        }
 
-        public void setClientRegion(String value)
-        {
-            this.clientRegion = value;
-        }
+    @PluginBuilderAttribute("clientFactory")
+    private String clientFactoryMethod;
 
-        @PluginBuilderAttribute("clientEndpoint")
-        private String clientEndpoint;
+    @Override
+    public String getClientFactory()
+    {
+        return clientFactoryMethod;
+    }
 
-        @Override
-        public String getClientEndpoint()
-        {
-            return clientEndpoint;
-        }
+    public T setClientFactory(String value)
+    {
+        this.clientFactoryMethod = value;
+        return (T)this;
+    }
 
-        public void setClientEndpoint(String value)
-        {
-            this.clientEndpoint = value;
-        }
 
-        @PluginBuilderAttribute("synchronous")
-        private boolean synchronous;
+    @PluginBuilderAttribute("clientRegion")
+    private String clientRegion;
 
-        @Override
-        public boolean isSynchronous()
-        {
-            return synchronous;
-        }
+    @Override
+    public String getClientRegion()
+    {
+        return clientRegion;
+    }
 
-        public void setSynchronous(boolean value)
-        {
-            this.synchronous = value;
-        }
+    public T setClientRegion(String value)
+    {
+        this.clientRegion = value;
+        return (T)this;
+    }
 
-        @PluginBuilderAttribute("useShutdownHook")
-        private boolean useShutdownHook = true;
 
-        @Override
-        public boolean isUseShutdownHook()
-        {
-            return useShutdownHook;
-        }
+    @PluginBuilderAttribute("clientEndpoint")
+    private String clientEndpoint;
 
-        public void setUseShutdownHook(boolean value)
-        {
-            this.useShutdownHook = value;
-        }
+    @Override
+    public String getClientEndpoint()
+    {
+        return clientEndpoint;
+    }
 
-        // these return default values here, are implemented by appenders that uses them
-        @Override
-        public int getSequence()
-        {
-            return 0;
-        }
+    public T setClientEndpoint(String value)
+    {
+        this.clientEndpoint = value;
+        return (T)this;
+    }
 
-        @Override
-        public String getRotationMode()
-        {
-            return RotationMode.none.name();
-        }
 
-        @Override
-        public long getRotationInterval()
-        {
-            return -1;
-        }
+    @PluginBuilderAttribute("synchronous")
+    private boolean synchronous;
+
+    @Override
+    public boolean isSynchronous()
+    {
+        return synchronous;
+    }
+
+    public T setSynchronous(boolean value)
+    {
+        this.synchronous = value;
+        return (T)this;
+    }
+
+
+    @PluginBuilderAttribute("useShutdownHook")
+    private boolean useShutdownHook = true;
+
+    @Override
+    public boolean isUseShutdownHook()
+    {
+        return useShutdownHook;
+    }
+
+    public T setUseShutdownHook(boolean value)
+    {
+        this.useShutdownHook = value;
+        return (T)this;
+    }
+
+    // the following getters return default values here, are overridden by appenders that use them
+
+    @Override
+    public int getSequence()
+    {
+        return 0;
+    }
+
+
+    @Override
+    public String getRotationMode()
+    {
+        return RotationMode.none.name();
+    }
+
+
+    @Override
+    public long getRotationInterval()
+    {
+        return -1;
+    }
 }

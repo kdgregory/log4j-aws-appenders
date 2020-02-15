@@ -24,7 +24,9 @@ import java.net.URI;
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 
+import com.kdgregory.log4j2.aws.SNSAppender.SNSAppenderBuilder;
 import com.kdgregory.log4j2.testhelpers.TestableSNSAppender;
+import com.kdgregory.log4j2.testhelpers.TestableSNSAppender.TestableSNSAppenderBuilder;
 import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.testhelpers.sns.MockSNSWriter;
 
@@ -106,6 +108,43 @@ public class TestSNSAppender
 
         assertTrue("synchronous mode",                                          appender.getConfig().isSynchronous());
         assertEquals("batch delay",         0L,                                 appender.getConfig().getBatchDelay());
+    }
+
+
+    @Test
+    public void testManualConfiguration() throws Exception
+    {
+        SNSAppenderBuilder builder = new TestableSNSAppenderBuilder()
+                                     .setName("test")
+                                     .setTopicName("example")
+                                     .setTopicArn("arn:example")
+                                     .setSubject("This is a test")
+                                     .setAutoCreate(true)
+                                     .setBatchDelay(9876L)                      // this is ignored
+                                     .setDiscardThreshold(123)
+                                     .setDiscardAction(DiscardAction.newest.name())
+                                     .setClientRegion("us-west-1")
+                                     .setClientEndpoint("sns.us-west-2.amazonaws.com")
+                                     .setSynchronous(false)
+                                     .setUseShutdownHook(false);
+
+
+        appender = (TestableSNSAppender)builder.build();
+
+        assertEquals("appender name",       "test",                         appender.getName());
+
+        assertEquals("topicName",           "example",                      appender.getConfig().getTopicName());
+        assertEquals("topicArn",            "arn:example",                  appender.getConfig().getTopicArn());
+
+        assertEquals("subject",             "This is a test",               appender.getConfig().getSubject());
+        assertTrue("autoCreate",                                            appender.getConfig().isAutoCreate());
+        assertEquals("batch delay",         1L,                             appender.getConfig().getBatchDelay());
+        assertEquals("discard threshold",   123,                            appender.getConfig().getDiscardThreshold());
+        assertEquals("discard action",      "newest",                       appender.getConfig().getDiscardAction());
+        assertEquals("client region",       "us-west-1",                    appender.getConfig().getClientRegion());
+        assertEquals("client endpoint",     "sns.us-west-2.amazonaws.com",  appender.getConfig().getClientEndpoint());
+        assertFalse("use shutdown hook",                                    appender.getConfig().isUseShutdownHook());
+        assertFalse("synchronous mode",                                     appender.getConfig().isSynchronous());
     }
 
 

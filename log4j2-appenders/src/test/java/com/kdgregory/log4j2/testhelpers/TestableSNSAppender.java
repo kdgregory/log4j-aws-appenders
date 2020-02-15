@@ -57,9 +57,10 @@ extends SNSAppender
         @PluginBuilderAttribute("useDefaultThreadFactory")
         private boolean useDefaultThreadFactory;
 
-        public void setUseDefaultThreadFactory(boolean value)
+        public TestableSNSAppenderBuilder setUseDefaultThreadFactory(boolean value)
         {
             this.useDefaultThreadFactory = value;
+            return this;
         }
 
         @Override

@@ -24,8 +24,11 @@ import static net.sf.kdgcommons.test.StringAsserts.*;
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 
+import com.kdgregory.log4j2.aws.CloudWatchAppender.CloudWatchAppenderBuilder;
 import com.kdgregory.log4j2.testhelpers.TestableCloudWatchAppender;
+import com.kdgregory.log4j2.testhelpers.TestableCloudWatchAppender.TestableCloudWatchAppenderBuilder;
 import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.common.util.RotationMode;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
 
 
@@ -58,8 +61,6 @@ public class TestCloudWatchAppender
     public void testConfiguration() throws Exception
     {
         initialize("testConfiguration");
-
-        System.out.println("this is success!");
 
         assertEquals("log group name",      "argle",                        appender.getConfig().getLogGroup());
         assertEquals("log stream name",     "bargle",                       appender.getConfig().getLogStream());
@@ -147,6 +148,49 @@ public class TestCloudWatchAppender
 
         assertTrue("synchronous mode",                                      appender.getConfig().isSynchronous());
         assertEquals("batch delay",         0L,                             appender.getConfig().getBatchDelay());
+    }
+
+
+    @Test
+    public void testManualConfiguration() throws Exception
+    {
+        CloudWatchAppenderBuilder builder = new TestableCloudWatchAppenderBuilder()
+                                            .setName("test")
+                                            .setLogGroup("argle")
+                                            .setLogStream("bargle")
+                                            .setDedicatedWriter(true)
+                                            .setBatchDelay(9876L)
+                                            .setSequence(2)
+                                            .setRotationMode(RotationMode.interval.name())
+                                            .setRotationInterval(7200000)
+                                            .setDiscardThreshold(12345)
+                                            .setDiscardAction(DiscardAction.newest.name())
+                                            .setClientFactory("com.example.Foo.bar")
+                                            .setClientRegion("us-west-1")
+                                            .setClientEndpoint("logs.us-west-2.amazonaws.com")
+                                            .setSynchronous(false)
+                                            .setUseShutdownHook(false)
+                                            .setRetentionPeriod(7);
+
+        appender = (TestableCloudWatchAppender)builder.build();
+
+        assertEquals("appender name",       "test",                         appender.getName());
+
+        assertEquals("log group name",      "argle",                        appender.getConfig().getLogGroup());
+        assertEquals("log stream name",     "bargle",                       appender.getConfig().getLogStream());
+        assertTrue("dedicated writer",                                      appender.getConfig().isDedicatedWriter());
+        assertEquals("batch delay",         9876L,                          appender.getConfig().getBatchDelay());
+        assertEquals("sequence",            2,                              appender.getConfig().getSequence());
+        assertEquals("rotation mode",       "interval",                     appender.getConfig().getRotationMode());
+        assertEquals("rotation interval",   7200000L,                       appender.getConfig().getRotationInterval());
+        assertEquals("discard threshold",   12345,                          appender.getConfig().getDiscardThreshold());
+        assertEquals("discard action",      "newest",                       appender.getConfig().getDiscardAction());
+        assertEquals("client factory",      "com.example.Foo.bar",          appender.getConfig().getClientFactory());
+        assertEquals("client region",       "us-west-1",                    appender.getConfig().getClientRegion());
+        assertEquals("client endpoint",     "logs.us-west-2.amazonaws.com", appender.getConfig().getClientEndpoint());
+        assertFalse("synchronous mode",                                     appender.getConfig().isSynchronous());
+        assertFalse("use shutdown hook",                                    appender.getConfig().isUseShutdownHook());
+        assertEquals("retention period",    Integer.valueOf(7),             appender.getRetentionPeriod());
     }
 
 

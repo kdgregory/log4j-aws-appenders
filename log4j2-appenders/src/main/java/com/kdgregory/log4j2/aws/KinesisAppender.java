@@ -50,8 +50,8 @@ extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWr
     }
 
     public static class KinesisAppenderBuilder
-    extends AbstractAppenderBuilder<KinesisAppender>
-    implements KinesisAppenderConfig
+    extends AbstractAppenderBuilder<KinesisAppenderBuilder>
+    implements KinesisAppenderConfig, org.apache.logging.log4j.core.util.Builder<KinesisAppender>
     {
         @PluginBuilderAttribute("name")
         @Required(message = "KinesisAppender: no name provided")
@@ -63,9 +63,10 @@ extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWr
             return name;
         }
 
-        public void setName(String value)
+        public KinesisAppenderBuilder setName(String value)
         {
             this.name = value;
+            return this;
         }
 
         @PluginBuilderAttribute("streamName")
@@ -77,9 +78,10 @@ extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWr
             return streamName;
         }
 
-        public void setStreamName(String value)
+        public KinesisAppenderBuilder setStreamName(String value)
         {
             this.streamName = value;
+            return this;
         }
 
         @PluginBuilderAttribute("partitionKey")
@@ -91,9 +93,10 @@ extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWr
             return partitionKey;
         }
 
-        public void setPartitionKey(String value)
+        public KinesisAppenderBuilder setPartitionKey(String value)
         {
             this.partitionKey = value;
+            return this;
         }
 
         @PluginBuilderAttribute("autoCreate")
@@ -105,9 +108,10 @@ extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWr
             return autoCreate;
         }
 
-        public void setAutoCreate(boolean value)
+        public KinesisAppenderBuilder setAutoCreate(boolean value)
         {
             this.autoCreate = value;
+            return this;
         }
 
         @PluginBuilderAttribute("shardCount")
@@ -119,9 +123,10 @@ extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWr
             return shardCount;
         }
 
-        public void setShardCount(int value)
+        public KinesisAppenderBuilder setShardCount(int value)
         {
             this.shardCount = value;
+            return this;
         }
 
         @PluginBuilderAttribute("retentionPeriod")
@@ -135,10 +140,11 @@ extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWr
                  : KinesisConstants.MINIMUM_RETENTION_PERIOD;
         }
 
-        public void setRetentionPeriod(Integer value)
+        public KinesisAppenderBuilder setRetentionPeriod(Integer value)
         {
             // note: validation happens in constructor
             this.retentionPeriod = value;
+            return this;
         }
 
         @Override

@@ -51,8 +51,8 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
     }
 
     public static class CloudWatchAppenderBuilder
-    extends AbstractAppenderBuilder<CloudWatchAppender>
-    implements CloudWatchAppenderConfig
+    extends AbstractAppenderBuilder<CloudWatchAppenderBuilder>
+    implements CloudWatchAppenderConfig, org.apache.logging.log4j.core.util.Builder<CloudWatchAppender>
     {
         @PluginBuilderAttribute("name")
         @Required(message = "CloudWatchAppender: no name provided")
@@ -64,9 +64,10 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
             return name;
         }
 
-        public void setName(String value)
+        public CloudWatchAppenderBuilder setName(String value)
         {
             this.name = value;
+            return this;
         }
 
         @PluginBuilderAttribute("logGroup")
@@ -78,9 +79,10 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
             return logGroup;
         }
 
-        public void setLogGroup(String value)
+        public CloudWatchAppenderBuilder setLogGroup(String value)
         {
             this.logGroup = value;
+            return this;
         }
 
         @PluginBuilderAttribute("logStream")
@@ -92,9 +94,10 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
             return logStream;
         }
 
-        public void setLogStream(String value)
+        public CloudWatchAppenderBuilder setLogStream(String value)
         {
             this.logStream = value;
+            return this;
         }
 
         @PluginBuilderAttribute("retentionPeriod")
@@ -106,11 +109,12 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
             return retentionPeriod;
         }
 
-        public void setRetentionPeriod(Integer value)
+        public CloudWatchAppenderBuilder setRetentionPeriod(Integer value)
         {
             // note: validation happens in appender because Log4J bypasses
             //       this setter during normal configuration
             this.retentionPeriod = value;
+            return this;
         }
 
         @PluginBuilderAttribute("rotationMode")
@@ -122,11 +126,12 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
             return rotationMode;
         }
 
-        public void setRotationMode(String value)
+        public CloudWatchAppenderBuilder setRotationMode(String value)
         {
             // note: validation happens in appender because Log4J bypasses
             //       this setter during normal configuration
             this.rotationMode = value;
+            return this;
         }
 
         @PluginBuilderAttribute("rotationInterval")
@@ -138,9 +143,10 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
             return rotationInterval;
         }
 
-        public void setRotationInterval(long value)
+        public CloudWatchAppenderBuilder setRotationInterval(long value)
         {
             this.rotationInterval = value;
+            return this;
         }
 
         @PluginBuilderAttribute("sequence")
@@ -152,9 +158,10 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
             return sequence;
         }
 
-        public void setSequence(int value)
+        public CloudWatchAppenderBuilder setSequence(int value)
         {
             this.sequence = value;
+            return this;
         }
 
         @PluginBuilderAttribute("dedicatedWriter")
@@ -166,9 +173,10 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
             return dedicatedWriter;
         }
 
-        public void setDedicatedWriter(boolean value)
+        public CloudWatchAppenderBuilder setDedicatedWriter(boolean value)
         {
             this.dedicatedWriter = value;
+            return this;
         }
 
         @Override

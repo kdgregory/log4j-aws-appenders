@@ -53,7 +53,7 @@ public class TestSNSAppender
         logger = Logger.getLogger(getClass());
 
         Logger rootLogger = Logger.getRootLogger();
-        appender = (TestableSNSAppender)rootLogger.getAppender("default");
+        appender = (TestableSNSAppender)rootLogger.getAppender("sns");
     }
 
 //----------------------------------------------------------------------------

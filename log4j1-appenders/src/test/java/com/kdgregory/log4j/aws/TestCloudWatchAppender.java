@@ -54,7 +54,7 @@ public class TestCloudWatchAppender
         logger = Logger.getLogger(getClass());
 
         Logger rootLogger = Logger.getRootLogger();
-        appender = (TestableCloudWatchAppender)rootLogger.getAppender("default");
+        appender = (TestableCloudWatchAppender)rootLogger.getAppender("cloudwatch");
     }
 
 //----------------------------------------------------------------------------

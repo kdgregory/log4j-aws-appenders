@@ -54,7 +54,7 @@ public class TestKinesisAppender
         logger = Logger.getLogger(getClass());
 
         Logger rootLogger = Logger.getRootLogger();
-        appender = (TestableKinesisAppender)rootLogger.getAppender("default");
+        appender = (TestableKinesisAppender)rootLogger.getAppender("kinesis");
     }
 
 //----------------------------------------------------------------------------

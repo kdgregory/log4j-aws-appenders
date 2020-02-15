@@ -68,7 +68,7 @@ public class TestCloudWatchAppender
         assertEquals("batch delay",         9876L,                          appender.getConfig().getBatchDelay());
         assertEquals("sequence",            2,                              appender.getConfig().getSequence());
         assertEquals("rotation mode",       "interval",                     appender.getConfig().getRotationMode());
-        assertEquals("rotation interval",   86400000L,                      appender.getConfig().getRotationInterval());
+        assertEquals("rotation interval",   7200000L,                       appender.getConfig().getRotationInterval());
         assertEquals("discard threshold",   12345,                          appender.getConfig().getDiscardThreshold());
         assertEquals("discard action",      "newest",                       appender.getConfig().getDiscardAction());
         assertEquals("client factory",      "com.example.Foo.bar",          appender.getConfig().getClientFactory());

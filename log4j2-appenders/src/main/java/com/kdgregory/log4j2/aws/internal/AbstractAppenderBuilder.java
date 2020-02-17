@@ -61,102 +61,6 @@ implements AbstractAppenderConfig
     }
 
 
-    @PluginBuilderAttribute("batchDelay")
-    private long batchDelay = 2000;
-
-    @Override
-    public long getBatchDelay()
-    {
-        return isSynchronous() ? 0 : batchDelay;
-    }
-
-    public T setBatchDelay(long value)
-    {
-        this.batchDelay = value;
-        return (T)this;
-    }
-
-
-    @PluginBuilderAttribute("discardThreshold")
-    private int discardThreshold = 10000;
-
-    @Override
-    public int getDiscardThreshold()
-    {
-        return discardThreshold;
-    }
-
-    public T setDiscardThreshold(int value)
-    {
-        this.discardThreshold = value;
-        return (T)this;
-    }
-
-
-    @PluginBuilderAttribute("discardAction")
-    private String discardAction = DiscardAction.oldest.name();
-
-    @Override
-    public String getDiscardAction()
-    {
-        return discardAction;
-    }
-
-    public T setDiscardAction(String value)
-    {
-        this.discardAction = value;
-        return (T)this;
-    }
-
-
-    @PluginBuilderAttribute("clientFactory")
-    private String clientFactoryMethod;
-
-    @Override
-    public String getClientFactory()
-    {
-        return clientFactoryMethod;
-    }
-
-    public T setClientFactory(String value)
-    {
-        this.clientFactoryMethod = value;
-        return (T)this;
-    }
-
-
-    @PluginBuilderAttribute("clientRegion")
-    private String clientRegion;
-
-    @Override
-    public String getClientRegion()
-    {
-        return clientRegion;
-    }
-
-    public T setClientRegion(String value)
-    {
-        this.clientRegion = value;
-        return (T)this;
-    }
-
-
-    @PluginBuilderAttribute("clientEndpoint")
-    private String clientEndpoint;
-
-    @Override
-    public String getClientEndpoint()
-    {
-        return clientEndpoint;
-    }
-
-    public T setClientEndpoint(String value)
-    {
-        this.clientEndpoint = value;
-        return (T)this;
-    }
-
-
     @PluginBuilderAttribute("synchronous")
     private boolean synchronous;
 
@@ -173,22 +77,160 @@ implements AbstractAppenderConfig
     }
 
 
+    @PluginBuilderAttribute("batchDelay")
+    private long batchDelay = 2000;
+
+    /**
+     *  Sets the <code>batchDelay</code> configuration property.
+     */
+    public T setBatchDelay(long value)
+    {
+        this.batchDelay = value;
+        return (T)this;
+    }
+
+    /**
+     *  Returns the <code>batchDelay</code> configuration property.
+     */
+    @Override
+    public long getBatchDelay()
+    {
+        return isSynchronous() ? 0 : batchDelay;
+    }
+
+
+    @PluginBuilderAttribute("discardThreshold")
+    private int discardThreshold = 10000;
+
+    /**
+     *  Sets the <code>discardThreshold</code> configuration property.
+     */
+    public T setDiscardThreshold(int value)
+    {
+        this.discardThreshold = value;
+        return (T)this;
+    }
+
+    /**
+     *  Retyrns the <code>discardThreshold</code> configuration property.
+     */
+    @Override
+    public int getDiscardThreshold()
+    {
+        return discardThreshold;
+    }
+
+
+    @PluginBuilderAttribute("discardAction")
+    private String discardAction = DiscardAction.oldest.name();
+
+    /**
+     *  Sets the <code>discardAction</code> configuration property.
+     */
+    public T setDiscardAction(String value)
+    {
+        this.discardAction = value;
+        return (T)this;
+    }
+
+    /**
+     *  Returns the <code>discardAction</code> configuration property.
+     */
+    @Override
+    public String getDiscardAction()
+    {
+        return discardAction;
+    }
+
+
+    @PluginBuilderAttribute("clientFactory")
+    private String clientFactoryMethod;
+
+    /**
+     *  Sets the <code>clientFactory</code> configuration property.
+     */
+    public T setClientFactory(String value)
+    {
+        this.clientFactoryMethod = value;
+        return (T)this;
+    }
+
+    /**
+     *  Returns the <code>clientFactory</code> configuration property.
+     */
+    @Override
+    public String getClientFactory()
+    {
+        return clientFactoryMethod;
+    }
+
+
+    @PluginBuilderAttribute("clientRegion")
+    private String clientRegion;
+
+    /**
+     *  Sets the <code>clientRegion</code> configuration property.
+     */
+    public T setClientRegion(String value)
+    {
+        this.clientRegion = value;
+        return (T)this;
+    }
+
+    /**
+     *  Returns the <code>clientRegion</code> configuration property.
+     */
+    @Override
+    public String getClientRegion()
+    {
+        return clientRegion;
+    }
+
+
+    @PluginBuilderAttribute("clientEndpoint")
+    private String clientEndpoint;
+
+    /**
+     *  Sets the <code>clientEndpoint</code> configuration property.
+     */
+    public T setClientEndpoint(String value)
+    {
+        this.clientEndpoint = value;
+        return (T)this;
+    }
+
+    /**
+     *  Returns the <code>clientEndpoint</code> configuration property.
+     */
+    @Override
+    public String getClientEndpoint()
+    {
+        return clientEndpoint;
+    }
+
+
     @PluginBuilderAttribute("useShutdownHook")
     private boolean useShutdownHook = true;
 
-    @Override
-    public boolean isUseShutdownHook()
-    {
-        return useShutdownHook;
-    }
-
+    /**
+     *  Sets the <code>useShutdownHook</code> configuration property.
+     */
     public T setUseShutdownHook(boolean value)
     {
         this.useShutdownHook = value;
         return (T)this;
     }
 
-    // the following getters return default values here, are overridden by appenders that use them
+    /**
+     *  Returns the <code>useShutdownHook</code> configuration property.
+     */
+    @Override
+    public boolean isUseShutdownHook()
+    {
+        return useShutdownHook;
+    }
+
+// the following getters return default values here, are overridden by appenders that use them
 
     @Override
     public int getSequence()

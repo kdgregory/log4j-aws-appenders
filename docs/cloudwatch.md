@@ -1,6 +1,6 @@
-# CloudWatch
+# CloudWatchAppender
 
-The CloudWatch implementation provides the following features:
+The CloudWatch appender provides the following features:
 
 * User-specified log-group and log-stream names.
 * Substitution variables to customize log-group and log-stream names.
@@ -16,8 +16,8 @@ Name                | Description
 --------------------|----------------------------------------------------------------
 `logGroup`          | Name of the CloudWatch log group where messages are sent; may use [substitutions](substitutions.md). If this group doesn't exist it will be created. No default.
 `logStream`         | Name of the CloudWatch log stream where messages are sent; may use [substitutions](substitutions.md). If this stream doesn't exist it will be created. Defaults to `{startupTimestamp}`.
-`dedicatedWriter`   | If `true`, the appender assumes that it will be the only writer to the log stream, and will not retrieve sequence numbers before writing. Defaults to `false`. See below for more information.
 `retentionPeriod`   | (optional) Specifies a non-default retention period for created CloudWatch log groups.
+`dedicatedWriter`   | If `true`, the appender assumes that it will be the only writer to the log stream, and will not retrieve a sequence token before each write. Defaults to `false` for legacy behavior. See below for more information.
 `rotationMode`      | Controls whether auto-rotation is enabled. Values are `none`, `count`, `interval`, `hourly`, and `daily`; default is `none`. See below for more information.
 `rotationInterval`  | Used only for `count` and `interval` rotation modes: for the former, the number of messages, and for the latter, the number of milliseconds between rotations.
 `sequence`          | A value that is incremented each time the stream is rotated. Defaults to 0.
@@ -25,7 +25,7 @@ Name                | Description
 `batchDelay`        | The time, in milliseconds, that the writer will wait to accumulate messages for a batch. See the [design doc](design.md#message-batches) for more information.
 `discardThreshold`  | The threshold count for discarding messages; default is 10,000. See the [design doc](design.md#message-discard) for more information.
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
-`clientFactory`     | Specifies the fully-qualified name of a static method that will be invoked to create the AWS service client. See the [service client doc](service-client.md#client-creation) for more information.
+`clientFactory`     | The fully-qualified name of a static method that will be invoked to create the AWS service client. See the [service client doc](service-client.md#client-creation) for more information.
 `clientRegion`      | Specifies a non-default region for the client. See the [service client doc](service-client.md#endpoint-configuration) for more information.
 `clientEndpoint`    | Specifies a non-default endpoint; only supported for clients created via constructor. See the [service client doc](service-client.md#endpoint-configuration) for more information.
 `useShutdownHook`   | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default; set to `false` to disable. See [docs](design.md#shutdown-hooks) for more information.

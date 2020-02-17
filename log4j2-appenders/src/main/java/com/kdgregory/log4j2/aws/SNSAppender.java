@@ -34,6 +34,101 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
 
 
+/**
+ *  An appender that writes to an SNS topic.
+ *  <p>
+ *  This appender supports the following configuration parameters:
+ *  <p>
+ *  <table>
+ *  <tr VALIGN="top">
+ *      <th> topicName
+ *      <td> The name of the destination SNS topic; substitutions are allowed.
+ *           <p>
+ *           Must refer to a topic in the current region; if not, and you do not
+ *           enable auto-create, initialization fails.
+ *           <p>
+ *           If you specify both <code>topicName</code> and <code>topicArn</code>,
+ *           the latter takes precedence.
+ *
+ *  <tr VALIGN="top">
+ *      <th> topicArn
+ *      <td> The ARN of the destination SNS topic; substitutions are allowed.
+ *           <p>
+ *           Must refer to a topic in the current region; if not, initialization
+ *           fails.
+ *           <p>
+ *           If you specify both <code>topicName</code> and <code>topicArn</code>,
+ *           the latter takes precedence.
+ *
+ *  <tr VALIGN="top">
+ *      <th> autoCreate
+ *      <td> If true, and the topic is specified by name, the appender will create
+ *           the topic if it does not already exist. If false, a missing topic
+ *           will be reported as an error and the appender will be disabled.
+ *           <p>
+ *           Default is <code>false</code>.
+ *
+ *  <tr VALIGN="top">
+ *      <th> subject
+ *      <td> (optional) The subject for messages that are delivered via email. This
+ *           is constrained by the SNS API to be less than 100 characters, ASCII
+ *           only, and not start with whitespace.
+ *
+ *  <tr VALIGN="top">
+ *      <th> discardThreshold
+ *      <td> The number of unsent messages that will trigger message discard. A
+ *           high value is useful when network connectivity is intermittent and/or
+ *           overall AWS communication is causing throttling. However, a value that
+ *           is too high may cause out-of-memory errors.
+ *           <p>
+ *           The default, 10,000, is based on the assumptions that (1) each message
+ *           will be 1k or less, and (2) any app that uses remote logging can afford
+ *           10MB.
+ *
+ *  <tr VALIGN="top">
+ *      <th> discardAction
+ *      <td> The action to take when the number of unsent messages exceeds the
+ *           discard threshold. Values are "none" (retain all messages), "oldest"
+ *           (discard oldest messages), and "newest" (discard most recent messages).
+ *           <p>
+ *           The default is "oldest". Attempting to set an incorrect value will throw
+ *           a configuration error.
+ *
+ *  <tr VALIGN="top">
+ *      <th> clientFactory
+ *      <td> The fully-qualified name of a static method to create the correct AWS
+ *           client, which will be called instead of the writer's internal client
+ *           factory. This is useful if you need non-default configuration, such as
+ *           using a proxy server.
+ *           <p>
+ *           The passed string is of the form <code>com.example.Classname.methodName</code>.
+ *           If this does not reference a class/method on the classpath then writer
+ *           initialization will fail.
+ *
+ *  <tr VALIGN="top">
+ *      <th> clientRegion
+ *      <td> Specifies a non-default service region. This setting is ignored if you
+ *           use a client factory.
+ *           <p>
+ *           Note that the region must be supported by the current SDK version.
+ *
+ *  <tr VALIGN="top">
+ *      <th> clientEndpoint
+ *      <td> Specifies a non-default service endpoint. This is intended for use with
+ *           older AWS SDK versions that do not provide client factories and default
+ *           to us-east-1 for constructed clients, although it can be used for newer
+ *           releases when you want to override the default region provider. This
+ *           setting is ignored if you use a client factory.
+ *
+ *  <tr VALIGN="top">
+ *      <th> useShutdownHook
+ *      <td> Controls whether the appender uses a shutdown hook to attempt to process
+ *           outstanding messages when the JVM exits. This is true by default; set to
+ *           false to disable.
+ *  </table>
+ *
+ *  @see <a href="https://github.com/kdgregory/log4j-aws-appenders/blob/master/docs/sns.md">Appender documentation</a>
+ */
 @Plugin(name = "SNSAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class SNSAppender
 extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterConfig>
@@ -64,77 +159,108 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterConfig>
         @Required(message = "SNSAppender: no name provided")
         private String name;
 
-        @Override
-        public String getName()
-        {
-            return name;
-        }
-
         public SNSAppenderBuilder setName(String value)
         {
             this.name = value;
             return this;
         }
 
+        @Override
+        public String getName()
+        {
+            return name;
+        }
+
+
         @PluginBuilderAttribute("topicName")
         private String topicName;
 
-        @Override
-        public String getTopicName()
-        {
-            return topicName;
-        }
-
+        /**
+         *  Sets the <code>topicName</code> configuration property.
+         */
         public SNSAppenderBuilder setTopicName(String value)
         {
             this.topicName = value;
             return this;
         }
 
+        /**
+         *  Returns the <code>topicName</code> configuration property, <code>null</code>
+         *  if the appender was configured via ARN.
+         */
+        @Override
+        public String getTopicName()
+        {
+            return topicName;
+        }
+
+
         @PluginBuilderAttribute("topicArn")
         private String topicArn;
 
-        @Override
-        public String getTopicArn()
-        {
-            return topicArn;
-        }
-
+        /**
+         *  Sets the <code>topicArn</code> configuration property.
+         */
         public SNSAppenderBuilder setTopicArn(String value)
         {
             this.topicArn = value;
             return this;
         }
 
-        @PluginBuilderAttribute("subject")
-        private String subject;
-
+        /**
+         *  Returns the <code>topicArn</code> configuration property, <code>null</code>
+         *  if the appender was configured via name.
+         */
         @Override
-        public String getSubject()
+        public String getTopicArn()
         {
-            return subject;
+            return topicArn;
         }
 
-        public SNSAppenderBuilder setSubject(String value)
-        {
-            this.subject = value;
-            return this;
-        }
 
         @PluginBuilderAttribute("autoCreate")
         private boolean autoCreate;
 
+        /**
+         *  Sets the <code>autoCreate</code> configuration property.
+         */
+        public SNSAppenderBuilder setAutoCreate(boolean value)
+        {
+            this.autoCreate = value;
+            return this;
+        }
+
+        /**
+         *  Returns the <code>autoCreate</code> configuration property.
+         */
         @Override
         public boolean isAutoCreate()
         {
             return autoCreate;
         }
 
-        public SNSAppenderBuilder setAutoCreate(boolean value)
+
+        @PluginBuilderAttribute("subject")
+        private String subject;
+
+        /**
+         *  Sets the <code>subject</code> configuration property.
+         */
+        public SNSAppenderBuilder setSubject(String value)
         {
-            this.autoCreate = value;
+            this.subject = value;
             return this;
         }
+
+        /**
+         *  Returns the <code>subject</code> configuration property.
+         */
+        @Override
+        public String getSubject()
+        {
+            return subject;
+        }
+
 
         @Override
         public long getBatchDelay()
@@ -145,6 +271,7 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterConfig>
             long value = super.getBatchDelay();
             return (value == 0) ? 0 : 1;
         }
+
 
         @Override
         public SNSAppender build()

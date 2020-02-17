@@ -1,4 +1,4 @@
-# Simple Notification Service (SNS)
+# Simple Notification Service (SNS) Appender
 
 The SNS appender is intended to support real-time error notifications, operating concurrently
 with other logging outputs. You would configure the appender to only respond to messages with

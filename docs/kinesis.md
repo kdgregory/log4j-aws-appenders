@@ -1,4 +1,4 @@
-# Kinesis
+# Kinesis Appender
 
 The Kinesis Streams appender is intended to be an entry point for log analytics, either
 as a direct feed to an analytics application, or via Kinesis Firehose to ElasticSearch

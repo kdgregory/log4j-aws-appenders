@@ -27,7 +27,150 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 
 
 /**
- *  Appender that writes to a CloudWatch log stream.
+ *  An appender that writes to a CloudWatch log stream.
+ *  <p>
+ *  This appender supports the following configuration parameters:
+ *  <p>
+ *  <table>
+ *
+ *  <tr VALIGN="top">
+ *      <th> logGroup
+ *      <td> Name of the CloudWatch log group where messages are sent; may use
+ *           substitutions. If this group doesn't exist it will be created.
+ *           <p>
+ *           You typically assign a single log group to an application, and then
+ *           use multiple log streams for instances of that application.
+ *           <p>
+ *           There is no default value. If you do not configure the log group,
+ *           the appender will be disabled and will report its misconfiguration.
+ *
+ *  <tr VALIGN="top">
+ *      <th> logStream
+ *      <td> Name of the CloudWatch log stream where messages are sent; may use
+ *           substitutions. If this stream doesn't exist it will be created.
+ *           <p>
+ *           You typically create a separate log stream for each instance of
+ *           the application.
+ *           <p>
+ *           Default value is <code>{startTimestamp}</code>, the JVM startup
+ *           timestamp.
+ *
+ *  <tr VALIGN="top">
+ *      <th> retentionPeriod
+ *      <td> (optional) Specifies a retention period for created CloudWatch log
+ *           groups. If omitted, messages are retained forever. Note that values
+ *           are restricted; see {@link <a href="https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutRetentionPolicy.html#CWL-PutRetentionPolicy-request-retentionInDays">AWS API doc</a>}.
+ *
+ *  <tr VALIGN="top">
+ *      <th> dedicatedWriter
+ *      <td> If true, the appender assumes that it will be the only writer to
+ *           the log stream, and will not retrieve a sequence token before each
+ *           write. Defaults to false for legacy behavior.
+ *
+ *  <tr VALIGN="top">
+ *      <th> rotationMode
+ *      <td> Controls whether auto-rotation is enabled. Values are none, count,
+ *           interval, hourly, and daily; default is none.
+ *
+ *  <tr VALIGN="top">
+ *      <th> rotationInterval
+ *      <td> Sets the rotation interval, for those appenders that support rotation.
+ *           This parameter is valid only when the <code>rotationMode</code> parameter
+ *           is "interval" or "count": for the former, it's the number of milliseconds
+ *           between rotations, for the latter the number of messages.
+ *           <p>
+ *           If using interval rotation, you should include <code>{timestamp}</code>
+ *           in the log stream name. If using counted rotation, you should include
+ *           <code>{sequence}</code>.
+ *
+ *  <tr VALIGN="top">
+ *      <th> sequence
+ *      <td> A value that is incremented each time the stream is rotated. May be
+ *           accessed as the <code>{sequence}</code> substitution. Defaults to 0.
+ *
+ *  <tr VALIGN="top">
+ *      <th> synchronous
+ *      <td> If true, the appender will operate in synchronous mode: calls to
+ *           append() execute on the caller's thread, and will not return until
+ *           writer has attempted to send a batch (errors may still result in
+ *           messages being requeued for the next batch). This negates the benefits
+ *           of message batching, and should only be used in cases (like AWS Lambda)
+ *           where background thread processing is not guaranteed.
+ *          <p>
+ *          Note: setting <code>synchronous</code> to true also sets
+ *          <code>batchDelay</code> to 0.
+ *
+ *  <tr VALIGN="top">
+ *      <th> batchDelay
+ *      <td> The time, in milliseconds, that the writer will wait to accumulate
+ *           messages for a batch.
+ *           <p>
+ *           The writer attempts to gather multiple logging messages into a batch,
+ *           to reduce communication with the service. The batch delay controls
+ *           the time that a message will remain in-memory while the writer builds
+ *           this batch. In a low-volume environment it will be the main determinant
+ *           of when the batch is sent; in a high volume environment it's likely
+ *           that the maximum request size will be reached before the delay elapses.
+ *           <p>
+ *           The default value is 2000, which is rather arbitrarily chosen.
+ *           <p>
+ *           If the appender is in synchronous mode, this setting is ignored.
+ *
+ *  <tr VALIGN="top">
+ *      <th> discardThreshold
+ *      <td> The number of unsent messages that will trigger message discard. A
+ *           high value is useful when network connectivity is intermittent and/or
+ *           overall AWS communication is causing throttling. However, a value that
+ *           is too high may cause out-of-memory errors.
+ *           <p>
+ *           The default, 10,000, is based on the assumptions that (1) each message
+ *           will be 1k or less, and (2) any app that uses remote logging can afford
+ *           10MB.
+ *           <p>
+ *
+ *  <tr VALIGN="top">
+ *      <th> discardAction
+ *      <td> The action to take when the number of unsent messages exceeds the
+ *           discard threshold. Values are "none" (retain all messages), "oldest"
+ *           (discard oldest messages), and "newest" (discard most recent messages).
+ *           <p>
+ *           The default is "oldest". Attempting to set an incorrect value will throw
+ *           a configuration error.
+ *
+ *  <tr VALIGN="top">
+ *      <th> clientFactory
+ *      <td> The fully-qualified name of a static method to create the correct AWS
+ *           client, which will be called instead of the writer's internal client
+ *           factory. This is useful if you need non-default configuration, such as
+ *           using a proxy server.
+ *           <p>
+ *           The passed string is of the form <code>com.example.Classname.methodName</code>.
+ *           If this does not reference a class/method on the classpath then writer
+ *           initialization will fail.
+ *
+ *  <tr VALIGN="top">
+ *      <th> clientRegion
+ *      <td> Specifies a non-default service region. This setting is ignored if you
+ *           use a client factory.
+ *           <p>
+ *           Note that the region must be supported by the current SDK version.
+ *
+ *  <tr VALIGN="top">
+ *      <th> clientEndpoint
+ *      <td> Specifies a non-default service endpoint. This is intended for use with
+ *           older AWS SDK versions that do not provide client factories and default
+ *           to us-east-1 for constructed clients, although it can be used for newer
+ *           releases when you want to override the default region provider. This
+ *           setting is ignored if you use a client factory.
+ *
+ *  <tr VALIGN="top">
+ *      <th> useShutdownHook
+ *      <td> Controls whether the appender uses a shutdown hook to attempt to process
+ *           outstanding messages when the JVM exits. This is true by default; set to
+ *           false to disable.
+ *  </table>
+ *
+ *  @see <a href="https://github.com/kdgregory/log4j-aws-appenders/blob/master/docs/cloudwatch.md">Appender documentation</a>
  */
 public class CloudWatchAppender
 extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,CloudWatchWriterStatisticsMXBean>
@@ -56,13 +199,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
 //----------------------------------------------------------------------------
 
     /**
-     *  Sets the CloudWatch Log Group associated with this appender.
-     *  <p>
-     *  You typically assign a single log group to an application, and then
-     *  use multiple log streams for instances of that application.
-     *  <p>
-     *  There is no default value. If you do not configure the log group, the
-     *  appender will be disabled and will report its misconfiguration.
+     *  Sets the <code>logGroup</code> configuration property.
      */
     public void setLogGroup(String value)
     {
@@ -71,8 +208,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
 
 
     /**
-     *  Returns the log group name; see {@link #setLogGroup}. Primarily used
-     *  for testing.
+     *  Returns the <code>logGroup</code> configuration property.
      */
     public String getLogGroup()
     {
@@ -81,12 +217,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
 
 
     /**
-     *  Sets the CloudWatch Log Stream associated with this appender.
-     *  <p>
-     *  You typically create a separate log stream for each instance of the
-     *  application.
-     *  <p>
-     *  Default value is <code>{startTimestamp}</code>, the JVM startup timestamp.
+     *  Sets the <code>logStream</code> configuration property.
      */
     public void setLogStream(String value)
     {
@@ -95,8 +226,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
 
 
     /**
-     *  Returns the log stream name; see {@link #setLogStream}. Primarily used
-     *  for testing.
+     *  Returns the <code>logStream</code> configuration property.
      */
     public String getLogStream()
     {
@@ -105,8 +235,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
 
 
     /**
-     *  Sets the retention period, in days, for auto-created log groups. Beware that AWS
-     *  limits the allowable values; see API documentation for details.
+     *  Sets the <code>retentionPeriod</code> configuration property.
      */
     public void setRetentionPeriod(int value)
     {
@@ -115,10 +244,8 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
 
 
     /**
-     *  Returns the current retention period; 0 indicates that retention
-     *  period has not been set (Log4J gets confused when setter is of a
-     *  different type than getter, and it can't accept an Integer for
-     *  the setter).
+     *  Returns the <code>retentionPeriod</code> configuration property,
+     *  0 to indicate unlimited retention.
      */
     public int getRetentionPeriod()
     {
@@ -127,10 +254,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
 
 
     /**
-     *  Sets a flag indicating that this appender will be the only writer to
-     *  the stream. This allows the appender to cache the sequence token from
-     *  each write, rather than requesting the current token (which will be
-     *  throttled with large numbers of writers).
+     *  Sets the <code>dedicatedWriter</code> configuration property.
      */
     public void setDedicatedWriter(boolean value)
     {
@@ -139,7 +263,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
 
 
     /**
-     *  Returns the flag indicating whether appender is a dedicated writer.
+     *  Returns the <code>dedicatedWriter</code> configuration property.
      */
     public boolean getDedicatedWriter()
     {
@@ -150,16 +274,16 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
 //  AbstractAppender overrides
 //----------------------------------------------------------------------------
 
-    @Override
     /** {@inheritDoc} */
+    @Override
     public void setRotationMode(String value)
     {
         super.setRotationMode(value);
     }
 
 
-    @Override
     /** {@inheritDoc} */
+    @Override
     public void rotate()
     {
         super.rotate();

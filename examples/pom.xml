@@ -16,6 +16,7 @@
     <modules>
         <module>log4j1-example</module>
         <module>log4j1-webapp</module>
+        <module>log4j2-example</module>
         <module>logback-example</module>
         <module>logback-webapp</module>
     </modules>

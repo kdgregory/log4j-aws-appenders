@@ -1,0 +1,53 @@
+<Configuration status="warn" packages="com.kdgregory.log4j2.aws">
+
+    <Appenders>
+
+        <Console name="CONSOLE">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] - %c %p - %m%n" />
+        </Console>
+
+<!-- uncomment the appenders that you want to use
+
+        <CloudWatchAppender name="CLOUDWATCH">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] - %c %p - %m" />
+            <logGroup>AppenderExample</logGroup>
+            <logStream>Example-{date}-{hostname}-{pid}</logStream>
+            <dedicatedWriter>true</dedicatedWriter>
+        </CloudWatchAppender>
+
+        <KinesisAppender name="KINESIS">
+            <JsonLayout complete="false" compact="true" eventEol="true" properties="true">
+                <KeyValuePair key="applicationName" value="Log4J2-Example" />
+                <KeyValuePair key="environment" value="${sys:environment:-dev}" />
+                <KeyValuePair key="accountId" value="${awslogs:awsAccountId}" />                
+                <KeyValuePair key="timestamp" value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSS'Z'}" />
+                <KeyValuePair key="processId" value="${awslogs:pid}" />
+                <KeyValuePair key="hostname" value="${awslogs:hostname}" />
+            </JsonLayout>
+            <streamName>AppenderExample</streamName>
+        </KinesisAppender>
+
+        <SNSAppender name="SNS">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] - %c %p - %m%n" />
+            <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+            <topicName>AppenderExample</topicName>
+            <subject>Error from logging example</subject>
+        </SNSAppender>
+-->
+    </Appenders>
+
+    <Loggers>
+        <Root level="warn">
+            <AppenderRef ref="CONSOLE" />
+            
+        </Root>
+        <Logger name="com.kdgregory" level="debug">
+<!-- uncomment the appenders that you want to use
+            <AppenderRef ref="CLOUDWATCH" />
+            <AppenderRef ref="KINESIS" />
+            <AppenderRef ref="SNS" />
+-->
+        </Logger>
+    </Loggers>
+
+</Configuration>

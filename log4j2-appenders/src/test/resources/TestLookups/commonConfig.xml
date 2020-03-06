@@ -1,0 +1,15 @@
+<Configuration status="debug" packages="com.kdgregory.log4j2.aws">
+
+    <Appenders>
+        <Console name="DUMMY">
+            <PatternLayout pattern="%m" />
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Root level="debug">
+            <AppenderRef ref="DUMMY" />
+        </Root>
+    </Loggers>
+
+</Configuration>

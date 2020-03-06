@@ -19,11 +19,6 @@ import static org.junit.Assert.*;
 
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
-import java.net.URI;
-
-import org.apache.logging.log4j.core.Logger;
-import org.apache.logging.log4j.core.LoggerContext;
-
 import com.kdgregory.log4j2.aws.KinesisAppender.KinesisAppenderBuilder;
 import com.kdgregory.log4j2.testhelpers.TestableKinesisAppender;
 import com.kdgregory.log4j2.testhelpers.TestableKinesisAppender.TestableKinesisAppenderBuilder;
@@ -32,24 +27,11 @@ import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriter;
 
 
 public class TestKinesisAppender
+extends AbstractUnitTest<TestableKinesisAppender>
 {
-    private Logger logger;
-    private TestableKinesisAppender appender;
-
-
-    private void initialize(String testName)
-    throws Exception
+    public TestKinesisAppender()
     {
-        String propsName = "TestKinesisAppender/" + testName + ".xml";
-        URI config = ClassLoader.getSystemResource(propsName).toURI();
-        assertNotNull("was able to retrieve config", config);
-
-        LoggerContext context = LoggerContext.getContext();
-        context.setConfigLocation(config);
-
-        logger = context.getLogger(getClass().getName());
-        appender = (TestableKinesisAppender)logger.getAppenders().get("KINESIS");
-        assertNotNull("was able to retrieve appender", appender);
+        super("TestKinesisAppender/", "KINESIS");
     }
 
 //----------------------------------------------------------------------------

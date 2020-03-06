@@ -14,52 +14,28 @@
 
 package com.kdgregory.logback.aws;
 
-import java.net.URL;
-
-import org.junit.Test;
-import static org.junit.Assert.*;
-
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
-import org.slf4j.LoggerFactory;
+import org.junit.Test;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
+import static org.junit.Assert.*;
 
 import com.kdgregory.logback.testhelpers.sns.TestableSNSAppender;
 import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.testhelpers.sns.MockSNSWriter;
 
+
 /**
  *  These tests exercise appender logic specific to SNSAppender, using a mock log-writer.
  */
 public class TestSNSAppender
+extends AbstractUnitTest<TestableSNSAppender>
 {
-    private Logger logger;
-    private TestableSNSAppender appender;
-
-
-    private void initialize(String testName)
-    throws Exception
+    public TestSNSAppender()
     {
-        String propsName = "TestSNSAppender/" + testName + ".xml";
-        URL config = ClassLoader.getSystemResource(propsName);
-        assertNotNull("was able to retrieve config", config);
-
-        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
-        context.reset();
-        JoranConfigurator configurator = new JoranConfigurator();
-        configurator.setContext(context);
-        configurator.doConfigure(config);
-
-        logger = context.getLogger(getClass());
-        appender = (TestableSNSAppender)logger.getAppender("SNS");
+        super("TestSNSAppender/", "SNS");
     }
 
-//----------------------------------------------------------------------------
-//  Tests
-//----------------------------------------------------------------------------
 
     @Test
     public void testConfigurationByName() throws Exception

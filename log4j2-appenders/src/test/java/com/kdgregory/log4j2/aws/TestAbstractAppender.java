@@ -14,9 +14,6 @@
 
 package com.kdgregory.log4j2.aws;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -26,13 +23,11 @@ import static org.junit.Assert.*;
 import static net.sf.kdgcommons.test.NumericAsserts.*;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
-import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 
 import net.sf.kdgcommons.lang.StringUtil;
 
 import com.kdgregory.log4j2.testhelpers.TestableCloudWatchAppender;
-import com.kdgregory.log4j2.testhelpers.TestableLog4J2InternalLogger;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.common.LogMessage;
@@ -45,61 +40,13 @@ import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriterFactory;
 
 
 public class TestAbstractAppender
+extends AbstractUnitTest<TestableCloudWatchAppender>
 {
-    private Logger logger;
-    private TestableCloudWatchAppender appender;
-    private TestableLog4J2InternalLogger appenderInternalLogger;
-
-
-    private void initialize(String testName)
-    throws Exception
+    public TestAbstractAppender()
     {
-        String propsName = "TestAbstractAppender/" + testName + ".xml";
-         URI config = ClassLoader.getSystemResource(propsName).toURI();
-         assertNotNull("was able to retrieve config", config);
-
-         LoggerContext context = LoggerContext.getContext();
-         context.setConfigLocation(config);
-
-         logger = context.getLogger(getClass().getName());
-         appender = (TestableCloudWatchAppender)logger.getAppenders().get("CLOUDWATCH");
-         assertNotNull("was able to retrieve appender", appender);
-
-         appenderInternalLogger = appender.getInternalLogger();
+        super("TestAbstractAppender/", "CLOUDWATCH");
     }
 
-
-    private void runLoggingThreads(final int numThreads, final int messagesPerThread)
-    throws Exception
-    {
-        List<Thread> threads = new ArrayList<Thread>();
-        for (int ii = 0 ; ii < numThreads ; ii++)
-        {
-            threads.add(new Thread(new Runnable() {
-                @Override
-                public void run()
-                {
-                    for (int jj = 0 ; jj < messagesPerThread ; jj++)
-                    {
-                        logger.debug(Thread.currentThread().getName() + " " + jj);
-                        Thread.yield();
-                    }
-                }
-            }));
-        }
-
-        for (Thread thread : threads)
-            thread.start();
-
-        for (Thread thread : threads)
-            thread.join();
-    }
-
-
-
-//----------------------------------------------------------------------------
-//  Tests
-//----------------------------------------------------------------------------
 
     @Test
     public void testLifecycle() throws Exception

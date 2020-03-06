@@ -19,11 +19,6 @@ import static org.junit.Assert.*;
 
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
-import java.net.URI;
-
-import org.apache.logging.log4j.core.Logger;
-import org.apache.logging.log4j.core.LoggerContext;
-
 import com.kdgregory.log4j2.aws.SNSAppender.SNSAppenderBuilder;
 import com.kdgregory.log4j2.testhelpers.TestableSNSAppender;
 import com.kdgregory.log4j2.testhelpers.TestableSNSAppender.TestableSNSAppenderBuilder;
@@ -32,29 +27,13 @@ import com.kdgregory.logging.testhelpers.sns.MockSNSWriter;
 
 
 public class TestSNSAppender
+extends AbstractUnitTest<TestableSNSAppender>
 {
-    private Logger logger;
-    private TestableSNSAppender appender;
-
-
-    private void initialize(String testName)
-    throws Exception
+    public TestSNSAppender()
     {
-        String propsName = "TestSNSAppender/" + testName + ".xml";
-        URI config = ClassLoader.getSystemResource(propsName).toURI();
-        assertNotNull("was able to retrieve config", config);
-
-        LoggerContext context = LoggerContext.getContext();
-        context.setConfigLocation(config);
-
-        logger = context.getLogger(getClass().getName());
-        appender = (TestableSNSAppender)logger.getAppenders().get("SNS");
-        assertNotNull("was able to retrieve appender", appender);
+        super("TestSNSAppender/", "SNS");
     }
 
-//----------------------------------------------------------------------------
-//  Tests
-//----------------------------------------------------------------------------
 
     @Test
     public void testConfigurationByName() throws Exception

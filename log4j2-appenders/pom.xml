@@ -23,8 +23,16 @@
             <artifactId>aws-shared</artifactId>
             <version>${project.version}</version>
         </dependency>
+        
+        <!-- this is needed for testing account ID lookup -->
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-sts</artifactId>
+            <version>${aws-sdk.version}</version>
+            <scope>provided</scope>
+        </dependency>
 
-        <!-- this is needed for testing JSON layout with EC2 instance ID -->
+        <!-- this is needed for testing EC2 instance ID lookup -->
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-core</artifactId>

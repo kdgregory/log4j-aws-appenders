@@ -15,6 +15,7 @@
 package com.kdgregory.logback.testhelpers.sns;
 
 import com.kdgregory.logback.aws.SNSAppender;
+import com.kdgregory.logback.testhelpers.TestableLogbackInternalLogger;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.common.LogWriter;
@@ -40,6 +41,7 @@ extends SNSAppender<ILoggingEvent>
         super();
         setThreadFactory(new InlineThreadFactory());
         setWriterFactory(new MockSNSWriterFactory());
+        internalLogger = new TestableLogbackInternalLogger(this);
     }
 
     public void setThreadFactory(ThreadFactory threadFactory)
@@ -69,5 +71,11 @@ extends SNSAppender<ILoggingEvent>
     public MockSNSWriter getMockWriter()
     {
         return (MockSNSWriter)writer;
+    }
+
+
+    public TestableLogbackInternalLogger getInternalLogger()
+    {
+        return (TestableLogbackInternalLogger)internalLogger;
     }
 }

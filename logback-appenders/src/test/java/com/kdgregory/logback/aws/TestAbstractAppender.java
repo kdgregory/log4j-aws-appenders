@@ -15,26 +15,19 @@
 package com.kdgregory.logback.aws;
 
 
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
-import org.junit.Test;
-import static org.junit.Assert.*;
-
-import net.sf.kdgcommons.lang.StringUtil;
-
 import static net.sf.kdgcommons.test.NumericAsserts.*;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import org.junit.Test;
+
+import static org.junit.Assert.*;
+
 import org.slf4j.LoggerFactory;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
+import net.sf.kdgcommons.lang.StringUtil;
 
-import com.kdgregory.logback.testhelpers.TestableLogbackInternalLogger;
 import com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
@@ -47,6 +40,8 @@ import com.kdgregory.logging.testhelpers.TestingException;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriterFactory;
 
+import ch.qos.logback.classic.LoggerContext;
+
 
 /**
  *  These tests exercise appender logic that's implemented in AbstractAppender,
@@ -54,60 +49,13 @@ import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriterFactory;
  *  log-writer.
  */
 public class TestAbstractAppender
+extends AbstractUnitTest<TestableCloudWatchAppender>
 {
-    private Logger logger;
-    private TestableCloudWatchAppender appender;
-    private TestableLogbackInternalLogger appenderInternalLogger;
-
-
-    private void initialize(String testName)
-    throws Exception
+    public TestAbstractAppender()
     {
-        String propsName = "TestAbstractAppender/" + testName + ".xml";
-        URL config = ClassLoader.getSystemResource(propsName);
-        assertNotNull("was able to retrieve config", config);
-
-        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
-        context.reset();
-        JoranConfigurator configurator = new JoranConfigurator();
-        configurator.setContext(context);
-        configurator.doConfigure(config);
-
-        logger = context.getLogger(getClass());
-        appender = (TestableCloudWatchAppender)logger.getAppender("CLOUDWATCH");
-        appenderInternalLogger = appender.getInternalLogger();
+        super("TestAbstractAppender/", "CLOUDWATCH");
     }
 
-
-    private void runLoggingThreads(final int numThreads, final int messagesPerThread)
-    throws Exception
-    {
-        List<Thread> threads = new ArrayList<Thread>();
-        for (int ii = 0 ; ii < numThreads ; ii++)
-        {
-            threads.add(new Thread(new Runnable() {
-                @Override
-                public void run()
-                {
-                    for (int jj = 0 ; jj < messagesPerThread ; jj++)
-                    {
-                        logger.debug(Thread.currentThread().getName() + " " + jj);
-                        Thread.yield();
-                    }
-                }
-            }));
-        }
-
-        for (Thread thread : threads)
-            thread.start();
-
-        for (Thread thread : threads)
-            thread.join();
-    }
-
-//----------------------------------------------------------------------------
-//  Tests
-//----------------------------------------------------------------------------
 
     @Test
     public void testLifecycle() throws Exception

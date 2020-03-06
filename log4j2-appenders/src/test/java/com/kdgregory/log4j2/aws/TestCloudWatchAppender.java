@@ -14,15 +14,11 @@
 
 package com.kdgregory.log4j2.aws;
 
-import java.net.URI;
-
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
-import org.apache.logging.log4j.core.Logger;
-import org.apache.logging.log4j.core.LoggerContext;
 
 import com.kdgregory.log4j2.aws.CloudWatchAppender.CloudWatchAppenderBuilder;
 import com.kdgregory.log4j2.testhelpers.TestableCloudWatchAppender;
@@ -33,29 +29,13 @@ import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
 
 
 public class TestCloudWatchAppender
+extends AbstractUnitTest<TestableCloudWatchAppender>
 {
-    private Logger logger;
-    private TestableCloudWatchAppender appender;
-
-
-    private void initialize(String testName)
-    throws Exception
+    public TestCloudWatchAppender()
     {
-        String propsName = "TestCloudWatchAppender/" + testName + ".xml";
-        URI config = ClassLoader.getSystemResource(propsName).toURI();
-        assertNotNull("was able to retrieve config", config);
-
-        LoggerContext context = LoggerContext.getContext();
-        context.setConfigLocation(config);
-
-        logger = context.getLogger(getClass().getName());
-        appender = (TestableCloudWatchAppender)logger.getAppenders().get("CLOUDWATCH");
-        assertNotNull("was able to retrieve appender", appender);
+        super("TestCloudWatchAppender/", "CLOUDWATCH");
     }
 
-//----------------------------------------------------------------------------
-//  Tests
-//----------------------------------------------------------------------------
 
     @Test
     public void testConfiguration() throws Exception

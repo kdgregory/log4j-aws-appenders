@@ -14,18 +14,11 @@
 
 package com.kdgregory.logback.aws;
 
-import java.net.URL;
-
-import org.junit.Test;
-import static org.junit.Assert.*;
-
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
-import org.slf4j.LoggerFactory;
+import org.junit.Test;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
+import static org.junit.Assert.*;
 
 import com.kdgregory.logback.testhelpers.kinesis.TestableKinesisAppender;
 import com.kdgregory.logging.common.util.DiscardAction;
@@ -37,31 +30,13 @@ import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriter;
  *  mock log-writer.
  */
 public class TestKinesisAppender
+extends AbstractUnitTest<TestableKinesisAppender>
 {
-    private Logger logger;
-    private TestableKinesisAppender appender;
-
-
-    private void initialize(String testName)
-    throws Exception
+    public TestKinesisAppender()
     {
-        String propsName = "TestKinesisAppender/" + testName + ".xml";
-        URL config = ClassLoader.getSystemResource(propsName);
-        assertNotNull("was able to retrieve config", config);
-
-        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
-        context.reset();
-        JoranConfigurator configurator = new JoranConfigurator();
-        configurator.setContext(context);
-        configurator.doConfigure(config);
-
-        logger = context.getLogger(getClass());
-        appender = (TestableKinesisAppender)logger.getAppender("KINESIS");
+        super("TestKinesisAppender/", "KINESIS");
     }
 
-//----------------------------------------------------------------------------
-//  Tests
-//----------------------------------------------------------------------------
 
     @Test
     public void testConfiguration() throws Exception

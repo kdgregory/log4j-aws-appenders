@@ -157,4 +157,26 @@ extends AbstractUnitTest<TestableKinesisAppender>
         assertEquals("writer client factory method",    "com.example.Foo.bar",              writer.config.clientFactoryMethod);
         assertEquals("writer client endpoint",          "kinesis.us-west-1.amazonaws.com",  writer.config.clientEndpoint);
     }
+
+
+    @Test
+    public void testWriterInitializationWithLookups() throws Exception
+    {
+        // property has to be set before initialization
+        System.setProperty("TestKinesisAppender.testWriterInitialization", "example");
+
+        initialize("testWriterInitializationWithLookups");
+
+        assertEquals("configured stream name",      "${sys:TestKinesisAppender.testWriterInitialization}",  appender.getConfig().getStreamName());
+        assertEquals("configured partition key",    "${awslogs:pid}-{pid}",                                 appender.getConfig().getPartitionKey());
+
+        logger.debug("this triggers writer creation");
+
+        MockKinesisWriter writer = appender.getMockWriter();
+
+        assertEquals("writer log group name",       "example",                  writer.config.streamName);
+        assertRegex("writer log stream name",       "[0-9]{1,5}-[0-9]{1,5}",    writer.config.partitionKey);
+
+        // we'll assume everything else was set as in above test
+    }
 }

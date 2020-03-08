@@ -156,4 +156,26 @@ extends AbstractUnitTest<TestableSNSAppender>
         assertEquals("writer client factory method",    "com.example.Foo.bar",              writer.config.clientFactoryMethod);
         assertEquals("writer client endpoint",          "sns.us-east-2.amazonaws.com",      writer.config.clientEndpoint);
     }
+
+
+    @Test
+    public void testWriterInitializationWithLookups() throws Exception
+    {
+        // property has to be set before initialization
+        System.setProperty("TestSNSAppender.testWriterInitialization", "example");
+
+        initialize("testWriterInitializationWithLookups");
+
+        assertEquals("configured topicName",            "name-${date:yyyyMMdd}-{date}",                     appender.getConfig().getTopicName());
+        assertEquals("configured topicArn",             "arn-${awslogs:pid}-{pid}",                         appender.getConfig().getTopicArn());
+        assertEquals("configured subect",               "${sys:TestSNSAppender.testWriterInitialization}",  appender.getConfig().getSubject());
+
+        logger.debug("this triggers writer creation");
+
+        MockSNSWriter writer = appender.getMockWriter();
+
+        assertRegex("writer topicName",                 "name-20\\d{6}-20\\d{6}",           writer.config.topicName);
+        assertRegex("writer topicArn",                  "arn-[0-9]{1,5}-[0-9]{1,5}",        writer.config.topicArn);
+        assertEquals("writer subect",                   "example",                          writer.config.subject);
+    }
 }

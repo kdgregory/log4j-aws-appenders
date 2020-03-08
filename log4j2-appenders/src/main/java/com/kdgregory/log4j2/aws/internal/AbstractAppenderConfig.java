@@ -16,6 +16,7 @@ package com.kdgregory.log4j2.aws.internal;
 
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.Layout;
+import org.apache.logging.log4j.core.config.Configuration;
 
 
 /**
@@ -27,6 +28,7 @@ public interface AbstractAppenderConfig
     String getName();
     Layout<String> getLayout();
     Filter getFilter();
+    Configuration getConfiguration();
 
     // these three are only used by CloudWatchAppender, but appear here
     // because rotation is implemented in AbstractAppender

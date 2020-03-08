@@ -22,6 +22,7 @@ import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
+import org.apache.logging.log4j.core.lookup.StrSubstitutor;
 
 import com.kdgregory.log4j2.aws.internal.AbstractAppender;
 import com.kdgregory.log4j2.aws.internal.AbstractAppenderBuilder;
@@ -311,11 +312,12 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterConfig>
     @Override
     protected SNSWriterConfig generateWriterConfig()
     {
+        StrSubstitutor l4jsubs  = config.getConfiguration().getStrSubstitutor();
         Substitutions subs      = new Substitutions(new Date(), sequence.get());
 
-        String actualTopicName  = subs.perform(config.getTopicName());
-        String actualTopicArn   = subs.perform(config.getTopicArn());
-        String actualSubject    = subs.perform(config.getSubject());
+        String actualTopicName  = subs.perform(l4jsubs.replace(config.getTopicName()));
+        String actualTopicArn   = subs.perform(l4jsubs.replace(config.getTopicArn()));
+        String actualSubject    = subs.perform(l4jsubs.replace(config.getSubject()));
 
         return new SNSWriterConfig(
             actualTopicName, actualTopicArn, actualSubject, config.isAutoCreate(),

@@ -16,7 +16,9 @@ package com.kdgregory.log4j2.aws.internal;
 
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.Layout;
+import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
+import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 
 import com.kdgregory.logging.common.util.DiscardAction;
@@ -58,6 +60,21 @@ implements AbstractAppenderConfig
     {
         this.filter = value;
         return (T)this;
+    }
+
+
+    @PluginConfiguration
+    private Configuration configuration;
+
+    @Override
+    public Configuration getConfiguration()
+    {
+        return configuration;
+    }
+
+    public void setConfiguration(Configuration configuration)
+    {
+        this.configuration = configuration;
     }
 
 

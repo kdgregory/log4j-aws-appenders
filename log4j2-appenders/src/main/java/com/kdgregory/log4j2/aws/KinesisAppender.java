@@ -22,6 +22,7 @@ import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
+import org.apache.logging.log4j.core.lookup.StrSubstitutor;
 
 import com.kdgregory.log4j2.aws.internal.AbstractAppender;
 import com.kdgregory.log4j2.aws.internal.AbstractAppenderBuilder;
@@ -333,9 +334,11 @@ extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWr
     @Override
     protected KinesisWriterConfig generateWriterConfig()
     {
+        StrSubstitutor l4jsubs    = config.getConfiguration().getStrSubstitutor();
         Substitutions subs        = new Substitutions(new Date(), sequence.get());
-        String actualStreamName   = subs.perform(config.getStreamName());
-        String actualPartitionKey = subs.perform(config.getPartitionKey());
+
+        String actualStreamName   = subs.perform(l4jsubs.replace(config.getStreamName()));
+        String actualPartitionKey = subs.perform(l4jsubs.replace(config.getPartitionKey()));
 
         return new KinesisWriterConfig(
             actualStreamName, actualPartitionKey,

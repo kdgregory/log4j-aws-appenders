@@ -19,7 +19,6 @@ import static org.junit.Assert.*;
 
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
-
 import com.kdgregory.log4j2.aws.CloudWatchAppender.CloudWatchAppenderBuilder;
 import com.kdgregory.log4j2.testhelpers.TestableCloudWatchAppender;
 import com.kdgregory.log4j2.testhelpers.TestableCloudWatchAppender.TestableCloudWatchAppenderBuilder;
@@ -195,5 +194,25 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("writer discard action",           DiscardAction.newest,               writer.config.discardAction);
         assertEquals("writer client factory method",    "com.example.Foo.bar",              writer.config.clientFactoryMethod);
         assertEquals("writer client endpoint",          "logs.us-west-2.amazonaws.com",     writer.config.clientEndpoint);
+    }
+
+
+    @Test
+    public void testWriterInitializationWithLookups() throws Exception
+    {
+        // property has to be set before initialization
+        System.setProperty("TestCloudWatchAppender.testWriterInitialization", "example");
+
+        initialize("testWriterInitializationWithLookups");
+
+        assertEquals("configured log group name",   "${sys:TestCloudWatchAppender.testWriterInitialization}",   appender.getConfig().getLogGroup());
+        assertEquals("configured log stream name",  "${awslogs:pid}-{pid}",                                     appender.getConfig().getLogStream());
+
+        MockCloudWatchWriter writer = appender.getMockWriter();
+
+        assertEquals("writer log group name",       "example",                  writer.config.logGroupName);
+        assertRegex("writer log stream name",       "[0-9]{1,5}-[0-9]{1,5}",    writer.config.logStreamName);
+
+        // no reason to think that any of the other writer config will be different from prior test
     }
 }

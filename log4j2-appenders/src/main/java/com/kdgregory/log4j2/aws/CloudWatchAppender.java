@@ -22,6 +22,7 @@ import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
+import org.apache.logging.log4j.core.lookup.StrSubstitutor;
 
 import com.kdgregory.log4j2.aws.internal.AbstractAppender;
 import com.kdgregory.log4j2.aws.internal.AbstractAppenderBuilder;
@@ -431,9 +432,10 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
     @Override
     protected CloudWatchWriterConfig generateWriterConfig()
     {
+        StrSubstitutor l4jsubs = config.getConfiguration().getStrSubstitutor();
         Substitutions subs     = new Substitutions(new Date(), sequence.get());
-        String actualLogGroup  = subs.perform(config.getLogGroup());
-        String actualLogStream = subs.perform(config.getLogStream());
+        String actualLogGroup  = subs.perform(l4jsubs.replace(config.getLogGroup()));
+        String actualLogStream = subs.perform(l4jsubs.replace(config.getLogStream()));
 
         return new CloudWatchWriterConfig(
             actualLogGroup, actualLogStream, retentionPeriod,

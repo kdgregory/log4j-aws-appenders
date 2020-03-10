@@ -30,7 +30,7 @@ import com.kdgregory.log4j2.aws.StatisticsMBean;
  *  <p>
  *  Invoke with the number of event-generator threads you want (default is 2):
  *  <pre>
- *      java -jar target/aws-appenders-example-1.0.0.jar NUM_THREADS
+ *      java -jar target/log4j2-aws-appenders-example-*.jar NUM_THREADS
  *  </pre>
  *
  *  Each thread will take a random walk, starting at the value 50 and moving up

@@ -31,6 +31,7 @@ import com.kdgregory.logging.aws.kinesis.KinesisConstants;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterFactory;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterStatisticsMXBean;
 import com.kdgregory.logging.aws.common.Substitutions;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
@@ -150,7 +151,7 @@ import com.kdgregory.logging.common.util.InternalLogger;
  */
 @Plugin(name = "KinesisAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class KinesisAppender
-extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWriterConfig>
+extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWriterStatisticsMXBean,KinesisWriterConfig>
 {
 
 //----------------------------------------------------------------------------
@@ -318,6 +319,7 @@ extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWr
             new DefaultThreadFactory("log4j2-kinesis"),
             new KinesisWriterFactory(),
             new KinesisWriterStatistics(),
+            KinesisWriterStatisticsMXBean.class,
             config,
             internalLogger);
     }

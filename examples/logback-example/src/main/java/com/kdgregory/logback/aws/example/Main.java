@@ -56,7 +56,7 @@ public class Main
                        
         ManagementFactory.getPlatformMBeanServer().createMBean(
                 StatisticsMBean.class.getName(),
-                new ObjectName("ch.qos.logback.classic:name=statistics"));
+                new ObjectName("com.kdgregory.logback.aws:name=statistics"));
 
         for (int ii = 0 ; ii < numThreads ; ii++)
         {

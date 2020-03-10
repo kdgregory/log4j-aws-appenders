@@ -31,7 +31,7 @@ import com.kdgregory.log4j2.testhelpers.TestableLog4J2InternalLogger;
 /**
  *  Common functionality for unit tests.
  */
-public abstract class AbstractUnitTest<T extends AbstractAppender<?,?,?>>
+public abstract class AbstractUnitTest<T extends AbstractAppender<?,?,?,?>>
 {
     // these are provided by constructor
     private String baseResourcePath;

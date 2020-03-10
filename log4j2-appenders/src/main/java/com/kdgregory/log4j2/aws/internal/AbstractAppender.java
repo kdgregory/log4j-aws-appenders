@@ -36,6 +36,7 @@ import com.kdgregory.logging.common.util.RotationMode;
 public abstract class AbstractAppender<
     AppenderConfigType extends AbstractAppenderConfig,
     AppenderStatsType extends AbstractWriterStatistics,
+    AppenderStatsMXBeanType,
     WriterConfigType>
 extends org.apache.logging.log4j.core.appender.AbstractAppender
 {
@@ -54,6 +55,10 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
     // the appender stats object; we keep the reference because we call writer factory
 
     protected AppenderStatsType appenderStats;
+
+    // the MX bean type for the appender stats object
+
+    private Class<AppenderStatsMXBeanType> appenderStatsMXBeanClass;
 
     // the last time we rotated the writer
 
@@ -97,6 +102,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
         ThreadFactory threadFactory,
         WriterFactory<WriterConfigType,AppenderStatsType> writerFactory,
         AppenderStatsType appenderStats,
+        Class<AppenderStatsMXBeanType> appenderStatsMXBeanClass,
         AppenderConfigType config,
         InternalLogger providedInternalLogger)
     {
@@ -105,6 +111,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
         this.threadFactory = threadFactory;
         this.writerFactory = writerFactory;
         this.appenderStats = appenderStats;
+        this.appenderStatsMXBeanClass = appenderStatsMXBeanClass;
         this.internalLogger = (providedInternalLogger != null)
                             ? providedInternalLogger
                             : new Log4J2InternalLogger(this);
@@ -363,24 +370,20 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
      *  <p>
      *  The name for the bean is consistent with the Log4J <code>LayoutDynamicMBean</code>,
      *  so that it will appear in the hierarchy under the appender.
-     *  <p>
-     *  Note: this method is protected so that it can be avoided during unit tests.
      */
     protected void registerStatisticsBean()
     {
-        // TODO - implement
+        JMXManager.getInstance().addStatsBean(getName(), appenderStats, appenderStatsMXBeanClass);
     }
 
 
     /**
      *  Unregisters the appender statistics from JMX. This is called when the appender
      *  is closed. Logs but otherwise ignores failure.
-     *  <p>
-     *  Note: this method is protected so that it can be avoided during unit tests.
      */
     protected void unregisterStatisticsBean()
     {
-        // TODO - implement
+        JMXManager.getInstance().removeStatsBean(getName());
     }
 
 

@@ -60,7 +60,7 @@ public class Main
 
         ManagementFactory.getPlatformMBeanServer().createMBean(
                 StatisticsMBean.class.getName(),
-                new ObjectName("log4j:name=Statistics"));
+                new ObjectName("com.kdgregory.log4j.aws:name=Statistics"));
 
         for (int ii = 0 ; ii < numThreads ; ii++)
         {

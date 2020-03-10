@@ -31,6 +31,7 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchConstants;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterFactory;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
+import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatisticsMXBean;
 import com.kdgregory.logging.aws.common.Substitutions;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
@@ -185,7 +186,7 @@ import com.kdgregory.logging.common.util.RotationMode;
  */
 @Plugin(name = "CloudWatchAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class CloudWatchAppender
-extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,CloudWatchWriterConfig>
+extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,CloudWatchWriterStatisticsMXBean,CloudWatchWriterConfig>
 {
 
 //----------------------------------------------------------------------------
@@ -399,6 +400,7 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
             new DefaultThreadFactory("log4j2-cloudwatch"),
             new CloudWatchWriterFactory(),
             new CloudWatchWriterStatistics(),
+            CloudWatchWriterStatisticsMXBean.class,
             config,
             internalLogger);
 

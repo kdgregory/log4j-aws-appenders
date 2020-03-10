@@ -30,10 +30,10 @@ import com.kdgregory.logging.common.util.InternalLogger;
 public class Log4J2InternalLogger
 implements InternalLogger
 {
-    private AbstractAppender<?,?,?> appender;
+    private AbstractAppender<?,?,?,?> appender;
 
 
-    public Log4J2InternalLogger(AbstractAppender<?,?,?> appender)
+    public Log4J2InternalLogger(AbstractAppender<?,?,?,?> appender)
     {
         this.appender = appender;
     }
@@ -56,6 +56,7 @@ implements InternalLogger
     @Override
     public void error(String message, Throwable ex)
     {
-        appender.error(message, ex);
+        if (appender != null)   appender.error(message, ex);
+        else                    StatusLogger.getLogger().error(message, ex);
     }
 }

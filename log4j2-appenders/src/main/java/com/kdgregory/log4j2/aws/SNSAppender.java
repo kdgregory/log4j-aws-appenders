@@ -30,6 +30,7 @@ import com.kdgregory.log4j2.aws.internal.SNSAppenderConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterFactory;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
+import com.kdgregory.logging.aws.sns.SNSWriterStatisticsMXBean;
 import com.kdgregory.logging.aws.common.Substitutions;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
@@ -132,7 +133,7 @@ import com.kdgregory.logging.common.util.InternalLogger;
  */
 @Plugin(name = "SNSAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class SNSAppender
-extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterConfig>
+extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterStatisticsMXBean,SNSWriterConfig>
 {
 
 //----------------------------------------------------------------------------
@@ -296,6 +297,7 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterConfig>
             new DefaultThreadFactory("log4j2-kinesis"),
             new SNSWriterFactory(),
             new SNSWriterStatistics(),
+            SNSWriterStatisticsMXBean.class,
             config,
             internalLogger);
     }

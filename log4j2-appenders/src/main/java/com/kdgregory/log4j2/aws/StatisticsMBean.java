@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logback.aws;
+package com.kdgregory.log4j2.aws;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import com.kdgregory.logback.aws.internal.JMXManager;
+import com.kdgregory.log4j2.aws.internal.JMXManager;
 import com.kdgregory.logging.common.jmx.AbstractMarkerBean;
 
 
@@ -40,7 +40,6 @@ import com.kdgregory.logging.common.jmx.AbstractMarkerBean;
 public class StatisticsMBean
 extends AbstractMarkerBean
 {
-
     @Override
     protected void onRegister(MBeanServer server, ObjectName beanName)
     {
@@ -54,3 +53,4 @@ extends AbstractMarkerBean
         JMXManager.getInstance().removeMarkerBean(this);
     }
 }
+

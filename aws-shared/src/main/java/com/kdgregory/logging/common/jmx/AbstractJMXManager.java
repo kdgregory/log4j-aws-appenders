@@ -54,7 +54,7 @@ public abstract class AbstractJMXManager
 
     protected InternalLogger logger;
 
-    protected Map<Object,List<MBeanServer>> regisrations
+    protected Map<Object,List<MBeanServer>> registrations
         = new IdentityHashMap<Object,List<MBeanServer>>();
 
     // note: we only allow one registration per server
@@ -97,11 +97,11 @@ public abstract class AbstractJMXManager
         }
         registrationNames.put(server, registrationName.getCanonicalName());
 
-        List<MBeanServer> servers = regisrations.get(bean);
+        List<MBeanServer> servers = registrations.get(bean);
         if (servers == null)
         {
             servers = new ArrayList<MBeanServer>();
-            regisrations.put(bean, servers);
+            registrations.put(bean, servers);
         }
         servers.add(server);
 
@@ -117,7 +117,7 @@ public abstract class AbstractJMXManager
      */
     public synchronized void removeMarkerBean(Object bean)
     {
-        List<MBeanServer> servers = regisrations.remove(bean);
+        List<MBeanServer> servers = registrations.remove(bean);
         if (servers == null)
         {
             logger.warn("JMXManager: attempt to remove unregistered StatisticsMBean");
@@ -153,7 +153,7 @@ public abstract class AbstractJMXManager
         statsBeans.put(appenderName, statsBean);
         statsBeanTypes.put(appenderName, statsBeanClass);
 
-        for (List<MBeanServer> servers : regisrations.values())
+        for (List<MBeanServer> servers : registrations.values())
         {
             for (MBeanServer server : servers)
             {
@@ -172,7 +172,7 @@ public abstract class AbstractJMXManager
         statsBeans.remove(appenderName);
         statsBeanTypes.remove(appenderName);
 
-        for (List<MBeanServer> servers : regisrations.values())
+        for (List<MBeanServer> servers : registrations.values())
         {
             for (MBeanServer server : servers)
             {

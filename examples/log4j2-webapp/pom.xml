@@ -3,28 +3,31 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.kdgregory.logging</groupId>
-    <artifactId>log4j2-aws-appenders-example</artifactId>
+    <artifactId>log4j2-aws-appenders-webapp</artifactId>
     <version>2.3.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>war</packaging>
 
-    <name>Log4J 2.x Example</name>
+    <name>Log4J 2.x Webapp Example</name>
 
     <description>
-        This is an example program that generates logging events with different levels,
-        and uses the AWS appenders to write them to various destinations.
+        This is an example web-application that uses the AWS appenders and
+        demonstrates best practices for webapp logging. Note that it uses
+        a rather old servlet spec.
     </description>
 
 
     <properties>
+        <jdk.version>1.7</jdk.version>
+
         <!-- build configuration props, because Maven can't pick a sensible default -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <aws-sdk.version>1.11.495</aws-sdk.version>
         <log4j2.version>2.10.0</log4j2.version>
+        <servlet-api.version>3.0.1</servlet-api.version>
 
         <plugin.compiler.version>3.1</plugin.compiler.version>
-        <plugin.shade.version>3.1.1</plugin.shade.version>
     </properties>
 
 
@@ -43,6 +46,16 @@
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
+            <version>${log4j2.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j2.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-web</artifactId>
             <version>${log4j2.version}</version>
         </dependency>
 
@@ -66,6 +79,13 @@
             <artifactId>aws-java-sdk-sts</artifactId>
             <version>${aws-sdk.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>${servlet-api.version}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
 
@@ -76,41 +96,10 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${plugin.compiler.version}</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>${jdk.version}</source>
+                    <target>${jdk.version}</target>
                     <debug>true</debug>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>${plugin.shade.version}</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <transformers>
-                                <transformer
-                                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.kdgregory.log4j2.aws.example.Main</mainClass>
-                                </transformer>
-                            </transformers>
-                            <!-- see https://stackoverflow.com/a/52923153 -->
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>**/Log4j2Plugins.dat</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

@@ -26,7 +26,8 @@ import com.kdgregory.logging.common.LogWriter;
  */
 public class DefaultThreadFactory implements ThreadFactory
 {
-    private AtomicInteger threadNumber = new AtomicInteger(0);
+    private static AtomicInteger threadNumber = new AtomicInteger(0);
+
     private String appenderName;
 
     public DefaultThreadFactory(String appenderName)

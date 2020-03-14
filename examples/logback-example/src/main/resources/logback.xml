@@ -1,4 +1,4 @@
-<configuration debug="true">
+<configuration debug="false">
 
     <jmxConfigurator />
 

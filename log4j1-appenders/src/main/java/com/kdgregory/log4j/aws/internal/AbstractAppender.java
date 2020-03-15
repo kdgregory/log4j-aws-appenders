@@ -654,32 +654,30 @@ extends AppenderSkeleton
 
         synchronized (appendLock)
         {
-            if (writer.isMessageTooLarge(message))
-            {
-                internalLogger.warn("attempted to append a message > AWS batch size; ignored");
-                return;
-            }
-
             long now = System.currentTimeMillis();
             if (shouldRotate(now))
             {
                 long secondsSinceLastRotation = (now - lastRotationTimestamp) / 1000;
                 internalLogger.debug("rotating: messagesSinceLastRotation = " + messagesSinceLastRotation + ", secondsSinceLastRotation = " + secondsSinceLastRotation);
                 rotate();
+                if (writer == null)
+                {
+                    internalLogger.error("failed to rotate writer", null);
+                    return;
+                }
             }
 
-            if (writer == null)
+            if (writer.isMessageTooLarge(message))
             {
-                internalLogger.error("appender not properly configured: writer is null", null);
+                internalLogger.warn("attempted to append a message > AWS batch size; ignored");
+                return;
             }
-            else
-            {
-                writer.addMessage(message);
-                messagesSinceLastRotation++;
-            }
+
+            writer.addMessage(message);
+            messagesSinceLastRotation++;
         }
 
-        // for Log4J append() happens within a big synchronized block managed by the framework
+        // for Log4J, append() happens within a big synchronized block managed by the framework
         // however, logically, I want to separate putting a message on the queue from sending it
         if (synchronous)
         {

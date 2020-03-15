@@ -398,29 +398,27 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
 
         synchronized (appendLock)
         {
-            if (writer.isMessageTooLarge(message))
-            {
-                internalLogger.warn("attempted to append a message > AWS batch size; ignored");
-                return;
-            }
-
             long now = System.currentTimeMillis();
             if (shouldRotate(now))
             {
                 long secondsSinceLastRotation = (now - lastRotationTimestamp) / 1000;
                 internalLogger.debug("rotating: messagesSinceLastRotation = " + messagesSinceLastRotation + ", secondsSinceLastRotation = " + secondsSinceLastRotation);
                 rotate();
+                if (writer == null)
+                {
+                    internalLogger.error("failed to rotate writer", null);
+                    return;
+                }
             }
 
-            if (writer == null)
+            if (writer.isMessageTooLarge(message))
             {
-                internalLogger.error("appender not properly configured: writer is null", null);
+                internalLogger.warn("attempted to append a message > AWS batch size; ignored");
+                return;
             }
-            else
-            {
-                writer.addMessage(message);
-                messagesSinceLastRotation++;
-            }
+
+            writer.addMessage(message);
+            messagesSinceLastRotation++;
         }
 
         // by processing the batch outside of the appendLock (and relying on writer internal

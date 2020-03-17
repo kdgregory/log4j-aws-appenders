@@ -32,6 +32,23 @@ import com.kdgregory.logging.common.util.RotationMode;
 
 /**
  *  Common implementation code that's shared between appenders.
+ *  <p>
+ *  For the most part, appenders have the same behavior: they initialize, transform
+ *  log messages, and shut down. Most of the code to do that lives here, with a few
+ *  hooks that are implemented in the appender proper.
+ *  <p>
+ *  Some behaviors, such as log rotation, are implemented here even if they are not
+ *  supported by all appenders. The appenders that do not support those behaviors are
+ *  responsible for disabling them. For example, an appender that does not support log
+ *  rotation should throw if {@link #setRotationMode} is called.
+ *  <p>
+ *  Most of the member variables defined by this class are protected. This is intended
+ *  to support testing. If you decide to subclass and access those variables, well,
+ *  this is an internal class: they may go away.
+ *  <p>
+ *  Log4J2, like Logback, explicitly initializes the appender before use. The only
+ *  strangeness here is in stop(): there are two versions defined by the interface,
+ *  but current versions of Log4J call only one of them.
  */
 public abstract class AbstractAppender<
     AppenderConfigType extends AbstractAppenderConfig,
@@ -184,9 +201,9 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
     public void stop()
     {
         // TODO - the framework should never call this code; this exception
-        //        is here to catch any copy-paste errors in tests, and can
-        //        be removed after unit tests are fully written
-        throw new IllegalStateException("stop() called -- don't do that");
+        //        is here to catch any copy-paste errors in tests, but will
+        //        also serve to identify an incorrect framework version
+        throw new IllegalStateException("stop() called -- should never happen with Log4J > 2.8");
     }
 
 
@@ -385,7 +402,6 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
     {
         JMXManager.getInstance().removeStatsBean(getName());
     }
-
 
 
     private void internalAppend(LogMessage message)

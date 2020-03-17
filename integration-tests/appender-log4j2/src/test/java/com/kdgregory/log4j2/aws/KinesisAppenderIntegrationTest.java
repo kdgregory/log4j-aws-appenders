@@ -30,12 +30,12 @@ import com.kdgregory.logging.test.AbstractKinesisAppenderIntegrationTest;
 import com.kdgregory.logging.testhelpers.CommonTestHelper;
 import com.kdgregory.logging.testhelpers.KinesisTestHelper;
 
-import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 
 import com.kdgregory.log4j2.aws.testhelpers.MessageWriter;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -138,6 +138,13 @@ extends AbstractKinesisAppenderIntegrationTest
         MDC.clear();
     }
 
+
+    @AfterClass
+    public static void afterClass()
+    {
+        AbstractKinesisAppenderIntegrationTest.afterClass();
+    }
+
 //----------------------------------------------------------------------------
 //  Tests
 //----------------------------------------------------------------------------
@@ -198,7 +205,7 @@ extends AbstractKinesisAppenderIntegrationTest
     {
         // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
         //         if that is your default, then the test will fail
-        AmazonKinesis altClient = AmazonKinesisClientBuilder.standard().withRegion("us-east-2").build();
+        altClient = AmazonKinesisClientBuilder.standard().withRegion("us-east-2").build();
         KinesisTestHelper altTestHelper = new KinesisTestHelper(altClient, "testAlternateRegion");
 
         // have to delete any eisting stream before initializing logger

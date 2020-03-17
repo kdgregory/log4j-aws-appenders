@@ -40,7 +40,8 @@ import com.kdgregory.logging.testhelpers.MessageWriter;
  */
 public abstract class AbstractCloudWatchAppenderIntegrationTest
 {
-    // CHANGE THIS IF YOU CHANGE THE CONFIG
+    // change these if you change the config
+    protected final static String BASE_LOGGROUP_NAME = "AppenderIntegrationTest";
     protected final static String LOGSTREAM_BASE  = "AppenderTest";
 
     // initialized here, and again by init() after the logging framework has been initialized
@@ -51,6 +52,9 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
 
     // this one is used solely by the static factory test
     protected static AWSLogs factoryClient;
+
+    // this one is used by the alternate region test
+    protected AWSLogs altClient;
 
     protected CloudWatchTestHelper testHelper;
 
@@ -103,6 +107,8 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
 
 //----------------------------------------------------------------------------
 //  JUnit Scaffolding
+//  I'm assuming that JUnit doesn't go out of its way to find annotations on
+//  superclasses, so implementation classes have to replicate these functions
 //----------------------------------------------------------------------------
 
     public static void beforeClass()
@@ -113,13 +119,29 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
 
     public void tearDown()
     {
+        // this is a static variable but set by a single test, so is cleared likewise
         if (factoryClient != null)
         {
             factoryClient.shutdown();
             factoryClient = null;
         }
 
+        if (altClient != null)
+        {
+            altClient.shutdown();
+            altClient = null;
+        }
+
         localLogger.info("finished");
+    }
+
+
+    public static void afterClass()
+    {
+        if (helperClient != null)
+        {
+            helperClient.shutdown();
+        }
     }
 
 //----------------------------------------------------------------------------

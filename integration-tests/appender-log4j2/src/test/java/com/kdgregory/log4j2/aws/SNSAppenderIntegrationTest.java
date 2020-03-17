@@ -33,6 +33,7 @@ import com.kdgregory.logging.testhelpers.SNSTestHelper;
 import com.kdgregory.log4j2.aws.testhelpers.MessageWriter;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -136,6 +137,13 @@ extends AbstractSNSAppenderIntegrationTest
     {
         super.tearDown();
         MDC.clear();
+    }
+
+    
+    @AfterClass
+    public static void afterClass()
+    {
+        AbstractSNSAppenderIntegrationTest.afterClass();
     }
 
 //----------------------------------------------------------------------------

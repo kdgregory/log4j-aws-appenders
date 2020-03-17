@@ -17,6 +17,7 @@ package com.kdgregory.log4j.aws;
 import java.net.URL;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -30,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import net.sf.kdgcommons.lang.ClassUtil;
 
-import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 
 import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
@@ -134,6 +134,13 @@ extends AbstractKinesisAppenderIntegrationTest
         MDC.clear();
     }
 
+
+    @AfterClass
+    public static void afterClass()
+    {
+        AbstractKinesisAppenderIntegrationTest.afterClass();
+    }
+
 //----------------------------------------------------------------------------
 //  Tests
 //
@@ -197,7 +204,7 @@ extends AbstractKinesisAppenderIntegrationTest
     {
         // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
         //         if that is your default, then the test will fail
-        AmazonKinesis altClient = AmazonKinesisClientBuilder.standard().withRegion("us-east-2").build();
+        altClient = AmazonKinesisClientBuilder.standard().withRegion("us-east-2").build();
         KinesisTestHelper altTestHelper = new KinesisTestHelper(altClient, "testAlternateRegion");
 
         // deleting the alternate stream here for consistency with Logback test; it isn't necessary

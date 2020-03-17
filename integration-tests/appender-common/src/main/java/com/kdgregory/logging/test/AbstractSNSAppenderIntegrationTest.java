@@ -44,7 +44,12 @@ public abstract class AbstractSNSAppenderIntegrationTest
     protected static AmazonSQS helperSQSclient;
 
     // this one is used solely by the static factory test
+    // (which doesn't need an SQS queue because we don't send anything)
     protected static AmazonSNS factoryClient;
+    
+    // these are for the alternate region test
+    protected AmazonSNS altSNSclient;
+    protected AmazonSQS altSQSclient;
 
     protected SNSTestHelper testHelper;
 
@@ -103,17 +108,43 @@ public abstract class AbstractSNSAppenderIntegrationTest
         helperSNSclient = AmazonSNSClientBuilder.defaultClient();
         helperSQSclient = AmazonSQSClientBuilder.defaultClient();
     }
+    
 
-
-    protected void tearDown()
+    public void tearDown()
     {
+        // this is a static variable but set by a single test, so is cleared likewise
         if (factoryClient != null)
         {
             factoryClient.shutdown();
             factoryClient = null;
         }
 
+        if (altSNSclient != null)
+        {
+            altSNSclient.shutdown();
+            altSNSclient = null;
+        }
+
+        if (altSQSclient != null)
+        {
+            altSQSclient.shutdown();
+            altSQSclient = null;
+        }
+
         localLogger.info("finished");
+    }
+
+
+    public static void afterClass()
+    {
+        if (helperSNSclient != null)
+        {
+            helperSNSclient.shutdown();
+        }
+        if (helperSQSclient != null)
+        {
+            helperSQSclient.shutdown();
+        }
     }
 
 //----------------------------------------------------------------------------
@@ -280,8 +311,8 @@ public abstract class AbstractSNSAppenderIntegrationTest
         // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
         //         if that is your default, then the test will fail
 
-        AmazonSNS altSNSclient = AmazonSNSClientBuilder.standard().withRegion("us-east-2").build();
-        AmazonSQS altSQSclient = AmazonSQSClientBuilder.standard().withRegion("us-east-2").build();
+        altSNSclient = AmazonSNSClientBuilder.standard().withRegion("us-east-2").build();
+        altSQSclient = AmazonSQSClientBuilder.standard().withRegion("us-east-2").build();
         SNSTestHelper altTestHelper = new SNSTestHelper(testHelper, altSNSclient, altSQSclient);
 
         localLogger.info("writing messages");

@@ -18,6 +18,7 @@ package com.kdgregory.logging.aws;
 import java.util.List;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -156,6 +157,15 @@ public class SNSLogWriterIntegrationTest
         localLogger.info("finished");
         MDC.clear();
     }
+
+
+    @AfterClass
+    public static void afterClass()
+    {
+        helperSNSclient.shutdown();
+        helperSQSclient.shutdown();
+    }
+
 
 //----------------------------------------------------------------------------
 //  Tests

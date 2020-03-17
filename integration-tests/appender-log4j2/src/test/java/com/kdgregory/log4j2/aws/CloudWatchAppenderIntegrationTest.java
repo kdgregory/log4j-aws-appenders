@@ -29,12 +29,12 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.test.AbstractCloudWatchAppenderIntegrationTest;
 import com.kdgregory.logging.testhelpers.CloudWatchTestHelper;
 
-import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 
 import com.kdgregory.log4j2.aws.testhelpers.MessageWriter;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -44,7 +44,6 @@ import static org.junit.Assert.*;
 public class CloudWatchAppenderIntegrationTest
 extends AbstractCloudWatchAppenderIntegrationTest
 {
-    private final static String BASE_LOGGROUP_NAME = "AppenderIntegrationTest";
 
 //----------------------------------------------------------------------------
 //  Helpers
@@ -143,6 +142,13 @@ extends AbstractCloudWatchAppenderIntegrationTest
         MDC.clear();
     }
 
+
+    @AfterClass
+    public static void afterClass()
+    {
+        AbstractCloudWatchAppenderIntegrationTest.afterClass();
+    }
+
 //----------------------------------------------------------------------------
 //  Test Cases
 //----------------------------------------------------------------------------
@@ -208,7 +214,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
     {
         // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
         //         if that is your default, then the test will fail
-        AWSLogs altClient = AWSLogsClientBuilder.standard().withRegion("us-east-2").build();
+        altClient = AWSLogsClientBuilder.standard().withRegion("us-east-2").build();
         CloudWatchTestHelper altTestHelper = new CloudWatchTestHelper(altClient, BASE_LOGGROUP_NAME, "testAlternateRegion");
 
         // must delete existing group before logger initialization to avoid race condition

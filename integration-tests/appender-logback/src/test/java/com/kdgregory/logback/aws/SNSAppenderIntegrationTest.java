@@ -17,6 +17,7 @@ package com.kdgregory.logback.aws;
 import java.net.URL;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -136,6 +137,13 @@ extends AbstractSNSAppenderIntegrationTest
     {
         super.tearDown();
         MDC.clear();
+    }
+
+    
+    @AfterClass
+    public static void afterClass()
+    {
+        AbstractSNSAppenderIntegrationTest.afterClass();
     }
 
 //----------------------------------------------------------------------------

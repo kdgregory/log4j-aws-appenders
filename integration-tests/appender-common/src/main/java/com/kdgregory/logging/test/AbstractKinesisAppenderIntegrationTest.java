@@ -43,6 +43,9 @@ public abstract class AbstractKinesisAppenderIntegrationTest
 
     // this one is used solely by the static factory test
     protected static AmazonKinesis factoryClient;
+    
+    // this one is used by the alternate region test
+    protected static AmazonKinesis altClient; 
 
     // initialized here, and again by init() after the logging framework has been initialized
     protected Logger localLogger = LoggerFactory.getLogger(getClass());
@@ -101,14 +104,31 @@ public abstract class AbstractKinesisAppenderIntegrationTest
     }
 
 
-    protected void tearDown()
+    public void tearDown()
     {
+        // this is a static variable but set by a single test, so is cleared likewise
         if (factoryClient != null)
         {
             factoryClient.shutdown();
             factoryClient = null;
         }
+
+        if (altClient != null)
+        {
+            altClient.shutdown();
+            altClient = null;
+        }
+
         localLogger.info("finished");
+    }
+
+
+    public static void afterClass()
+    {
+        if (helperClient != null)
+        {
+            helperClient.shutdown();
+        }
     }
 
 //----------------------------------------------------------------------------

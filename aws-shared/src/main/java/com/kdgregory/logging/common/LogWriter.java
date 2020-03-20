@@ -119,6 +119,13 @@ extends Runnable
      *  <code>run()</code> method.
      */
     void stop();
+    
+    
+    /**
+     *  Waits until the writer thread has stopped, the timeout has expired, or the
+     *  calling thread is interrupted.
+     */
+    void waitUntilStopped(long millisToWait);
 
 
     /**

@@ -259,6 +259,24 @@ implements LogWriter
 
 
     @Override
+    public void waitUntilStopped(long millisToWait)
+    {
+        try
+        {
+            // this test avoids hung tests
+            if (dispatchThread != Thread.currentThread())
+            {
+                dispatchThread.join(millisToWait);
+            }
+        }
+        catch (InterruptedException ignored)
+        {
+            // return silently
+        }
+    }
+
+
+    @Override
     public void cleanup()
     {
         stopAWSClient();

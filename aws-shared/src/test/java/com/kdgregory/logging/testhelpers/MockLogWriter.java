@@ -143,6 +143,22 @@ implements LogWriter
 
 
     @Override
+    public void waitUntilStopped(long millisToWait)
+    {
+        try
+        {
+            if ((writerThread != null) && (writerThread != Thread.currentThread()))
+            {
+                writerThread.join(millisToWait);
+            }
+        }
+        catch (InterruptedException ex)
+        {
+            throw new RuntimeException("unexpected interrupt");
+        }
+    }
+
+    @Override
     public void cleanup()
     {
         cleanupInvocationCount++;

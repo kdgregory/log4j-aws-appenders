@@ -200,9 +200,9 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
     @Override
     public void stop()
     {
-        // TODO - the framework should never call this code; this exception
-        //        is here to catch any copy-paste errors in tests, but will
-        //        also serve to identify an incorrect framework version
+        // the framework should never call this code; this exception
+        // is here to catch any copy-paste errors in tests, but will
+        // also serve to identify an incorrect framework version
         throw new IllegalStateException("stop() called -- should never happen with Log4J > 2.8");
     }
 
@@ -214,7 +214,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
         {
             if (writer != null)
             {
-                stopWriter();
+                stopWriter(timeout, timeUnit);
             }
 
             unregisterStatisticsBean();
@@ -268,7 +268,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
     {
         synchronized (initializationLock)
         {
-            stopWriter();
+            stopWriter(0, null);
             sequence.incrementAndGet();
             startWriter();
         }
@@ -345,9 +345,9 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
 
 
     /**
-     *  Closes the current writer.
+     *  Closes the current writer and optionally waits for it to shut down.
      */
-    private void stopWriter()
+    private void stopWriter(long timeout, TimeUnit timeUnit)
     {
         synchronized (initializationLock)
         {
@@ -370,6 +370,11 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
                 if (config.isSynchronous())
                 {
                     writer.cleanup();
+                }
+
+                if (timeUnit != null)
+                {
+                    writer.waitUntilStopped(timeUnit.toMillis(timeout));
                 }
             }
             catch (Exception ex)

@@ -44,7 +44,7 @@ log4j.appender.kinesis.batchDelay=500
 log4j.appender.kinesis.layout=com.kdgregory.log4j.aws.JsonLayout
 log4j.appender.kinesis.layout.enableHostname=true
 log4j.appender.kinesis.layout.enableLocation=true
-log4j.appender.kinesis.layout.tags=applicationName={env:APP_NAME}
+log4j.appender.kinesis.layout.tags=applicationName={env:APP_NAME},deployment={sysprop:deployment:dev}
 ```
 
 
@@ -58,9 +58,32 @@ log4j.appender.kinesis.layout.tags=applicationName={env:APP_NAME}
     <layout class="com.kdgregory.logback.aws.JsonLayout">
         <enableHostname>true</enableHostname>
         <enableLocation>true</enableLocation>
-        <tags>applicationName={env:APP_NAME}</tags>
+        <tags>applicationName={env:APP_NAME},deployment={sysprop:deployment:dev}</tags>
     </layout>
 </appender>
+```
+
+
+### Example: Log4J2
+
+Note that this example uses Log4J [lookups](https://logging.apache.org/log4j/2.x/manual/lookups.html#EnvironmentLookup)
+in addition to library-provided substitutions. It also uses the Log4J [JsonLayout](https://logging.apache.org/log4j/2.x/manual/layouts.html#JSONLayout)
+with additional fields, including a `timestamp` field that's compatible with the Log4J1 and Logback
+`JsonLayout` implementations.
+
+```
+<KinesisAppender name="KINESIS">
+    <streamName>logging-stream</streamName>
+    <partitionKey>{pid}</partitionKey>
+    <batchDelay>500</batchDelay>
+    <JsonLayout complete="false" compact="true" eventEol="true" properties="true" locationInfo="true">
+        <KeyValuePair key="applicationName" value="${env:APP_NAME}" />
+        <KeyValuePair key="environment" value="${sys:deployment:-dev}" />
+        <KeyValuePair key="processId" value="${awslogs:pid}" />
+        <KeyValuePair key="hostname" value="${awslogs:hostname}" />
+        <KeyValuePair key="timestamp" value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSS'Z'}" />
+    </JsonLayout>
+</KinesisAppender>
 ```
 
 

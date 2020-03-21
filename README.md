@@ -1,7 +1,8 @@
 # log4j-aws-appenders
 
-Appenders for [Log4J 1.x](http://logging.apache.org/log4j/1.2/index.html) and
-[Logback](https://logback.qos.ch/) that write to various AWS destinations:
+Appenders for [Log4J 1.x](http://logging.apache.org/log4j/1.2/index.html),
+[Logback](https://logback.qos.ch/), and [Log4J 2.x](https://logging.apache.org/log4j/2.x/)
+that write to various AWS destinations:
 
 * [CloudWatch Logs](docs/cloudwatch.md): basic centralized log management, providing keyword and time range search.
 * [Kinesis Streams](docs/kinesis.md): the first step in a [logging pipeline](https://www.kdgregory.com/index.php?page=aws.loggingPipeline)
@@ -26,10 +27,11 @@ The appender JARs are published on Maven Central. You can find the latest versio
 following links:
 
 * [Log4J 1.x](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.kdgregory.logging%22%20AND%20a%3A%22log4j1-aws-appenders%22)
+* [Log4J 2.x](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.kdgregory.logging%22%20AND%20a%3A%22log4j2-aws-appenders%22)
 * [Logback](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.kdgregory.logging%22%20AND%20a%3A%22logback-aws-appenders%22)
 
-See the documentation for each appender to see how to configure that appender. You can
-also look at the [example projects](examples).
+See the documentation for each appender for configuration. You can also look at the
+[example projects](examples).
 
 
 ### Versions
@@ -63,13 +65,13 @@ The minimum supported dependency versions are:
   This is the first version that implements `LoggingEvent.getTimeStamp()`, which
   is needed to order messages when sending to AWS. It's been around since 2010,
   so if you haven't upgraded already you should.
-* Log4J 2.x: 2.8
-  This version added some convenience methods/constants that I found useful. Even
-  without them, the earliest version that I could use was 2.7, which introduced a
-  breaking change to `AbstractAppender`.
+* Log4J 2.x: 2.10.0 
+  This is the first version that supports custom key/value pairs for `JsonLayout`.
+  If that's not important to you, the library will work with version 2.8 (which
+  had a breaking change in backwards compatibility).
 * Logback: 1.2.0
   This version is required to support `JsonAccessLayout`. If you don't use that,
-  version 1.0.0 is sufficient.
+  version 1.0.0 will work.
 * AWS SDK: 1.11.0
   The appenders will work with all releases in the 1.11.x sequence. If you're using
   a version that has client builders, they will be used to create service clients;
@@ -87,6 +89,6 @@ are found in common libraries.
 
 [Frequently Asked Questions](FAQ.md)
 
-[Design Documentation](docs/design.md)
+[Design Documentation](docs/design.md) and [Implementation Notes](docs/implementation.md)
 
-[If you want to build it yourself](docs/build.md)
+If you want to build it yourself, [read this](docs/build.md)

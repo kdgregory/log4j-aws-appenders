@@ -35,12 +35,13 @@ Name                | Description
 
 ```
 log4j.appender.cloudwatch=com.kdgregory.log4j.aws.CloudWatchAppender
-log4j.appender.cloudwatch.logGroup={env:APP_NAME}-{sysprop:deployment}
-log4j.appender.cloudwatch.logStream={hostname}-{startupTimestamp}
+log4j.appender.cloudwatch.logGroup={env:APP_NAME}-{sysprop:deployment:dev}
+log4j.appender.cloudwatch.logStream={hostname}-{startupTimestamp}-{sequence}
 log4j.appender.cloudwatch.rotationMode=daily
+log4j.appender.cloudwatch.dedicatedWriter=true
 
 log4j.appender.cloudwatch.layout=org.apache.log4j.PatternLayout
-log4j.appender.cloudwatch.layout.ConversionPattern=%d [%t] %-5p %c %x - %m%n
+log4j.appender.cloudwatch.layout.ConversionPattern=%d [%t] %-5p - %c - %m%n
 ```
 
 
@@ -48,13 +49,30 @@ log4j.appender.cloudwatch.layout.ConversionPattern=%d [%t] %-5p %c %x - %m%n
 
 ```
 <appender name="CLOUDWATCH" class="com.kdgregory.logback.aws.CloudWatchAppender">
-    <logGroup>{env:APP_NAME}-{sysprop:deployment}</logGroup>
-    <logStream>{hostname}-{startupTimestamp}</logStream>
+    <logGroup>{env:APP_NAME}-{sysprop:deployment:dev}</logGroup>
+    <logStream>{hostname}-{startupTimestamp}-{sequence}</logStream>
     <rotationMode>daily</rotationMode>
+    <dedicatedWriter>true</dedicatedWriter>
     <layout class="ch.qos.logback.classic.PatternLayout">
-        <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level - %logger{36} - %msg%n</pattern>
     </layout>
 </appender>
+```
+
+
+### Example: Log4J2
+
+Note that this example uses Log4J [lookups](https://logging.apache.org/log4j/2.x/manual/lookups.html#EnvironmentLookup)
+in addition to library-provided substitutions.
+
+```
+<CloudWatchAppender name="CLOUDWATCH">
+    <logGroup>${env:APP_NAME}-${sys:deployment:-dev}</logGroup>
+    <logStream>{hostname}-{startupTimestamp}-{sequence}</logStream>
+    <rotationMode>daily</rotationMode>
+    <dedicatedWriter>true</dedicatedWriter>
+    <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %p - %c - %m" />
+</CloudWatchAppender>
 ```
 
 
@@ -88,7 +106,7 @@ the log streams that held those messages; you may end up with a lot of empty str
 up those streams, you can use [this Lambda](https://github.com/kdgregory/aws-misc/tree/master/lambda/cloudwatch-log-cleanup)).
 
 Also be aware that you can't pick any arbitrary number of days for this parameter: the
-[CloudWatch API](: see https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutRetentionPolicy.html)
+[CloudWatch API doc](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutRetentionPolicy.html)
 lists allowable values, and the appender will check your configured value against the
 list. If you pick an incorrect value, an error will be logged and the setting will be
 ignored.

@@ -6,10 +6,12 @@ and visualize log data.  However, Elasticsearch wants JSON as input, and while y
 parse text logs, it's faster and less error-prone to simply send JSON.
 
 This layout transforms the raw logging event into JSON, adding optional information such as the server's
-hostname, EC2 instance tags, and user-defined metadata. You can use it with any appender, not just the
+hostname, EC2 instance ID, and user-defined metadata. You can use it with any appender, not just the
 ones in this library.
 
 For Logback, there's also [JsonAccessLayout](jsonaccesslayout.md), which similarly formats access logs.
+
+The Log4J 2.x library does not provide this class; see [below](#log4j2_support) for more information.
 
 
 ## Configuration
@@ -103,3 +105,65 @@ Which, when pretty-printed, looks like this:
     "timestamp": "2018-09-08T18:41:22.476Z"
 }
 ```
+
+## Log4J2 Support
+
+Log4J 2.x provides its own [JsonLayout](https://logging.apache.org/log4j/2.x/log4j-core/apidocs/org/apache/logging/log4j/core/layout/JsonLayout.html).
+The output of the Log4J layout does not use the same field names as the JSON layout from this
+project, but offers the ability to customize the output with additional fields. As a result,
+I decided to not implement the project's layout manager for Log4J2. Instead, you can get
+almost the same results using the following configuration:
+
+```
+<JsonLayout complete="false" compact="true" eventEol="true" properties="true" locationInfo="true">
+    <KeyValuePair key="timestamp" value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSS'Z'}" />
+    <KeyValuePair key="processId" value="${awslogs:pid}" />
+    <KeyValuePair key="hostname" value="${awslogs:hostname}" />
+    <KeyValuePair key="applicationName" value="Example" />
+    <KeyValuePair key="environment" value="${sys:environment:-dev}" />
+    <KeyValuePair key="runDate" value="${date:yyyy-MM-dd}" />
+</JsonLayout>
+```
+
+The output (again pretty-printed) looks like this:
+
+```
+{
+	"timeMillis": 1584102479182,
+	"thread": "example-0",
+	"level": "DEBUG",
+	"loggerName": "com.kdgregory.log4j2.aws.example.Main",
+	"message": "value is 52",
+	"endOfBatch": false,
+	"loggerFqcn": "org.apache.logging.log4j.spi.AbstractLogger",
+	"contextMap": {},
+	"threadId": 12,
+	"threadPriority": 5,
+	"source": {
+		"class": "com.kdgregory.log4j2.aws.example.Main$LogGeneratorRunnable",
+		"method": "updateValue",
+		"file": "Main.java",
+		"line": 115
+	},
+	"timestamp": "2020-03-13T08:27:59.182Z",
+	"processId": "18816",
+	"hostname": "ithilien",
+	"applicationName": "Example",
+	"environment": "dev",
+	"runDate": "2020-03-13"
+}
+```
+
+Some things to note:
+
+* This example uses the `awslogs` substitutions to retrieve process ID and hostname; see
+  [substitutions](substitutions.md#log4j2-support) for more information.
+* The Log4J2 `JsonLayout` writes the event timestamp as `timeMillis`, a count of milliseconds
+  since the epoch. To maintain consistency with the Logback and Log4J1 `JsonLayout` I added a
+  `timestamp` field, and used a Log4J2 substitution to format it as ISO-8601 (to avoid
+  confusing Elasticsearch, which wants a single timestamp field per index).
+* The Log4J2 `JsonLayout` writes the logger name as `loggerName`, thread as `threadId`, MDC as
+  `contextMap`, and location information as `source`. These names, along with the fields inside
+  the location info, are different from those written by the other appenders in this library.
+  If you do field-level searches and have multiple logging libraries in use you will need to
+  look for both.

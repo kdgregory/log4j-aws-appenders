@@ -20,10 +20,12 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import net.sf.kdgcommons.lang.StringUtil;
 import net.sf.kdgcommons.test.StringAsserts;
 
 import com.amazonaws.util.EC2MetadataUtils;
@@ -33,7 +35,28 @@ import com.kdgregory.logging.aws.common.Substitutions;
 
 public class TestSubstitutions
 {
+    // most tests create a Substitutions instance with this date
     private static Date TEST_DATE = new Date(1496082062000L);    // Mon May 29 14:21:02 EDT 2017
+
+    // these are populated by @BeforeClass, using independent implementation
+    // of the logic in Substittions
+    private static String pid;
+    private static String hostname;
+    private static String startupTimestamp;
+
+    @BeforeClass
+    public static void initExpectedValues()
+    {
+        RuntimeMXBean runtimeMxBean = ManagementFactory.getRuntimeMXBean();
+
+        String vmName = runtimeMxBean.getName();
+        pid = StringUtil.extractLeft(vmName, "@");
+        hostname = StringUtil.extractRight(vmName, "@");
+
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+        formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+        startupTimestamp = formatter.format(new Date(runtimeMxBean.getStartTime()));
+    }
 
 
     @Test
@@ -84,13 +107,7 @@ public class TestSubstitutions
     {
         Substitutions subs = new Substitutions(TEST_DATE, 0);
 
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
-        formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-
-        RuntimeMXBean runtimeMxBean = ManagementFactory.getRuntimeMXBean();
-        String expected = formatter.format(new Date(runtimeMxBean.getStartTime()));
-
-        assertEquals(expected, subs.perform("{startupTimestamp}"));
+        assertEquals(startupTimestamp, subs.perform("{startupTimestamp}"));
     }
 
 
@@ -99,8 +116,7 @@ public class TestSubstitutions
     {
         Substitutions subs = new Substitutions(TEST_DATE, 0);
 
-        // rather than duplicate implementation, I'll just assert that we got something like a PID
-        StringAsserts.assertRegex("[0-9]+", subs.perform("{pid}"));
+        assertEquals(pid, subs.perform("{pid}"));
     }
 
 
@@ -109,10 +125,7 @@ public class TestSubstitutions
     {
         Substitutions subs = new Substitutions(TEST_DATE, 0);
 
-        // rather than duplicate implementation, I'll just assert that we got something
-        // more-or-less correct that wasn't "unknown" and consists of acceptable chars
-        StringAsserts.assertRegex("[A-Za-z][A-Za-z0-9._\\-]*", subs.perform("{hostname}"));
-        assertFalse("wasn't unknown", subs.perform("{hostname}").equals("unknown"));
+        assertEquals(hostname, subs.perform("{hostname}"));
     }
 
 
@@ -121,7 +134,7 @@ public class TestSubstitutions
     {
         Substitutions subs = new Substitutions(TEST_DATE, 0);
 
-        StringAsserts.assertRegex("[0-9]+", subs.perform("{aws:accountId}"));
+        StringAsserts.assertRegex("[0-9]{12}", subs.perform("{aws:accountId}"));
     }
 
 
@@ -200,7 +213,7 @@ public class TestSubstitutions
     {
         Substitutions subs = new Substitutions(TEST_DATE, 0);
 
-        assertEquals("{date", subs.perform("{date"));
+        assertEquals("{bogus}", subs.perform("{bogus}"));
     }
 
 
@@ -209,7 +222,7 @@ public class TestSubstitutions
     {
         Substitutions subs = new Substitutions(TEST_DATE, 0);
 
-        assertEquals("{bogus}", subs.perform("{bogus}"));
+        assertEquals("{date", subs.perform("{date"));
     }
 
 

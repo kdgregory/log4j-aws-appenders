@@ -1,4 +1,4 @@
-# Simple Notification Service (SNS)
+# Simple Notification Service (SNS) Appender
 
 The SNS appender is intended to support real-time error notifications, operating concurrently
 with other logging outputs. You would configure the appender to only respond to messages with
@@ -63,6 +63,22 @@ log4j.appender.sns.layout.ConversionPattern=%d %c - %m%n
         <onMismatch>DENY</onMismatch>
     </filter>
 </appender>
+```
+
+
+### Example: Log4J2
+
+Note that this example uses a Log4J [lookup](https://logging.apache.org/log4j/2.x/manual/lookups.html#EnvironmentLookup)
+for the application name rather than the library-provided substitutions. The
+latter is also supported.
+
+```
+<SNSAppender name="SNS">
+    <topicArn>arn:aws:sns:us-east-1:123456789012:LoggingExample</topicArn>
+    <subject>Error from ${env:APP_NAME}</subject>
+    <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] - %c %p - %m%n" />
+    <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+</SNSAppender>
 ```
 
 

@@ -14,18 +14,15 @@
 
 package com.kdgregory.log4j.aws;
 
-import java.net.URL;
+import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
-import static net.sf.kdgcommons.test.StringAsserts.*;
-
 import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
 
 import com.kdgregory.log4j.testhelpers.sns.TestableSNSAppender;
@@ -37,28 +34,13 @@ import com.kdgregory.logging.testhelpers.sns.MockSNSWriter;
  *  These tests exercise appender logic specific to SNSAppender, using a mock log-writer.
  */
 public class TestSNSAppender
+extends AbstractUnitTest<TestableSNSAppender>
 {
-    private Logger logger;
-    private TestableSNSAppender appender;
-
-
-    private void initialize(String testName)
-    throws Exception
+    public TestSNSAppender()
     {
-        String propsName = "TestSNSAppender/" + testName + ".properties";
-        URL config = ClassLoader.getSystemResource(propsName);
-        assertNotNull("was able to retrieve config", config);
-        PropertyConfigurator.configure(config);
-
-        logger = Logger.getLogger(getClass());
-
-        Logger rootLogger = Logger.getRootLogger();
-        appender = (TestableSNSAppender)rootLogger.getAppender("default");
+        super("TestSNSAppender/", "sns");
     }
 
-//----------------------------------------------------------------------------
-//  JUnit stuff
-//----------------------------------------------------------------------------
 
     @Before
     public void setUp()

@@ -114,4 +114,6 @@ shutting down (ie, a scale-in operation): the OS typically gives applications a 
 to gracefully shut themselves down, then sends a SIGKILL to forcibly terminate them.
 
 If you do not want this shutdown hook, you can set the `useShutdownHook` configuration parameter
-to `false`. I can't see any good reason to do this, which is why it's `true` by default.
+to `false`. The only reasons that I can see for doing this (1) when using Log4J2, which offers a
+configurable shutdown timeout, and (2) in a web container, when using a context listener that
+explicitly shuts down the logging framework on undeploy.

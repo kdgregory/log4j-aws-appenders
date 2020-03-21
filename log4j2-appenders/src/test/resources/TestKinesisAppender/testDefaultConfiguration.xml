@@ -1,0 +1,18 @@
+<Configuration status="warn" packages="com.kdgregory.log4j2.testhelpers">
+
+    <Appenders>
+        <TestableKinesisAppender name="KINESIS">
+            <PatternLayout pattern="%m" />
+            <streamName>NoDefault</streamName>
+        </TestableKinesisAppender>
+    </Appenders>
+
+    <Loggers>
+        <Root level="off">
+        </Root>
+        <Logger name="com.kdgregory.log4j2.aws.TestKinesisAppender" level="debug">
+            <AppenderRef ref="KINESIS" />
+        </Logger>
+    </Loggers>
+
+</Configuration>

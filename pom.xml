@@ -4,7 +4,7 @@
 
     <groupId>com.kdgregory.logging</groupId>
     <artifactId>root</artifactId>
-    <version>2.2.2</version>
+    <version>2.3.0</version>
     <packaging>pom</packaging>
 
     <name>AWS Log Appenders Root Build</name>
@@ -17,8 +17,9 @@
         <module>parent</module>
         <module>aws-shared</module>
         <module>log4j1-appenders</module>
+        <module>log4j2-appenders</module>
         <module>logback-appenders</module>
-        <module>integration-tests/aws-testhelpers</module>
+        <module>integration-tests/helpers</module>
     </modules>
 
 </project>

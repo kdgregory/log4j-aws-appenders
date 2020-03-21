@@ -31,7 +31,7 @@ implements LogWriter
 {
     public T config;
 
-    public Thread writerThread;
+    public volatile Thread writerThread;
     public Thread shutdownHook;
 
     public List<LogMessage> messages = new ArrayList<LogMessage>();
@@ -109,7 +109,21 @@ implements LogWriter
     @Override
     public boolean waitUntilInitialized(long millisToWait)
     {
-        return true;
+        try
+        {
+            long sleepUntil = System.currentTimeMillis() + millisToWait;
+            while (System.currentTimeMillis() < sleepUntil)
+            {
+                if (writerThread != null)
+                    return true;
+                Thread.sleep(10);
+            }
+            return false;
+        }
+        catch (InterruptedException ex)
+        {
+            throw new RuntimeException("unexpected interrupt");
+        }
     }
 
 
@@ -127,6 +141,22 @@ implements LogWriter
         stopped = true;
     }
 
+
+    @Override
+    public void waitUntilStopped(long millisToWait)
+    {
+        try
+        {
+            if ((writerThread != null) && (writerThread != Thread.currentThread()))
+            {
+                writerThread.join(millisToWait);
+            }
+        }
+        catch (InterruptedException ex)
+        {
+            throw new RuntimeException("unexpected interrupt");
+        }
+    }
 
     @Override
     public void cleanup()

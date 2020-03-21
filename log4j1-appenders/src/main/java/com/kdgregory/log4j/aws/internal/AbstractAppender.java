@@ -72,7 +72,7 @@ extends AppenderSkeleton
 
     // used for internal logging: we manage this and expose it to our subclasses
 
-    protected Log4JInternalLogger logger;
+    protected Log4JInternalLogger internalLogger;
 
     // the appender stats object; we keep the reference because we call writer factory
 
@@ -130,7 +130,7 @@ extends AppenderSkeleton
         this.appenderStats = appenderStats;
         this.appenderStatsMXBeanClass = appenderStatsMXBeanClass;
 
-        this.logger = new Log4JInternalLogger(getClass().getSimpleName());
+        this.internalLogger = new Log4JInternalLogger(getClass().getSimpleName());
 
         batchDelay = 2000;
         discardThreshold = 10000;
@@ -149,7 +149,7 @@ extends AppenderSkeleton
     public void setName(String name)
     {
         super.setName(name);
-        logger.setAppenderName(name);
+        internalLogger.setAppenderName(name);
     }
 
 //----------------------------------------------------------------------------
@@ -157,17 +157,71 @@ extends AppenderSkeleton
 //----------------------------------------------------------------------------
 
     /**
-     *  Enables or disables synchronous mode. This may only be called during
-     *  configuration.
+     *  Sets the <code>rotationMode</code> configuration property.
      *  <p>
-     *  When running in synchronous mode calls to append() will not return until
-     *  the writer has attempted to send a batch (errors may result in messages
-     *  being requeued for the next batch). This negates the benefits of message
-     *  batching, and should only be used in cases (like AWS Lambda) where
-     *  background thread processing is not guaranteed.
-     *  <p>
-     *  Note: setting <code>synchronous</code> true also sets <code>batchDelay</code>
-     *  to 0.
+     *  This method must be explicitly overridden and made public by appenders that support rotation.
+     */
+    protected void setRotationMode(String value)
+    {
+        RotationMode newMode = RotationMode.lookup(value);
+        if (newMode == null)
+        {
+            newMode = RotationMode.none;
+            internalLogger.error("invalid rotation mode: " + value + ", setting to " + newMode, null);
+        }
+        this.rotationMode = newMode;
+    }
+
+
+    /**
+     *  Returns the <code>rotationMode</code> configuration property.
+     */
+    public String getRotationMode()
+    {
+        return this.rotationMode.name();
+    }
+
+
+    /**
+     *  Sets the <code>rotationInterval</code> configuration property.
+     */
+    public void setRotationInterval(long value)
+    {
+        this.rotationInterval = value;
+    }
+
+
+    /**
+     *  Returns the <code>rotationInterval</code> configuration property.
+     */
+    public long getRotationInterval()
+    {
+        return rotationInterval;
+    }
+
+
+    /**
+     *  Sets the <code>sequence</code> configuration property.
+     */
+    public void setSequence(int value)
+    {
+        sequence.set(value);
+    }
+
+
+    /**
+     *  Returns the current <code>sequence</code> value (which will be updated each
+     *  time the appender rotates).
+     */
+    public int getSequence()
+    {
+        return sequence.get();
+    }
+
+
+    /**
+     *  Sets the <code>synchronous</code> configuration property. This can only
+     *  be done at the time of configuration, not once the appender is operating.
      */
     public void setSynchronous(boolean value)
     {
@@ -184,7 +238,7 @@ extends AppenderSkeleton
 
 
     /**
-     *  Returns the current synchronous mode setting.
+     *  Returns the <code>synchronous</code> configuration property.
      */
     public boolean getSynchronous()
     {
@@ -193,18 +247,7 @@ extends AppenderSkeleton
 
 
     /**
-     *  Sets the maximum batch delay, in milliseconds.
-     *  <p>
-     *  The writer attempts to gather multiple logging messages into a batch, to
-     *  reduce communication with the service. The batch delay controls the time
-     *  that a message will remain in-memory while the writer builds this batch.
-     *  In a low-volume environment it will be the main determinant of when the
-     *  batch is sent; in a high volume environment it's likely that the maximum
-     *  request size will be reached before the batch delay expires.
-     *  <p>
-     *  The default value is 2000, which is rather arbitrarily chosen.
-     *  <p>
-     *  If the appender is in synchronous mode, this setting is ignored.
+     *  Sets the <code>batchDelay</code> configuration property.
      */
     public void setBatchDelay(long value)
     {
@@ -220,8 +263,7 @@ extends AppenderSkeleton
 
 
     /**
-     *  Returns the maximum batch delay; see {@link #setBatchDelay}. Primarily used
-     *  for testing.
+     *  Returns the <code>batchDelay</code> configuration property.
      */
     public long getBatchDelay()
     {
@@ -230,17 +272,7 @@ extends AppenderSkeleton
 
 
     /**
-     *  Sets the number of unsent messages that will trigger message discard. A high
-     *  value is useful when network connectivity is intermittent and/or overall AWS
-     *  communication is causing throttling. However, a value that is too high may
-     *  cause out-of-memory errors.
-     *  <p>
-     *  The default, 10,000, is based on the assumptions that (1) each message will be
-     *  1k or less, and (2) any app that uses remote logging can afford 10MB.
-     *  <p>
-     *  Note: at present, discard threshold cannot be changed after creating a log
-     *  writer. For appenders that rotate logs, a new configuration value will be
-     *  recognized at the time of rotation.
+     *  Sets the <code>discardThreshold</code> configuration property.
      */
     public void setDiscardThreshold(int value)
     {
@@ -253,7 +285,7 @@ extends AppenderSkeleton
 
 
     /**
-     *  Returns the configured discard threshold.
+     *  Returns the <code>discardThreshold</code> configuration property.
      */
     public int getDiscardThreshold()
     {
@@ -262,23 +294,14 @@ extends AppenderSkeleton
 
 
     /**
-     *  Sets the action to take when the number of unsent messages exceeds the discard
-     *  threshold. Values are "none" (retain all messages), "oldest" (discard oldest
-     *  messages), and "newest" (discard most recent messages).
-     *  <p>
-     *  The default is "oldest". Attempting to set an incorrect value will throw a
-     *  configuration error.
-     *  <p>
-     *  Note: at present, discard action cannot be changed after creating a log
-     *  writer. For appenders that rotate logs, a new configuration value will be
-     *  recognized at the time of rotation.
+     *  Sets the <code>discardAction</code> configuration property.
      */
     public void setDiscardAction(String value)
     {
         DiscardAction tmpDiscardAction = DiscardAction.lookup(value);
         if (tmpDiscardAction == null)
         {
-            logger.error("invalid discard action: " + value, null);
+            internalLogger.error("invalid discard action: " + value, null);
             return;
         }
 
@@ -292,7 +315,7 @@ extends AppenderSkeleton
 
 
     /**
-     *  Returns the configured discard action.
+     *  Returns the <code>discardAction</code> configuration property.
      */
     public String getDiscardAction()
     {
@@ -301,87 +324,10 @@ extends AppenderSkeleton
 
 
     /**
-     *  Sets the rule for log stream rotation, for those appenders that support rotation.
-     *  See {@link com.kdgregory.logging.common.util.RotationMode} for values. Invalid
-     *  values are logged and translated to "none".
-     *  <p>
-     *  Note: this method must be explicitly overridden by appenders that support rotation.
-     */
-    protected void setRotationMode(String value)
-    {
-        RotationMode newMode = RotationMode.lookup(value);
-        if (newMode == null)
-        {
-            newMode = RotationMode.none;
-            logger.error("invalid rotation mode: " + value + ", setting to " + newMode, null);
-        }
-        this.rotationMode = newMode;
-    }
-
-
-    /**
-     *  Returns the current rotation mode.
-     */
-    public String getRotationMode()
-    {
-        return this.rotationMode.name();
-    }
-
-
-    /**
-     *  Sets the rotation interval, for those appenders that support rotation. This parameter
-     *  is valid only when the <code>rotationMode</code> parameter is "interval" or "count":
-     *  for the former, it's the number of milliseconds between rotations, for the latter the
-     *  number of messages.
-     *  <p>
-     *  If using interval rotation, you should include <code>{timestamp}</code> in the log stream
-     *  name. If using counted rotation, you should include <code>{sequence}</code>.
-     */
-    public void setRotationInterval(long value)
-    {
-        this.rotationInterval = value;
-    }
-
-
-    /**
-     *  Returns the current rotation interval.
-     */
-    public long getRotationInterval()
-    {
-        return rotationInterval;
-    }
-
-
-    /**
-     *  Sets the log sequence number, used by the <code>{sequence}</code> substitution variable.
-     */
-    public void setSequence(int value)
-    {
-        sequence.set(value);
-    }
-
-
-    /**
-     *  Returns the current log sequence number.
-     */
-    public int getSequence()
-    {
-        return sequence.get();
-    }
-
-
-    /**
-     *  Sets a static AWS client factory method, which will be called instead of
-     *  the writer's internal client factory. This may be useful if the default
-     *  client is not appropriate (for example, to set a non-default region).
-     *  <p>
-     *  The passed string is of the form <code>com.example.Classname.methodName</code>.
-     *  If this does not reference a class/method on the classpath then writer
-     *  initialization will fail.
+     *  Sets the <code>clientFactory</code> configuration property.
      *  <p>
      *  Calling this method after the writer has been initialized will have no
-     *  effect (except for those appenders that rotate logs, in which case it
-     *  will apply to the post-rotate writer).
+     *  effect until the next log rotation.
      */
     public void setClientFactory(String value)
     {
@@ -390,8 +336,7 @@ extends AppenderSkeleton
 
 
     /**
-     *  Returns the current AWS client factory class/method name. Will be null
-     *  if the factory hasn't been set.
+     *  Returns the <code>clientFactory</code> configuration property.
      */
     public String getClientFactory()
     {
@@ -400,10 +345,7 @@ extends AppenderSkeleton
 
 
     /**
-     *  Sets the service region. This is only used for clients created by SDK
-     *  builders and dirct constructors, not for clients created by a user
-     *  implemented client factory. Not that the region must be supported by
-     *  the current SDK version.
+     *  Sets the <code>clientRegion</code> configuration property.
      */
     public void setClientRegion(String value)
     {
@@ -411,6 +353,9 @@ extends AppenderSkeleton
     }
 
 
+    /**
+     *  Returns the <code>clientRegion</code> configuration property.
+     */
     public String getClientRegion()
     {
         return clientRegion;
@@ -418,11 +363,7 @@ extends AppenderSkeleton
 
 
     /**
-     *  Sets the service endpoint. This is intended for use with older AWS SDK
-     *  versions that do not provide client factories and default to us-east-1,
-     *  although it can be used for newer releases when you want to override the
-     *  default region provider. The endpoint setting is ignored if you specify
-     *  a client factory.
+     *  Sets the <code>clientEndpoint</code> configuration property.
      */
     public void setClientEndpoint(String value)
     {
@@ -431,8 +372,7 @@ extends AppenderSkeleton
 
 
     /**
-     *  Returns the current service endpoint. Will be null if the endpoint has
-     *  not been explicitly set.
+     *  Returns the <code>clientEndpoint</code> configuration property.
      */
     public String getClientEndpoint()
     {
@@ -441,8 +381,7 @@ extends AppenderSkeleton
 
 
     /**
-     *  Controls whether the appender will use a shutdown hook to wait for the
-     *  writer thread to stop. By default this is <code>true</code>.
+     *  Sets the <code>useShutdownHook</code> configuration property.
      */
     public void setUseShutdownHook(boolean value)
     {
@@ -451,7 +390,7 @@ extends AppenderSkeleton
 
 
     /**
-     *  Returns the current synchronous mode setting.
+     *  Returns the <code>useShutdownHook</code> configuration property.
      */
     public boolean getUseShutdownHook()
     {
@@ -504,7 +443,7 @@ extends AppenderSkeleton
         }
         catch (Exception ex)
         {
-            logger.error("unable to apply layout", ex);
+            internalLogger.error("unable to apply layout", ex);
             return;
         }
 
@@ -514,7 +453,7 @@ extends AppenderSkeleton
         }
         catch (Exception ex)
         {
-            logger.error("unable to append event", ex);
+            internalLogger.error("unable to append event", ex);
         }
     }
 
@@ -608,7 +547,7 @@ extends AppenderSkeleton
         {
             try
             {
-                writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats, logger);
+                writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats, internalLogger);
                 if (synchronous)
                 {
                     writer.initialize();
@@ -620,7 +559,7 @@ extends AppenderSkeleton
                         @Override
                         public void uncaughtException(Thread t, Throwable ex)
                         {
-                            logger.error("unhandled exception in writer", ex);
+                            internalLogger.error("unhandled exception in writer", ex);
                             appenderStats.setLastError(null, ex);
                             writer = null;
                         }
@@ -639,7 +578,7 @@ extends AppenderSkeleton
             }
             catch (Exception ex)
             {
-                logger.error("exception while initializing writer", ex);
+                internalLogger.error("exception while initializing writer", ex);
             }
         }
     }
@@ -671,7 +610,7 @@ extends AppenderSkeleton
             }
             catch (Exception ex)
             {
-                logger.error("exception while shutting down writer", ex);
+                internalLogger.error("exception while shutting down writer", ex);
             }
 
             writer = null;
@@ -709,38 +648,36 @@ extends AppenderSkeleton
     {
         if (message == null)
         {
-            logger.error("internal error: message was null", null);
+            internalLogger.error("internal error: message was null", null);
             return;
         }
 
         synchronized (appendLock)
         {
-            if (writer.isMessageTooLarge(message))
-            {
-                logger.warn("attempted to append a message > AWS batch size; ignored");
-                return;
-            }
-
             long now = System.currentTimeMillis();
             if (shouldRotate(now))
             {
                 long secondsSinceLastRotation = (now - lastRotationTimestamp) / 1000;
-                logger.debug("rotating: messagesSinceLastRotation = " + messagesSinceLastRotation + ", secondsSinceLastRotation = " + secondsSinceLastRotation);
+                internalLogger.debug("rotating: messagesSinceLastRotation = " + messagesSinceLastRotation + ", secondsSinceLastRotation = " + secondsSinceLastRotation);
                 rotate();
+                if (writer == null)
+                {
+                    internalLogger.error("failed to rotate writer", null);
+                    return;
+                }
             }
 
-            if (writer == null)
+            if (writer.isMessageTooLarge(message))
             {
-                logger.error("appender not properly configured: writer is null", null);
+                internalLogger.warn("attempted to append a message > AWS batch size; ignored");
+                return;
             }
-            else
-            {
-                writer.addMessage(message);
-                messagesSinceLastRotation++;
-            }
+
+            writer.addMessage(message);
+            messagesSinceLastRotation++;
         }
 
-        // for Log4J append() happens within a big synchronized block managed by the framework
+        // for Log4J, append() happens within a big synchronized block managed by the framework
         // however, logically, I want to separate putting a message on the queue from sending it
         if (synchronous)
         {
@@ -749,7 +686,12 @@ extends AppenderSkeleton
     }
 
 
-    private boolean shouldRotate(long now)
+    /**
+     *  Determines whether the appender should rotate its writer. This is called on every
+     *  append, so should be as performant as possible. Subclasses that don't rotate should
+     *  override and return false (Hotspot will quickly inline them).
+     */
+    protected boolean shouldRotate(long now)
     {
         switch (rotationMode)
         {

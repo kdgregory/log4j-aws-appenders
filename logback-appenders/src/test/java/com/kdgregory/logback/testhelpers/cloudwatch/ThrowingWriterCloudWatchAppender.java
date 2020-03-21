@@ -21,11 +21,7 @@ import com.kdgregory.logging.testhelpers.ThrowingWriterFactory;
 
 
 /**
- *  This class exists to test uncaught exception handling. Unlike the normal testable
- *  appender, it runs the writer on a background thread.
- *  <p>
- *  We need to use an explicit class because Logback initializes the appender before
- *  any messages are written (unlike Log4J).
+ *  This class is used to test uncaught exception handling.
  */
 public class ThrowingWriterCloudWatchAppender
 extends TestableCloudWatchAppender

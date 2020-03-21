@@ -1,4 +1,4 @@
-<configuration debug="true">
+<configuration debug="false">
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -20,6 +20,7 @@
     <appender name="KINESIS" class="com.kdgregory.logback.aws.KinesisAppender">
         <streamName>AppenderExample</streamName>
         <layout class="com.kdgregory.logback.aws.JsonLayout">
+            <appendNewlines>true</appendNewlines>
             <enableHostname>true</enableHostname>
             <enableLocation>true</enableLocation>
             <tags>applicationName=Logback-Example,runDate={date},environment={sysprop:environment:dev}</tags>

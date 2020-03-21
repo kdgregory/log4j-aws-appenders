@@ -1,0 +1,16 @@
+<!--  default logging profile; used when tests start, before explicit configurations are loaded -->
+<Configuration status="warn">
+
+    <Appenders>
+        <Console name="CONSOLE">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS}  %-5p  - %X{testName}: %m%n" />
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Root level="debug">
+            <AppenderRef ref="CONSOLE" />
+        </Root>
+    </Loggers>
+
+</Configuration>

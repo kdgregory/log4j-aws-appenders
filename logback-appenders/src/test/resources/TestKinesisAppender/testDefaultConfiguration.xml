@@ -3,10 +3,10 @@
   <root level="off"/>
 
   <appender name="KINESIS" class="com.kdgregory.logback.testhelpers.kinesis.TestableKinesisAppender">
-    <streamName>NoDefault</streamName>
     <layout class="ch.qos.logback.classic.PatternLayout">
       <pattern>%msg</pattern>
     </layout>
+    <streamName>NoDefault</streamName>
   </appender>
 
   <logger name="com.kdgregory.logback.aws.TestKinesisAppender" level="debug">

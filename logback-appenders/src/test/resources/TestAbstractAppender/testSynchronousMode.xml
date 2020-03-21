@@ -3,10 +3,10 @@
   <root level="off"/>
 
   <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
-    <logGroup>argle</logGroup>
     <layout class="ch.qos.logback.classic.PatternLayout">
       <pattern>%date{yyyy} %logger{0} %msg</pattern>
     </layout>
+    <logGroup>argle</logGroup>
     <synchronous>true</synchronous>
   </appender>
 

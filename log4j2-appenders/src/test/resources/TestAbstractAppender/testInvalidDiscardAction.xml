@@ -1,0 +1,19 @@
+<Configuration status="warn" packages="com.kdgregory.log4j2.testhelpers">
+
+    <Appenders>
+        <TestableCloudWatchAppender name="CLOUDWATCH">
+            <PatternLayout pattern="%m" />
+            <logGroup>argle</logGroup>
+            <discardAction>bogus</discardAction>
+        </TestableCloudWatchAppender>
+    </Appenders>
+
+    <Loggers>
+        <Root level="off">
+        </Root>
+        <Logger name="com.kdgregory.log4j2.aws.TestAbstractAppender" level="debug">
+            <AppenderRef ref="CLOUDWATCH" />
+        </Logger>
+    </Loggers>
+
+</Configuration>

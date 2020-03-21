@@ -1,0 +1,27 @@
+<Configuration status="warn" packages="com.kdgregory.log4j2.testhelpers">
+
+    <Appenders>
+        <TestableKinesisAppender name="KINESIS">
+            <PatternLayout pattern="%m" />
+            <streamName>MyStream-{sysprop:TestKinesisAppender.testWriterInitialization}</streamName>
+            <partitionKey>{date}-{bogus}</partitionKey>
+            <autoCreate>true</autoCreate>
+            <shardCount>7</shardCount>
+            <retentionPeriod>48</retentionPeriod>
+            <batchDelay>1234</batchDelay>
+            <discardThreshold>54321</discardThreshold>
+            <discardAction>newest</discardAction>
+            <clientFactory>com.example.Foo.bar</clientFactory>
+            <clientEndpoint>kinesis.us-west-1.amazonaws.com</clientEndpoint>
+        </TestableKinesisAppender>
+    </Appenders>
+
+    <Loggers>
+        <Root level="off">
+        </Root>
+        <Logger name="com.kdgregory.log4j2.aws.TestKinesisAppender" level="debug">
+            <AppenderRef ref="KINESIS" />
+        </Logger>
+    </Loggers>
+
+</Configuration>

@@ -14,18 +14,11 @@
 
 package com.kdgregory.logback.aws;
 
-import java.net.URL;
-
-import org.junit.Test;
-import static org.junit.Assert.*;
-
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
-import org.slf4j.LoggerFactory;
+import org.junit.Test;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
+import static org.junit.Assert.*;
 
 import com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender;
 import com.kdgregory.logging.common.util.DiscardAction;
@@ -37,31 +30,13 @@ import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
  *  mock log-writer.
  */
 public class TestCloudWatchAppender
+extends AbstractUnitTest<TestableCloudWatchAppender>
 {
-    private Logger logger;
-    private TestableCloudWatchAppender appender;
-
-
-    private void initialize(String testName)
-    throws Exception
+    public TestCloudWatchAppender()
     {
-        String propsName = "TestCloudWatchAppender/" + testName + ".xml";
-        URL config = ClassLoader.getSystemResource(propsName);
-        assertNotNull("was able to retrieve config", config);
-
-        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
-        context.reset();
-        JoranConfigurator configurator = new JoranConfigurator();
-        configurator.setContext(context);
-        configurator.doConfigure(config);
-
-        logger = context.getLogger(getClass());
-        appender = (TestableCloudWatchAppender)logger.getAppender("CLOUDWATCH");
+        super("TestCloudWatchAppender/", "CLOUDWATCH");
     }
 
-//----------------------------------------------------------------------------
-//  Tests
-//----------------------------------------------------------------------------
 
     @Test
     public void testConfiguration() throws Exception
@@ -75,7 +50,7 @@ public class TestCloudWatchAppender
         assertEquals("batch delay",         9876L,                          appender.getBatchDelay());
         assertEquals("sequence",            2,                              appender.getSequence());
         assertEquals("rotation mode",       "interval",                     appender.getRotationMode());
-        assertEquals("rotation interval",   86400000L,                      appender.getRotationInterval());
+        assertEquals("rotation interval",   7200000L,                       appender.getRotationInterval());
         assertEquals("discard threshold",   12345,                          appender.getDiscardThreshold());
         assertEquals("discard action",      "newest",                       appender.getDiscardAction());
         assertEquals("client factory",      "com.example.Foo.bar",          appender.getClientFactory());
@@ -112,6 +87,34 @@ public class TestCloudWatchAppender
 
 
     @Test
+    public void testInvalidRetentionPeriod() throws Exception
+    {
+        initialize("testInvalidRetentionPeriod");
+
+        // retention period should retain its default value
+
+        assertEquals("retention period",    null,                           appender.getRetentionPeriod());
+
+        // everything else should be properly configured
+
+        assertEquals("log group name",      "argle",                        appender.getLogGroup());
+        assertEquals("log stream name",     "bargle",                       appender.getLogStream());
+        assertTrue("dedicated writer",                                      appender.getDedicatedWriter());
+        assertEquals("batch delay",         9876L,                          appender.getBatchDelay());
+        assertEquals("sequence",            2,                              appender.getSequence());
+        assertEquals("rotation mode",       "interval",                     appender.getRotationMode());
+        assertEquals("rotation interval",   86400000L,                      appender.getRotationInterval());
+        assertEquals("discard threshold",   12345,                          appender.getDiscardThreshold());
+        assertEquals("discard action",      "newest",                       appender.getDiscardAction());
+        assertEquals("client factory",      "com.example.Foo.bar",          appender.getClientFactory());
+        assertEquals("client region",       "us-west-1",                    appender.getClientRegion());
+        assertEquals("client endpoint",     "logs.us-west-2.amazonaws.com", appender.getClientEndpoint());
+        assertFalse("synchronous mode",                                     appender.getSynchronous());
+        assertFalse("use shutdown hook",                                    appender.getUseShutdownHook());
+    }
+
+
+    @Test
     public void testSynchronousConfiguration() throws Exception
     {
         initialize("testSynchronousConfiguration");
@@ -133,8 +136,6 @@ public class TestCloudWatchAppender
 
         assertEquals("configured log group name",   "MyLog-{sysprop:TestCloudWatchAppender.testWriterInitialization}",  appender.getLogGroup());
         assertEquals("configured log stream name",  "MyStream-{date}-{bogus}",                                          appender.getLogStream());
-
-        logger.debug("this triggers writer creation");
 
         MockCloudWatchWriter writer = appender.getMockWriter();
 

@@ -20,6 +20,7 @@ import javax.management.ObjectName;
 import com.kdgregory.logback.aws.internal.JMXManager;
 import com.kdgregory.logging.common.jmx.AbstractMarkerBean;
 
+
 /**
  *  This class provides a bridge between the writer statistics exposed by an
  *  appender and an MBeanServer. When an instance of this class has been

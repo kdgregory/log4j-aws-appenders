@@ -1,0 +1,16 @@
+<FindBugsFilter>
+
+    <Match>
+        <Class name='com.kdgregory.log4j2.aws.internal.AbstractAppender' />
+        <Field name='messagesSinceLastRotation' />
+        <Bug pattern='VO_VOLATILE_INCREMENT' />
+        <!-- this field is only updated within a synchronized context; it is exposed for testing -->
+    </Match>
+
+    <Match>
+        <Class name='com.kdgregory.log4j2.aws.internal.AbstractAppender' />
+        <Bug pattern='NM_SAME_SIMPLE_NAME_AS_SUPERCLASS' />
+        <!-- I'm not changing my conventions because they're shared by someone else -->
+    </Match>
+
+</FindBugsFilter>

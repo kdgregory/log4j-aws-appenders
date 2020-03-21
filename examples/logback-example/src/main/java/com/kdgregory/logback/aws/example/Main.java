@@ -30,9 +30,9 @@ import com.kdgregory.logback.aws.StatisticsMBean;
  *  <p>
  *  Invoke with the number of event-generator threads you want (default is 2):
  *  <pre>
- *      java -jar target/aws-appenders-example-1.0.0.jar NUM_THREADS
+ *      java -jar target/logback-aws-appenders-example-*.jar NUM_THREADS
  *  </pre>
- *  
+ *
  *  Each thread will take a random walk, starting at the value 50 and moving up
  *  or down by a small amount at each step. When the current value is in the
  *  range 10..90, the program emits a debug log message. When in the range 0..9
@@ -53,10 +53,10 @@ public class Main
         int numThreads = (argv.length > 0)
                        ? Integer.parseInt(argv[0])
                        : 2;
-                       
+
         ManagementFactory.getPlatformMBeanServer().createMBean(
                 StatisticsMBean.class.getName(),
-                new ObjectName("ch.qos.logback.classic:name=statistics"));
+                new ObjectName("com.kdgregory.logback.aws:name=statistics"));
 
         for (int ii = 0 ; ii < numThreads ; ii++)
         {
@@ -92,7 +92,7 @@ public class Main
                 catch (InterruptedException ignored) { /* */ }
             }
         }
-        
+
         private void updateValue()
         {
             value += 2 - rnd.nextInt(5);

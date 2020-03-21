@@ -4,7 +4,7 @@
 
     <groupId>com.kdgregory.logging</groupId>
     <artifactId>examples</artifactId>
-    <version>2.2.2</version>
+    <version>2.3.0</version>
     <packaging>pom</packaging>
 
     <name>AWS Log Appenders - Examples</name>
@@ -16,6 +16,8 @@
     <modules>
         <module>log4j1-example</module>
         <module>log4j1-webapp</module>
+        <module>log4j2-example</module>
+        <module>log4j2-webapp</module>
         <module>logback-example</module>
         <module>logback-webapp</module>
     </modules>

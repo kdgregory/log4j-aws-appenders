@@ -111,10 +111,81 @@ com.amazonaws.SdkClientException: Unable to load AWS credentials from any provid
 ```
 
 
+## Log4J 2.x
+
+For Log4J 2.x, you can set the level of internal logging in the configuration file.
+
+```
+<Configuration status="debug" packages="com.kdgregory.log4j2.aws">
+
+    <!-- configuration omitted -->
+
+</Configuration>
+```
+
+
+### Example: successful configuration
+
+I've just configured the CloudWatch appender in this example. You can follow through the process of building
+the appender plugins, and then see the CloudWatch writer thread write its messages.
+
+```
+2020-03-21 16:05:01,303 main DEBUG Initializing configuration XmlConfiguration[location=jar:file:/tmp/log4j2-example/target/log4j2-aws-appenders-example-2.3.0-SNAPSHOT.jar!/log4j2.xml]
+2020-03-21 16:05:01,306 main DEBUG Installed 1 script engine
+2020-03-21 16:05:01,542 main DEBUG Oracle Nashorn version: 1.8.0_192, language: ECMAScript, threading: Not Thread Safe, compile: true, names: [nashorn, Nashorn, js, JS, JavaScript, javascript, ECMAScript, ecmascript], factory class: jdk.nashorn.api.scripting.NashornScriptEngineFactory
+2020-03-21 16:05:01,721 main DEBUG Took 0.177783 seconds to load 4 plugins from package com.kdgregory.log4j2.aws
+2020-03-21 16:05:01,721 main DEBUG PluginManager 'Core' found 119 plugins
+2020-03-21 16:05:01,721 main DEBUG PluginManager 'Level' found 0 plugins
+2020-03-21 16:05:01,723 main DEBUG PluginManager 'Lookup' found 14 plugins
+2020-03-21 16:05:01,724 main DEBUG Building Plugin[name=layout, class=org.apache.logging.log4j.core.layout.PatternLayout].
+2020-03-21 16:05:01,727 main DEBUG PluginManager 'TypeConverter' found 26 plugins
+2020-03-21 16:05:01,734 main DEBUG PatternLayout$Builder(pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] - %c %p - %m%n", PatternSelector=null, Configuration(jar:file:/tmp/log4j2-example/target/log4j2-aws-appenders-example-2.3.0-SNAPSHOT.jar!/log4j2.xml), Replace=null, charset="null", alwaysWriteExceptions="null", disableAnsi="null", noConsoleNoAnsi="null", header="null", footer="null")
+2020-03-21 16:05:01,734 main DEBUG PluginManager 'Converter' found 42 plugins
+2020-03-21 16:05:01,737 main DEBUG Building Plugin[name=appender, class=org.apache.logging.log4j.core.appender.ConsoleAppender].
+2020-03-21 16:05:01,739 main DEBUG ConsoleAppender$Builder(target="null", follow="null", direct="null", bufferedIo="null", bufferSize="null", immediateFlush="null", ignoreExceptions="null", PatternLayout(%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] - %c %p - %m%n), name="CONSOLE", Configuration(jar:file:/tmp/log4j2-example/target/log4j2-aws-appenders-example-2.3.0-SNAPSHOT.jar!/log4j2.xml), Filter=null)
+2020-03-21 16:05:01,740 main DEBUG Starting OutputStreamManager SYSTEM_OUT.false.false
+2020-03-21 16:05:01,740 main DEBUG Building Plugin[name=layout, class=org.apache.logging.log4j.core.layout.PatternLayout].
+2020-03-21 16:05:01,741 main DEBUG PatternLayout$Builder(pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] - %c %p - %m", PatternSelector=null, Configuration(jar:file:/tmp/log4j2-example/target/log4j2-aws-appenders-example-2.3.0-SNAPSHOT.jar!/log4j2.xml), Replace=null, charset="null", alwaysWriteExceptions="null", disableAnsi="null", noConsoleNoAnsi="null", header="null", footer="null")
+2020-03-21 16:05:01,741 main DEBUG Building Plugin[name=appender, class=com.kdgregory.log4j2.aws.CloudWatchAppender].
+2020-03-21 16:05:01,744 main DEBUG CloudWatchAppender$CloudWatchAppenderBuilder(name="CLOUDWATCH", logGroup="AppenderExample", logStream="Example-{date}-{hostname}-{pid}", retentionPeriod="null", dedicatedWriter="true", rotationMode="null", rotationInterval="null", sequence="null", PatternLayout(%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] - %c %p - %m), Filter=null, Configuration(jar:file:/tmp/log4j2-example/target/log4j2-aws-appenders-example-2.3.0-SNAPSHOT.jar!/log4j2.xml), synchronous="null", batchDelay="null", discardThreshold="null", discardAction="null", clientFactory="null", clientRegion="null", clientEndpoint="null", useShutdownHook="null")
+2020-03-21 16:05:01,746 main DEBUG Building Plugin[name=appenders, class=org.apache.logging.log4j.core.config.AppendersPlugin].
+2020-03-21 16:05:01,746 main DEBUG createAppenders(={CONSOLE, com.kdgregory.log4j2.aws.CloudWatchAppender with name CloudWatchAppender})
+2020-03-21 16:05:01,747 main DEBUG Building Plugin[name=AppenderRef, class=org.apache.logging.log4j.core.config.AppenderRef].
+2020-03-21 16:05:01,749 main DEBUG createAppenderRef(ref="CONSOLE", level="null", Filter=null)
+2020-03-21 16:05:01,749 main DEBUG Building Plugin[name=root, class=org.apache.logging.log4j.core.config.LoggerConfig$RootLogger].
+2020-03-21 16:05:01,749 main DEBUG createLogger(additivity="null", level="WARN", includeLocation="null", ={CONSOLE}, ={}, Configuration(jar:file:/tmp/log4j2-example/target/log4j2-aws-appenders-example-2.3.0-SNAPSHOT.jar!/log4j2.xml), Filter=null)
+2020-03-21 16:05:01,750 main DEBUG Building Plugin[name=AppenderRef, class=org.apache.logging.log4j.core.config.AppenderRef].
+2020-03-21 16:05:01,750 main DEBUG createAppenderRef(ref="CLOUDWATCH", level="null", Filter=null)
+2020-03-21 16:05:01,751 main DEBUG Building Plugin[name=logger, class=org.apache.logging.log4j.core.config.LoggerConfig].
+2020-03-21 16:05:01,752 main DEBUG createLogger(additivity="true", level="DEBUG", name="com.kdgregory", includeLocation="null", ={CLOUDWATCH}, ={}, Configuration(jar:file:/tmp/log4j2-example/target/log4j2-aws-appenders-example-2.3.0-SNAPSHOT.jar!/log4j2.xml), Filter=null)
+2020-03-21 16:05:01,752 main DEBUG Building Plugin[name=loggers, class=org.apache.logging.log4j.core.config.LoggersPlugin].
+2020-03-21 16:05:01,753 main DEBUG createLoggers(={root, com.kdgregory})
+2020-03-21 16:05:01,753 main DEBUG Configuration XmlConfiguration[location=jar:file:/tmp/log4j2-example/target/log4j2-aws-appenders-example-2.3.0-SNAPSHOT.jar!/log4j2.xml] initialized
+2020-03-21 16:05:01,753 main DEBUG Starting configuration XmlConfiguration[location=jar:file:/tmp/log4j2-example/target/log4j2-aws-appenders-example-2.3.0-SNAPSHOT.jar!/log4j2.xml]
+2020-03-21 16:05:01,758 com-kdgregory-aws-logwriter-log4j2-cloudwatch-1 DEBUG log writer starting (thread: com-kdgregory-aws-logwriter-log4j2-cloudwatch-1)
+2020-03-21 16:05:01,770 com-kdgregory-aws-logwriter-log4j2-cloudwatch-1 DEBUG creating client via SDK builder
+2020-03-21 16:05:02,503 com-kdgregory-aws-logwriter-log4j2-cloudwatch-1 DEBUG creating CloudWatch log group: AppenderExample
+2020-03-21 16:05:02,611 com-kdgregory-aws-logwriter-log4j2-cloudwatch-1 DEBUG creating CloudWatch log stream: Example-20200321-ithilien-3397
+2020-03-21 16:05:02,673 com-kdgregory-aws-logwriter-log4j2-cloudwatch-1 DEBUG log writer initialization complete (thread: com-kdgregory-aws-logwriter-log4j2-cloudwatch-1)
+2020-03-21 16:05:02,766 main DEBUG Started configuration XmlConfiguration[location=jar:file:/tmp/log4j2-example/target/log4j2-aws-appenders-example-2.3.0-SNAPSHOT.jar!/log4j2.xml] OK.
+```
+
+
+### Example: missing credentials
+
+In this example, the initial configuration looks like the previous example, but there's
+an exception thrown when the log writer starts executing.
+
+```
+2020-03-21 16:09:42,907 com-kdgregory-aws-logwriter-log4j2-cloudwatch-1 DEBUG log writer starting (thread: com-kdgregory-aws-logwriter-log4j2-cloudwatch-1)
+2020-03-21 16:09:42,920 com-kdgregory-aws-logwriter-log4j2-cloudwatch-1 DEBUG creating client via SDK builder
+2020-03-21 16:09:45,409 com-kdgregory-aws-logwriter-log4j2-cloudwatch-1 ERROR unable to configure log group/stream com.amazonaws.SdkClientException: Unable to load AWS credentials from any provider in the chain: [EnvironmentVariableCredentialsProvider: Unable to load AWS credentials from environment variables (AWS_ACCESS_KEY_ID (or AWS_ACCESS_KEY) and AWS_SECRET_KEY (or AWS_SECRET_ACCESS_KEY)), SystemPropertiesCredentialsProvider: Unable to load AWS credentials from Java system properties (aws.accessKeyId and aws.secretKey), com.amazonaws.auth.profile.ProfileCredentialsProvider@589830a6: profile file cannot be null, com.amazonaws.auth.EC2ContainerCredentialsProviderWrapper@4224d099: Unable to load credentials from service endpoint]
+```
+
+
 ## Logback
 
-For Logback, you enable debug mode in the configuration file. The [example program](../examples/logback-example)
-already has this set.
+For Logback, you enable debug mode in the configuration file.
 
 ```
 <configuration debug="true">

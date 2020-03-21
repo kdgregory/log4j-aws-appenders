@@ -1,0 +1,26 @@
+<Configuration status="warn" packages="com.kdgregory.log4j2.testhelpers">
+
+    <Appenders>
+        <TestableSNSAppender name="SNS">
+            <PatternLayout pattern="%m" />
+            <!-- note: specifying both ARN and name for testing; this is not a normal configuration -->
+            <topicName>name-{date}</topicName>
+            <topicArn>arn-{date}</topicArn>
+            <subject>{sysprop:TestSNSAppender.testWriterInitialization}</subject>
+            <autoCreate>true</autoCreate>
+            <discardThreshold>123</discardThreshold>
+            <discardAction>newest</discardAction>
+            <clientFactory>com.example.Foo.bar</clientFactory>
+            <clientEndpoint>sns.us-east-2.amazonaws.com</clientEndpoint>
+        </TestableSNSAppender>
+    </Appenders>
+
+    <Loggers>
+        <Root level="off">
+        </Root>
+        <Logger name="com.kdgregory.log4j2.aws.TestSNSAppender" level="debug">
+            <AppenderRef ref="SNS" />
+        </Logger>
+    </Loggers>
+
+</Configuration>

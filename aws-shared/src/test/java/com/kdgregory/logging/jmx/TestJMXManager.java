@@ -54,7 +54,7 @@ public class TestJMXManager
             super(logger);
         }
 
-        public Map<Object,List<MBeanServer>>        getKnownServers()       { return regisrations; }
+        public Map<Object,List<MBeanServer>>        getKnownServers()       { return registrations; }
         public Map<MBeanServer,String>              getRegistrationNames()  { return registrationNames; }
         public Map<String,AbstractWriterStatistics> getStatsBeans()         { return statsBeans; }
         public Map<String,Class<?>>                 getStatsBeanTypes()     { return statsBeanTypes; }

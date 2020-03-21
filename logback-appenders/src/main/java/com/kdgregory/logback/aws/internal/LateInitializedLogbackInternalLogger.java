@@ -39,7 +39,7 @@ implements InternalLogger
 {
     private volatile ContextAware destination;
     private String origin;
-    
+
     private ConcurrentLinkedQueue<Status> deferredMessages = new ConcurrentLinkedQueue<Status>();
 
 
@@ -94,7 +94,7 @@ implements InternalLogger
         Status status = (ex != null)
                       ? new ErrorStatus(message, origin, ex)
                       : new ErrorStatus(message, origin);
-                      
+
         if (destination == null)
             deferredMessages.add(status);
         else

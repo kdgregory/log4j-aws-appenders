@@ -45,6 +45,7 @@ public class ThrowingWriterFactory<C extends AbstractWriterConfig,S> implements 
                 @Override
                 public void run()
                 {
+                    writerThread = Thread.currentThread();
                     try
                     {
                         appendLatch.await();

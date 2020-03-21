@@ -3,13 +3,13 @@
   <root level="off"/>
 
   <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <pattern>%msg</pattern>
+    </layout>
     <logGroup>argle</logGroup>
     <logStream>bargle-{sequence}</logStream>
     <rotationMode>bogus</rotationMode>
     <rotationInterval>10000</rotationInterval>
-    <layout class="ch.qos.logback.classic.PatternLayout">
-      <pattern>%msg</pattern>
-    </layout>
   </appender>
 
   <logger name="com.kdgregory.logback.aws.TestAbstractAppender" level="debug">

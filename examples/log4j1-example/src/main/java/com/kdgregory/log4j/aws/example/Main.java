@@ -30,9 +30,9 @@ import com.kdgregory.log4j.aws.StatisticsMBean;
  *  <p>
  *  Invoke with the number of event-generator threads you want (default is 2):
  *  <pre>
- *      java -jar target/aws-appenders-example-1.0.0.jar NUM_THREADS
+ *      java -jar target/log4j1-aws-appenders-example-*.jar NUM_THREADS
  *  </pre>
- *  
+ *
  *  Each thread will take a random walk, starting at the value 50 and moving up
  *  or down by a small amount at each step. When the current value is in the
  *  range 10..90, the program emits a debug log message. When in the range 0..9
@@ -60,7 +60,7 @@ public class Main
 
         ManagementFactory.getPlatformMBeanServer().createMBean(
                 StatisticsMBean.class.getName(),
-                new ObjectName("log4j:name=Statistics"));
+                new ObjectName("com.kdgregory.log4j.aws:name=Statistics"));
 
         for (int ii = 0 ; ii < numThreads ; ii++)
         {
@@ -96,7 +96,7 @@ public class Main
                 catch (InterruptedException ignored) { /* */ }
             }
         }
-        
+
         private void updateValue()
         {
             value += 2 - rnd.nextInt(5);

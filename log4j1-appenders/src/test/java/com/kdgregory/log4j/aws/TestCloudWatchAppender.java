@@ -14,18 +14,15 @@
 
 package com.kdgregory.log4j.aws;
 
-import java.net.URL;
+import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
-import static net.sf.kdgcommons.test.StringAsserts.*;
-
 import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
 
 import com.kdgregory.log4j.testhelpers.cloudwatch.TestableCloudWatchAppender;
@@ -38,28 +35,13 @@ import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
  *  mock log-writer.
  */
 public class TestCloudWatchAppender
+extends AbstractUnitTest<TestableCloudWatchAppender>
 {
-    private Logger logger;
-    private TestableCloudWatchAppender appender;
-
-
-    private void initialize(String testName)
-    throws Exception
+    public TestCloudWatchAppender()
     {
-        String propsName = "TestCloudWatchAppender/" + testName + ".properties";
-        URL config = ClassLoader.getSystemResource(propsName);
-        assertNotNull("was able to retrieve config", config);
-        PropertyConfigurator.configure(config);
-
-        logger = Logger.getLogger(getClass());
-
-        Logger rootLogger = Logger.getRootLogger();
-        appender = (TestableCloudWatchAppender)rootLogger.getAppender("default");
+        super("TestCloudWatchAppender/", "cloudwatch");
     }
 
-//----------------------------------------------------------------------------
-//  JUnit stuff
-//----------------------------------------------------------------------------
 
     @Before
     public void setUp()
@@ -91,7 +73,7 @@ public class TestCloudWatchAppender
         assertEquals("batch delay",         9876L,                          appender.getBatchDelay());
         assertEquals("sequence",            2,                              appender.getSequence());
         assertEquals("rotation mode",       "interval",                     appender.getRotationMode());
-        assertEquals("rotation interval",   86400000L,                      appender.getRotationInterval());
+        assertEquals("rotation interval",   7200000L,                       appender.getRotationInterval());
         assertEquals("discard threshold",   12345,                          appender.getDiscardThreshold());
         assertEquals("discard action",      "newest",                       appender.getDiscardAction());
         assertEquals("client factory",      "com.example.Foo.bar",          appender.getClientFactory());
@@ -124,6 +106,34 @@ public class TestCloudWatchAppender
         assertEquals("client endpoint",     null,                           appender.getClientEndpoint());
         assertFalse("synchronous mode",                                     appender.getSynchronous());
         assertTrue("use shutdown hook",                                     appender.getUseShutdownHook());
+    }
+
+
+    @Test
+    public void testInvalidRetentionPeriod() throws Exception
+    {
+        initialize("testInvalidRetentionPeriod");
+
+        // retention period should retain its default value
+
+        assertEquals("retention period",    0,                              appender.getRetentionPeriod());
+
+        // everything else should be properly configured
+
+        assertEquals("log group name",      "argle",                        appender.getLogGroup());
+        assertEquals("log stream name",     "bargle",                       appender.getLogStream());
+        assertTrue("dedicated writer",                                      appender.getDedicatedWriter());
+        assertEquals("batch delay",         9876L,                          appender.getBatchDelay());
+        assertEquals("sequence",            2,                              appender.getSequence());
+        assertEquals("rotation mode",       "interval",                     appender.getRotationMode());
+        assertEquals("rotation interval",   86400000L,                      appender.getRotationInterval());
+        assertEquals("discard threshold",   12345,                          appender.getDiscardThreshold());
+        assertEquals("discard action",      "newest",                       appender.getDiscardAction());
+        assertEquals("client factory",      "com.example.Foo.bar",          appender.getClientFactory());
+        assertEquals("client region",       "us-west-1",                    appender.getClientRegion());
+        assertEquals("client endpoint",     "logs.us-west-2.amazonaws.com", appender.getClientEndpoint());
+        assertFalse("synchronous mode",                                     appender.getSynchronous());
+        assertFalse("use shutdown hook",                                    appender.getUseShutdownHook());
     }
 
 

@@ -26,53 +26,42 @@ import com.kdgregory.logging.aws.internal.Utils;
 
 
 /**
- *  Handles the standard substitution variables. You create a new instance whenever
- *  performing substitutions; instances are not thread-safe.
+ *  Handles the standard substitution variables. Standard usage is to create a
+ *  new instance whenever you need one; the current timestamp would otherwise
+ *  become stale.
+ *  <p>
+ *  Values are lazily retrieved. Instances are thread-safe, but not thread-optimized
+ *  (concurrent lazy retrieves of the same value are possible).
  */
 public class Substitutions
 {
-    // we precompute all substitution values and cache them for future use; we don't
-    // expect to be called in any sort of tight loop
-
-    private String date;
-    private String timestamp;
-    private String hourlyTimestamp;
-    private String startupTimestamp;
-    private String pid;
-    private String hostname;
+    // these are set by constructor
+    private Date currentDate;
     private String sequence;
+    private RuntimeMXBean runtimeMx;
+
+    // these are lazily retrieved; volatile as a habit
+    private volatile String date;
+    private volatile String timestamp;
+    private volatile String hourlyTimestamp;
+    private volatile String startupTimestamp;
+    private volatile String pid;
+    private volatile String hostname;
+    private volatile String accountId;
+    private volatile String instanceId;
 
 
     public Substitutions(Date currentDate, int sequence)
     {
-        RuntimeMXBean runtimeMx = ManagementFactory.getRuntimeMXBean();
-        String vmName = runtimeMx.getName();
-
-        pid = (vmName.indexOf('@') > 0)
-            ? vmName.substring(0, vmName.indexOf('@'))
-            : "unknown";
-
-        hostname = (vmName.indexOf('@') > 0)
-                 ? vmName.substring(vmName.indexOf('@') + 1, vmName.length())
-                 : "unknown";
-
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        date = dateFormat.format(currentDate);
-
-        SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyyMMddHHmmss");
-        timestampFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        timestamp = timestampFormat.format(currentDate);
-        hourlyTimestamp = timestamp.substring(0, 10) + "0000";  // yeah, it's a hack
-        startupTimestamp = timestampFormat.format(new Date(runtimeMx.getStartTime()));
-
+        this.currentDate = currentDate;
         this.sequence = String.valueOf(sequence);
+        this.runtimeMx = ManagementFactory.getRuntimeMXBean();
     }
 
 
     /**
      *  Applies all substitutions. This is not particularly performant, but it
-     *  won't be called frequently. If passed <code>null</code> returns it.
+     *  won't be called frequently. If passed <code>null</code> returns same.
      */
     public String perform(String input)
     {
@@ -83,13 +72,13 @@ public class Substitutions
         do
         {
             input = output;
-            output = substitute("{date}",            date,
-                     substitute("{timestamp}",       timestamp,
-                     substitute("{hourlyTimestamp}", hourlyTimestamp,
-                     substitute("{startupTimestamp}", startupTimestamp,
-                     substitute("{pid}",             pid,
-                     substitute("{hostname}",        hostname,
-                     substitute("{sequence}",        sequence,
+            output = substitute("{sequence}", sequence,
+                     substituteDate(
+                     substituteTimestamp(
+                     substituteHourlyTimestamp(
+                     substituteStartupTimestamp(
+                     substitutePid(
+                     substituteHostname(
                      substituteAwsAccountId(
                      substituteEC2InstanceId(
                      substituteEC2Region(
@@ -103,8 +92,17 @@ public class Substitutions
 
 
     /**
-     *  Performs simple subsitutions, where the tag fully describes the substitution.
+     *  This function handles the actual replacement; it should only be called
+     *  if you know that there's a valud substitution.
      */
+    private String substitute(String input, int start, String tag, String value)
+    {
+        return input.substring(0, start) + value + input.substring(start + tag.length(), input.length());
+    }
+
+    // all of the following methods take the input string as their last parameter
+    // so that they can be chained together
+
     private String substitute(String tag, String value, String input)
     {
         if (input == null)
@@ -117,24 +115,143 @@ public class Substitutions
         if (index < 0)
             return input;
 
-        return input.substring(0, index) + value + input.substring(index + tag.length(), input.length());
+        return substitute(input, index, tag, value);
     }
 
 
-    /**
-     *  Substitutes the AWS account ID. This makes a call to AWS.
-     */
-    private String substituteAwsAccountId(String input)
+    private String substituteDate(String input)
     {
-        String tag = "{aws:accountId}";
+        String tag = "{date}";
+
         int index = input.indexOf(tag);
         if (index < 0)
             return input;
 
-        String accountId = Utils.retrieveAWSAccountId();
-        return (accountId != null)
-             ? substitute(tag, accountId, input)
-             : input;
+        if (date == null)
+        {
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd");
+            formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+            date = formatter.format(currentDate);
+        }
+
+        return substitute(input, index, tag, date);
+    }
+
+
+    private String substituteTimestamp(String input)
+    {
+        String tag = "{timestamp}";
+
+        int index = input.indexOf(tag);
+        if (index < 0)
+            return input;
+
+        if (timestamp == null)
+        {
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+            formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+            timestamp = formatter.format(currentDate);
+        }
+
+        return substitute(input, index, tag, timestamp);
+    }
+
+
+    private String substituteHourlyTimestamp(String input)
+    {
+        String tag = "{hourlyTimestamp}";
+
+        int index = input.indexOf(tag);
+        if (index < 0)
+            return input;
+
+        if (hourlyTimestamp == null)
+        {
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHH'0000'");
+            formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+            hourlyTimestamp = formatter.format(currentDate);
+        }
+
+        return substitute(input, index, tag, hourlyTimestamp);
+    }
+
+
+    private String substituteStartupTimestamp(String input)
+    {
+        String tag = "{startupTimestamp}";
+
+        int index = input.indexOf(tag);
+        if (index < 0)
+            return input;
+
+        if (startupTimestamp == null)
+        {
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+            formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+            startupTimestamp = formatter.format(new Date(runtimeMx.getStartTime()));
+        }
+
+        return substitute(input, index, tag, startupTimestamp);
+    }
+
+
+    private String substitutePid(String input)
+    {
+        String tag = "{pid}";
+
+        int index = input.indexOf(tag);
+        if (index < 0)
+            return input;
+
+        if (pid == null)
+        {
+            String vmName = runtimeMx.getName();
+            pid = (vmName.indexOf('@') > 0)
+                ? vmName.substring(0, vmName.indexOf('@'))
+                : "unknown";
+        }
+
+        return substitute(input, index, tag, pid);
+    }
+
+
+    private String substituteHostname(String input)
+    {
+        String tag = "{hostname}";
+
+        int index = input.indexOf(tag);
+        if (index < 0)
+            return input;
+
+        if (hostname == null)
+        {
+            String vmName = runtimeMx.getName();
+            hostname = (vmName.indexOf('@') > 0)
+                     ? vmName.substring(vmName.indexOf('@') + 1, vmName.length())
+                     : "unknown";
+        }
+
+        return substitute(input, index, tag, hostname);
+    }
+
+
+    private String substituteAwsAccountId(String input)
+    {
+        String tag = "{aws:accountId}";
+
+        int index = input.indexOf(tag);
+        if (index < 0)
+            return input;
+
+        if (accountId == null)
+        {
+            accountId = Utils.retrieveAWSAccountId();
+            accountId = (accountId != null)
+                      ? accountId
+                      : "unknown-account";
+        }
+
+        return substitute(input, index, tag, accountId);
     }
 
 
@@ -155,11 +272,16 @@ public class Substitutions
                 return input;
         }
 
-        String instanceId = EC2MetadataUtils.getInstanceId();
-        if ((instanceId == null) || (instanceId.length() == 0))
-            return input;
+        if (instanceId == null)
+        {
+            instanceId = EC2MetadataUtils.getInstanceId();
+            if ((instanceId == null) || (instanceId.length() == 0))
+            {
+                instanceId = "unknown-instance";
+            }
+        }
 
-        return substitute(tag, instanceId, input);
+        return substitute(input, index, tag, instanceId);
     }
 
 

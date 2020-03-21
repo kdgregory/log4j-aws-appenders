@@ -17,7 +17,7 @@ package com.kdgregory.logback.testhelpers;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kdgregory.logback.aws.internal.LogbackInternalLogger;
+import com.kdgregory.logging.common.util.InternalLogger;
 import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 
 import ch.qos.logback.core.spi.ContextAware;
@@ -28,7 +28,7 @@ import ch.qos.logback.core.spi.ContextAware;
  *  in lists.
  */
 public class TestableLogbackInternalLogger
-extends LogbackInternalLogger
+implements InternalLogger
 {
     public String appenderName;
 
@@ -40,7 +40,6 @@ extends LogbackInternalLogger
 
     public TestableLogbackInternalLogger(ContextAware destination)
     {
-        super(destination);
         appenderName = destination.toString();
     }
 
@@ -57,7 +56,6 @@ extends LogbackInternalLogger
     {
         warnMessages.add(message);
     }
-
 
 
     @Override

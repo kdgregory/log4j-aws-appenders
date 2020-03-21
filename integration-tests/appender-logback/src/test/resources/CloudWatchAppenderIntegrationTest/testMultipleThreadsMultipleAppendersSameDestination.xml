@@ -1,0 +1,80 @@
+<configuration debug="false">
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level - %mdc{testName}: %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="test1" class="com.kdgregory.logback.aws.CloudWatchAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
+        </layout>
+        <logGroup>AppenderIntegrationTest-testMultipleThreadsMultipleAppendersSameDestination</logGroup>
+        <logStream>AppenderTest</logStream>
+        <batchDelay>500</batchDelay>
+    </appender>
+
+    <appender name="test2" class="com.kdgregory.logback.aws.CloudWatchAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
+        </layout>
+        <logGroup>AppenderIntegrationTest-testMultipleThreadsMultipleAppendersSameDestination</logGroup>
+        <logStream>AppenderTest</logStream>
+        <batchDelay>500</batchDelay>
+    </appender>
+
+    <appender name="test3" class="com.kdgregory.logback.aws.CloudWatchAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
+        </layout>
+        <logGroup>AppenderIntegrationTest-testMultipleThreadsMultipleAppendersSameDestination</logGroup>
+        <logStream>AppenderTest</logStream>
+        <batchDelay>500</batchDelay>
+    </appender>
+
+    <appender name="test4" class="com.kdgregory.logback.aws.CloudWatchAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
+        </layout>
+        <logGroup>AppenderIntegrationTest-testMultipleThreadsMultipleAppendersSameDestination</logGroup>
+        <logStream>AppenderTest</logStream>
+        <batchDelay>500</batchDelay>
+    </appender>
+
+    <appender name="test5" class="com.kdgregory.logback.aws.CloudWatchAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
+        </layout>
+        <logGroup>AppenderIntegrationTest-testMultipleThreadsMultipleAppendersSameDestination</logGroup>
+        <logStream>AppenderTest</logStream>
+        <batchDelay>500</batchDelay>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="console" />
+    </root>
+
+    <logger name="com.kdgregory" level="debug"/>
+
+    <logger name="TestLogger1" level="debug" additivity="false">
+        <appender-ref ref="test1" />
+    </logger>
+
+    <logger name="TestLogger2" level="debug" additivity="false">
+        <appender-ref ref="test2" />
+    </logger>
+
+    <logger name="TestLogger3" level="debug" additivity="false">
+        <appender-ref ref="test3" />
+    </logger>
+
+    <logger name="TestLogger4" level="debug" additivity="false">
+        <appender-ref ref="test4" />
+    </logger>
+
+    <logger name="TestLogger5" level="debug" additivity="false">
+        <appender-ref ref="test5" />
+    </logger>
+
+</configuration>

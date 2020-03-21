@@ -5,6 +5,7 @@ There are multiple projects in this repository:
 * [aws-shared](../aws-shared): the AWS log-writers and supporting code that would be
   used by any appender implementation.
 * [log4j1-appenders](../log4j1-appenders): appender implementations for Log4J 1.x.
+* [log4j2-appenders](../log4j2-appenders): appender implementations for Log4J 2.x.
 * [logback-appenders](../logback-appenders): appender implementations for Logback.
 * [examples](../examples): example programs that demonstrate using the appenders.
 * [integration-tests](../integration-tests): integration tests that execute several
@@ -64,11 +65,6 @@ driver POMs is to be able to build projects that require the same set of build c
 
 There is a parent POM, which provides plugin configuration and version properties that are used
 throughout the project (other than the examples, which I want to be stand-alone).
-
-This split between driver and parent can lead to some strange behaviors. For example, while
-you can run `mvn install` from the project root, you can't run `mvn site` because the test
-helpers (which need to be installed before the integration tests run) doesn't provide site
-configuration.
 
 
 ## Code coverage (or lack thereof)

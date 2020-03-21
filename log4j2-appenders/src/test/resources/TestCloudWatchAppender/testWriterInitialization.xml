@@ -1,0 +1,25 @@
+<Configuration status="warn" packages="com.kdgregory.log4j2.testhelpers">
+
+    <Appenders>
+        <TestableCloudWatchAppender name="CLOUDWATCH">
+            <PatternLayout pattern="%m" />
+            <logGroup>MyLog-{sysprop:TestCloudWatchAppender.testWriterInitialization}</logGroup>
+            <logStream>MyStream-{date}-{bogus}</logStream>
+            <retentionPeriod>14</retentionPeriod>
+            <batchDelay>9876</batchDelay>
+            <discardThreshold>12345</discardThreshold>
+            <discardAction>newest</discardAction>
+            <clientFactory>com.example.Foo.bar</clientFactory>
+            <clientEndpoint>logs.us-west-2.amazonaws.com</clientEndpoint>
+        </TestableCloudWatchAppender>
+    </Appenders>
+
+    <Loggers>
+        <Root level="off">
+        </Root>
+        <Logger name="com.kdgregory.log4j2.aws.TestCloudWatchAppender" level="debug">
+            <AppenderRef ref="CLOUDWATCH" />
+        </Logger>
+    </Loggers>
+
+</Configuration>

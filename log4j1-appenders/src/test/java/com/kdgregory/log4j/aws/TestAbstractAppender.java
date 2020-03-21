@@ -14,10 +14,6 @@
 
 package com.kdgregory.log4j.aws;
 
-
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.junit.After;
@@ -31,12 +27,9 @@ import static net.sf.kdgcommons.test.NumericAsserts.*;
 import net.sf.kdgcommons.lang.StringUtil;
 
 import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.helpers.LogLog;
 
 import com.kdgregory.log4j.testhelpers.HeaderFooterLayout;
-import com.kdgregory.log4j.testhelpers.TestableLog4JInternalLogger;
 import com.kdgregory.log4j.testhelpers.cloudwatch.TestableCloudWatchAppender;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
@@ -58,57 +51,13 @@ import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriterFactory;
  *  log-writer.
  */
 public class TestAbstractAppender
+extends AbstractUnitTest<TestableCloudWatchAppender>
 {
-    private Logger logger;
-    private TestableCloudWatchAppender appender;
-    private TestableLog4JInternalLogger appenderInternalLogger;
-
-
-    private void initialize(String testName)
-    throws Exception
+    public TestAbstractAppender()
     {
-        String propsName = "TestAbstractAppender/" + testName + ".properties";
-        URL config = ClassLoader.getSystemResource(propsName);
-        assertNotNull("was able to retrieve config", config);
-        PropertyConfigurator.configure(config);
-
-        logger = Logger.getLogger(getClass());
-
-        Logger rootLogger = Logger.getRootLogger();
-        appender = (TestableCloudWatchAppender)rootLogger.getAppender("default");
-        appenderInternalLogger = appender.getInternalLogger();
+        super("TestAbstractAppender/", "default");
     }
 
-
-    private void runLoggingThreads(final int numThreads, final int messagesPerThread)
-    throws Exception
-    {
-        List<Thread> threads = new ArrayList<Thread>();
-        for (int ii = 0 ; ii < numThreads ; ii++)
-        {
-            threads.add(new Thread(new Runnable() {
-                @Override
-                public void run()
-                {
-                    for (int jj = 0 ; jj < messagesPerThread ; jj++)
-                    {
-                        logger.debug(Thread.currentThread().getName() + " " + jj);
-                        Thread.yield();
-                    }
-                }
-            }));
-        }
-
-        for (Thread thread : threads)
-            thread.start();
-
-        for (Thread thread : threads)
-            thread.join();
-    }
-
-//----------------------------------------------------------------------------
-//  JUnit stuff
-//----------------------------------------------------------------------------
 
     @Before
     public void setUp()
@@ -124,9 +73,6 @@ public class TestAbstractAppender
         LogLog.setQuietMode(false);
     }
 
-//----------------------------------------------------------------------------
-//  Tests
-//----------------------------------------------------------------------------
 
     @Test
     public void testLifecycle() throws Exception
@@ -582,19 +528,14 @@ public class TestAbstractAppender
     @Test
     public void testInvalidDiscardAction() throws Exception
     {
-        initialize("testReconfigureDiscardProperties");
+        initialize("testInvalidDiscardAction");
 
         logger.debug("a message to trigger writer creation");
 
         MockCloudWatchWriter writer = appender.getMockWriter();
 
-        assertEquals("pre-update discard action, from appender",    DiscardAction.newest.toString(),    appender.getDiscardAction());
-        assertEquals("pre-update discard action, from writer",      DiscardAction.newest,               writer.config.discardAction);
-
-        appender.setDiscardAction("bogus");
-
-        assertEquals("post-update discard action, from appender",   DiscardAction.newest.toString(),    appender.getDiscardAction());
-        assertEquals("post-update discard action, from writer",     DiscardAction.newest,               writer.config.discardAction);
+        assertEquals("discard action, from appender",    DiscardAction.oldest.toString(),    appender.getDiscardAction());
+        assertEquals("discard action, from writer",      DiscardAction.oldest,               writer.config.discardAction);
 
         appenderInternalLogger.assertDebugLog();
         appenderInternalLogger.assertErrorLog("invalid discard action.*bogus.*");

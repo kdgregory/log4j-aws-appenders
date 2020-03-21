@@ -4,21 +4,23 @@
 
     <groupId>com.kdgregory.logging</groupId>
     <artifactId>integration-tests</artifactId>
-    <version>2.2.2</version>
+    <version>2.3.0</version>
     <packaging>pom</packaging>
 
-    <name>AWS Log Appenders - Integration Tests</name>
+    <name>AWS Logging Appenders - Integration Tests</name>
 
     <description>
         Driver POM to build the integration tests.
     </description>
 
     <modules>
-        <module>cloudwatch-logwriter-integration-tests</module>
-        <module>kinesis-logwriter-integration-tests</module>
-        <module>sns-logwriter-integration-tests</module>
-        <module>log4j1-integration-tests</module>
-        <module>logback-integration-tests</module>
+        <module>logwriter-cloudwatch</module>
+        <module>logwriter-kinesis</module>
+        <module>logwriter-sns</module>
+        <module>appender-common</module>
+        <module>appender-log4j1</module>
+        <module>appender-log4j2</module>
+        <module>appender-logback</module>
     </modules>
 
 </project>

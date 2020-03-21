@@ -1,0 +1,27 @@
+<Configuration status="warn" packages="com.kdgregory.log4j2.testhelpers">
+
+    <Appenders>
+        <TestableSNSAppender name="SNS">
+            <PatternLayout pattern="%m" />
+            <topicName>example</topicName>
+            <subject>This is a test</subject>
+            <autoCreate>true</autoCreate>
+            <synchronous>false</synchronous> <!-- explicitly set to default value -->
+            <discardThreshold>123</discardThreshold>
+            <discardAction>newest</discardAction>
+            <clientFactory>com.example.Foo.bar</clientFactory>
+            <clientRegion>us-west-1</clientRegion>
+            <clientEndpoint>sns.us-west-2.amazonaws.com</clientEndpoint>
+            <useShutdownHook>false</useShutdownHook>
+        </TestableSNSAppender>
+    </Appenders>
+
+    <Loggers>
+        <Root level="off">
+        </Root>
+        <Logger name="com.kdgregory.log4j2.aws.TestSNSAppender" level="debug">
+            <AppenderRef ref="SNS" />
+        </Logger>
+    </Loggers>
+
+</Configuration>

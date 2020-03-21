@@ -2,7 +2,7 @@
 
     <Appenders>
         <TestableCloudWatchAppender name="CLOUDWATCH">
-            <PatternLayout 
+            <PatternLayout
                 pattern="%m"
                 header="File Header"
                 footer="File Footer"

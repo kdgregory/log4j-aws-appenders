@@ -393,13 +393,11 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
 
-        // we need to call twice to avoid race conditions between setting the error in statistics and
-        // reading those statistics from the main thread
+        // we need to call four times to avoid race conditions between setting the
+        // error in statistics and reading those statistics from the main thread
 
         mock.allowWriterThread();
         mock.allowWriterThread();
-
-        // FIXME - we actually need to call four times, to get past interal retries
         mock.allowWriterThread();
         mock.allowWriterThread();
 

@@ -89,8 +89,8 @@ public class Substitutions
         while (! output.equals(input));
         return output;
     }
-    
-    
+
+
     /**
      *  This function handles the actual replacement; it should only be called
      *  if you know that there's a valud substitution.
@@ -122,7 +122,7 @@ public class Substitutions
     private String substituteDate(String input)
     {
         String tag = "{date}";
-        
+
         int index = input.indexOf(tag);
         if (index < 0)
             return input;
@@ -141,7 +141,7 @@ public class Substitutions
     private String substituteTimestamp(String input)
     {
         String tag = "{timestamp}";
-        
+
         int index = input.indexOf(tag);
         if (index < 0)
             return input;
@@ -160,7 +160,7 @@ public class Substitutions
     private String substituteHourlyTimestamp(String input)
     {
         String tag = "{hourlyTimestamp}";
-        
+
         int index = input.indexOf(tag);
         if (index < 0)
             return input;
@@ -179,7 +179,7 @@ public class Substitutions
     private String substituteStartupTimestamp(String input)
     {
         String tag = "{startupTimestamp}";
-        
+
         int index = input.indexOf(tag);
         if (index < 0)
             return input;
@@ -198,7 +198,7 @@ public class Substitutions
     private String substitutePid(String input)
     {
         String tag = "{pid}";
-        
+
         int index = input.indexOf(tag);
         if (index < 0)
             return input;
@@ -218,7 +218,7 @@ public class Substitutions
     private String substituteHostname(String input)
     {
         String tag = "{hostname}";
-        
+
         int index = input.indexOf(tag);
         if (index < 0)
             return input;

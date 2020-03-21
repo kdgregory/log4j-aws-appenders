@@ -46,7 +46,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
     // this one is used solely by the static factory test
     // (which doesn't need an SQS queue because we don't send anything)
     protected static AmazonSNS factoryClient;
-    
+
     // these are for the alternate region test
     protected AmazonSNS altSNSclient;
     protected AmazonSQS altSQSclient;
@@ -108,7 +108,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
         helperSNSclient = AmazonSNSClientBuilder.defaultClient();
         helperSQSclient = AmazonSQSClientBuilder.defaultClient();
     }
-    
+
 
     public void tearDown()
     {

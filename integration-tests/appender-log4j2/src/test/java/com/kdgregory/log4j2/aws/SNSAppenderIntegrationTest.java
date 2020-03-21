@@ -139,7 +139,7 @@ extends AbstractSNSAppenderIntegrationTest
         MDC.clear();
     }
 
-    
+
     @AfterClass
     public static void afterClass()
     {

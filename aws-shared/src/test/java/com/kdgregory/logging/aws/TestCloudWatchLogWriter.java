@@ -651,7 +651,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
 
         // based on the current timeout settings I know that there will be 5 retry attempts
-        // ... although running on a slow machine there may be only 4
+        // ... although running on a slow machine there may be only 4, which can cause test
+        //     to fail (not fixing)
 
         long start = System.currentTimeMillis();
         for (int ii = 0 ; ii < 6 ; ii++)

@@ -641,7 +641,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
         }
 
         synchronized (appendLock)
-        {            
+        {
             long now = System.currentTimeMillis();
             if (shouldRotate(now))
             {

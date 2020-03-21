@@ -47,8 +47,8 @@ extends Runnable
      *  has been reached.
      */
     void setDiscardAction(DiscardAction value);
-    
-    
+
+
     /**
      *  Used when shutdown hooks are in effect, so that the writer can remove that hook
      *  during cleanup. See {@link com.kdgregory.logging.common.factories.DefaultThreadFactory}
@@ -119,8 +119,8 @@ extends Runnable
      *  <code>run()</code> method.
      */
     void stop();
-    
-    
+
+
     /**
      *  Waits until the writer thread has stopped, the timeout has expired, or the
      *  calling thread is interrupted.

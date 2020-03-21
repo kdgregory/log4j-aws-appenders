@@ -19,8 +19,8 @@
 
 
     <properties>
-        <!-- tests use the latest version of the SDK -->
-        <aws-sdk.version>1.11.495</aws-sdk.version>
+        <!-- appender integration tests use a recent-ish version of the SDK -->
+        <aws-sdk.version>1.11.600</aws-sdk.version>
     </properties>
 
 

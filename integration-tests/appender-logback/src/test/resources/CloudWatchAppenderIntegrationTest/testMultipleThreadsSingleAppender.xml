@@ -2,7 +2,7 @@
 
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS}  %-5level - %mdc{testName}: %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} %-5level - %mdc{testName}: %msg%n</pattern>
         </encoder>
     </appender>
 

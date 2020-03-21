@@ -32,7 +32,7 @@ import com.kdgregory.log4j.aws.StatisticsMBean;
  *  <pre>
  *      java -jar target/log4j1-aws-appenders-example-*.jar NUM_THREADS
  *  </pre>
- *  
+ *
  *  Each thread will take a random walk, starting at the value 50 and moving up
  *  or down by a small amount at each step. When the current value is in the
  *  range 10..90, the program emits a debug log message. When in the range 0..9
@@ -96,7 +96,7 @@ public class Main
                 catch (InterruptedException ignored) { /* */ }
             }
         }
-        
+
         private void updateValue()
         {
             value += 2 - rnd.nextInt(5);

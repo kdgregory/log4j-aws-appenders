@@ -3,7 +3,7 @@
 
     <Appenders>
         <Console name="CONSOLE">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS}  %-5p  - %X{testName}: %m%n" />
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5p - %X{testName}: %m%n" />
         </Console>
     </Appenders>
 

@@ -36,7 +36,7 @@ extends TestableCloudWatchAppender
         return new ThrowingWriterCloudWatchAppenderBuilder();
     }
 
-    
+
     public static class ThrowingWriterCloudWatchAppenderBuilder
     extends TestableCloudWatchAppenderBuilder
     {
@@ -46,8 +46,8 @@ extends TestableCloudWatchAppender
             return new ThrowingWriterCloudWatchAppender(getName(), this);
         }
     }
-    
-    
+
+
     private ThrowingWriterCloudWatchAppender(String name, CloudWatchAppenderConfig config)
     {
         super(name, config, true);

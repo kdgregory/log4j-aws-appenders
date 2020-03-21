@@ -17,6 +17,8 @@
         Tests the CloudWatch back-end in isolation.
     </description>
 
+    <!-- logwriter integration tests use the base (1.11.0) SDK version -->
+
     <dependencies>
         <dependency>
             <groupId>com.kdgregory.logging</groupId>

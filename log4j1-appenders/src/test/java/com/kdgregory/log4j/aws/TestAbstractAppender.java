@@ -72,7 +72,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
     {
         LogLog.setQuietMode(false);
     }
-    
+
 
     @Test
     public void testLifecycle() throws Exception

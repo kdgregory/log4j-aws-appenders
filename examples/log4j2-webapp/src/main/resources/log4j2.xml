@@ -18,7 +18,7 @@
             <JsonLayout complete="false" compact="true" eventEol="true" properties="true">
                 <KeyValuePair key="applicationName" value="Log4J2-Example" />
                 <KeyValuePair key="environment" value="${env:ENVIRONMENT:-dev}" />
-                <KeyValuePair key="accountId" value="${awslogs:awsAccountId}" />                
+                <KeyValuePair key="accountId" value="${awslogs:awsAccountId}" />
                 <KeyValuePair key="timestamp" value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSS'Z'}" />
                 <KeyValuePair key="processId" value="${awslogs:pid}" />
                 <KeyValuePair key="hostname" value="${awslogs:hostname}" />
@@ -38,7 +38,7 @@
     <Loggers>
         <Root level="warn">
             <AppenderRef ref="CONSOLE" />
-            
+
         </Root>
         <Logger name="com.kdgregory" level="debug">
 <!-- uncomment the appenders that you want to use

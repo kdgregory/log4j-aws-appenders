@@ -17,6 +17,7 @@
         Tests the SNS back-end in isolation.
     </description>
 
+    <!-- logwriter integration tests use the base (1.11.0) SDK version -->
 
     <dependencies>
         <dependency>

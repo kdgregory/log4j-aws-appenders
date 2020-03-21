@@ -19,6 +19,7 @@
         <module>log4j1-appenders</module>
         <module>log4j2-appenders</module>
         <module>logback-appenders</module>
+        <module>integration-tests/helpers</module>
     </modules>
 
 </project>

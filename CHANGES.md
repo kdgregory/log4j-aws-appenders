@@ -1,6 +1,6 @@
 # Change History
 
-## 2.3.0 (TBD)
+## 2.3.0 (2020-03-21)
 
 * Support Log4J 2.x
 * Appenders are no longer usable with JRE 1.6. The
@@ -9,9 +9,8 @@
   classfiles were formerly compiled for 1.6 compatibility. The Log4J2
   implementation, however, requires 1.7, so all build scripts were updated.
 * CloudWatchLogWriter: set retention policy in thread that successfully
-  created the log group (was executing from every thread, causing
-  spurious exceptions but otherwise succeeding).
-
+  created the log group (was executing from every thread, causing spurious
+  exceptions but otherwise succeeding).
 
 ## 2.2.2 (2019-10-20)
 

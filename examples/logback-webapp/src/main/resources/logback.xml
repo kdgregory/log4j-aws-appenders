@@ -2,7 +2,7 @@
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{ISO8601} %-5level [%thread] %logger{24} - %msg%n</pattern>
+            <pattern>%d{ISO8601} %-5level [%thread] %logger{24} - %X{requestUUID} - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -10,10 +10,10 @@
 
     <appender name="CLOUDWATCH" class="com.kdgregory.logback.aws.CloudWatchAppender">
         <logGroup>AppenderExample</logGroup>
-        <logStream>WebApp-{date}-{hostname}-{pid}</logStream>
+        <logStream>Logback-WebApp-{date}-{hostname}-{pid}</logStream>
         <dedicatedWriter>true</dedicatedWriter>
         <layout class="ch.qos.logback.classic.PatternLayout">
-            <pattern>%d{ISO8601} %-5level [%thread] %logger{24} - %msg%n</pattern>
+            <pattern>%d{ISO8601} %-5level [%thread] %logger{24} - %X{requestUUID} - %msg%n</pattern>
         </layout>
     </appender>
 
@@ -23,15 +23,15 @@
             <appendNewlines>true</appendNewlines>
             <enableHostname>true</enableHostname>
             <enableLocation>true</enableLocation>
-            <tags>applicationName=Logback-Example,runDate={date},environment={sysprop:environment:dev}</tags>
+            <tags>applicationName=Logback-Webapp,runDate={date},environment={sysprop:environment:dev}</tags>
         </layout>
     </appender>
 
     <appender name="SNS" class="com.kdgregory.logback.aws.SNSAppender">
         <topicName>AppenderExample</topicName>
-        <subject>Error from logging example</subject>
+        <subject>Error from logback webapp</subject>
         <layout class="ch.qos.logback.classic.PatternLayout">
-            <pattern>%d{ISO8601} %-5level [%thread] %logger{24} - %msg%n</pattern>
+            <pattern>%d{ISO8601} [%thread] %logger{24} - %X{requestUUID} - %msg%n</pattern>
         </layout>
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>ERROR</level>
@@ -45,7 +45,6 @@
     <root level="warn">
         <appender-ref ref="CONSOLE" />
     </root>
-
 
     <logger name="com.kdgregory" level="debug">
 <!-- uncomment the appenders that you want to use

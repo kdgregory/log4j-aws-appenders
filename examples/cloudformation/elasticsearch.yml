@@ -17,7 +17,7 @@ Resources:
     Type:                               "AWS::Elasticsearch::Domain"
     Properties:
       DomainName:                       !Ref ElasticsearchDomainName
-      ElasticsearchVersion:             "5.5"
+      ElasticsearchVersion:             "7.1"
       ElasticsearchClusterConfig:
         InstanceType:                   "t2.small.elasticsearch"
         InstanceCount:                  1

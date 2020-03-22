@@ -2,35 +2,35 @@
 
     <Appenders>
         <Console name="CONSOLE">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %X{requestUUID} - %c %p - %m%n" />
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t] %c - %X{requestUUID} - %m%n" />
         </Console>
 
 <!-- uncomment the appenders that you want to use
 
         <CloudWatchAppender name="CLOUDWATCH">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %X{requestUUID} - %c %p - %m" />
             <logGroup>AppenderExample</logGroup>
-            <logStream>Example-{date}-{hostname}-{pid}</logStream>
+            <logStream>Log4J2-Webapp-{date}-{hostname}-${awslogs:pid}</logStream>
             <dedicatedWriter>true</dedicatedWriter>
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t] %c - %X{requestUUID} - %m%n" />
         </CloudWatchAppender>
 
         <KinesisAppender name="KINESIS">
-            <JsonLayout complete="false" compact="true" eventEol="true" properties="true">
-                <KeyValuePair key="applicationName" value="Log4J2-Example" />
+            <streamName>AppenderExample</streamName>
+            <JsonLayout complete="false" compact="true" eventEol="true" properties="true" locationInfo="true">
+                <KeyValuePair key="applicationName" value="Log4J2-Webapp" />
                 <KeyValuePair key="environment" value="${env:ENVIRONMENT:-dev}" />
                 <KeyValuePair key="accountId" value="${awslogs:awsAccountId}" />
-                <KeyValuePair key="timestamp" value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSS'Z'}" />
+                <KeyValuePair key="timestamp" value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSSZ}" />
                 <KeyValuePair key="processId" value="${awslogs:pid}" />
                 <KeyValuePair key="hostname" value="${awslogs:hostname}" />
             </JsonLayout>
-            <streamName>AppenderExample</streamName>
         </KinesisAppender>
 
         <SNSAppender name="SNS">
-            <PatternLayout pattern="[%t] %-5p %c - %m%n" />
-            <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
             <topicName>AppenderExample</topicName>
-            <subject>Error from logging example</subject>
+            <subject>Error from Log4J2 webapp</subject>
+            <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c - %X{requestUUID} - %m%n" />
         </SNSAppender>
 -->
     </Appenders>

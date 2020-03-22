@@ -25,7 +25,7 @@ Parameters:
   ArchivePrefix:
     Description:                        "Prefix within the bucket for log record archive"
     Type:                               "String"
-    Default:                            "log-archive"
+    Default:                            "logging-example"
 
 Resources:
 
@@ -130,9 +130,9 @@ Resources:
         RoleARN:                        !GetAtt FirehoseDeliveryRole.Arn
       ElasticsearchDestinationConfiguration:
         DomainARN:                      !Sub "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/${ElasticsearchDomainName}"
-        IndexName:                      "application_logs"
+        IndexName:                      "logstash"
         IndexRotationPeriod:            "OneDay"
-        TypeName:                       "ApplicationLog"
+        TypeName:                       ""      # must be empty for Elasticsearch 7.1, non-empty for earlier versions
         RoleARN:                        !GetAtt FirehoseDeliveryRole.Arn
         BufferingHints:
           IntervalInSeconds:            60

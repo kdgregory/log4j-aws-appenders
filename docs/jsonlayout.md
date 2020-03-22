@@ -116,7 +116,7 @@ almost the same results using the following configuration:
 
 ```
 <JsonLayout complete="false" compact="true" eventEol="true" properties="true" locationInfo="true">
-    <KeyValuePair key="timestamp" value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSS'Z'}" />
+    <KeyValuePair key="timestamp" value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSSZ}" />
     <KeyValuePair key="processId" value="${awslogs:pid}" />
     <KeyValuePair key="hostname" value="${awslogs:hostname}" />
     <KeyValuePair key="applicationName" value="Example" />
@@ -145,7 +145,7 @@ The output (again pretty-printed) looks like this:
 		"file": "Main.java",
 		"line": 115
 	},
-	"timestamp": "2020-03-13T08:27:59.182Z",
+	"timestamp": "2020-03-13T08:27:59.182-0400",
 	"processId": "18816",
 	"hostname": "ithilien",
 	"applicationName": "Example",

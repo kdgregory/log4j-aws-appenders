@@ -20,7 +20,7 @@
                 <KeyValuePair key="applicationName" value="Log4J2-Webapp" />
                 <KeyValuePair key="environment" value="${env:ENVIRONMENT:-dev}" />
                 <KeyValuePair key="accountId" value="${awslogs:awsAccountId}" />
-                <KeyValuePair key="timestamp" value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSS'Z'}" />
+                <KeyValuePair key="timestamp" value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSSZ}" />
                 <KeyValuePair key="processId" value="${awslogs:pid}" />
                 <KeyValuePair key="hostname" value="${awslogs:hostname}" />
             </JsonLayout>

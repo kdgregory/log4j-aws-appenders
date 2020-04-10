@@ -56,7 +56,8 @@ to ensure that your project includes necessary dependencies for your destination
 * [`aws-java-sdk-logs`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-logs%22) to use `CloudWatchAppender`
 * [`aws-java-sdk-kinesis`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-kinesis%22) to use `KinesisAppender`
 * [`aws-java-sdk-sns`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-sns%22) to use `SNSAppender`
-* [`aws-java-sdk-sts`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-sts%22) to use the `aws:accountId` substitution variable.
+* [`aws-java-sdk-iam`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-iam%22) to use assumed roles.
+* [`aws-java-sdk-sts`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-sts%22) to use the `aws:accountId` substitution variable or assumed roles.
 
 The minimum supported dependency versions are:
 

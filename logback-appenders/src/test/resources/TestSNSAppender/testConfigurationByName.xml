@@ -12,6 +12,7 @@
     <synchronous>false</synchronous> <!-- explicitly set to default value -->
     <discardThreshold>123</discardThreshold>
     <discardAction>newest</discardAction>
+    <assumedRole>AssumableRole</assumedRole>
     <clientFactory>com.example.Foo.bar</clientFactory>
     <clientRegion>us-west-1</clientRegion>
     <clientEndpoint>sns.us-west-2.amazonaws.com</clientEndpoint>

@@ -352,7 +352,7 @@ extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWr
             actualStreamName, actualPartitionKey,
             config.getAutoCreate(), config.getShardCount(), config.getRetentionPeriod(),
             config.getBatchDelay(), config.getDiscardThreshold(), discardAction,
-            config.getClientFactory(), config.getClientRegion(), config.getClientEndpoint());
+            config.getClientFactory(), config.getAssumedRole(), config.getClientRegion(), config.getClientEndpoint());
     }
 
 

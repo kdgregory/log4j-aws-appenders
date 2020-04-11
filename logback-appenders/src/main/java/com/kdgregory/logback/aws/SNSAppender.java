@@ -252,7 +252,8 @@ extends AbstractAppender<SNSWriterConfig,SNSWriterStatistics,SNSWriterStatistics
 
         return new SNSWriterConfig(
             actualTopicName, actualTopicArn, actualSubject, autoCreate,
-            discardThreshold, discardAction, clientFactory, clientRegion, clientEndpoint);
+            discardThreshold, discardAction,
+            clientFactory, assumedRole, clientRegion, clientEndpoint);
     }
 
 

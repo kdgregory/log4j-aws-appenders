@@ -95,15 +95,16 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         config = new KinesisWriterConfig(
             DEFAULT_STREAM_NAME,
             DEFAULT_PARTITION_KEY,
-            false,                            // batchDelay
-            0,                          // discardThreshold
-            null,
-            100,                           // clientFactoryMethod
-            10000,                           // clientRegion
-            DiscardAction.oldest,                           // clientEndpoint
-            null,                          // autoCreate
-            null,                              // shardCount,
-            null);                          // retentionPeriod
+            false,                      // autoCreate
+            0,                          // shardCount
+            null,                       // retentionPeriod
+            100,                        // batchDelay
+            10000,                      // discardThreshold
+            DiscardAction.oldest,       // discardAction
+            null,                       // clientFactoryMethod
+            null,                       // assumedRole
+            null,                       // clientRegion
+            null);                      // clientEndpoint
 
         stats = new KinesisWriterStatistics();
 
@@ -128,18 +129,30 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     @Test
     public void testConfiguration() throws Exception
     {
+        // note: the client endpoint configuration is ignored when creating the writer
         config = new KinesisWriterConfig(
-            DEFAULT_STREAM_NAME,
-            DEFAULT_PARTITION_KEY,
-            false,                            // batchDelay
-            0,                            // discardThreshold
-            null,
-            123,                           // clientFactoryMethod
-            456,                           // clientRegion
-            DiscardAction.newest,                           // clientEndpoint
-            null,                          // autoCreate
-            null,                              // shardCount,
-            null);                          // retentionPeriod
+                "argle",                                // streamName
+                "bargle",                               // partitionKey
+                true,                                   // autoCreate
+                3,                                      // shardCount
+                48,                                     // retentionPeriod
+                123,                                    // batchDelay
+                456,                                    // discardThreshold
+                DiscardAction.newest,                   // discardAction
+                "com.example.factory.Method",           // clientFactoryMethod
+                "SomeRole",                             // assumedRole
+                "us-west-1",                            // clientRegion
+                "kinesis.us-west-1.amazonaws.com");     // clientEndpoint
+
+        assertEquals("stream name",                         "argle",                            config.streamName);
+        assertEquals("partition key",                       "bargle",                           config.partitionKey);
+        assertTrue("auto-create",                                                               config.autoCreate);
+        assertEquals("shard count",                         3,                                  config.shardCount);
+        assertEquals("retention period",                    Integer.valueOf(48),                config.retentionPeriod);
+        assertEquals("factory method",                      "com.example.factory.Method",       config.clientFactoryMethod);
+        assertEquals("assumed role",                        "SomeRole",                         config.assumedRole);
+        assertEquals("client region",                       "us-west-1",                        config.clientRegion);
+        assertEquals("client endpoint",                     "kinesis.us-west-1.amazonaws.com",  config.clientEndpoint);
 
         writer = new KinesisLogWriter(config, stats, internalLogger, dummyClientFactory);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);

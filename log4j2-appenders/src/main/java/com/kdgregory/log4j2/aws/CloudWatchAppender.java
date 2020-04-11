@@ -449,6 +449,6 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
             actualLogGroup, actualLogStream, retentionPeriod,
             config.isDedicatedWriter(), config.getBatchDelay(),
             config.getDiscardThreshold(), discardAction,
-            config.getClientFactory(), config.getClientRegion(), config.getClientEndpoint());
+            config.getClientFactory(), config.getAssumedRole(), config.getClientRegion(), config.getClientEndpoint());
     }
 }

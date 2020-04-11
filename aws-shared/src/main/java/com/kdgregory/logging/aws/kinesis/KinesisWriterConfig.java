@@ -48,6 +48,7 @@ extends AbstractWriterConfig
      *  @param discardThreshold     Maximum number of messages to retain if unable to send.
      *  @param discardAction        What to do with unsent messages over the threshold.
      *  @param clientFactoryMethod  Optional: fully-qualified name of a static method to create client.
+     *  @param assumedRole          Optional: name or ARN of a role to assume when creating client.
      *  @param clientRegion         Optional: explicit region for client (used with ctor and SDK builder).
      *  @param clientEndpoint       Optional: explicit endpoint for client (only used with constructors).
      */
@@ -55,9 +56,9 @@ extends AbstractWriterConfig
         String streamName, String partitionKey,
         boolean autoCreate, int shardCount, Integer retentionPeriod,
         long batchDelay, int discardThreshold, DiscardAction discardAction,
-        String clientFactoryMethod, String clientRegion, String clientEndpoint)
+        String clientFactoryMethod, String assumedRole, String clientRegion, String clientEndpoint)
     {
-        super(batchDelay, discardThreshold, discardAction, clientFactoryMethod, clientRegion, clientEndpoint);
+        super(batchDelay, discardThreshold, discardAction, clientFactoryMethod, assumedRole, clientRegion, clientEndpoint);
 
         this.streamName = streamName;
         this.partitionKey = partitionKey;

@@ -51,11 +51,12 @@ extends AbstractUnitTest<TestableKinesisAppender>
         assertEquals("max delay",           1234L,                              appender.getConfig().getBatchDelay());
         assertEquals("discard threshold",   54321,                              appender.getConfig().getDiscardThreshold());
         assertEquals("discard action",      "newest",                           appender.getConfig().getDiscardAction());
+        assertFalse("synchronous mode",                                         appender.getConfig().isSynchronous());
+        assertFalse("use shutdown hook",                                        appender.getConfig().isUseShutdownHook());
+        assertEquals("assumed role",        "AssumableRole",                    appender.getConfig().getAssumedRole());
         assertEquals("client factory",      "com.example.Foo.bar",              appender.getConfig().getClientFactory());
         assertEquals("client region",       "us-west-1",                        appender.getConfig().getClientRegion());
         assertEquals("client endpoint",     "kinesis.us-west-2.amazonaws.com",  appender.getConfig().getClientEndpoint());
-        assertFalse("synchronous mode",                                         appender.getConfig().isSynchronous());
-        assertFalse("use shutdown hook",                                        appender.getConfig().isUseShutdownHook());
     }
 
 
@@ -72,11 +73,12 @@ extends AbstractUnitTest<TestableKinesisAppender>
         assertEquals("max delay",           2000L,                              appender.getConfig().getBatchDelay());
         assertEquals("discard threshold",   10000,                              appender.getConfig().getDiscardThreshold());
         assertEquals("discard action",      "oldest",                           appender.getConfig().getDiscardAction());
+        assertFalse("synchronous mode",                                         appender.getConfig().isSynchronous());
+        assertTrue("use shutdown hook",                                         appender.getConfig().isUseShutdownHook());
+        assertEquals("assumed role",        null,                               appender.getConfig().getAssumedRole());
         assertEquals("client factory",      null,                               appender.getConfig().getClientFactory());
         assertEquals("client region",       null,                               appender.getConfig().getClientRegion());
         assertEquals("client endpoint",     null,                               appender.getConfig().getClientEndpoint());
-        assertFalse("synchronous mode",                                         appender.getConfig().isSynchronous());
-        assertTrue("use shutdown hook",                                         appender.getConfig().isUseShutdownHook());
     }
 
 

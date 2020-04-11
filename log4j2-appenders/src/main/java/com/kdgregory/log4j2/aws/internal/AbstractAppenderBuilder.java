@@ -160,6 +160,28 @@ implements AbstractAppenderConfig
     }
 
 
+    @PluginBuilderAttribute("assumedRole")
+    private String assumedRole;
+
+    /**
+     *  Sets the <code>clientFactory</code> configuration property.
+     */
+    public T setAssumedRole(String value)
+    {
+        this.assumedRole = value;
+        return (T)this;
+    }
+
+    /**
+     *  Returns the <code>clientFactory</code> configuration property.
+     */
+    @Override
+    public String getAssumedRole()
+    {
+        return assumedRole;
+    }
+
+
     @PluginBuilderAttribute("clientFactory")
     private String clientFactoryMethod;
 

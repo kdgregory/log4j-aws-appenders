@@ -140,7 +140,7 @@ public class TestDefaultClientFactory
     @Test
     public void testOrderOfOperations() throws Exception
     {
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, logger)
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, null, logger)
         {
             @Override
             protected AWSLogs tryFactory()
@@ -182,7 +182,7 @@ public class TestDefaultClientFactory
     {
         String factoryMethodName = getClass().getName() + ".createMockClient";
 
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, logger)
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, null, logger)
         {
             @Override
             public AWSLogs tryBuilder()
@@ -210,7 +210,7 @@ public class TestDefaultClientFactory
     public void testBogusFactoryMethodName() throws Exception
     {
         String factoryMethodName = "com.example.Bogus.bogus";
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, logger)
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, null, logger)
         {
             // our goal is to cleanly recover from bad method name, not actually create a client, so other mechanisms just record invocation
 
@@ -244,7 +244,7 @@ public class TestDefaultClientFactory
     {
         String factoryMethodName = getClass().getName() + ".throwingFactoryMethod";
 
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, logger)
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, null, logger)
         {
             // again, we just want to cleanly recover, so will verify that other mechanisms were tried
 
@@ -276,7 +276,7 @@ public class TestDefaultClientFactory
     @Test
     public void testClientBuilder() throws Exception
     {
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, logger)
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, null, logger)
         {
             // for this test we want to exercise the full builder code path
             {
@@ -304,7 +304,7 @@ public class TestDefaultClientFactory
     {
         final String region = "us-west-1";
 
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, region, null, logger)
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, region, null, logger)
         {
             // for this test we want to exercise the full builder code path
             {
@@ -333,7 +333,7 @@ public class TestDefaultClientFactory
     public void testClientConstructor() throws Exception
     {
         // we're using an actual client, not a mock
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, logger);
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, null, logger);
 
         AWSLogs client = factory.createClient();
         assertNotNull("actually created a client",  client);
@@ -365,7 +365,7 @@ public class TestDefaultClientFactory
         final String region = "us-west-1";
 
         // we're using an actual client, not a mock
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, region, null, logger);
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, region, null, logger);
 
         AWSLogs client = factory.createClient();
         assertNotNull("actually created a client",  client);
@@ -387,7 +387,7 @@ public class TestDefaultClientFactory
         final String region = "eu-west-3";
 
         // we're using an actual client, not a mock
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, region, null, logger);
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, region, null, logger);
 
         AWSLogs client = factory.createClient();
         assertNotNull("actually created a client",  client);
@@ -420,7 +420,7 @@ public class TestDefaultClientFactory
         final String endpoint = "logs." + region + ".amazonaws.com";
 
         // we're using an actual client, not a mock
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, endpoint, logger);
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, endpoint, logger);
 
         AWSLogs client = factory.createClient();
         assertNotNull("actually created a client",  client);

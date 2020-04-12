@@ -42,6 +42,7 @@ implements ClientFactory<AWSClientType>
     // these all come from the constructor
     private Class<AWSClientType> clientType;
     private String factoryMethodName;
+    private String assumedRole;
     private String region;
     private String endpoint;
     private InternalLogger logger;
@@ -69,16 +70,19 @@ implements ClientFactory<AWSClientType>
      *  @param clientType       The AWS client interface type, used for hardcoded selection chains.
      *  @param factoryMethod    Optional: if not-null, specifies a caller-defined static method to
      *                          create the client.
+     *  @param assumedRole      Optional: if non-blank, will attempt to assume a role when using the
+     *                          client-builder.
      *  @param region           Optional: if non-blank, specifies the desired AWS region for a client
      *                          created either via constructor or SDK builder.
      *  @param endpoint         Optional: if not null, specifies a caller-defined endpoint to apply
      *                          to a client created via the default constructor.
      *  @param logger           Used to log creation events/errors.
      */
-    public DefaultClientFactory(Class<AWSClientType> clientType, String factoryMethod, String region, String endpoint, InternalLogger logger)
+    public DefaultClientFactory(Class<AWSClientType> clientType, String factoryMethod, String assumedRole, String region, String endpoint, InternalLogger logger)
     {
         this.clientType = clientType;
         this.factoryMethodName = factoryMethod;
+        this.assumedRole = assumedRole;
         this.region = region;
         this.endpoint = endpoint;
         this.logger = logger;

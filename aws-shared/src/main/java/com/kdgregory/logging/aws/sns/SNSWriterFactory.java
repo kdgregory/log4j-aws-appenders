@@ -32,6 +32,8 @@ implements WriterFactory<SNSWriterConfig,SNSWriterStatistics>
     {
         return new SNSLogWriter(
                 config, stats, logger,
-                new DefaultClientFactory<AmazonSNS>(AmazonSNS.class, config.clientFactoryMethod, config.clientRegion, config.clientEndpoint, logger));
+                new DefaultClientFactory<AmazonSNS>(
+                    AmazonSNS.class, config.clientFactoryMethod, config.assumedRole,
+                    config.clientRegion, config.clientEndpoint, logger));
     }
 }

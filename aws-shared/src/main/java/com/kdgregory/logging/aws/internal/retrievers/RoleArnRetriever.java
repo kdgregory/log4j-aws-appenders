@@ -67,8 +67,8 @@ extends ReflectionBasedInvoker
                 if (roles == null) roles = Collections.emptyList(); // should not be needed
                 for (Object role : roles)
                 {
-                    String roleArn = (String)invoke(roleKlass, role, "getArn", null, null);
-                    if (roleName.equals(invoke(roleKlass, role, "getRoleName", null, null)))
+                    String roleArn = (String)invokeMethod(roleKlass, role, "getArn", null, null);
+                    if (roleName.equals(invokeMethod(roleKlass, role, "getRoleName", null, null)))
                         return roleArn;
                 }
             } while (getResponseValue(response, "isTruncated", Boolean.class));

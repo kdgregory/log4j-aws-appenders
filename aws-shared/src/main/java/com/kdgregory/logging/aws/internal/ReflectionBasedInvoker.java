@@ -35,8 +35,9 @@ import java.lang.reflect.Method;
  *  </ol>
  *  All variables involved in this process must be defined as <code>Object</code>.
  *  <p>
- *  There are also two utility methods: {@link #loadClass} to load arbitrary classes,
- *  and {@link #invoke} for invocation of an arbitrary 0-arity or 1-arity method.
+ *  In addition to the request-response methods, there are utility methods to load
+ *  a class, instantiate that class, and invoke arbitrary 0- or 1-arity static or
+ *  instance methods.
  *  <p>
  *  Any exceptions thrown during method invocations are retained, and short-circuit
  *  any subsequent operations. It is therefore safe to perform a chain of operations,
@@ -59,6 +60,24 @@ public class ReflectionBasedInvoker
         clientKlass = loadClass(clientClassName);
         requestKlass = loadClass(requestClassName);
         responseKlass = loadClass(responseClassName);
+    }
+
+
+    /**
+     *  Constructs an instance for static method invocation. This loads the "client" class.
+     */
+    public ReflectionBasedInvoker(String className)
+    {
+        clientKlass = loadClass(className);
+    }
+
+
+    /**
+     *  Constructs an instance for when you just want to use the utility methods.
+     */
+    public ReflectionBasedInvoker()
+    {
+        // nothing happening here
     }
 
 
@@ -112,9 +131,9 @@ public class ReflectionBasedInvoker
      *  null (this is a short-circuit), as well as when an exception occurs during
      *  invocation. For the latter, unwraps <code>InvocationTargetException</code>.
      */
-    public Object invoke(Class<?> objKlass, Object obj, String methodName, Class<?> paramKlass, Object value)
+    public Object invokeMethod(Class<?> objKlass, Object obj, String methodName, Class<?> paramKlass, Object value)
     {
-        if ((exception != null) || (objKlass == null) || (obj == null))
+        if ((exception != null) || (objKlass == null))
             return null;
 
         try
@@ -144,12 +163,22 @@ public class ReflectionBasedInvoker
 
 
     /**
+     *  Static method invoke. Can also be used for 0- or 1-arity functions, by passing
+     *  a null parameter class.
+     */
+    public Object invokeStatic(Class<?> objKlass, String methodName, Class<?> paramKlass, Object value)
+    {
+        return invokeMethod(objKlass, null, methodName, paramKlass, value);
+    }
+
+
+    /**
      *  Convenience method that invokes a setter on the provided object, which is
      *  assumed to be an instance of the constructed request class.
      */
     public void setRequestValue(Object request, String methodName, Class<?> valueKlass, Object value)
     {
-        invoke(requestKlass, request, methodName, valueKlass, value);
+        invokeMethod(requestKlass, request, methodName, valueKlass, value);
     }
 
 
@@ -159,7 +188,7 @@ public class ReflectionBasedInvoker
      */
     public Object invokeRequest(Object client, String methodName, Object value)
     {
-        return invoke(clientKlass, client, methodName, requestKlass, value);
+        return invokeMethod(clientKlass, client, methodName, requestKlass, value);
     }
 
 
@@ -169,7 +198,7 @@ public class ReflectionBasedInvoker
      */
     public <T> T getResponseValue(Object response, String methodName, Class<T> resultKlass)
     {
-        return resultKlass.cast(invoke(responseKlass, response, methodName, null, null));
+        return resultKlass.cast(invokeMethod(responseKlass, response, methodName, null, null));
     }
 
 

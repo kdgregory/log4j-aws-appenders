@@ -24,22 +24,23 @@ public class TestReflectionBasedInvoker
     public void testHappyPath() throws Exception
     {
         final String testValue = "test";
-        ReflectionBasedInvoker retriever = new ReflectionBasedInvoker(HappyPathClient.class.getName(),
+        ReflectionBasedInvoker invoker = new ReflectionBasedInvoker(
+                                                    HappyPathClient.class.getName(),
                                                     HappyPathRequest.class.getName(),
                                                     HappyPathResponse.class.getName());
 
-        assertNull("no exception reported", retriever.exception);
-        assertSame("client class",          HappyPathClient.class,      retriever.clientKlass);
-        assertSame("request class",         HappyPathRequest.class,     retriever.requestKlass);
-        assertSame("response class",        HappyPathResponse.class,    retriever.responseKlass);
+        assertNull("no exception reported", invoker.exception);
+        assertSame("client class",          HappyPathClient.class,      invoker.clientKlass);
+        assertSame("request class",         HappyPathRequest.class,     invoker.requestKlass);
+        assertSame("response class",        HappyPathResponse.class,    invoker.responseKlass);
 
-        Object client = retriever.instantiate(retriever.clientKlass);
+        Object client = invoker.instantiate(invoker.clientKlass);
         assertNotNull("instantiate() succeeded", client);
 
-        Object request = retriever.instantiate(retriever.requestKlass);
-        retriever.setRequestValue(request, "setValue", String.class, testValue);
-        Object response = retriever.invokeRequest(client, "doSomething", request);
-        String result = retriever.getResponseValue(response, "getValue", String.class);
+        Object request = invoker.instantiate(invoker.requestKlass);
+        invoker.setRequestValue(request, "setValue", String.class, testValue);
+        Object response = invoker.invokeRequest(client, "doSomething", request);
+        String result = invoker.getResponseValue(response, "getValue", String.class);
 
         assertEquals("returned result", testValue, result);
     }
@@ -84,19 +85,30 @@ public class TestReflectionBasedInvoker
     @Test
     public void testBaseRetrieverBogusClass() throws Exception
     {
-        ReflectionBasedInvoker retriever = new ReflectionBasedInvoker("com.example.Bogus", "com.example.Bogus", "com.example.Bogus");
+        ReflectionBasedInvoker invoker = new ReflectionBasedInvoker("com.example.Bogus", "com.example.Bogus", "com.example.Bogus");
 
-        assertNotNull("exception reported", retriever.exception);
-        assertNull("client class",          retriever.clientKlass);
-        assertNull("request class",         retriever.requestKlass);
-        assertNull("response class",        retriever.responseKlass);
+        assertNotNull("exception reported", invoker.exception);
+        assertNull("client class",          invoker.clientKlass);
+        assertNull("request class",         invoker.requestKlass);
+        assertNull("response class",        invoker.responseKlass);
 
         // for these we pass a bogus class; should silently fail due to prior exception
-        assertNull("instantiate()",         retriever.instantiate(String.class));
-        assertNull("invokeRequest()",       retriever.invokeRequest("bogus", "concat", "bogus"));
-        assertNull("getResponseValue",      retriever.getResponseValue("bogus", "getBytes", byte[].class));
+        assertNull("instantiate()",         invoker.instantiate(String.class));
+        assertNull("invokeRequest()",       invoker.invokeRequest("bogus", "concat", "bogus"));
+        assertNull("getResponseValue",      invoker.getResponseValue("bogus", "getBytes", byte[].class));
 
         // for this, not throwing is a good thing
-        retriever.setRequestValue("bogus", "concat", String.class, "bogus");
+        invoker.setRequestValue("bogus", "concat", String.class, "bogus");
     }
+
+
+    @Test
+    public void testInvokeStatic() throws Exception
+    {
+        ReflectionBasedInvoker invoker = new ReflectionBasedInvoker("java.lang.String");
+
+        String result = (String)invoker.invokeStatic(invoker.clientKlass, "valueOf", Object.class, new Integer(123));
+        assertEquals("result", "123", result);
+    }
+
 }

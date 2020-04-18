@@ -14,12 +14,17 @@
 
 package com.kdgregory.logging.aws.common;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.regions.Regions;
 
+import com.kdgregory.logging.aws.internal.ReflectionBasedInvoker;
+import com.kdgregory.logging.aws.internal.retrievers.RoleArnRetriever;
 import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
 
@@ -30,11 +35,15 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *  The following three approaches are tried, in order:
  *  <ol>
  *  <li> Invoking a configured factory method via reflection.
- *  <li> Invoking the SDK default client builder via reflection, if it exists in
- *       the version of the SDK in use.
+ *  <li> Invoking the SDK client builder via reflection, if it exists in the
+ *       the SDK in use. This option also allows assuming a role.
  *  <li> Invoking the SDK client constructor and configuring it using either a
  *       configured endpoint or the <code>AWS_REGION </code> environment variable.
  *  </ol>
+ *
+ *  This class operates entirely by reflection, to ensure that we don't depend on
+ *  any classes that are not present in the 1.11.0 SDK. It uses granular methods
+ *  that are marked protected, to allow mock testing.
  */
 public class DefaultClientFactory<AWSClientType>
 implements ClientFactory<AWSClientType>
@@ -140,7 +149,6 @@ implements ClientFactory<AWSClientType>
     {
         try
         {
-            // builder classes don't exist in the base SDK version so we have to be completely generic
             Object builder = createBuilder();
             if (builder == null)
                 return null;
@@ -150,8 +158,11 @@ implements ClientFactory<AWSClientType>
             if ((region != null) && ! region.isEmpty())
             {
                 logger.debug("setting region: " + region);
-                maybeSetAttribute(builder, "setRegion", region);
+                maybeSetAttribute(builder, "setRegion", String.class, region);
             }
+
+            AWSCredentialsProvider credentialsProvider = createCredentialsProvider();
+            maybeSetAttribute(builder, "setCredentials", AWSCredentialsProvider.class, credentialsProvider);
 
             Method clientFactoryMethod = builder.getClass().getMethod("build");
             return clientType.cast(clientFactoryMethod.invoke(builder));
@@ -169,20 +180,84 @@ implements ClientFactory<AWSClientType>
     // from the invocation code
     protected Object createBuilder()
     {
+        String bulderClassName = factoryClasses.get(clientType.getName());
+        ReflectionBasedInvoker invoker = new ReflectionBasedInvoker(bulderClassName);
+        return invoker.invokeStatic(invoker.clientKlass, "standard", null, null);
+    }
+
+
+    protected AWSCredentialsProvider createCredentialsProvider()
+    {
+        if (assumedRole == null)
+        {
+            logger.debug("using default credentials provider");
+            return createDefaultCredentialsProvider();
+        }
+        else
+        {
+            logger.debug("assuming role " + assumedRole);
+            return createAssumedRoleCredentialsProvider();
+        }
+    }
+
+
+    protected AWSCredentialsProvider createDefaultCredentialsProvider()
+    {
+        ReflectionBasedInvoker invoker = new ReflectionBasedInvoker("com.amazonaws.auth.DefaultAWSCredentialsProviderChain");
+        AWSCredentialsProvider provider = (AWSCredentialsProvider)invoker.invokeStatic(invoker.clientKlass, "getInstance", null, null);
+        if (invoker.exception != null)
+        {
+            logger.error("failed to create default credentials provider", invoker.exception);
+        }
+        return provider;
+    }
+
+
+    protected AWSCredentialsProvider createAssumedRoleCredentialsProvider()
+    {
+        String roleArn = new RoleArnRetriever().invoke(assumedRole);
+
+        // implementation note: there's no requirement for uniqueness on the role session
+        // name, and adding too much additional text (such as a hostname) risks exceeding
+        // the 64-character limit, so we'll let all loggers use the same name
+        String sessionName = getClass().getName();
+
+        ReflectionBasedInvoker invoker = new ReflectionBasedInvoker("com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider$Builder",
+                                                                    "com.amazonaws.services.securitytoken.AWSSecurityTokenService",
+                                                                    null);
+
         try
         {
-            String builderClassName = factoryClasses.get(clientType.getName());
-            if (builderClassName == null)
-                return null;
-
-            Class<?> builderClass = Class.forName(builderClassName);
-            Method factoryMethod = builderClass.getMethod("standard");
-            return factoryMethod.invoke(null);
+            // unfortunately, the invoker only supports 0-arity constructors so we have to do reflection
+            Constructor<?> ctor = invoker.clientKlass.getConstructor(String.class, String.class);
+            Object builder = ctor.newInstance(roleArn, sessionName);
+            invoker.invokeMethod(invoker.clientKlass, builder, "withStsClient", invoker.requestKlass, createSTSClient());
+            AWSCredentialsProvider provider = (AWSCredentialsProvider)invoker.invokeMethod(invoker.clientKlass, builder, "build", null, null);
+            if (invoker.exception != null)
+                throw invoker.exception; // gets caught below
+            return provider;
         }
-        catch (Exception ignored)
+        catch (InvocationTargetException ex)
         {
+            logger.error("failed to create assumed-role credentials provider", ex.getCause());
             return null;
         }
+        catch (Throwable ex)
+        {
+            logger.error("failed to create assumed-role credentials provider", ex);
+            return null;
+        }
+    }
+
+
+    protected Object createSTSClient()
+    throws Throwable
+    {
+        ReflectionBasedInvoker invoker = new ReflectionBasedInvoker("com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder");
+        Object stsClient = invoker.invokeStatic(invoker.clientKlass, "defaultClient", null, null);
+        if (invoker.exception != null)
+            throw invoker.exception;
+        return stsClient;
     }
 
 
@@ -194,7 +269,7 @@ implements ClientFactory<AWSClientType>
         if (client == null)
             return null;
 
-        if (maybeSetAttribute(client, "setEndpoint", endpoint))
+        if (maybeSetAttribute(client, "setEndpoint", String.class, endpoint))
         {
             logger.debug("setting endpoint: " + endpoint);
             return client;
@@ -245,7 +320,7 @@ implements ClientFactory<AWSClientType>
         {
             Regions resolvedRegion = Regions.fromName(value);
             logger.debug("setting region: " + value);
-            return maybeSetAttribute(client, "configureRegion", resolvedRegion);
+            return maybeSetAttribute(client, "configureRegion", Regions.class, resolvedRegion);
         }
         catch (IllegalArgumentException ex)
         {
@@ -255,7 +330,7 @@ implements ClientFactory<AWSClientType>
     }
 
 
-    protected boolean maybeSetAttribute(Object client, String setterName, Object value)
+    protected boolean maybeSetAttribute(Object client, String setterName, Class<?> valueKlass, Object value)
     {
         if (value == null)
             return false;
@@ -265,7 +340,7 @@ implements ClientFactory<AWSClientType>
 
         try
         {
-            Method setter = client.getClass().getMethod(setterName, value.getClass());
+            Method setter = client.getClass().getMethod(setterName, valueKlass);
             setter.invoke(client, value);
             return true;
         }

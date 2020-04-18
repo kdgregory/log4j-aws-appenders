@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logging.aws;
+package com.kdgregory.logging.aws.internal.retrievers;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -23,8 +23,6 @@ import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClient;
 import com.amazonaws.services.identitymanagement.model.ListRolesResult;
 import com.amazonaws.services.identitymanagement.model.Role;
 
-import com.kdgregory.logging.aws.internal.AWSRetriever;
-
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import java.util.List;
@@ -32,16 +30,16 @@ import java.util.UUID;
 
 
 /**
- *  "Integration" tests for the functions in <code>AWSRetriever</code>. These are
- *  disabled by default, should only be run in an environment that has access
- *  to AWS.
+ *  Tests the functions in <code>AWSRetriever</code> using real clients. These
+ *  will fail if you do not have valid credentials. They will probably end up
+ *  moving to a new integration test module.
  */
-public class TestAWSRetriever
+public class TestAWSRetrieverLive
 {
     @Test
     public void testRetrieveAccountId() throws Exception
     {
-        assertRegex("\\d{12}", AWSRetriever.retrieveAccountId());
+        assertRegex("\\d{12}", new AccountIdRetriever().invoke());
     }
 
 
@@ -50,7 +48,7 @@ public class TestAWSRetriever
     public void testRetrieveAccountIdWithNoCredentials() throws Exception
     {
         // as the name says, this needs to be run without valid credentials
-        assertRegex(null, AWSRetriever.retrieveAccountId());
+        assertRegex(null, new AccountIdRetriever().invoke());
     }
 
 
@@ -64,7 +62,7 @@ public class TestAWSRetriever
         List<Role> roles = result.getRoles();
         Role role = roles.get(roles.size() / 2);
 
-        assertEquals(role.getArn(), AWSRetriever.retrieveRoleArn(role.getRoleName()));
+        assertEquals(role.getArn(), new RoleArnRetriever().invoke(role.getRoleName()));
     }
 
 
@@ -73,7 +71,7 @@ public class TestAWSRetriever
     {
         // I'm pretty sure that this will never be found
 
-        assertEquals(null, AWSRetriever.retrieveRoleArn(UUID.randomUUID().toString()));
+        assertEquals(null, new RoleArnRetriever().invoke(UUID.randomUUID().toString()));
     }
 
 
@@ -83,7 +81,7 @@ public class TestAWSRetriever
         String roleArn = "arn:aws:iam::123456789012:role/ThisRoleDoesntExist";
 
         // no way to verify that we didn't actually talk to AWS
-        assertEquals(roleArn, AWSRetriever.retrieveRoleArn(roleArn));
+        assertEquals(roleArn, new RoleArnRetriever().invoke(roleArn));
     }
 
 }

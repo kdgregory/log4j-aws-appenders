@@ -22,7 +22,7 @@ import java.util.TimeZone;
 
 import com.amazonaws.util.EC2MetadataUtils;
 
-import com.kdgregory.logging.aws.internal.AWSRetriever;
+import com.kdgregory.logging.aws.internal.retrievers.AccountIdRetriever;
 
 
 /**
@@ -245,7 +245,7 @@ public class Substitutions
 
         if (accountId == null)
         {
-            accountId = AWSRetriever.retrieveAccountId();
+            accountId = new AccountIdRetriever().invoke();
             accountId = (accountId != null)
                       ? accountId
                       : "unknown-account";

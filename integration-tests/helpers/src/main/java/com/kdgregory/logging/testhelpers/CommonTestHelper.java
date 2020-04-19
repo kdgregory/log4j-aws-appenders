@@ -14,10 +14,13 @@
 
 package com.kdgregory.logging.testhelpers;
 
+import java.lang.reflect.Field;
+
 import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.ClassUtil;
 
+import com.kdgregory.logging.aws.internal.AbstractLogWriter;
 import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 import com.kdgregory.logging.common.LogWriter;
 
@@ -67,5 +70,22 @@ public class CommonTestHelper
         }
 
         fail("messages not sent within timeout: expected " + expectedMessages + ", was " + stats.getMessagesSent());
+    }
+
+
+    /**
+     *  Attempts to retrieve the writer's credentials provider. This is a hack to support
+     *  assumed-role tests, since there's no way to determine whether a role was actually
+     *  used to perform an operation (both CloudTrail and the role's "last accessed"
+     *  timestamp are updated long after the test completes).
+     */
+    public static Class<?> getCredentialsProviderClass(AbstractLogWriter<?,?,?> writer)
+    throws Exception
+    {
+        Object client = ClassUtil.getFieldValue(writer, "client", Object.class);
+        Field cpField = client.getClass().getDeclaredField("awsCredentialsProvider");
+        cpField.setAccessible(true);
+        Object provider = cpField.get(client);
+        return provider.getClass();
     }
 }

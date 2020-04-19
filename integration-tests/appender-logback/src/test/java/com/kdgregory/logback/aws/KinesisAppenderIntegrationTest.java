@@ -16,12 +16,15 @@ package com.kdgregory.logback.aws;
 
 import java.net.URL;
 
+import junit.framework.AssertionFailedError;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import com.amazonaws.services.identitymanagement.model.Role;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 
 import com.kdgregory.logback.aws.testhelpers.MessageWriter;
@@ -29,6 +32,7 @@ import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.test.AbstractKinesisAppenderIntegrationTest;
 import com.kdgregory.logging.testhelpers.KinesisTestHelper;
+import com.kdgregory.logging.testhelpers.RoleTestHelper;
 import com.kdgregory.logging.testhelpers.CommonTestHelper;
 
 import ch.qos.logback.classic.LoggerContext;
@@ -213,5 +217,38 @@ extends AbstractKinesisAppenderIntegrationTest
 
         init("testAlternateRegion");
         super.testAlternateRegion(new LoggerInfo("TestLogger", "test"), altTestHelper);
+    }
+
+
+    @Test
+    public void testAssumedRole() throws Exception
+    {
+        // we can't change the config, so will have to pass a role name that's unlikely
+        // to be used by the user; also have to create it before loading config
+        final String roleName = "KinesisAppenderIntegrationTest-Logback";
+
+        RoleTestHelper roleHelper = new RoleTestHelper();
+        try
+        {
+            Role role = roleHelper.createRole(roleName, "arn:aws:iam::aws:policy/AmazonKinesisFullAccess");
+            roleHelper.waitUntilRoleAssumable(role.getArn(), 60);
+            init("testAssumedRole");
+            super.testAssumedRole(new LoggerInfo("TestLogger", "test"));
+        }
+        catch (AssertionFailedError ex)
+        {
+            // the next catch clause will swallow the assertion if we didn't do this
+            throw ex;
+        }
+        catch (Exception ex)
+        {
+            localLogger.warn("unexpected exception", ex);
+            fail("unexpected exception: " + ex.getMessage());
+        }
+        finally
+        {
+            roleHelper.deleteRole(roleName);
+            roleHelper.shutdown();
+        }
     }
 }

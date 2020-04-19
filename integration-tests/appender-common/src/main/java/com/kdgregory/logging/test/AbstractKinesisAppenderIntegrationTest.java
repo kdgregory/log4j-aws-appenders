@@ -26,11 +26,13 @@ import static org.junit.Assert.*;
 
 import org.slf4j.Logger;
 
+import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
+import com.kdgregory.logging.testhelpers.CommonTestHelper;
 import com.kdgregory.logging.testhelpers.KinesisTestHelper;
 import com.kdgregory.logging.testhelpers.MessageWriter;
 import com.kdgregory.logging.testhelpers.KinesisTestHelper.RetrievedRecord;
@@ -289,5 +291,27 @@ public abstract class AbstractKinesisAppenderIntegrationTest
 
         testHelper.assertMessages(messages, 1, numMessages);
         assertNull("stream does not exist in default region", testHelper.describeStream());
+    }
+
+
+    protected void testAssumedRole(LoggerAccessor accessor)
+    throws Exception
+    {
+        final int numMessages = 1001;
+
+        localLogger.info("writing messages");
+        accessor.newMessageWriter(numMessages).run();
+
+        localLogger.info("reading messages");
+        List<RetrievedRecord> messages = testHelper.retrieveAllMessages(numMessages);
+
+        testHelper.assertMessages(messages, 1, numMessages);
+        testHelper.assertPartitionKeys(messages, numMessages, "test");
+
+        testHelper.assertStats(accessor.getStats(), numMessages);
+        assertEquals("credentials provider",
+                     STSAssumeRoleSessionCredentialsProvider.class,
+                     CommonTestHelper.getCredentialsProviderClass(accessor.getWriter())
+                     );
     }
 }

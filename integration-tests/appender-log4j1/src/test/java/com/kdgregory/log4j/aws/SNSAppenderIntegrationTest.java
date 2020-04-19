@@ -16,6 +16,8 @@ package com.kdgregory.log4j.aws;
 
 import java.net.URL;
 
+import junit.framework.AssertionFailedError;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -31,12 +33,15 @@ import org.slf4j.LoggerFactory;
 
 import net.sf.kdgcommons.lang.ClassUtil;
 
+import com.amazonaws.services.identitymanagement.model.Role;
+
 import com.kdgregory.log4j.aws.testhelpers.MessageWriter;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.test.AbstractSNSAppenderIntegrationTest;
 import com.kdgregory.logging.testhelpers.SNSTestHelper;
 import com.kdgregory.logging.testhelpers.CommonTestHelper;
+import com.kdgregory.logging.testhelpers.RoleTestHelper;
 
 
 public class SNSAppenderIntegrationTest
@@ -216,5 +221,38 @@ extends AbstractSNSAppenderIntegrationTest
     {
         init("testAlternateRegion", false);
         super.testAlternateRegion(new LoggerInfo("TestLogger", "test"));
+    }
+
+
+    @Test
+    public void testAssumedRole() throws Exception
+    {
+        // we can't change the config, so will have to pass a role name that's unlikely
+        // to be used by the user; also have to create it before loading config
+        final String roleName = "SNSAppenderIntegrationTest-Log4J1";
+
+        RoleTestHelper roleHelper = new RoleTestHelper();
+        try
+        {
+            Role role = roleHelper.createRole(roleName, "arn:aws:iam::aws:policy/AmazonSNSFullAccess");
+            roleHelper.waitUntilRoleAssumable(role.getArn(), 60);
+            init("testAssumedRole", true);
+            super.testAssumedRole(new LoggerInfo("TestLogger", "test"));
+        }
+        catch (AssertionFailedError ex)
+        {
+            // the next catch clause will swallow the assertion if we didn't do this
+            throw ex;
+        }
+        catch (Exception ex)
+        {
+            localLogger.warn("unexpected exception", ex);
+            fail("unexpected exception: " + ex.getMessage());
+        }
+        finally
+        {
+            roleHelper.deleteRole(roleName);
+            roleHelper.shutdown();
+        }
     }
 }

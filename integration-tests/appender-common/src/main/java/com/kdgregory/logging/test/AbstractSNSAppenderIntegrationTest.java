@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import net.sf.kdgcommons.lang.ClassUtil;
 
+import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -326,5 +327,26 @@ public abstract class AbstractSNSAppenderIntegrationTest
 
         assertEquals("actual topic name, from statistics",  altTestHelper.getTopicName(),      accessor.getStats().getActualTopicName());
         assertEquals("actual topic ARN, from statistics",   altTestHelper.getTopicARN(),       accessor.getStats().getActualTopicArn());
+    }
+
+
+    protected void testAssumedRole(LoggerAccessor accessor)
+    throws Exception
+    {
+        final int numMessages = 11;
+
+        localLogger.info("writing messages");
+        accessor.newMessageWriter(numMessages).run();
+
+        localLogger.info("reading messages");
+        List<String> messages = testHelper.retrieveMessages(numMessages);
+
+        assertEquals("number of messages", numMessages, messages.size());
+        testHelper.assertMessageContent(messages);
+
+        assertEquals("credentials provider",
+                     STSAssumeRoleSessionCredentialsProvider.class,
+                     CommonTestHelper.getCredentialsProviderClass(accessor.getWriter())
+                     );
     }
 }

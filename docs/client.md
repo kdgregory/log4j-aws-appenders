@@ -41,6 +41,9 @@ account.
 > Note: only applies when using a "builder" object to create the client, not when
   using either a constructor or application-provided factory method.
 
+> Note: in the current implementation, failure to assume a role will result in
+  falling back to the client constructor.
+
 May be specified as either a simple role name or an ARN. If specified as a name, a
 role with that name must exist in the current account.
 
@@ -56,6 +59,7 @@ credentials.
 Example:
 
 ```
+log4j.appender.cloudwatch.assumedRole=CloudWatchAppenderIntegrationTest-Log4J1
 ```
 
 
@@ -76,11 +80,16 @@ construction mechanism.
 Example configuration:
 
 ```
+log4j.appender.cloudwatch.clientFactory=com.kdgregory.logging.test.AbstractCloudWatchAppenderIntegrationTest.createClient
 ```
 
-Example implementation (note that it doesn't do anything, so is rather pointless):
+Example implementation (note that it just returns the default client, so is rather pointless):
 
 ```
+public static AWSLogs createClient()
+{
+    return AWSLogsClientBuilder.defaultClient();
+}
 ```
 
 
@@ -99,6 +108,12 @@ If unable to set the region, the appender will report the error using the loggin
 framework's internal status logger. It will not create a client in the default
 region.
 
+Example:
+
+```
+log4j.appender.cloudwatch.clientRegion=us-east-2
+```
+
 
 ### `clientEndpoint`
 
@@ -112,4 +127,24 @@ and SNS [here](https://docs.aws.amazon.com/general/latest/gr/rande.html#sns_regi
 Example:
 
 ```
+log4j.appender.cloudwatch.clientEndpoint=logs.us-west-2.amazonaws.com
 ```
+
+
+# Client Shutdown
+
+At the present time, this library does not explicitly shut down its AWS clients. A
+client is created when the log-writer starts, and will be garbage collected when
+the log-writer goes out of scope (which only happens when the logging framework is
+shut down prior to program exit).
+
+I have considered adding a `shutdown()` method to `ClientFactory`, but this leads
+to some undesirable complexity: how should I handle clients that have been created
+using an application-specific factory method? Should I require applications to
+provide a `shutdown()` method as well? For that matter, does anybody actually use
+that functionality?
+
+After spending time looking at the `AmazonWebServiceClient` implementation, I decided
+that this complexity would not be worthwhile. While the SDK client holds a connection
+for multiple requests, those connections (1) will be closed on their own, and (2) use
+a finalizer for the case where a client goes out of scope.

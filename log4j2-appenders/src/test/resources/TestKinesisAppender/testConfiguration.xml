@@ -12,6 +12,7 @@
             <batchDelay>1234</batchDelay>
             <discardThreshold>54321</discardThreshold>
             <discardAction>newest</discardAction>
+            <assumedRole>AssumableRole</assumedRole>
             <clientFactory>com.example.Foo.bar</clientFactory>
             <clientRegion>us-west-1</clientRegion>
             <clientEndpoint>kinesis.us-west-2.amazonaws.com</clientEndpoint>

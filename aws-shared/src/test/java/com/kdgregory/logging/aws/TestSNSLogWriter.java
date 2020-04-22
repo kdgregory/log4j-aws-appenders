@@ -91,11 +91,12 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         config = new SNSWriterConfig(
                 null,                   // topicName
                 null,                   // topicArn
-                null,                  // autoCreate
-                false,                   // subject
+                null,                   // subject
+                false,                  // autoCreate
                 1000,                   // discardThreshold
-                DiscardAction.oldest,
+                DiscardAction.oldest,   // discardAction
                 null,                   // clientFactoryMethod
+                null,                   // assumedRole
                 null,                   // clientRegion
                 null);                  // clientEndpoint
 
@@ -124,7 +125,27 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     @Test
     public void testConfiguration() throws Exception
     {
-        // we don't want to initialize the writer, so will create it outselves
+        // note: the client endpoint configuration is ignored when creating a writer
+        config = new SNSWriterConfig(
+                "topic-name",                       // topicName
+                "topic-arn",                        // topicArn
+                "subject",                          // subject
+                true,                               // autoCreate
+                123,                               // discardThreshold
+                DiscardAction.newest,               // discardAction
+                "com.example.factory.Method",       // clientFactoryMethod
+                "SomeRole",                         // assumedRole
+                "us-west-1",                        // clientRegion
+                "sns.us-west-1.amazonaws.com");     // clientEndpoint
+
+        assertEquals("topic name",                  "topic-name",                   config.topicName);
+        assertEquals("log stream name",             "topic-arn",                    config.topicArn);
+        assertEquals("subject",                     "subject",                      config.subject);
+        assertTrue("auto-create",                                                   config.autoCreate);
+        assertEquals("factory method",              "com.example.factory.Method",   config.clientFactoryMethod);
+        assertEquals("assumed role",                "SomeRole",                     config.assumedRole);
+        assertEquals("client region",               "us-west-1",                    config.clientRegion);
+        assertEquals("client endpoint",             "sns.us-west-1.amazonaws.com",  config.clientEndpoint);
 
         writer = new SNSLogWriter(config, stats, internalLogger, dummyClientFactory);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
@@ -133,8 +154,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         // so we just look for the pieces that it exposes or passes on
 
         assertEquals("writer batch delay",                      1L,                     writer.getBatchDelay());
-        assertEquals("message queue discard policy",            DiscardAction.oldest,   messageQueue.getDiscardAction());
-        assertEquals("message queue discard threshold",         1000,                   messageQueue.getDiscardThreshold());
+        assertEquals("message queue discard policy",            DiscardAction.newest,   messageQueue.getDiscardAction());
+        assertEquals("message queue discard threshold",         123,                    messageQueue.getDiscardThreshold());
     }
 
 

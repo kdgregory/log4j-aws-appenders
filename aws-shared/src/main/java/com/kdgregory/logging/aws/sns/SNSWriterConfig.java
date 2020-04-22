@@ -39,15 +39,16 @@ extends AbstractWriterConfig
      *  @param  discardThreshold    The maximum number of messages that will be retained in the queue.
      *  @param  discardAction       Controls how messages are discarded from the queue to remain within threshold.
      *  @param  clientFactoryMethod Optional: fully-qualified name of a static method to create client.
+     *  @param  assumedRole         Optional: name or ARN of a role to assume when creating client.
      *  @param  clientRegion        Optional: explicit region for client (used with ctor and SDK builder).
      *  @param  clientEndpoint      Optional: explicit endpoint for client (only used with constructors).
      */
     public SNSWriterConfig(
         String topicName, String topicArn, String subject, boolean autoCreate,
         int discardThreshold, DiscardAction discardAction,
-        String clientFactoryMethod, String clientRegion, String clientEndpoint)
+        String clientFactoryMethod, String assumedRole, String clientRegion, String clientEndpoint)
     {
-        super(1, discardThreshold, discardAction, clientFactoryMethod, clientRegion, clientEndpoint);
+        super(1, discardThreshold, discardAction, clientFactoryMethod, assumedRole, clientRegion, clientEndpoint);
 
         this.topicName = topicName;
         this.topicArn = topicArn;

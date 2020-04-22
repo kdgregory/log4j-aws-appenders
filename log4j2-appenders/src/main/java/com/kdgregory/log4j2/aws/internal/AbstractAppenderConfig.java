@@ -39,9 +39,11 @@ public interface AbstractAppenderConfig
     long getBatchDelay();
     int getDiscardThreshold();
     String getDiscardAction();
+    boolean isSynchronous();
+    boolean isUseShutdownHook();    // yeah, I hate that name too
+
+    String getAssumedRole();
     String getClientFactory();
     String getClientRegion();
     String getClientEndpoint();
-    boolean isSynchronous();
-    boolean isUseShutdownHook();    // yeah, I hate that name too
 }

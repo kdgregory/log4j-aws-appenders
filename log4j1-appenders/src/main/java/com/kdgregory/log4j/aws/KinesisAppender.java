@@ -104,6 +104,12 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *           a configuration error.
  *
  *  <tr VALIGN="top">
+ *      <th> assumedRole
+ *      <td> Specifies role name or ARN that will be assumed by this appender. Useful
+ *           for cross-account logging. If the appender does not have permission to
+ *           assume this role, initialization will fail.
+ *
+ *  <tr VALIGN="top">
  *      <th> clientFactory
  *      <td> The fully-qualified name of a static method to create the correct AWS
  *           client, which will be called instead of the writer's internal client
@@ -300,7 +306,7 @@ extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWrit
         return new KinesisWriterConfig(actualStreamName, actualPartitionKey,
                                        autoCreate, shardCount, retentionPeriod,
                                        batchDelay, discardThreshold, discardAction,
-                                       clientFactory, clientRegion, clientEndpoint);
+                                       clientFactory, assumedRole, clientRegion, clientEndpoint);
     }
 
 

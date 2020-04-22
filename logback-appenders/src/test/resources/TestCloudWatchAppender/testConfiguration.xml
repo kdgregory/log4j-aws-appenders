@@ -17,6 +17,7 @@
     <rotationInterval>7200000</rotationInterval>
     <discardThreshold>12345</discardThreshold>
     <discardAction>newest</discardAction>
+    <assumedRole>AssumableRole</assumedRole>
     <clientFactory>com.example.Foo.bar</clientFactory>
     <clientRegion>us-west-1</clientRegion>
     <clientEndpoint>logs.us-west-2.amazonaws.com</clientEndpoint>

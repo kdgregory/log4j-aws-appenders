@@ -25,12 +25,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import net.sf.kdgcommons.lang.ClassUtil;
-
-import org.slf4j.Logger;
 
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.logs.AWSLogs;
@@ -120,7 +119,7 @@ public class CloudWatchLogWriterIntegrationTest
      */
     private CloudWatchWriterConfig defaultConfig()
     {
-        return new CloudWatchWriterConfig(logGroupName, logStreamName, null, false, 250, 10000, DiscardAction.oldest, null, null, null);
+        return new CloudWatchWriterConfig(logGroupName, logStreamName, null, false, 250, 10000, DiscardAction.oldest, null, null, null, null);
     }
 
 

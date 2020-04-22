@@ -24,6 +24,8 @@ import static org.junit.Assert.*;
 import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.InvalidOperationException;
 
@@ -33,15 +35,10 @@ import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchClient;
 
 
 /**
- *  Verifies operation of the client factory. This is a whitebox test: it
- *  overrides various factory methods to record their invocation. It relies
- *  on being built with SDK version 1.11.0; changing the build version may
- *  break tests.
- *  <p>
- *  Note: most of the tests use MockCloudWatchClient, but the constructor
- *  tests need to use an actual client because the factory calls methods
- *  that aren't implemented by the interface (and therefore can't be mocked
- *  via proxy).
+ *  Verifies high-level operation of the client factory. This is a whitebox
+ *  test: it overrides factory methods to ensure that they're called. Other
+ *  than the constructor test (which is unavoidable), it does not invoke
+ *  any AWS-specific methods.
  */
 public class TestDefaultClientFactory
 {
@@ -56,9 +53,10 @@ public class TestDefaultClientFactory
     // set by createMockClient()
     private static AWSLogs clientFromFactory;
 
-    // set by MockClientBuilder
+    // set by MockClientBuilder (which we never see created, so can't examine directly)
     private static AWSLogs clientFromBuilder;
     private static String clientBuilderRegion;
+    private static Object clientBuilderCredentialsProvider;
 
 //----------------------------------------------------------------------------
 //  Support Code
@@ -86,7 +84,7 @@ public class TestDefaultClientFactory
     }
 
 
-    // a simulation of AWSLogsClientBuilder, since the real thing doesn't exist
+    // a simulation of AWSLogsClientBuilder
     public static class MockClientBuilder
     {
         public static MockClientBuilder standard()
@@ -100,9 +98,32 @@ public class TestDefaultClientFactory
             return clientFromBuilder;
         }
 
+        public void setCredentials(AWSCredentialsProvider credentialsProvider)
+        {
+            clientBuilderCredentialsProvider = credentialsProvider;
+        }
+
         public void setRegion(String region)
         {
             clientBuilderRegion = region;
+        }
+    }
+
+
+    // this exists to provide objects tha can be compared based on identity
+    public static class MockCredentialsProvider
+    implements AWSCredentialsProvider
+    {
+        @Override
+        public AWSCredentials getCredentials()
+        {
+            return null;
+        }
+
+        @Override
+        public void refresh()
+        {
+            // nothing happening here
         }
     }
 
@@ -140,7 +161,7 @@ public class TestDefaultClientFactory
     @Test
     public void testOrderOfOperations() throws Exception
     {
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, logger)
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, null, logger)
         {
             @Override
             protected AWSLogs tryFactory()
@@ -182,18 +203,18 @@ public class TestDefaultClientFactory
     {
         String factoryMethodName = getClass().getName() + ".createMockClient";
 
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, logger)
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, null, logger)
         {
             @Override
             public AWSLogs tryBuilder()
             {
-                throw new IllegalStateException("should not have gotten here");
+                throw new IllegalStateException("should not have called builder");
             }
 
             @Override
             protected AWSLogs tryConstructor()
             {
-                throw new IllegalStateException("should not have gotten here");
+                throw new IllegalStateException("should not have called constructor");
             }
         };
 
@@ -210,7 +231,7 @@ public class TestDefaultClientFactory
     public void testBogusFactoryMethodName() throws Exception
     {
         String factoryMethodName = "com.example.Bogus.bogus";
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, logger)
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, null, logger)
         {
             // our goal is to cleanly recover from bad method name, not actually create a client, so other mechanisms just record invocation
 
@@ -240,11 +261,11 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testThrowingClientFactory() throws Exception
+    public void testExceptionInFactoryMethod() throws Exception
     {
         String factoryMethodName = getClass().getName() + ".throwingFactoryMethod";
 
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, logger)
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, null, logger)
         {
             // again, we just want to cleanly recover, so will verify that other mechanisms were tried
 
@@ -274,19 +295,31 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testClientBuilder() throws Exception
+    public void testDefaultClientBuilder() throws Exception
     {
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, logger)
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, null, logger)
         {
-            // for this test we want to exercise the full builder code path
+            // for this test we want to exercise the basic builder code path
             {
                 factoryClasses.put("com.amazonaws.services.logs.AWSLogs", MockClientBuilder.class.getName());
             }
 
             @Override
+            protected AWSCredentialsProvider createDefaultCredentialsProvider()
+            {
+                return new MockCredentialsProvider();
+            }
+
+            @Override
+            protected AWSCredentialsProvider createAssumedRoleCredentialsProvider()
+            {
+                throw new IllegalStateException("should not have called assumed-role credentials provider");
+            }
+
+            @Override
             protected AWSLogs tryConstructor()
             {
-                throw new IllegalStateException("should not have gotten here");
+                throw new IllegalStateException("should not have called constructor");
             }
         };
 
@@ -294,7 +327,9 @@ public class TestDefaultClientFactory
         assertNotNull("actually created a client",  client);
         assertSame("client created via build",      client, clientFromBuilder);
 
-        logger.assertInternalDebugLog("creating client via SDK builder");
+        logger.assertInternalDebugLog(
+                "creating client via SDK builder",
+                "using default credentials provider");
         logger.assertInternalErrorLog();
     }
 
@@ -304,27 +339,84 @@ public class TestDefaultClientFactory
     {
         final String region = "us-west-1";
 
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, region, null, logger)
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, region, null, logger)
         {
-            // for this test we want to exercise the full builder code path
+            // we'll replace the AWS builder class with our own
             {
                 factoryClasses.put("com.amazonaws.services.logs.AWSLogs", MockClientBuilder.class.getName());
             }
 
             @Override
+            protected AWSCredentialsProvider createDefaultCredentialsProvider()
+            {
+                return new MockCredentialsProvider();
+            }
+
+            @Override
+            protected AWSCredentialsProvider createAssumedRoleCredentialsProvider()
+            {
+                throw new IllegalStateException("should not have called assumed-role credentials provider");
+            }
+
+            @Override
             protected AWSLogs tryConstructor()
             {
-                throw new IllegalStateException("should not have gotten here");
+                throw new IllegalStateException("should not have called constructor");
             }
         };
 
         AWSLogs client = factory.createClient();
         assertNotNull("actually created a client",  client);
-        assertSame("client created via build",      client,     clientFromBuilder);
+        assertSame("client created by builder",     client,     clientFromBuilder);
         assertSame("region set on builder",         region,     clientBuilderRegion);
 
+        logger.assertInternalDebugLog(
+                "creating client via SDK builder",
+                "setting region.*" + region,
+                "using default credentials provider");
+        logger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testClientBuilderWithAssumedRole() throws Exception
+    {
+        final String assumedRole = "Example";
+        final AWSCredentialsProvider expectedARProvider = new MockCredentialsProvider();
+
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, assumedRole, null, null, logger)
+        {
+            // we'll replace the AWS builder class with our own
+            {
+                factoryClasses.put("com.amazonaws.services.logs.AWSLogs", MockClientBuilder.class.getName());
+            }
+
+            @Override
+            protected AWSCredentialsProvider createDefaultCredentialsProvider()
+            {
+                throw new IllegalStateException("should not have called default credentials provider");
+            }
+
+            @Override
+            protected AWSCredentialsProvider createAssumedRoleCredentialsProvider()
+            {
+                return expectedARProvider;
+            }
+
+            @Override
+            protected AWSLogs tryConstructor()
+            {
+                throw new IllegalStateException("should not have called constructor");
+            }
+        };
+
+        AWSLogs client = factory.createClient();
+        assertNotNull("actually created a client",  client);
+        assertSame("client created via build",      client,                 clientFromBuilder);
+        assertSame("credentials provider set",      expectedARProvider,     clientBuilderCredentialsProvider);
+
         logger.assertInternalDebugLog("creating client via SDK builder",
-                                      "setting region.*" + region);
+                                      "assuming role.*" + assumedRole);
         logger.assertInternalErrorLog();
     }
 
@@ -333,7 +425,7 @@ public class TestDefaultClientFactory
     public void testClientConstructor() throws Exception
     {
         // we're using an actual client, not a mock
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, logger);
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, null, logger);
 
         AWSLogs client = factory.createClient();
         assertNotNull("actually created a client",  client);
@@ -365,7 +457,7 @@ public class TestDefaultClientFactory
         final String region = "us-west-1";
 
         // we're using an actual client, not a mock
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, region, null, logger);
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, region, null, logger);
 
         AWSLogs client = factory.createClient();
         assertNotNull("actually created a client",  client);
@@ -387,7 +479,7 @@ public class TestDefaultClientFactory
         final String region = "eu-west-3";
 
         // we're using an actual client, not a mock
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, region, null, logger);
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, region, null, logger);
 
         AWSLogs client = factory.createClient();
         assertNotNull("actually created a client",  client);
@@ -420,7 +512,7 @@ public class TestDefaultClientFactory
         final String endpoint = "logs." + region + ".amazonaws.com";
 
         // we're using an actual client, not a mock
-        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, endpoint, logger);
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, endpoint, logger);
 
         AWSLogs client = factory.createClient();
         assertNotNull("actually created a client",  client);

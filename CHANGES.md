@@ -1,5 +1,10 @@
 # Change History
 
+## 2.4.0 (TBD)
+
+* Allow appenders to assume a role. This supports cross-account logging.
+  ([#92](https://github.com/kdgregory/log4j-aws-appenders/issues/92))
+
 ## 2.3.0 (2020-03-21)
 
 * Support Log4J 2.x

@@ -109,6 +109,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     protected volatile RotationMode     rotationMode;
     protected volatile long             rotationInterval;
     protected AtomicInteger             sequence;
+    protected String                    assumedRole;
     protected String                    clientFactory;
     protected String                    clientRegion;
     protected String                    clientEndpoint;
@@ -322,6 +323,26 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     public String getDiscardAction()
     {
         return discardAction.toString();
+    }
+
+
+    /**
+     *  Sets the <code>assumedRole</code> configuration property.
+     *  <p>
+     *  Calling this method after the writer has been initialized will have no
+     *  effect until the next log rotation.
+     */
+    public void setAssumedRole(String value)
+    {
+        assumedRole = value;
+    }
+
+    /**
+     *  Returns the <code>assumedRole</code> configuration property.
+     */
+    public String getAssumedRole()
+    {
+        return assumedRole;
     }
 
 

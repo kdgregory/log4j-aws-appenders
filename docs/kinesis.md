@@ -14,7 +14,7 @@ The Kinesis appender provides the following features:
 
 ## Configuration
 
-The appender provides the following properties (also described in the JavaDoc):
+This appender provides the following configuration properties, along with the common [connection properties](client.md#configuration-properties).
 
 Name                | Description
 --------------------|----------------------------------------------------------------
@@ -27,9 +27,6 @@ Name                | Description
 `batchDelay`        | The time, in milliseconds, that the writer will wait to accumulate messages for a batch. See the [design doc](design.md#message-batches) for more information.
 `discardThreshold`  | The threshold count for discarding messages; default is 10,000. See the [design doc](design.md#message-discard) for more information.
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
-`clientFactory`     | Specifies the fully-qualified name of a static method that will be invoked to create the AWS service client. See the [service client doc](service-client.md#client-creation) for more information.
-`clientRegion`      | Specifies a non-default region for the client. See the [service client doc](service-client.md#endpoint-configuration) for more information.
-`clientEndpoint`    | Specifies a non-default endpoint; only supported for clients created via constructor. See the [service client doc](service-client.md#endpoint-configuration) for more information.
 `useShutdownHook`   | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default; set to `false` to disable. See [docs](design.md#shutdown-hooks) for more information.
 
 

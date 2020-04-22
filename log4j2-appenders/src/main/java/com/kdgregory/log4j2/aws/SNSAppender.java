@@ -97,6 +97,12 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *           a configuration error.
  *
  *  <tr VALIGN="top">
+ *      <th> assumedRole
+ *      <td> Specifies role name or ARN that will be assumed by this appender. Useful
+ *           for cross-account logging. If the appender does not have permission to
+ *           assume this role, initialization will fail.
+ *
+ *  <tr VALIGN="top">
  *      <th> clientFactory
  *      <td> The fully-qualified name of a static method to create the correct AWS
  *           client, which will be called instead of the writer's internal client
@@ -324,7 +330,7 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterStatisti
         return new SNSWriterConfig(
             actualTopicName, actualTopicArn, actualSubject, config.isAutoCreate(),
             config.getDiscardThreshold(), discardAction,
-            config.getClientFactory(), config.getClientRegion(), config.getClientEndpoint());
+            config.getClientFactory(), config.getAssumedRole(), config.getClientRegion(), config.getClientEndpoint());
 
     }
 

@@ -86,16 +86,17 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     {
         // this is the default configuration; may be updated or replaced by test
         config = new CloudWatchWriterConfig(
-            "argle",                // log group name
-            "bargle",               // log stream name
-            null,                   // retention period
-            false,                  // dedicated stream
-            100,                    // batch delay -- short enough to keep tests fast, long enough that we can write a lot of messages
-            10000,                  // discard threshold
-            DiscardAction.oldest,   // discard action
-            null,                   // factory method
-            null,                   // region
-            null);                  // endpoint
+            "argle",                // actualLogGroup
+            "bargle",               // actualLogStream
+            null,                   // retentionPeriod
+            false,                  // dedicatedWriter
+            100,                    // batchDelay -- short enough to keep tests fast, long enough that we can write a lot of messages
+            10000,                  // discardThreshold
+            DiscardAction.oldest,   // discardAction
+            null,                   // clientFactoryMethod
+            null,                   // assumedRole
+            null,                   // clientRegion
+            null);                  // clientEndpoint
 
         stats = new CloudWatchWriterStatistics();
 
@@ -118,12 +119,28 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testConfiguration() throws Exception
     {
-        config = new CloudWatchWriterConfig("foo", "bar", 1, true, 123, 456, DiscardAction.newest, "com.example.factory.Method", "us-west-1", "logs.us-west-1.amazonaws.com");
+        // note: the client endpoint configuration is ignored when creating a writer
+        config = new CloudWatchWriterConfig(
+                "foo",                              // actualLogGroup
+                "bar",                              // actualLogStream
+                1,                                  // retentionPeriod
+                true,                               // dedicatedWriter
+                123,                                // batchDelay
+                456,                                // discardThreshold
+                DiscardAction.newest,               // discardAction
+                "com.example.factory.Method",       // clientFactoryMethod
+                "SomeRole",                         // assumedRole
+                "us-west-1",                        // clientRegion
+                "logs.us-west-1.amazonaws.com");    // clientEndpoint
 
-        assertEquals("log group name",                          "foo",                  config.logGroupName);
-        assertEquals("log stream name",                         "bar",                  config.logStreamName);
-        assertEquals("retention period",                        Integer.valueOf(1),     config.retentionPeriod);
-        assertEquals("dedicated stream",                        true,                   config.dedicatedWriter);
+        assertEquals("log group name",                          "foo",                          config.logGroupName);
+        assertEquals("log stream name",                         "bar",                          config.logStreamName);
+        assertEquals("retention period",                        Integer.valueOf(1),             config.retentionPeriod);
+        assertEquals("dedicated stream",                        true,                           config.dedicatedWriter);
+        assertEquals("factory method",                          "com.example.factory.Method",   config.clientFactoryMethod);
+        assertEquals("assumed role",                            "SomeRole",                     config.assumedRole);
+        assertEquals("client region",                           "us-west-1",                    config.clientRegion);
+        assertEquals("client endpoint",                         "logs.us-west-1.amazonaws.com", config.clientEndpoint);
 
         writer = new CloudWatchLogWriter(config, stats, internalLogger, dummyClientFactory);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);

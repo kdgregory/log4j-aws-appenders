@@ -14,6 +14,7 @@
 
 package com.kdgregory.logging.test;
 
+import net.sf.kdgcommons.lang.ClassUtil;
 import static net.sf.kdgcommons.test.NumericAsserts.*;
 
 import static org.junit.Assert.*;
@@ -21,8 +22,7 @@ import static org.junit.Assert.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.sf.kdgcommons.lang.ClassUtil;
-
+import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 
@@ -348,9 +348,9 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
     protected void testFactoryMethod(LoggerAccessor accessor)
     throws Exception
     {
-        // again, defined in configuration
         final int numMessages     = 1001;
 
+        localLogger.info("writing messages");
         accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("waiting for logger");
@@ -368,6 +368,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
     {
         final int numMessages = 1001;
 
+        localLogger.info("writing messages");
         accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("waiting for logger");
@@ -375,6 +376,25 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
 
         altTestHelper.assertMessages(LOGSTREAM_BASE, numMessages);
         assertFalse("logstream does not exist in default region", testHelper.isLogStreamAvailable(LOGSTREAM_BASE));
+    }
+
+
+    protected void testAssumedRole(LoggerAccessor accessor)
+    throws Exception
+    {
+        final int numMessages = 1001;
+
+        localLogger.info("writing messages");
+        accessor.newMessageWriter(numMessages).run();
+
+        localLogger.info("waiting for logger");
+        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
+
+        testHelper.assertMessages(LOGSTREAM_BASE, numMessages);
+        assertEquals("credentials provider",
+                     STSAssumeRoleSessionCredentialsProvider.class,
+                     CommonTestHelper.getCredentialsProviderClass(accessor.getWriter())
+                     );
     }
 
 

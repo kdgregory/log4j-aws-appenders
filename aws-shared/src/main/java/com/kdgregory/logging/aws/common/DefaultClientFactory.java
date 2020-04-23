@@ -147,30 +147,30 @@ implements ClientFactory<AWSClientType>
 
     public AWSClientType tryBuilder()
     {
+        Object builder = createBuilder();
+        if (builder == null)
+            return null;
+
+        logger.debug("creating client via SDK builder");
+
+        if ((region != null) && ! region.isEmpty())
+        {
+            logger.debug("setting region: " + region);
+            maybeSetAttribute(builder, "setRegion", String.class, region);
+        }
+
+        AWSCredentialsProvider credentialsProvider = createCredentialsProvider();
+        maybeSetAttribute(builder, "setCredentials", AWSCredentialsProvider.class, credentialsProvider);
+
         try
         {
-            Object builder = createBuilder();
-            if (builder == null)
-                return null;
-
-            logger.debug("creating client via SDK builder");
-
-            if ((region != null) && ! region.isEmpty())
-            {
-                logger.debug("setting region: " + region);
-                maybeSetAttribute(builder, "setRegion", String.class, region);
-            }
-
-            AWSCredentialsProvider credentialsProvider = createCredentialsProvider();
-            maybeSetAttribute(builder, "setCredentials", AWSCredentialsProvider.class, credentialsProvider);
-
             Method clientFactoryMethod = builder.getClass().getMethod("build");
             return clientType.cast(clientFactoryMethod.invoke(builder));
         }
         catch (Exception ex)
         {
             logger.error("failed to invoke builder", ex);
-            return null;
+            throw new IllegalArgumentException("failed to invoke builder" + factoryMethodName, ex);
         }
     }
 

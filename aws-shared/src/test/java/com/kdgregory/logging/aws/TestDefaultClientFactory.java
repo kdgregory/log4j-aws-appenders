@@ -202,7 +202,7 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testStaticClientFactory() throws Exception
+    public void testFactoryMethod() throws Exception
     {
         String factoryMethodName = getClass().getName() + ".createMockClient";
 
@@ -231,7 +231,7 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testBogusFactoryMethodName() throws Exception
+    public void testFactoryMethodBogusName() throws Exception
     {
         String factoryMethodName = getClass().getName() + ".bogus";
         DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, null, logger)
@@ -268,7 +268,7 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testExceptionInFactoryMethod() throws Exception
+    public void testFactoryMethodException() throws Exception
     {
         // this test is alsmost identical to the previous, but has a different exception cause
 
@@ -308,7 +308,7 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testDefaultClientBuilder() throws Exception
+    public void testClientBuilder() throws Exception
     {
         DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, null, logger)
         {
@@ -348,7 +348,7 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testClientBuilderWithRegion() throws Exception
+    public void testBuilderWithRegion() throws Exception
     {
         final String region = "us-west-1";
 
@@ -392,7 +392,7 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testClientBuilderWithAssumedRole() throws Exception
+    public void testBuilderWithAssumedRole() throws Exception
     {
         final String assumedRole = "Example";
         final AWSCredentialsProvider expectedARProvider = new MockCredentialsProvider();
@@ -435,7 +435,54 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testClientConstructor() throws Exception
+    public void testBuilderWithExceptionInAssumingRole() throws Exception
+    {
+        final String assumedRole = "Example";
+
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, assumedRole, null, null, logger)
+        {
+            // we'll replace the AWS builder class with our own
+            {
+                factoryClasses.put("com.amazonaws.services.logs.AWSLogs", MockClientBuilder.class.getName());
+            }
+
+            @Override
+            protected AWSCredentialsProvider createDefaultCredentialsProvider()
+            {
+                throw new IllegalStateException("should not have called default credentials provider");
+            }
+
+            @Override
+            protected AWSCredentialsProvider createAssumedRoleCredentialsProvider()
+            {
+                throw new InvalidOperationException("denied!");
+            }
+
+            @Override
+            protected AWSLogs tryConstructor()
+            {
+                throw new IllegalStateException("should not have called constructor");
+            }
+        };
+
+        try
+        {
+            factory.createClient();
+            fail("able to create client when credentials provider threw");
+        }
+        catch (InvalidOperationException ex)
+        {
+            assertEquals("exception message", "denied!", ex.getMessage());
+        }
+
+        logger.assertInternalDebugLog("creating client via SDK builder",
+                                      "assuming role.*" + assumedRole);
+        logger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testConstructor() throws Exception
     {
         // we're using an actual client, not a mock
         DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, null, logger);
@@ -464,7 +511,7 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testClientConstructorWithExplicitRegion() throws Exception
+    public void testConstructorWithExplicitRegion() throws Exception
     {
         // to be valid for the test, the region must have existed when SDK 1.11.0 came out
         final String region = "us-west-1";
@@ -486,7 +533,7 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testClientConstructorWithBogusRegion() throws Exception
+    public void testConstructorWithBogusRegion() throws Exception
     {
         // this region didn't exist when SDK 1.11.0 came out
         final String region = "eu-west-3";
@@ -518,7 +565,7 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testClientConstructorWithExplicitEndpoint() throws Exception
+    public void testConstructorWithExplicitEndpoint() throws Exception
     {
         // this region didn't exist when SDK 1.11.0 came out
         final String region = "eu-west-3";

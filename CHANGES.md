@@ -4,6 +4,9 @@
 
 * Allow appenders to assume a role. This supports cross-account logging.
   ([#92](https://github.com/kdgregory/log4j-aws-appenders/issues/92))
+* If the configured client creation mechanism fails, do not fallback to
+  an alternative mechanism (ie, don't blindly write in current account).
+  ([#105](https://github.com/kdgregory/log4j-aws-appenders/issues/105))
 
 ## 2.3.0 (2020-03-21)
 

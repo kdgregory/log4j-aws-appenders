@@ -139,8 +139,8 @@ implements ClientFactory<AWSClientType>
         }
         catch (Exception ex)
         {
-            logger.error("failed to create client via configured factory: " + factoryMethodName, ex);
-            return null;
+            logger.error("failed to invoke configured factory: " + factoryMethodName, ex);
+            throw new IllegalArgumentException("client factory: " + factoryMethodName, ex);
         }
     }
 

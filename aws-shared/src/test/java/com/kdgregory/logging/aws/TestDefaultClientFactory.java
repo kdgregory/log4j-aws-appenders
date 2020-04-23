@@ -14,6 +14,7 @@
 
 package com.kdgregory.logging.aws;
 
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -23,6 +24,8 @@ import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
+
+import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -230,67 +233,77 @@ public class TestDefaultClientFactory
     @Test
     public void testBogusFactoryMethodName() throws Exception
     {
-        String factoryMethodName = "com.example.Bogus.bogus";
+        String factoryMethodName = getClass().getName() + ".bogus";
         DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, null, logger)
         {
-            // our goal is to cleanly recover from bad method name, not actually create a client, so other mechanisms just record invocation
-
             @Override
             public AWSLogs tryBuilder()
             {
-                builderCalledAt.set(invocationCounter.incrementAndGet());
+                fail("should not have attempted to use builder");
                 return null;
             }
 
             @Override
             protected AWSLogs tryConstructor()
             {
-                constructorCalledAt.set(invocationCounter.incrementAndGet());
+                fail("should not have attempted to use constructor");
                 return null;
             }
         };
 
-        AWSLogs client = factory.createClient();
-        assertNull("didn't actually create a client", client);
-        assertTrue("called builder mechanism", builderCalledAt.get() > 0);
-        assertTrue("called constructor mechanism", constructorCalledAt.get() > 0);
+        try
+        {
+            factory.createClient();
+            fail("should have thrown");
+        }
+        catch (IllegalArgumentException ex)
+        {
+            assertRegex("exception reported method name used", "client factory: " + factoryMethodName, ex.getMessage());
+            assertEquals("exception contained cause", NoSuchMethodException.class, ex.getCause().getClass());
+        }
 
         logger.assertInternalDebugLog("creating client via factory.*" + factoryMethodName);
-        logger.assertInternalErrorLog("failed to create client.*" + factoryMethodName);
+        logger.assertInternalErrorLog("failed to invoke.*factory.*" + factoryMethodName);
     }
 
 
     @Test
     public void testExceptionInFactoryMethod() throws Exception
     {
+        // this test is alsmost identical to the previous, but has a different exception cause
+
         String factoryMethodName = getClass().getName() + ".throwingFactoryMethod";
 
         DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, null, logger)
         {
-            // again, we just want to cleanly recover, so will verify that other mechanisms were tried
-
             @Override
             public AWSLogs tryBuilder()
             {
-                builderCalledAt.set(invocationCounter.incrementAndGet());
+                fail("should not have attempted to use builder");
                 return null;
             }
 
             @Override
             protected AWSLogs tryConstructor()
             {
-                constructorCalledAt.set(invocationCounter.incrementAndGet());
+                fail("should not have attempted to use constructor");
                 return null;
             }
         };
 
-        AWSLogs client = factory.createClient();
-        assertNull("didn't actually create a client", client);
-        assertTrue("called builder mechanism", builderCalledAt.get() > 0);
-        assertTrue("called constructor mechanism", constructorCalledAt.get() > 0);
+        try
+        {
+            factory.createClient();
+            fail("should have thrown");
+        }
+        catch (IllegalArgumentException ex)
+        {
+            assertRegex("exception reported method name used", "client factory: " + factoryMethodName, ex.getMessage());
+            assertEquals("exception happened due to method invocation", InvocationTargetException.class, ex.getCause().getClass());
+        }
 
         logger.assertInternalDebugLog("creating client via factory.*" + factoryMethodName);
-        logger.assertInternalErrorLog("failed to create client.*" + factoryMethodName);
+        logger.assertInternalErrorLog("failed to invoke.*factory.*" + factoryMethodName);
     }
 
 

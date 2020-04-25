@@ -15,7 +15,6 @@
 package com.kdgregory.logging.aws.common;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
@@ -139,8 +138,7 @@ implements ClientFactory<AWSClientType>
         }
         catch (Exception ex)
         {
-            logger.error("failed to invoke configured factory: " + factoryMethodName, ex);
-            throw new IllegalArgumentException("client factory: " + factoryMethodName, ex);
+            throw new ClientFactoryException("failed to invoke factory method: " + factoryMethodName, ex);
         }
     }
 
@@ -159,18 +157,17 @@ implements ClientFactory<AWSClientType>
             maybeSetAttribute(builder, "setRegion", String.class, region);
         }
 
-        AWSCredentialsProvider credentialsProvider = createCredentialsProvider();
-        maybeSetAttribute(builder, "setCredentials", AWSCredentialsProvider.class, credentialsProvider);
-
         try
         {
+            AWSCredentialsProvider credentialsProvider = createCredentialsProvider();
+            maybeSetAttribute(builder, "setCredentials", AWSCredentialsProvider.class, credentialsProvider);
+
             Method clientFactoryMethod = builder.getClass().getMethod("build");
             return clientType.cast(clientFactoryMethod.invoke(builder));
         }
         catch (Exception ex)
         {
-            logger.error("failed to invoke builder", ex);
-            throw new IllegalArgumentException("failed to invoke builder" + factoryMethodName, ex);
+            throw new ClientFactoryException("failed to invoke builder", ex);
         }
     }
 
@@ -237,15 +234,9 @@ implements ClientFactory<AWSClientType>
                 throw invoker.exception; // gets caught below
             return provider;
         }
-        catch (InvocationTargetException ex)
-        {
-            logger.error("failed to create assumed-role credentials provider", ex.getCause());
-            return null;
-        }
         catch (Throwable ex)
         {
-            logger.error("failed to create assumed-role credentials provider", ex);
-            return null;
+            throw new ClientFactoryException("failed to create assumed-role credentials provider", ex);
         }
     }
 
@@ -275,8 +266,22 @@ implements ClientFactory<AWSClientType>
             return client;
         }
 
-        if (maybeSetRegion(client, region) || maybeSetRegion(client, System.getenv("AWS_REGION")))
-            return client;
+        String regionName = (region != null)
+                          ? region
+                          :  System.getenv("AWS_REGION");
+        if (regionName != null)
+        {
+            logger.debug("setting region: " + regionName);
+            try
+            {
+                Regions resolvedRegion = Regions.fromName(regionName);
+                maybeSetAttribute(client, "configureRegion", Regions.class, resolvedRegion);
+            }
+            catch (IllegalArgumentException ex)
+            {
+                throw new ClientFactoryException("invalid region: " + regionName);
+            }
+        }
 
         return client;
     }
@@ -300,32 +305,7 @@ implements ClientFactory<AWSClientType>
         }
         catch (Exception ex)
         {
-            logger.error("failed to instantiate service client: " + clientClass, ex);
-            return null;
-        }
-    }
-
-
-    // setting region requires multiple steps, including an enum lookup, any of which can fail
-    // since this is called from multiple places, it deserves its own function
-    protected boolean maybeSetRegion(AWSClientType client, String value)
-    {
-        if (client == null)
-            return false;
-
-        if ((value == null) || value.isEmpty())
-            return false;
-
-        try
-        {
-            Regions resolvedRegion = Regions.fromName(value);
-            logger.debug("setting region: " + value);
-            return maybeSetAttribute(client, "configureRegion", Regions.class, resolvedRegion);
-        }
-        catch (IllegalArgumentException ex)
-        {
-            logger.error("unsupported/invalid region: " + value, null);
-            return false;
+            throw new ClientFactoryException("failed to instantiate service client: " + clientClass, ex);
         }
     }
 
@@ -346,10 +326,9 @@ implements ClientFactory<AWSClientType>
         }
         catch (Exception ex)
         {
-            // should only fail for invalid name/value; since we're calling internally, it's
-            // an error if that happens
-            logger.error("failed to set attribute: " + setterName + "(" + value + ")", ex);
-            return false;
+            // this is only called internally, for user-configured values, so a bad attribute
+            // should be treated as an error and stop the appender (no fallback)
+            throw new ClientFactoryException("failed to set attribute: " + setterName + "(" + value + ")", ex);
         }
     }
 }

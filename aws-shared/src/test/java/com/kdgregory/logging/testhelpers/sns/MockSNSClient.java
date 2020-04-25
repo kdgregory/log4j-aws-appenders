@@ -26,10 +26,10 @@ import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.*;
 
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
+import com.kdgregory.logging.aws.common.ClientFactory;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.common.LogWriter;
-import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
 

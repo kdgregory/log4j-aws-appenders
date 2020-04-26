@@ -15,10 +15,14 @@
 package com.kdgregory.log4j2.aws.internal;
 
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.StringLayout;
 
 import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 import com.kdgregory.logging.common.LogMessage;
@@ -100,6 +104,9 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
     // this is provided to us by subclass
 
     protected AppenderConfigType config;
+    
+    // character set for handling header/footer; extracted from layout if possible
+    protected Charset layoutCharset = StandardCharsets.UTF_8;
 
     // holding this separately because of Log4J's "setters? we don't need no stinkin' setters!"
     // approach to configuration
@@ -109,8 +116,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
     protected RotationMode rotationMode;
     protected long rotationInterval;
 
-    // the current writer; initialized on first append, changed after rotation or error
-
+    // the current writer; changed after rotation or error
     protected volatile LogWriter writer;
 
 
@@ -150,6 +156,12 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
         }
 
         rotationInterval = config.getRotationInterval();
+        
+        Layout<?> layout = config.getLayout();
+        if (layout instanceof StringLayout)
+        {
+            layoutCharset = ((StringLayout)layout).getCharset();
+        }
     }
 
 
@@ -324,7 +336,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
 
                 if (getLayout().getHeader() != null)
                 {
-                    String header = new String(getLayout().getHeader(), "UTF-8");
+                    String header = new String(getLayout().getHeader(), layoutCharset);
                     if (header.length() > 0)
                     {
                         internalAppend(new LogMessage(System.currentTimeMillis(), header));
@@ -358,7 +370,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
 
                 if (getLayout().getFooter() != null)
                 {
-                    String header = new String(getLayout().getFooter(), "UTF-8");
+                    String header = new String(getLayout().getFooter(), layoutCharset);
                     if (header.length() > 0)
                     {
                         internalAppend(new LogMessage(System.currentTimeMillis(), header));

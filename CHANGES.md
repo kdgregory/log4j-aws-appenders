@@ -4,6 +4,9 @@
 
 * Allow appenders to assume a role. This supports cross-account logging.
   ([#92](https://github.com/kdgregory/log4j-aws-appenders/issues/92))
+* Log4J2 appenders now use the layout's character set for subclasses of
+  `StringLayout`.
+  ([#101](https://github.com/kdgregory/log4j-aws-appenders/issues/101))
 * When creating a client via static factory method, you can now provide
   a method that receives configuration parameters `assumedRole`, `region`,
   and `endpoint` (see [client docs](docs/client.md#clientfactory)).

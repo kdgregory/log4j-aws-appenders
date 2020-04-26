@@ -189,6 +189,8 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
     @Test
     public void testWriteHeaderAndFooter() throws Exception
     {
+        // for Log4J2 this test also verifies layout character set handling
+
         initialize("testWriteHeaderAndFooter");
 
         MockCloudWatchWriter mockWriter = appender.getMockWriter();
@@ -197,10 +199,10 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
         appender.stop(0, TimeUnit.MILLISECONDS);
 
-        assertEquals("number of messages",  3,                  mockWriter.messages.size());
-        assertEquals("header is first",     "File Header",      mockWriter.getMessage(0));
-        assertEquals("message is middle",   "blah blah blah",   mockWriter.getMessage(1));
-        assertEquals("footer is last",      "File Footer",      mockWriter.getMessage(2));
+        assertEquals("number of messages",  3,                      mockWriter.messages.size());
+        assertEquals("header is first",     "File Header\u00a9",    mockWriter.getMessage(0));
+        assertEquals("message is middle",   "blah blah blah",       mockWriter.getMessage(1));
+        assertEquals("footer is last",      "File Footer\u00a9",    mockWriter.getMessage(2));
     }
 
 

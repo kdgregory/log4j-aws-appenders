@@ -25,6 +25,8 @@
             <appendNewlines>true</appendNewlines>
             <enableHostname>true</enableHostname>
             <enableLocation>true</enableLocation>
+            <enableInstanceId>false</enableInstanceId>
+            <enableAccountId>true</enableAccountId>
             <tags>applicationName=Logback-Example,runDate={date},environment={sysprop:environment:dev}</tags>
         </layout>
     </appender>

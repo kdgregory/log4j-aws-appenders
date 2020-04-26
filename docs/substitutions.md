@@ -14,7 +14,7 @@ Variable            | Description
 `pid`               | Process ID (see below)
 `hostname`          | Hostname (see below)
 `instanceId`        | _Deprecated_: use `ec2:instanceId`
-`aws:accountId`     | AWS account ID. This exists to support SNS topic ARNs, probably not useful elsewhere.
+`aws:accountId`     | AWS account ID. Useful for cross-account logging (eg, as part of a CloudWatch log stream name)
 `ec2:instanceId`    | EC2 instance ID; see below.
 `ec2:region`        | Region where the current instance is running; see below.
 `env:XXX`           | Environment variable `XXX`; see below for complete syntax.

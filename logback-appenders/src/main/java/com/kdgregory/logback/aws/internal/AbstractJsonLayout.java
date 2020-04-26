@@ -34,6 +34,7 @@ extends LayoutBase<E>
     private String processId;
     private String hostname;
     private String instanceId;
+    private String accountId;
     private Map<String,String> tags;
 
     private ThreadLocal<JsonConverter> converterTL = new ThreadLocal<JsonConverter>()
@@ -52,6 +53,7 @@ extends LayoutBase<E>
     private boolean enableHostname = true;
     private boolean appendNewlines;
     private boolean enableInstanceId;
+    private boolean enableAccountId;
     private String rawTags;
 
 
@@ -76,6 +78,18 @@ extends LayoutBase<E>
     public boolean getEnableInstanceId()
     {
         return enableInstanceId;
+    }
+
+
+    public boolean getEnableAccountId()
+    {
+        return enableAccountId;
+    }
+
+
+    public void setEnableAccountId(boolean enableAccountId)
+    {
+        this.enableAccountId = enableAccountId;
     }
 
 
@@ -129,6 +143,13 @@ extends LayoutBase<E>
                 instanceId = null;
         }
 
+        if (enableAccountId)
+        {
+            accountId = subs.perform("{aws:accountId}");
+            if ("unknown-account".equals(accountId))
+                accountId = null;
+        }
+
         if ((rawTags != null) && !rawTags.isEmpty())
         {
             tags = new TreeMap<String,String>();
@@ -166,10 +187,10 @@ extends LayoutBase<E>
      */
     protected String addCommonAttributesAndConvert(Map<String,Object> map)
     {
-
         if (processId != null)  map.put("processId", processId);
         if (hostname != null)   map.put("hostname", hostname);
         if (instanceId != null) map.put("instanceId", instanceId);
+        if (accountId != null)  map.put("accountId", accountId);
 
         if (tags != null)       map.put("tags",         tags);
 

@@ -4,6 +4,8 @@
 
 * Allow appenders to assume a role. This supports cross-account logging.
   ([#92](https://github.com/kdgregory/log4j-aws-appenders/issues/92))
+* `JsonLayout` now optionally includes AWS account ID (Log4J1 and Logback).
+  ([#95](https://github.com/kdgregory/log4j-aws-appenders/issues/95))
 * Log4J2 appenders now use the layout's character set for subclasses of
   `StringLayout`.
   ([#101](https://github.com/kdgregory/log4j-aws-appenders/issues/101))

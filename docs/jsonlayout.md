@@ -11,7 +11,7 @@ ones in this library.
 
 For Logback, there's also [JsonAccessLayout](jsonaccesslayout.md), which similarly formats access logs.
 
-The Log4J 2.x library does not provide this class; see [below](#log4j2_support) for more information.
+The Log4J 2.x library does not provide this class; see [below](#log4j2-support) for more information.
 
 
 ## Configuration
@@ -23,8 +23,9 @@ value "false", and default to "false" unless otherwise noted.
  Name                   | Type      | Description
 ------------------------|-----------|----------------------------------------------------------------------------------------------------------------
 `appendNewlines`        | Boolean   | If "true", a newline will be appended to each record (default is false). This is useful when sending logging output to a file, particularly one read by an agent.
-`enableInstanceId`      | Boolean   | If "true", the JSON will include the EC2 instance ID where the application is running. *WARNING*: This is retrieved from EC2 metadata, and will delay application startup if you're not running on EC2.
+`enableAccountId`       | Boolean   | If "true", the JSON will include the AWS account ID that the application is running under.
 `enableHostname`        | Boolean   | Defaults to "true", including the logging server's hostname in the output; may be disabled by setting to "false".
+`enableInstanceId`      | Boolean   | If "true", the JSON will include the EC2 instance ID where the application is running. *WARNING*: This is retrieved from EC2 metadata, and will delay application startup if you're not running on EC2.
 `enableLocation`        | Boolean   | If "true", the JSON will include a sub-object that holds the location (class, source file, and line number) where the log message was written. This adds to the cost of every logging message so should not be enabled in production.
 `tags`                  | String    | If present, the JSON will include a sub-object with specified user metadata. See [below](#metadata) for more information.
 
@@ -46,6 +47,7 @@ The generated JSON object will have the following properties, some of which are 
  `mdc`          | The mapped diagnostic context, if it exists. This is a child map containing whatever entries are in the MDC.
  `ndc`          | Log4J only: The nested diagnostic context, if it exists. This is a single string that contains each of the pushed entries separated by spaces (yes, that's how Log4J provides it).
  `locationInfo` | The location where the logger was called, if enabled. This is a child object with the following components: `className`, `methodName`, `fileName`, `lineNumber`.
+ `accountId`    | The AWS account ID used by the application, if enabled.
  `instanceId`   | The EC2 instance ID of the machine where the logger is running, if enabled.
  `tags`         | Optional sub-object containing user-specified metadata; see below.
 
@@ -111,8 +113,8 @@ Which, when pretty-printed, looks like this:
 Log4J 2.x provides its own [JsonLayout](https://logging.apache.org/log4j/2.x/log4j-core/apidocs/org/apache/logging/log4j/core/layout/JsonLayout.html).
 The output of the Log4J layout does not use the same field names as the JSON layout from this
 project, but offers the ability to customize the output with additional fields. As a result,
-I decided to not implement the project's layout manager for Log4J2. Instead, you can get
-almost the same results using the following configuration:
+I decided not to implement a Log4J2 JSON layout manager. Instead, you can get almost the same
+results using the following configuration:
 
 ```
 <JsonLayout complete="false" compact="true" eventEol="true" properties="true" locationInfo="true">

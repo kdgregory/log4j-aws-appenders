@@ -324,8 +324,7 @@ public class TestDefaultClientFactory
         }
         catch (ClientFactoryException ex)
         {
-            assertEquals("exception reported method name used", "failed to invoke factory method: " + factoryMethodName, ex.getMessage());
-            assertEquals("exception contained cause",           NoSuchMethodException.class,                             ex.getCause().getClass());
+            assertEquals("exception message", "factory method does not exist: " + factoryMethodName, ex.getMessage());
         }
 
         logger.assertInternalDebugLog("creating client via factory.*" + factoryMethodName);

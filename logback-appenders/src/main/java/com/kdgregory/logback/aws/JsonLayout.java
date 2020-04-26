@@ -69,6 +69,7 @@ import ch.qos.logback.classic.spi.StackTraceElementProxy;
  *  <li> <code>instanceId</code>:   the EC2 instance ID of the machine where the logger is
  *                                  running. WARNING: do not enable this elsewhere, as the
  *                                  operation to retrieve this value may take a long time.
+ *  <li> <code>accountId</code>:    the AWS account ID associated with the current user/role.
  *  </ul>
  *  <p>
  *  Lastly, you can define a set of user tags, which are written as a child object with

@@ -14,6 +14,8 @@
 
 package com.kdgregory.logback.aws;
 
+import static net.sf.kdgcommons.test.StringAsserts.*;
+
 import java.io.ByteArrayOutputStream;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -257,6 +259,22 @@ public class TestJsonLayout
         String instanceId = new XPathWrapper("/data/instanceId").evaluateAsString(dom);
         assertTrue("instance ID starts with i- (was: " + instanceId + ")",
                    instanceId.startsWith("i-"));
+    }
+
+
+    @Test
+//    @Ignore("this test should only be run if you have AWS credentials")
+    public void testAccountId() throws Exception
+    {
+        initialize("testAccountId");
+
+        logger.debug(TEST_MESSAGE);
+
+        captureLoggingOutputAndParse();
+        assertCommonElements(TEST_MESSAGE);
+
+        String accountId = new XPathWrapper("/data/accountId").evaluateAsString(dom);
+        assertRegex("\\d{12}", accountId);
     }
 
 

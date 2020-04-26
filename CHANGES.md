@@ -4,6 +4,10 @@
 
 * Allow appenders to assume a role. This supports cross-account logging.
   ([#92](https://github.com/kdgregory/log4j-aws-appenders/issues/92))
+* When creating a client via static factory method, you can now provide
+  a method that receives configuration parameters `assumedRole`, `region`,
+  and `endpoint` (see [client docs](docs/client.md#clientfactory)).
+  ([#102](https://github.com/kdgregory/log4j-aws-appenders/issues/102))
 * If the configured client creation mechanism fails, do not fallback to
   an alternative mechanism (ie, don't blindly write in current account).
   ([#105](https://github.com/kdgregory/log4j-aws-appenders/issues/105))

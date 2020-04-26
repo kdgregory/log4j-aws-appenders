@@ -25,10 +25,10 @@ import java.util.regex.Pattern;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
 
+import com.kdgregory.logging.aws.common.ClientFactory;
 import com.kdgregory.logging.aws.internal.AbstractLogWriter;
 import com.kdgregory.logging.aws.internal.Utils;
 import com.kdgregory.logging.common.LogMessage;
-import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
 
 

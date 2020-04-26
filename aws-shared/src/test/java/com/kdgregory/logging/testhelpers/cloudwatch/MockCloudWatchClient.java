@@ -26,10 +26,10 @@ import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.*;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
+import com.kdgregory.logging.aws.common.ClientFactory;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.common.LogWriter;
-import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
 

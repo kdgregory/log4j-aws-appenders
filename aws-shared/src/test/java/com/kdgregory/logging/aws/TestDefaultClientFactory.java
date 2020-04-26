@@ -23,12 +23,14 @@ import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
+import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.InvalidOperationException;
 
+import com.kdgregory.logging.aws.common.ClientFactoryException;
 import com.kdgregory.logging.aws.common.DefaultClientFactory;
 import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchClient;
@@ -80,7 +82,7 @@ public class TestDefaultClientFactory
 
     public static AWSLogs throwingFactoryMethod()
     {
-        throw new InvalidOperationException("me no work");
+        throw new InvalidOperationException("not today, not ever");
     }
 
 
@@ -106,6 +108,23 @@ public class TestDefaultClientFactory
         public void setRegion(String region)
         {
             clientBuilderRegion = region;
+        }
+    }
+
+
+    // a variant for testing invalid region
+    public static class MockClientBuilderForInvalidRegionTest
+    extends MockClientBuilder
+    {
+        public static MockClientBuilderForInvalidRegionTest standard()
+        {
+            return new MockClientBuilderForInvalidRegionTest();
+        }
+
+        @Override
+        public void setRegion(String region)
+        {
+            throw new IllegalArgumentException("invalid region");
         }
     }
 
@@ -199,7 +218,7 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testStaticClientFactory() throws Exception
+    public void testFactoryMethod() throws Exception
     {
         String factoryMethodName = getClass().getName() + ".createMockClient";
 
@@ -228,78 +247,87 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testBogusFactoryMethodName() throws Exception
+    public void testFactoryMethodBogusName() throws Exception
     {
-        String factoryMethodName = "com.example.Bogus.bogus";
+        String factoryMethodName = getClass().getName() + ".bogus";
         DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, null, logger)
         {
-            // our goal is to cleanly recover from bad method name, not actually create a client, so other mechanisms just record invocation
-
             @Override
             public AWSLogs tryBuilder()
             {
-                builderCalledAt.set(invocationCounter.incrementAndGet());
+                fail("should not have attempted to use builder");
                 return null;
             }
 
             @Override
             protected AWSLogs tryConstructor()
             {
-                constructorCalledAt.set(invocationCounter.incrementAndGet());
+                fail("should not have attempted to use constructor");
                 return null;
             }
         };
 
-        AWSLogs client = factory.createClient();
-        assertNull("didn't actually create a client", client);
-        assertTrue("called builder mechanism", builderCalledAt.get() > 0);
-        assertTrue("called constructor mechanism", constructorCalledAt.get() > 0);
+        try
+        {
+            factory.createClient();
+            fail("should have thrown");
+        }
+        catch (ClientFactoryException ex)
+        {
+            assertEquals("exception reported method name used", "failed to invoke factory method: " + factoryMethodName, ex.getMessage());
+            assertEquals("exception contained cause",           NoSuchMethodException.class,                             ex.getCause().getClass());
+        }
 
         logger.assertInternalDebugLog("creating client via factory.*" + factoryMethodName);
-        logger.assertInternalErrorLog("failed to create client.*" + factoryMethodName);
     }
 
 
     @Test
-    public void testExceptionInFactoryMethod() throws Exception
+    public void testFactoryMethodException() throws Exception
     {
+        // this test is alsmost identical to the previous, but has a different exception cause
+
         String factoryMethodName = getClass().getName() + ".throwingFactoryMethod";
 
         DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, null, logger)
         {
-            // again, we just want to cleanly recover, so will verify that other mechanisms were tried
-
             @Override
             public AWSLogs tryBuilder()
             {
-                builderCalledAt.set(invocationCounter.incrementAndGet());
+                fail("should not have attempted to use builder");
                 return null;
             }
 
             @Override
             protected AWSLogs tryConstructor()
             {
-                constructorCalledAt.set(invocationCounter.incrementAndGet());
+                fail("should not have attempted to use constructor");
                 return null;
             }
         };
 
-        AWSLogs client = factory.createClient();
-        assertNull("didn't actually create a client", client);
-        assertTrue("called builder mechanism", builderCalledAt.get() > 0);
-        assertTrue("called constructor mechanism", constructorCalledAt.get() > 0);
+        try
+        {
+            factory.createClient();
+            fail("should have thrown");
+        }
+        catch (ClientFactoryException ex)
+        {
+            assertEquals("exception message",   "failed to invoke factory method: " + factoryMethodName,    ex.getMessage());
+            assertEquals("underlying cause",    InvalidOperationException.class,                            ex.getCause().getClass());
+        }
 
         logger.assertInternalDebugLog("creating client via factory.*" + factoryMethodName);
-        logger.assertInternalErrorLog("failed to create client.*" + factoryMethodName);
+        logger.assertInternalErrorLog();
     }
 
 
     @Test
-    public void testDefaultClientBuilder() throws Exception
+    public void testClientBuilder() throws Exception
     {
         DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, null, logger)
         {
-            // for this test we want to exercise the basic builder code path
+            // the AWS builder class isn't in our dependencies, so we'll replace it with our own
             {
                 factoryClasses.put("com.amazonaws.services.logs.AWSLogs", MockClientBuilder.class.getName());
             }
@@ -335,13 +363,13 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testClientBuilderWithRegion() throws Exception
+    public void testBuilderWithRegion() throws Exception
     {
         final String region = "us-west-1";
 
         DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, region, null, logger)
         {
-            // we'll replace the AWS builder class with our own
+            // the AWS builder class isn't in our dependencies, so we'll replace it with our own
             {
                 factoryClasses.put("com.amazonaws.services.logs.AWSLogs", MockClientBuilder.class.getName());
             }
@@ -379,7 +407,55 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testClientBuilderWithAssumedRole() throws Exception
+    public void testBuilderWithInvalidRegion() throws Exception
+    {
+        final String region = "bogus";
+
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, region, null, logger)
+        {
+            // the AWS builder class isn't in our dependencies, so we'll replace it with our own
+            {
+                factoryClasses.put("com.amazonaws.services.logs.AWSLogs", MockClientBuilderForInvalidRegionTest.class.getName());
+            }
+
+            @Override
+            protected AWSCredentialsProvider createDefaultCredentialsProvider()
+            {
+                return new MockCredentialsProvider();
+            }
+
+            @Override
+            protected AWSCredentialsProvider createAssumedRoleCredentialsProvider()
+            {
+                throw new IllegalStateException("should not have called assumed-role credentials provider");
+            }
+
+            @Override
+            protected AWSLogs tryConstructor()
+            {
+                throw new IllegalStateException("should not have called constructor");
+            }
+        };
+
+        try
+        {
+            factory.createClient();
+            fail("was able to create client");
+        }
+        catch (ClientFactoryException ex)
+        {
+            assertRegex("exception message", "failed.*" + region + ".*", ex.getMessage());
+        }
+
+        logger.assertInternalDebugLog(
+                "creating client via SDK builder",
+                "setting region.*" + region);
+        logger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testBuilderWithAssumedRole() throws Exception
     {
         final String assumedRole = "Example";
         final AWSCredentialsProvider expectedARProvider = new MockCredentialsProvider();
@@ -422,7 +498,55 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testClientConstructor() throws Exception
+    public void testBuilderExceptionWhileAssumingRole() throws Exception
+    {
+        final String assumedRole = "Example";
+
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, assumedRole, null, null, logger)
+        {
+            // we'll replace the AWS builder class with our own
+            {
+                factoryClasses.put("com.amazonaws.services.logs.AWSLogs", MockClientBuilder.class.getName());
+            }
+
+            @Override
+            protected AWSCredentialsProvider createDefaultCredentialsProvider()
+            {
+                throw new IllegalStateException("should not have called default credentials provider");
+            }
+
+            @Override
+            protected AWSCredentialsProvider createAssumedRoleCredentialsProvider()
+            {
+                throw new RuntimeException("denied!");
+            }
+
+            @Override
+            protected AWSLogs tryConstructor()
+            {
+                throw new IllegalStateException("should not have called constructor");
+            }
+        };
+
+        try
+        {
+            factory.createClient();
+            fail("able to create client when credentials provider threw");
+        }
+        catch (ClientFactoryException ex)
+        {
+            assertEquals("exception message", "failed to invoke builder",   ex.getMessage());
+            assertEquals("wrapped exception", "denied!",                    ex.getCause().getMessage());
+        }
+
+        logger.assertInternalDebugLog("creating client via SDK builder",
+                                      "assuming role.*" + assumedRole);
+        logger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testConstructor() throws Exception
     {
         // we're using an actual client, not a mock
         DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, null, null, logger);
@@ -430,7 +554,7 @@ public class TestDefaultClientFactory
         AWSLogs client = factory.createClient();
         assertNotNull("actually created a client",  client);
 
-        // I have this envar defined by default; need to test both ways
+        // I have this envar defined by default; so need to test both ways
         if (StringUtil.isBlank(System.getenv("AWS_REGION")))
         {
             assertEndpointRegion(client, "us-east-1");  // this is the default region for 1.11.0
@@ -451,7 +575,7 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testClientConstructorWithExplicitRegion() throws Exception
+    public void testConstructorWithExplicitRegion() throws Exception
     {
         // to be valid for the test, the region must have existed when SDK 1.11.0 came out
         final String region = "us-west-1";
@@ -473,7 +597,7 @@ public class TestDefaultClientFactory
 
 
     @Test
-    public void testClientConstructorWithBogusRegion() throws Exception
+    public void testConstructorWithBogusRegion() throws Exception
     {
         // this region didn't exist when SDK 1.11.0 came out
         final String region = "eu-west-3";
@@ -481,31 +605,20 @@ public class TestDefaultClientFactory
         // we're using an actual client, not a mock
         DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, null, null, region, null, logger);
 
-        AWSLogs client = factory.createClient();
-        assertNotNull("actually created a client",  client);
-
-        // again, we need to test both ways
-        if (StringUtil.isBlank(System.getenv("AWS_REGION")))
+        try
         {
-            assertEndpointRegion(client, "us-east-1");  // should revert to default
-            logger.assertInternalDebugLog("creating client via constructor");
-            logger.assertInternalErrorLog("unsupported/invalid region.*" + region);
+            factory.createClient();
+            fail("did not throw when constructing client");
         }
-        else
+        catch (ClientFactoryException ex)
         {
-            assertEndpointRegion(client, System.getenv("AWS_REGION"));
-            logger.assertInternalDebugLog("creating client via constructor",
-                                          "setting region.*" + System.getenv("AWS_REGION"));
-            logger.assertInternalErrorLog("unsupported/invalid region.*" + region);
+            assertRegex(".*invalid region.*" + region, ex.getMessage());
         }
-
-        // this shouldn't be necessary, but also shouldn't hurt
-        client.shutdown();
     }
 
 
     @Test
-    public void testClientConstructorWithExplicitEndpoint() throws Exception
+    public void testConstructorWithExplicitEndpoint() throws Exception
     {
         // this region didn't exist when SDK 1.11.0 came out
         final String region = "eu-west-3";

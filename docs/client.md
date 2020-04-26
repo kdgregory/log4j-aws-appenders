@@ -12,17 +12,22 @@ the following mechanisms are tried in order:
    not support the region provider chain (instead defaulting to `us-east-1`). You can,
    however, explicitly specify a region.
 
-**Note:** one thing that this library does not &mdash; _and will never_ &mdash;
-allow is storing access keys in the logger configuration file. Please follow the
-[AWS best practices](https://docs.aws.amazon.com/general/latest/gr/aws-access-keys-best-practices.html)
-for managing your credentials.
+> One thing that this library does not &mdash; _and will never_ &mdash; allow is 
+  providing access keys via configuration properties. Please follow the
+  [AWS best practices](https://docs.aws.amazon.com/general/latest/gr/aws-access-keys-best-practices.html)
+  for managing your credentials.
 
 
 ## Configuration Properties
 
-All appenders provide the following connection properties, which are described in detail below.
+All appenders provide the following connection properties, which are described in detail
+below.  These configuration properties cannot be changed once the appender has started.
 
-**Note:** these configuration properties cannot be changed once the appender has started.
+**Note:** since 2.4.0, if a client configuration property is specified but can not be
+applied, the appender will fail to start. This prevents accidental misconfiguration
+from turning into a hidden security breach (_eg,_ if you assume a role to write sensitive
+log messages to a different account, you don't want an invalid role name to result in
+writing those messages in the current account).
 
 Name                | Description
 --------------------|----------------------------------------------------------------
@@ -40,9 +45,6 @@ account.
 
 > Note: only applies when using a "builder" object to create the client, not when
   using either a constructor or application-provided factory method.
-
-> Note: in the current implementation, failure to assume a role will result in
-  falling back to the client constructor.
 
 May be specified as either a simple role name or an ARN. If specified as a name, a
 role with that name must exist in the current account.
@@ -69,9 +71,6 @@ If specified, identifies the fully qualified name of a static method provided by
 application code. This method must return an appropriate SDK client, which will then
 be used to write to the destination. This is intended to support client configuration
 that isn't otherwise covered by the appender (for example, using an HTTP proxy).
-
-> Note: if you provide a client factory method, the appender will not try any other
-  mechanisms.
 
 If unable to invoke the client method, the appender will report the error using the
 logging framework's internal status logger. It will not fallback to another client
@@ -145,6 +144,6 @@ provide a `shutdown()` method as well? For that matter, does anybody actually us
 that functionality?
 
 After spending time looking at the `AmazonWebServiceClient` implementation, I decided
-that this complexity would not be worthwhile. While the SDK client holds a connection
-for multiple requests, those connections (1) will be closed on their own, and (2) use
-a finalizer for the case where a client goes out of scope.
+this complexity would not be worthwhile. While the SDK client does use a connection
+for multiple requests, those connections (1) are closed when a timeout expires, and
+(2) use a finalizer for the case where a client goes out of scope.

@@ -14,18 +14,19 @@
 
 package com.kdgregory.logging.common.factories;
 
+
 /**
- *  Used to create an AWS service client. {@link DefaultClientFactory} is the
- *  standard implementation, which uses a series of initialization steps. The
- *  mock-client tests uses an alternate implementation.
+ *  @deprecated - Use {@link #com.kdgregory.logging.aws.common.ClientFactory}.
  */
+@Deprecated
 public interface ClientFactory<ClientType>
+
 {
     /**
      *  Creates a new instance of the desired client type.
      *
-     *  @throws RuntimeException if any error happened (this generally indicates
-     *          a configureation error, and assumed to be unrecoverable).
+     *  @throws RuntimeException if any error happened. Any exceptions trapped
+     *          internally are rethrown as <code>ClientFactoryException</code>.
      */
     public ClientType createClient();
 }

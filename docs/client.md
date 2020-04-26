@@ -72,6 +72,13 @@ application code. This method must return an appropriate SDK client, which will 
 be used to write to the destination. This is intended to support client configuration
 that isn't otherwise covered by the appender (for example, using an HTTP proxy).
 
+There are two supported variants for this method. The first takes no parameters; it
+must retrieve any configuration from an external source. The second is passed three
+parameters from the appender configuration. Examples, for `CloudWatchAppender`:
+
+* `public static AWSLogs createCloudWatchClient()`
+* `public static AWSLogs createCloudWatchClient(String assumedRole, String region, String endpoint)`
+
 If unable to invoke the client method, the appender will report the error using the
 logging framework's internal status logger. It will not fallback to another client
 construction mechanism.

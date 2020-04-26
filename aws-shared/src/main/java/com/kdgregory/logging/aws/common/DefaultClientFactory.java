@@ -123,22 +123,34 @@ implements ClientFactory<AWSClientType>
         if ((factoryMethodName == null) || factoryMethodName.isEmpty())
             return null;
 
+        logger.debug("creating client via factory method: " + factoryMethodName);
+
         int methodIdx = factoryMethodName.lastIndexOf('.');
         if (methodIdx < 0)
-            throw new IllegalArgumentException("invalid client factory configuration: " + factoryMethodName);
-
-        logger.debug("creating client via factory method: " + factoryMethodName);
+            throw new ClientFactoryException("invalid factory method name: " + factoryMethodName);
 
         try
         {
-            Class<?> factoryKlass = Class.forName(factoryMethodName.substring(0, methodIdx));
-            Method factoryMethod = factoryKlass.getDeclaredMethod(factoryMethodName.substring(methodIdx + 1));
-            return clientType.cast(factoryMethod.invoke(null));
+            String className = factoryMethodName.substring(0, methodIdx);
+            String methodName = factoryMethodName.substring(methodIdx + 1);
+
+            for (Method method : Class.forName(className).getDeclaredMethods())
+            {
+                if (method.getName().equals(methodName))
+                {
+                    return (method.getParameterTypes().length == 0)
+                         ? clientType.cast(method.invoke(null))
+                         : clientType.cast(method.invoke(null, assumedRole, region, endpoint));
+                }
+            }
         }
         catch (Exception ex)
         {
             throw new ClientFactoryException("failed to invoke factory method: " + factoryMethodName, ex);
         }
+
+        // fall-through from loop; outside try/catch because otherwise it would be wrapped
+        throw new ClientFactoryException("factory method does not exist: "  + factoryMethodName);
     }
 
 

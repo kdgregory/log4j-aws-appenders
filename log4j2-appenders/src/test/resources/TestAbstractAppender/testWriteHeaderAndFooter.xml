@@ -3,9 +3,10 @@
     <Appenders>
         <TestableCloudWatchAppender name="CLOUDWATCH">
             <PatternLayout
+                charset="ISO-8859-1"
                 pattern="%m"
-                header="File Header"
-                footer="File Footer"
+                header="File Header&#xA9;"
+                footer="File Footer&#xA9;"
                 />
             <logGroup>argle</logGroup>
         </TestableCloudWatchAppender>

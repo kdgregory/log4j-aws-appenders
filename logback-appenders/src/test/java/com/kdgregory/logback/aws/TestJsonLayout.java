@@ -66,7 +66,7 @@ public class TestJsonLayout
     private void initialize(String propsName)
     throws Exception
     {
-        URL config = ClassLoader.getSystemResource(propsName);
+        URL config = ClassLoader.getSystemResource("TestJsonLayout/" + propsName + ".xml");
         assertNotNull("was able to retrieve config", config);
 
         LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
@@ -134,7 +134,7 @@ public class TestJsonLayout
     @Test
     public void testSimpleMessage() throws Exception
     {
-        initialize("TestJsonLayout/default.xml");
+        initialize("default");
 
         logger.debug(TEST_MESSAGE);
 
@@ -156,7 +156,7 @@ public class TestJsonLayout
     @Test
     public void testException() throws Exception
     {
-        initialize("TestJsonLayout/default.xml");
+        initialize("default");
 
         String innerMessage = "I'm not worthy";
         String outerMessage = "throw it out";
@@ -193,7 +193,7 @@ public class TestJsonLayout
     @Test
     public void testMDC() throws Exception
     {
-        initialize("TestJsonLayout/default.xml");
+        initialize("default");
 
         MDC.put("foo", "bar");
         MDC.put("argle", "bargle");
@@ -214,7 +214,7 @@ public class TestJsonLayout
     @Test
     public void testLocation() throws Exception
     {
-        initialize("TestJsonLayout/testLocation.xml");
+        initialize("testLocation");
 
         logger.debug(TEST_MESSAGE);
 
@@ -234,7 +234,7 @@ public class TestJsonLayout
     @Test
     public void testDisableHostname() throws Exception
     {
-        initialize("TestJsonLayout/testDisableHostname.xml");
+        initialize("testDisableHostname");
 
         logger.debug(TEST_MESSAGE);
 
@@ -249,7 +249,7 @@ public class TestJsonLayout
     @Ignore("this test should only be run on an EC2 instance")
     public void testInstanceId() throws Exception
     {
-        initialize("TestJsonLayout/testInstanceId.xml");
+        initialize("testInstanceId");
 
         logger.debug(TEST_MESSAGE);
 
@@ -281,7 +281,7 @@ public class TestJsonLayout
     @Test
     public void testTags() throws Exception
     {
-        initialize("TestJsonLayout/testTags.xml");
+        initialize("testTags");
 
         logger.debug(TEST_MESSAGE);
 
@@ -302,7 +302,7 @@ public class TestJsonLayout
         // this is a somewhat bogus test, because Logback completely ignores an empty property,
         // but it's useful to ensure that nothing breaks
 
-        initialize("TestJsonLayout/testEmptyTags.xml");
+        initialize("testEmptyTags");
 
         logger.debug(TEST_MESSAGE);
 
@@ -316,7 +316,7 @@ public class TestJsonLayout
     @Test
     public void testNoAppendNewlines() throws Exception
     {
-        initialize("TestJsonLayout/default.xml");
+        initialize("default");
 
         logger.debug(TEST_MESSAGE);
         logger.debug(TEST_MESSAGE);
@@ -330,7 +330,7 @@ public class TestJsonLayout
     @Test
     public void testAppendNewlines() throws Exception
     {
-        initialize("TestJsonLayout/testAppendNewlines.xml");
+        initialize("testAppendNewlines");
 
         logger.debug(TEST_MESSAGE);
         logger.debug(TEST_MESSAGE);

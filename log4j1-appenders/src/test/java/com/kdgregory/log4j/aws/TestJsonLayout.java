@@ -37,6 +37,8 @@ import org.apache.log4j.WriterAppender;
 import org.apache.log4j.helpers.LogLog;
 
 import net.sf.kdgcommons.lang.StringUtil;
+import static net.sf.kdgcommons.test.StringAsserts.*;
+
 import net.sf.practicalxml.converter.JsonConverter;
 import net.sf.practicalxml.junit.DomAsserts;
 import net.sf.practicalxml.xpath.XPathWrapper;
@@ -284,6 +286,22 @@ public class TestJsonLayout
         String instanceId = new XPathWrapper("/data/instanceId").evaluateAsString(dom);
         assertTrue("instance ID starts with i- (was: " + instanceId + ")",
                    instanceId.startsWith("i-"));
+    }
+
+
+    @Test
+    @Ignore("this test should only be run if you have AWS credentials")
+    public void testAccountId() throws Exception
+    {
+        initialize("TestJsonLayout/testAccountId.properties");
+
+        logger.debug(TEST_MESSAGE);
+
+        captureLoggingOutputAndParse();
+        assertCommonElements(TEST_MESSAGE);
+
+        String accountId = new XPathWrapper("/data/accountId").evaluateAsString(dom);
+        assertRegex("\\d{12}", accountId);
     }
 
 

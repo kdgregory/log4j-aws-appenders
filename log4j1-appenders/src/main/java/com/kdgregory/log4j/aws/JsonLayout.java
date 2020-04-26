@@ -72,6 +72,7 @@ import com.kdgregory.logging.common.util.JsonConverter;
  *  <li> <code>instanceId</code>:   the EC2 instance ID of the machine where the logger is
  *                                  running. WARNING: do not enable this elsewhere, as the
  *                                  operation to retrieve this value may take a long time.
+ *  <li> <code>accountId</code>:    the AWS account ID associated with the current user/role.
  *  </ul>
  *  <p>
  *  Lastly, you can define a set of user tags, which are written as a child object with
@@ -90,6 +91,7 @@ extends Layout
     private String processId;
     private String hostname;
     private String instanceId;
+    private String accountId;
     private Map<String,String> tags;
 
 //----------------------------------------------------------------------------
@@ -101,6 +103,7 @@ extends Layout
     private boolean appendNewlines;
     private boolean enableLocation;
     private boolean enableInstanceId;
+    private boolean enableAccountId;
     private String rawTags;
 
 
@@ -136,6 +139,18 @@ extends Layout
     public boolean getEnableInstanceId()
     {
         return enableInstanceId;
+    }
+
+
+    public boolean getEnableAccountId()
+    {
+        return enableAccountId;
+    }
+
+
+    public void setEnableAccountId(boolean enableAccountId)
+    {
+        this.enableAccountId = enableAccountId;
     }
 
 
@@ -189,6 +204,13 @@ extends Layout
                 instanceId = null;
         }
 
+        if (enableAccountId)
+        {
+            accountId = subs.perform("{aws:accountId}");
+            if ("unknown-account".equals(accountId))
+                accountId = null;
+        }
+
         if ((rawTags != null) && !rawTags.isEmpty())
         {
             tags = new TreeMap<String,String>();
@@ -223,6 +245,7 @@ extends Layout
         if (processId != null)          map.put("processId",    processId);
         if (hostname != null)           map.put("hostname",     hostname);
         if (instanceId != null)         map.put("instanceId",   instanceId);
+        if (accountId != null)          map.put("accountId",    accountId);
 
         if ((event.getProperties() != null) && ! event.getProperties().isEmpty())
         {

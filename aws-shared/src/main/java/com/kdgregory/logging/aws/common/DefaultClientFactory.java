@@ -123,11 +123,11 @@ implements ClientFactory<AWSClientType>
         if ((factoryMethodName == null) || factoryMethodName.isEmpty())
             return null;
 
+        logger.debug("creating client via factory method: " + factoryMethodName);
+
         int methodIdx = factoryMethodName.lastIndexOf('.');
         if (methodIdx < 0)
-            throw new IllegalArgumentException("invalid client factory configuration: " + factoryMethodName);
-
-        logger.debug("creating client via factory method: " + factoryMethodName);
+            throw new ClientFactoryException("invalid factory method name: " + factoryMethodName);
 
         try
         {

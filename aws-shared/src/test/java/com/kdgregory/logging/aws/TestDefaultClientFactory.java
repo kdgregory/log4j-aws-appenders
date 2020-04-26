@@ -299,6 +299,77 @@ public class TestDefaultClientFactory
     @Test
     public void testFactoryMethodBogusName() throws Exception
     {
+        String factoryMethodName = "completelybogus";
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, null, logger)
+        {
+            @Override
+            public AWSLogs tryBuilder()
+            {
+                fail("should not have attempted to use builder");
+                return null;
+            }
+
+            @Override
+            protected AWSLogs tryConstructor()
+            {
+                fail("should not have attempted to use constructor");
+                return null;
+            }
+        };
+
+        try
+        {
+            factory.createClient();
+            fail("should have thrown");
+        }
+        catch (ClientFactoryException ex)
+        {
+            assertEquals("exception message", "invalid factory method name: " + factoryMethodName, ex.getMessage());
+        }
+
+        logger.assertInternalDebugLog("creating client via factory.*" + factoryMethodName);
+    }
+
+
+    @Test
+    public void testFactoryMethodNoSuchClass() throws Exception
+    {
+        String factoryMethodName = "com.example.bogus";
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, null, logger)
+        {
+            @Override
+            public AWSLogs tryBuilder()
+            {
+                fail("should not have attempted to use builder");
+                return null;
+            }
+
+            @Override
+            protected AWSLogs tryConstructor()
+            {
+                fail("should not have attempted to use constructor");
+                return null;
+            }
+        };
+
+        try
+        {
+            factory.createClient();
+            fail("should have thrown");
+        }
+        catch (ClientFactoryException ex)
+        {
+            assertEquals("exception message",   "failed to invoke factory method: " + factoryMethodName,    ex.getMessage());
+            assertSame("wrapped exception",     ClassNotFoundException.class,                               ex.getCause().getClass());
+        }
+
+        logger.assertInternalDebugLog("creating client via factory.*" + factoryMethodName);
+    }
+
+
+    @Test
+    public void testFactoryMethodNoSuchMethod() throws Exception
+    {
         String factoryMethodName = getClass().getName() + ".bogus";
         DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, null, logger)
         {

@@ -52,20 +52,22 @@ public class TestDefaultClientFactory
     private AtomicInteger builderCalledAt = new AtomicInteger(0);
     private AtomicInteger constructorCalledAt = new AtomicInteger(0);
 
-    // set by createMockClient()
+    // set by factory method tests
     private static AWSLogs clientFromFactory;
+    private static String factoryParamAssumedRole;
+    private static String factoryParamEndpoint;
+    private static String factoryParamRegion;
 
     // set by MockClientBuilder (which we never see created, so can't examine directly)
     private static AWSLogs clientFromBuilder;
-    private static String clientBuilderRegion;
+    private static String builderParamRegion;
     private static Object clientBuilderCredentialsProvider;
 
 //----------------------------------------------------------------------------
 //  Support Code
 //----------------------------------------------------------------------------
 
-    // used by factory method tests
-    public static AWSLogs createMockClient()
+    public static AWSLogs baseFactoryMethod()
     {
         try
         {
@@ -77,6 +79,15 @@ public class TestDefaultClientFactory
             fail("exception in static factory: " + ex);
             return null;
         }
+    }
+
+
+    public static AWSLogs parameterizedFactoryMethod(String assumedRole, String region, String endpoint)
+    {
+        factoryParamAssumedRole = assumedRole;
+        factoryParamEndpoint = endpoint;
+        factoryParamRegion = region;
+        return baseFactoryMethod();
     }
 
 
@@ -107,7 +118,7 @@ public class TestDefaultClientFactory
 
         public void setRegion(String region)
         {
-            clientBuilderRegion = region;
+            builderParamRegion = region;
         }
     }
 
@@ -170,7 +181,11 @@ public class TestDefaultClientFactory
         // these may have been set by previous test
         clientFromFactory = null;
         clientFromBuilder = null;
-        clientBuilderRegion = null;
+
+        factoryParamAssumedRole = null;
+        factoryParamEndpoint = null;
+        factoryParamRegion = null;
+        builderParamRegion = null;
     }
 
 //----------------------------------------------------------------------------
@@ -220,7 +235,7 @@ public class TestDefaultClientFactory
     @Test
     public void testFactoryMethod() throws Exception
     {
-        String factoryMethodName = getClass().getName() + ".createMockClient";
+        String factoryMethodName = getClass().getName() + ".baseFactoryMethod";
 
         DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, null, null, null, logger)
         {
@@ -238,8 +253,43 @@ public class TestDefaultClientFactory
         };
 
         AWSLogs client = factory.createClient();
-        assertNotNull("actually created a client",  client);
+        assertNotNull("created a client",           client);
         assertSame("client created via factory",    client, clientFromFactory);
+
+        logger.assertInternalDebugLog("creating client via factory.*" + factoryMethodName);
+        logger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testFactoryMethodWithConfig() throws Exception
+    {
+        String factoryMethodName = getClass().getName() + ".parameterizedFactoryMethod";
+        String assumedRole = "arn:aws:iam::123456789012:role/AssumableRole";
+        final String region = "eu-west-3";
+        final String endpoint = "logs." + region + ".amazonaws.com";
+
+        DefaultClientFactory<AWSLogs> factory = new DefaultClientFactory<AWSLogs>(AWSLogs.class, factoryMethodName, assumedRole, region, endpoint, logger)
+        {
+            @Override
+            public AWSLogs tryBuilder()
+            {
+                throw new IllegalStateException("should not have called builder");
+            }
+
+            @Override
+            protected AWSLogs tryConstructor()
+            {
+                throw new IllegalStateException("should not have called constructor");
+            }
+        };
+
+        AWSLogs client = factory.createClient();
+        assertNotNull("created a client",  client);
+        assertSame("client created via factory",    client,         clientFromFactory);
+        assertEquals("role provided",               assumedRole,    factoryParamAssumedRole);
+        assertEquals("region provided",             region,         factoryParamRegion);
+        assertEquals("endpoint provided",           endpoint,       factoryParamEndpoint);
 
         logger.assertInternalDebugLog("creating client via factory.*" + factoryMethodName);
         logger.assertInternalErrorLog();
@@ -396,7 +446,7 @@ public class TestDefaultClientFactory
         AWSLogs client = factory.createClient();
         assertNotNull("actually created a client",  client);
         assertSame("client created by builder",     client,     clientFromBuilder);
-        assertSame("region set on builder",         region,     clientBuilderRegion);
+        assertSame("region set on builder",         region,     builderParamRegion);
 
         logger.assertInternalDebugLog(
                 "creating client via SDK builder",

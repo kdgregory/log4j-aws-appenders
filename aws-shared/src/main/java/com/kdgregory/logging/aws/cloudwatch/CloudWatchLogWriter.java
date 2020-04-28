@@ -23,10 +23,10 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.*;
 
-import com.kdgregory.logging.aws.common.ClientFactory;
 import com.kdgregory.logging.aws.internal.AbstractLogWriter;
 import com.kdgregory.logging.aws.internal.Utils;
 import com.kdgregory.logging.common.LogMessage;
+import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
 
 

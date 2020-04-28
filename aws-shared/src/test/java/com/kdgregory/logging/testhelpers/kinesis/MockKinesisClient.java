@@ -26,10 +26,10 @@ import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
 
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
-import com.kdgregory.logging.aws.common.ClientFactory;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.common.LogWriter;
+import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
 

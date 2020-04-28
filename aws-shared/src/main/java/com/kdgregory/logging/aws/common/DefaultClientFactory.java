@@ -24,6 +24,7 @@ import com.amazonaws.regions.Regions;
 
 import com.kdgregory.logging.aws.internal.ReflectionBasedInvoker;
 import com.kdgregory.logging.aws.internal.retrievers.RoleArnRetriever;
+import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
 
 

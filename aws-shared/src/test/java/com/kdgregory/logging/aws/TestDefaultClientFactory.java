@@ -30,8 +30,8 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.InvalidOperationException;
 
-import com.kdgregory.logging.aws.common.ClientFactoryException;
 import com.kdgregory.logging.aws.common.DefaultClientFactory;
+import com.kdgregory.logging.common.factories.ClientFactoryException;
 import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchClient;
 

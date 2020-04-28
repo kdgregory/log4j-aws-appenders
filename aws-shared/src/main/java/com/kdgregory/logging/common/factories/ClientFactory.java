@@ -28,8 +28,8 @@ public interface ClientFactory<ClientType>
     /**
      *  Creates a new instance of the desired client type.
      *
-     *  @throws RuntimeException if any error happened. Any exceptions trapped
-     *          internally are rethrown as <code>ClientFactoryException</code>.
+     *  @throws ClientFactoryException for any internally-caught error, wrapping
+     *          any underlying exception.
      */
     public ClientType createClient();
 }

@@ -23,7 +23,6 @@ import com.kdgregory.logging.aws.common.DefaultClientFactory;
  *  mock-client tests uses an alternate implementation.
  */
 public interface ClientFactory<ClientType>
-
 {
     /**
      *  Creates a new instance of the desired client type.

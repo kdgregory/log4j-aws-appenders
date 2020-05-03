@@ -12,19 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logging.aws.internal;
+package com.kdgregory.logging.aws.internal.retrievers;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import com.kdgregory.logging.aws.internal.retrievers.AbstractRetriever;
 
-public class TestReflectionBasedInvoker
+
+public class TestAbstractRetriever
 {
     @Test
     public void testHappyPath() throws Exception
     {
         final String testValue = "test";
-        ReflectionBasedInvoker invoker = new ReflectionBasedInvoker(
+        AbstractRetriever invoker = new AbstractRetriever(
                                                     HappyPathClient.class.getName(),
                                                     HappyPathRequest.class.getName(),
                                                     HappyPathResponse.class.getName());
@@ -85,7 +87,7 @@ public class TestReflectionBasedInvoker
     @Test
     public void testBaseRetrieverBogusClass() throws Exception
     {
-        ReflectionBasedInvoker invoker = new ReflectionBasedInvoker("com.example.Bogus", "com.example.Bogus", "com.example.Bogus");
+        AbstractRetriever invoker = new AbstractRetriever("com.example.Bogus", "com.example.Bogus", "com.example.Bogus");
 
         assertNotNull("exception reported", invoker.exception);
         assertNull("client class",          invoker.clientKlass);
@@ -105,7 +107,7 @@ public class TestReflectionBasedInvoker
     @Test
     public void testInvokeStatic() throws Exception
     {
-        ReflectionBasedInvoker invoker = new ReflectionBasedInvoker("java.lang.String");
+        AbstractRetriever invoker = new AbstractRetriever("java.lang.String");
 
         String result = (String)invoker.invokeStatic(invoker.clientKlass, "valueOf", Object.class, new Integer(123));
         assertEquals("result", "123", result);

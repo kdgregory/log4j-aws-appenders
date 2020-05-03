@@ -18,8 +18,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import com.kdgregory.logging.aws.internal.ReflectionBasedInvoker;
-
 
 /**
  *  Finds a role's ARN given its name.
@@ -29,7 +27,7 @@ import com.kdgregory.logging.aws.internal.ReflectionBasedInvoker;
  *  for any other reason (generally a missing library or invalid credentials).
  */
 public class RoleArnRetriever
-extends ReflectionBasedInvoker
+extends AbstractRetriever
 {
     private Class<?> roleKlass;
 

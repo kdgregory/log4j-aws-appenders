@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logging.aws.internal;
+package com.kdgregory.logging.aws.internal.retrievers;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -43,7 +43,7 @@ import java.lang.reflect.Method;
  *  any subsequent operations. It is therefore safe to perform a chain of operations,
  *  as long as you can accept a null value at the end of the chain.
  */
-public class ReflectionBasedInvoker
+public class AbstractRetriever
 {
     // these are public because otherwise I'd just need to add accessors; I promise not to misuse
     public Throwable exception;
@@ -55,7 +55,7 @@ public class ReflectionBasedInvoker
     /**
      *  Constructs an instance for a "standard" operation.
      */
-    public ReflectionBasedInvoker(String clientClassName, String requestClassName, String responseClassName)
+    public AbstractRetriever(String clientClassName, String requestClassName, String responseClassName)
     {
         clientKlass = loadClass(clientClassName);
         requestKlass = loadClass(requestClassName);
@@ -66,7 +66,7 @@ public class ReflectionBasedInvoker
     /**
      *  Constructs an instance for static method invocation. This loads the "client" class.
      */
-    public ReflectionBasedInvoker(String className)
+    public AbstractRetriever(String className)
     {
         clientKlass = loadClass(className);
     }
@@ -75,7 +75,7 @@ public class ReflectionBasedInvoker
     /**
      *  Constructs an instance for when you just want to use the utility methods.
      */
-    public ReflectionBasedInvoker()
+    public AbstractRetriever()
     {
         // nothing happening here
     }

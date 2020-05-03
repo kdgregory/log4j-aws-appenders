@@ -19,8 +19,8 @@ import java.lang.reflect.Method;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 
-import com.kdgregory.logging.aws.internal.ReflectionBasedInvoker;
 import com.kdgregory.logging.aws.internal.Utils;
+import com.kdgregory.logging.aws.internal.retrievers.AbstractRetriever;
 import com.kdgregory.logging.aws.internal.retrievers.RoleArnRetriever;
 import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.factories.ClientFactoryException;
@@ -146,7 +146,7 @@ implements ClientFactory<ClientType>
 
     protected AWSCredentialsProvider createDefaultCredentialsProvider()
     {
-        ReflectionBasedInvoker invoker = new ReflectionBasedInvoker("com.amazonaws.auth.DefaultAWSCredentialsProviderChain");
+        AbstractRetriever invoker = new AbstractRetriever("com.amazonaws.auth.DefaultAWSCredentialsProviderChain");
         AWSCredentialsProvider provider = (AWSCredentialsProvider)invoker.invokeStatic(invoker.clientKlass, "getInstance", null, null);
         if (invoker.exception != null)
         {
@@ -165,7 +165,7 @@ implements ClientFactory<ClientType>
         // the 64-character limit, so we'll let all loggers use the same name
         String sessionName = getClass().getName();
 
-        ReflectionBasedInvoker invoker = new ReflectionBasedInvoker("com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider$Builder",
+        AbstractRetriever invoker = new AbstractRetriever("com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider$Builder",
                                                                     "com.amazonaws.services.securitytoken.AWSSecurityTokenService",
                                                                     null);
 
@@ -190,7 +190,7 @@ implements ClientFactory<ClientType>
     protected Object createSTSClient()
     throws Throwable
     {
-        ReflectionBasedInvoker invoker = new ReflectionBasedInvoker("com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder");
+        AbstractRetriever invoker = new AbstractRetriever("com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder");
         Object stsClient = invoker.invokeStatic(invoker.clientKlass, "defaultClient", null, null);
         if (invoker.exception != null)
             throw invoker.exception;

@@ -61,14 +61,23 @@ implements ClientFactory<ClientType>
 
         logger.debug("creating client via factory method: " + fullyQualifiedMethodName);
 
+        // since there's only two method variants, we'll try both using a utility function,
+        // rather than
         Method factoryMethod;
         try
         {
-            factoryMethod = Utils.lookupFactoryMethod(fullyQualifiedMethodName, true);
+            factoryMethod = Utils.findFullyQualifiedMethod(fullyQualifiedMethodName);
         }
-        catch (Exception ex)
+        catch (Exception ignored)
         {
-            throw new ClientFactoryException("invalid factory method: " + fullyQualifiedMethodName, ex);
+            try
+            {
+                factoryMethod = Utils.findFullyQualifiedMethod(fullyQualifiedMethodName, String.class, String.class, String.class);
+            }
+            catch (Exception ex)
+            {
+                throw new ClientFactoryException("invalid factory method: " + fullyQualifiedMethodName, ex);
+            }
         }
 
         try

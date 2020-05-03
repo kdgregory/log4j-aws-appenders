@@ -14,6 +14,7 @@
 
 package com.kdgregory.logging.aws.internal;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
@@ -55,17 +56,26 @@ public class Utils
 
 
     /**
-     *  Returns a declared method with the specified parameter types, <code>null</code>
-     *  if one doesn't exist or the passed class is null.
+     *  Returns a declared or inherited method with the specified parameter types,
+     *  <code>null</code> if one doesn't exist or the passed class is null.
      */
-    public static Method findDeclaredMethod(Class<?> klass, String methodName, Class<?>... paramTypes)
+    public static Method findMethodIfExists(Class<?> klass, String methodName, Class<?>... paramTypes)
     {
-        if (klass == null)
+        if ((klass == null) || (methodName == null) || methodName.isEmpty())
             return null;
 
         try
         {
             return klass.getDeclaredMethod(methodName, paramTypes);
+        }
+        catch (Exception ex)
+        {
+            // fall-through to find inherited method
+        }
+
+        try
+        {
+            return klass.getMethod(methodName, paramTypes);
         }
         catch (Exception ex)
         {
@@ -75,50 +85,65 @@ public class Utils
 
 
     /**
-     *  Attempts to find a static factory method, given a fully-qualified method name
-     *  (eg: <code>com.example.package.MyClass.myMethod</code>). Returns null if passed
-     *  null or an empty string, throws if given an invalid method name, and optionally
-     *  throws if the method can't be found.
-     *  <p>
-     *  If there are multiple methods with the same name, returns the first one found.
+     *  Attempts to find a method given its fully-qualified name (eg:
+     *  <code>com.example.package.MyClass.myMethod</code>). Typically used
+     *  for static factory method lookup, but can be used for instance
+     *  methods as well.
+     *
+     *  @throws IllegalArgumentException if unable parse the method name.
+     *  @throws ClassNotFoundException if unable to load the specified class.
+     *  @throws NoSuchMethodException if unable to find a method with the given parameters.
      */
-    public static Method lookupFactoryMethod(String fullyQualifiedMethodName, boolean throwIfMissing)
+    public static Method findFullyQualifiedMethod(String name, Class<?>... params)
     throws ClassNotFoundException, NoSuchMethodException
     {
-        if ((fullyQualifiedMethodName == null) || (fullyQualifiedMethodName.isEmpty()))
+        if ((name == null) || (name.isEmpty()))
             return null;
 
-        int methodIdx = fullyQualifiedMethodName.lastIndexOf('.');
+        int methodIdx = name.lastIndexOf('.');
         if (methodIdx <= 0)
-            throw new IllegalArgumentException("invalid factory method name: " + fullyQualifiedMethodName);
+            throw new IllegalArgumentException("invalid factory method name: " + name);
 
-        String className = fullyQualifiedMethodName.substring(0, methodIdx);
-        String methodName = fullyQualifiedMethodName.substring(methodIdx + 1);
+        String className = name.substring(0, methodIdx);
+        String methodName = name.substring(methodIdx + 1);
 
         Class<?> klass = loadClass(className);
         if (klass == null)
             throw new ClassNotFoundException(className);
 
-        for (Method method : klass.getDeclaredMethods())
-        {
-            if (method.getName().equals(methodName))
-            {
-                return method;
-            }
-        }
+        Method method = findMethodIfExists(klass, methodName, params);
+        if (method == null)
+            throw new NoSuchMethodException("invalid factory method: " + name);
 
-        if (throwIfMissing)
-            throw new NoSuchMethodException("invalid factory method: " + fullyQualifiedMethodName);
-        else
+        return method;
+    }
+
+
+    /**
+     *  Invokes an instance method, returning <code>null</code> if the passed method
+     *  is <code>null</code> or if any exception occurred.
+     */
+    public static Object invokeQuietly(Object obj, Method method, Object... params)
+    {
+        if ((obj == null) || (method == null))
             return null;
+
+        try
+        {
+            return method.invoke(obj, params);
+        }
+        catch (Exception ex)
+        {
+            return null;
+        }
     }
 
 
     /**
      *  Invokes a static method, returning <code>null</code> if the passed method
-     *  is <code>null</code>, or if any exception occurred.
+     *  is <code>null</code> or if any exception occurred.
      */
-    public static Object invokeStatic(Method method, Object... params)
+    public static Object invokeQuietly(Method method, Object... params)
     {
         if (method == null)
             return null;
@@ -135,27 +160,50 @@ public class Utils
 
 
     /**
-     *  Invokes the named single-argument method, iff the passed value is not null. Optionally
-     *  throws or swallows any exceptions.
+     *  Invokes a named setter method; no-op if passed a null object. Throws
+     *  <code>NoSuchMethodException</code> if unable to find a method that takes
+     *  the specified parameters. Unwraps <code>InvocationTargetException</code>,
+     *  all other reflection exceptions thrown unchanged.
      */
-    public static boolean maybeSetValue(Object obj, String setterName, Class<?> valueKlass, Object value, boolean rethrow)
+    public static void invokeSetter(Object obj, String setterName, Class<?> valueKlass, Object value)
+    throws Throwable
+    {
+        if (obj == null)
+            return;
+
+        Method m = findMethodIfExists(obj.getClass(), setterName, valueKlass);
+        if (m == null)
+            throw new NoSuchMethodException(obj.getClass().getName() + "." + setterName);
+
+        try
+        {
+            m.invoke(obj, value);
+        }
+        catch (InvocationTargetException ex)
+        {
+            throw ex.getCause();
+        }
+    }
+
+
+    /**
+     *  Invokes the named setter method suppressing any exceptions. Returns <code>true</code>
+     *  if successful, false if not.
+     */
+    public static boolean invokeSetterQuietly(Object obj, String setterName, Class<?> valueKlass, Object value)
     throws Exception
     {
-        if ((obj == null) || (value == null))
+        if (obj == null)
             return false;
 
         try
         {
-            Method setter = obj.getClass().getMethod(setterName, valueKlass);
-            setter.invoke(obj, value);
+            invokeSetter(obj, setterName, valueKlass, value);
             return true;
         }
-        catch (Exception ex)
+        catch (Throwable ex)
         {
-            if (rethrow)
-                throw ex;
+            return false;
         }
-
-        return false;
     }
 }

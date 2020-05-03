@@ -85,10 +85,10 @@ implements ClientFactory<ClientType>
         try
         {
             logger.debug("setting endpoint: " + endpoint);
-            Utils.maybeSetValue(client, "setEndpoint", String.class, endpoint, true);
+            Utils.invokeSetter(client, "setEndpoint", String.class, endpoint);
             return true;
         }
-        catch (Exception ex)
+        catch (Throwable ex)
         {
             throw new ClientFactoryException("failed to set endpoint: " + endpoint, ex);
         }
@@ -107,9 +107,10 @@ implements ClientFactory<ClientType>
         try
         {
             Regions resolvedRegion = Regions.fromName(regionName);
-            return Utils.maybeSetValue(client, "configureRegion", Regions.class, resolvedRegion, true);
+            Utils.invokeSetter(client, "configureRegion", Regions.class, resolvedRegion);
+            return true;
         }
-        catch (Exception ex)
+        catch (Throwable ex)
         {
             throw new ClientFactoryException("failed to set region: " + regionName);
         }

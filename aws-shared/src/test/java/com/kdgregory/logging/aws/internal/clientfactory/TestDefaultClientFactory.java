@@ -17,6 +17,7 @@ package com.kdgregory.logging.aws.internal.clientfactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.ClassUtil;
@@ -26,9 +27,6 @@ import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClient;
 
 import com.kdgregory.logging.aws.common.DefaultClientFactory;
-import com.kdgregory.logging.aws.internal.clientfactory.BuilderClientFactory;
-import com.kdgregory.logging.aws.internal.clientfactory.ConstructorClientFactory;
-import com.kdgregory.logging.aws.internal.clientfactory.StaticMethodClientFactory;
 import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.factories.ClientFactoryException;
 import com.kdgregory.logging.common.util.InternalLogger;

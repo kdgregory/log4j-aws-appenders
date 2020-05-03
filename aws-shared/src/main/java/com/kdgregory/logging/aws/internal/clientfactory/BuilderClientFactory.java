@@ -72,7 +72,7 @@ implements ClientFactory<ClientType>
         // can't refer to builder by its actual class, because that class doesn't exist in 1.11.0
         Object builder = createBuilder();
 
-        setRegion(builder);
+        maybeSetRegion(builder);
         setCredentialsProvider(builder);
 
         try
@@ -102,17 +102,17 @@ implements ClientFactory<ClientType>
     }
 
 
-    protected void setRegion(Object builder)
+    protected void maybeSetRegion(Object builder)
     {
+        if ((region == null) || region.isEmpty())
+            return;
+        
         try
         {
-            if ((region != null) && !region.isEmpty())
-            {
-                logger.debug("setting region: " + region);
-                Utils.maybeSetValue(builder, "setRegion", String.class, region, true);
-            }
+            logger.debug("setting region: " + region);
+            Utils.invokeSetter(builder, "setRegion", String.class, region);
         }
-        catch (Exception ex)
+        catch (Throwable ex)
         {
             throw new ClientFactoryException("failed to set region: " + region, ex);
         }
@@ -135,9 +135,9 @@ implements ClientFactory<ClientType>
                 credentialsProvider = createAssumedRoleCredentialsProvider();
             }
 
-            Utils.maybeSetValue(builder, "setCredentials", AWSCredentialsProvider.class, credentialsProvider, true);
+            Utils.invokeSetter(builder, "setCredentials", AWSCredentialsProvider.class, credentialsProvider);
         }
-        catch (Exception ex)
+        catch (Throwable ex)
         {
             throw new ClientFactoryException("failed to set credentials provider", ex);
         }

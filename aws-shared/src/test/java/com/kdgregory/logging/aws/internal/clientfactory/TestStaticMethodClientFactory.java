@@ -24,7 +24,6 @@ import net.sf.kdgcommons.test.SelfMock;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.InvalidOperationException;
 
-import com.kdgregory.logging.aws.internal.clientfactory.StaticMethodClientFactory;
 import com.kdgregory.logging.common.factories.ClientFactoryException;
 import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 

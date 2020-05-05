@@ -106,7 +106,7 @@ implements ClientFactory<ClientType>
     {
         if ((region == null) || region.isEmpty())
             return;
-        
+
         try
         {
             logger.debug("setting region: " + region);
@@ -158,23 +158,32 @@ implements ClientFactory<ClientType>
 
     protected AWSCredentialsProvider createAssumedRoleCredentialsProvider()
     {
+        Object stsClient = new BuilderClientFactory<>(Object.class, "com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder", null, null, logger)
+                           .createClient();
+        
         String roleArn = new RoleArnRetriever().invoke(assumedRole);
 
         // implementation note: there's no requirement for uniqueness on the role session
         // name, and adding too much additional text (such as a hostname) risks exceeding
         // the 64-character limit, so we'll let all loggers use the same name
-        String sessionName = getClass().getName();
+        String sessionName = "com.kdgregory.logging.aws";
 
-        AbstractRetriever invoker = new AbstractRetriever("com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider$Builder",
-                                                                    "com.amazonaws.services.securitytoken.AWSSecurityTokenService",
-                                                                    null);
+        // we can leverage the retriever (which tracks but ignores exceptions), but it doesn't support
+        // N-arity constructors, so we'll have to do that inside a try/catch; we'll do the initial loads
+        // outside the try/catch, however, so we can return a custom exception
+
+        AbstractRetriever invoker = new AbstractRetriever(
+                                    "com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider$Builder",
+                                    "com.amazonaws.services.securitytoken.AWSSecurityTokenService",
+                                    null);
+        if (invoker.clientKlass == null)
+            throw new ClientFactoryException("failed to load STS credentials provider builder; check your dependencies");
 
         try
         {
-            // unfortunately, the invoker only supports 0-arity constructors so we have to do reflection
             Constructor<?> ctor = invoker.clientKlass.getConstructor(String.class, String.class);
             Object stsClientBuilder = ctor.newInstance(roleArn, sessionName);
-            invoker.invokeMethod(invoker.clientKlass, stsClientBuilder, "withStsClient", invoker.requestKlass, createSTSClient());
+            invoker.invokeMethod(invoker.clientKlass, stsClientBuilder, "withStsClient", invoker.requestKlass, stsClient);
             AWSCredentialsProvider provider = (AWSCredentialsProvider)invoker.invokeMethod(invoker.clientKlass, stsClientBuilder, "build", null, null);
             if (invoker.exception != null)
                 throw invoker.exception; // gets caught below
@@ -184,16 +193,5 @@ implements ClientFactory<ClientType>
         {
             throw new ClientFactoryException("failed to create assumed-role credentials provider", ex);
         }
-    }
-
-
-    protected Object createSTSClient()
-    throws Throwable
-    {
-        AbstractRetriever invoker = new AbstractRetriever("com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder");
-        Object stsClient = invoker.invokeStatic(invoker.clientKlass, "defaultClient", null, null);
-        if (invoker.exception != null)
-            throw invoker.exception;
-        return stsClient;
     }
 }

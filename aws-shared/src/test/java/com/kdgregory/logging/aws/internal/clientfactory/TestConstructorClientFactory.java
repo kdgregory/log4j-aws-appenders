@@ -26,7 +26,6 @@ import static net.sf.kdgcommons.test.StringAsserts.*;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClient;
 
-import com.kdgregory.logging.aws.internal.clientfactory.ConstructorClientFactory;
 import com.kdgregory.logging.common.factories.ClientFactoryException;
 import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 

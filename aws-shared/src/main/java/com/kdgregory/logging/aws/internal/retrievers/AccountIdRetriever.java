@@ -14,14 +14,12 @@
 
 package com.kdgregory.logging.aws.internal.retrievers;
 
-import com.kdgregory.logging.aws.internal.ReflectionBasedInvoker;
-
 /**
  *  Retrieves the callers AWS account ID using STS. Returns null if unable to retrieve
  *  the ID for any reason (generally a missing library or invalid credentials).
  */
 public class AccountIdRetriever
-extends ReflectionBasedInvoker
+extends AbstractRetriever
 {
     public AccountIdRetriever()
     {

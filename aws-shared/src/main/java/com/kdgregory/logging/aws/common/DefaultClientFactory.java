@@ -14,16 +14,14 @@
 
 package com.kdgregory.logging.aws.common;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.regions.Regions;
-
-import com.kdgregory.logging.aws.internal.ReflectionBasedInvoker;
-import com.kdgregory.logging.aws.internal.retrievers.RoleArnRetriever;
+import com.kdgregory.logging.aws.internal.clientfactory.BuilderClientFactory;
+import com.kdgregory.logging.aws.internal.clientfactory.ConstructorClientFactory;
+import com.kdgregory.logging.aws.internal.clientfactory.StaticMethodClientFactory;
+import com.kdgregory.logging.common.factories.ClientFactory;
+import com.kdgregory.logging.common.factories.ClientFactoryException;
 import com.kdgregory.logging.common.util.InternalLogger;
 
 
@@ -39,21 +37,13 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *       configured endpoint or the <code>AWS_REGION </code> environment variable.
  *  </ol>
  *
- *  This class operates entirely by reflection, to ensure that we don't depend on
- *  any classes that are not present in the 1.11.0 SDK. It uses granular methods
- *  that are marked protected, to allow mock testing.
+ *  Implementation note: this class defers to individual client factories, which
+ *  it creates when constructed. This factories are stored in protected variables,
+ *  so that they can be replaced for testing.
  */
 public class DefaultClientFactory<AWSClientType>
 implements ClientFactory<AWSClientType>
 {
-    // these all come from the constructor
-    private Class<AWSClientType> clientType;
-    private String factoryMethodName;
-    private String assumedRole;
-    private String region;
-    private String endpoint;
-    private InternalLogger logger;
-
     // lookup tables for client constructors and factories
     // these are protected intance variables (rather than static) so that they
     // can be modified for testing
@@ -72,6 +62,11 @@ implements ClientFactory<AWSClientType>
         clientClasses.put("com.amazonaws.services.sns.AmazonSNS",           "com.amazonaws.services.sns.AmazonSNSClient");
     }
 
+    // these are protected so that they can be overridden during testing
+    protected ClientFactory<AWSClientType> staticMethodClientFactory;
+    protected ClientFactory<AWSClientType> builderClientFactory;
+    protected ClientFactory<AWSClientType> constructorClientFactory;
+
 
     /**
      *  @param clientType       The AWS client interface type, used for hardcoded selection chains.
@@ -87,259 +82,27 @@ implements ClientFactory<AWSClientType>
      */
     public DefaultClientFactory(Class<AWSClientType> clientType, String factoryMethod, String assumedRole, String region, String endpoint, InternalLogger logger)
     {
-        this.clientType = clientType;
-        this.factoryMethodName = factoryMethod;
-        this.assumedRole = assumedRole;
-        this.region = region;
-        this.endpoint = endpoint;
-        this.logger = logger;
+        staticMethodClientFactory = new StaticMethodClientFactory<>(clientType, factoryMethod, assumedRole, region, endpoint, logger);
+        builderClientFactory = new BuilderClientFactory<>(clientType, factoryClasses.get(clientType.getName()), assumedRole, region, logger);
+        constructorClientFactory = new ConstructorClientFactory<>(clientType, clientClasses.get(clientType.getName()), region, endpoint, logger);
     }
 
 
     @Override
     public AWSClientType createClient()
     {
-        AWSClientType client = tryFactory();
+        AWSClientType client = staticMethodClientFactory.createClient();
         if (client != null)
             return client;
 
-        client = tryBuilder();
+        client = builderClientFactory.createClient();
         if (client != null)
             return client;
 
-        client = tryConstructor();
+        client = constructorClientFactory.createClient();
         if (client != null)
             return client;
 
-        return null;
-    }
-
-//----------------------------------------------------------------------------
-//  Internals -- all methods "protected" for overriding in unit tests
-//----------------------------------------------------------------------------
-
-    protected AWSClientType tryFactory()
-    {
-        if ((factoryMethodName == null) || factoryMethodName.isEmpty())
-            return null;
-
-        logger.debug("creating client via factory method: " + factoryMethodName);
-
-        int methodIdx = factoryMethodName.lastIndexOf('.');
-        if (methodIdx < 0)
-            throw new ClientFactoryException("invalid factory method name: " + factoryMethodName);
-
-        try
-        {
-            String className = factoryMethodName.substring(0, methodIdx);
-            String methodName = factoryMethodName.substring(methodIdx + 1);
-
-            for (Method method : Class.forName(className).getDeclaredMethods())
-            {
-                if (method.getName().equals(methodName))
-                {
-                    return (method.getParameterTypes().length == 0)
-                         ? clientType.cast(method.invoke(null))
-                         : clientType.cast(method.invoke(null, assumedRole, region, endpoint));
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            throw new ClientFactoryException("failed to invoke factory method: " + factoryMethodName, ex);
-        }
-
-        // fall-through from loop; outside try/catch because otherwise it would be wrapped
-        throw new ClientFactoryException("factory method does not exist: "  + factoryMethodName);
-    }
-
-
-    public AWSClientType tryBuilder()
-    {
-        Object builder = createBuilder();
-        if (builder == null)
-            return null;
-
-        logger.debug("creating client via SDK builder");
-
-        if ((region != null) && ! region.isEmpty())
-        {
-            logger.debug("setting region: " + region);
-            maybeSetAttribute(builder, "setRegion", String.class, region);
-        }
-
-        try
-        {
-            AWSCredentialsProvider credentialsProvider = createCredentialsProvider();
-            maybeSetAttribute(builder, "setCredentials", AWSCredentialsProvider.class, credentialsProvider);
-
-            Method clientFactoryMethod = builder.getClass().getMethod("build");
-            return clientType.cast(clientFactoryMethod.invoke(builder));
-        }
-        catch (Exception ex)
-        {
-            throw new ClientFactoryException("failed to invoke builder", ex);
-        }
-    }
-
-
-    // this method is extracted so we can mock it in unit tests; plus, it's OK if the builder
-    // doesn't exist (and it won't in the base build), so we need separate exception handling
-    // from the invocation code
-    protected Object createBuilder()
-    {
-        String bulderClassName = factoryClasses.get(clientType.getName());
-        ReflectionBasedInvoker invoker = new ReflectionBasedInvoker(bulderClassName);
-        return invoker.invokeStatic(invoker.clientKlass, "standard", null, null);
-    }
-
-
-    protected AWSCredentialsProvider createCredentialsProvider()
-    {
-        if (assumedRole == null)
-        {
-            logger.debug("using default credentials provider");
-            return createDefaultCredentialsProvider();
-        }
-        else
-        {
-            logger.debug("assuming role " + assumedRole);
-            return createAssumedRoleCredentialsProvider();
-        }
-    }
-
-
-    protected AWSCredentialsProvider createDefaultCredentialsProvider()
-    {
-        ReflectionBasedInvoker invoker = new ReflectionBasedInvoker("com.amazonaws.auth.DefaultAWSCredentialsProviderChain");
-        AWSCredentialsProvider provider = (AWSCredentialsProvider)invoker.invokeStatic(invoker.clientKlass, "getInstance", null, null);
-        if (invoker.exception != null)
-        {
-            logger.error("failed to create default credentials provider", invoker.exception);
-        }
-        return provider;
-    }
-
-
-    protected AWSCredentialsProvider createAssumedRoleCredentialsProvider()
-    {
-        String roleArn = new RoleArnRetriever().invoke(assumedRole);
-
-        // implementation note: there's no requirement for uniqueness on the role session
-        // name, and adding too much additional text (such as a hostname) risks exceeding
-        // the 64-character limit, so we'll let all loggers use the same name
-        String sessionName = getClass().getName();
-
-        ReflectionBasedInvoker invoker = new ReflectionBasedInvoker("com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider$Builder",
-                                                                    "com.amazonaws.services.securitytoken.AWSSecurityTokenService",
-                                                                    null);
-
-        try
-        {
-            // unfortunately, the invoker only supports 0-arity constructors so we have to do reflection
-            Constructor<?> ctor = invoker.clientKlass.getConstructor(String.class, String.class);
-            Object builder = ctor.newInstance(roleArn, sessionName);
-            invoker.invokeMethod(invoker.clientKlass, builder, "withStsClient", invoker.requestKlass, createSTSClient());
-            AWSCredentialsProvider provider = (AWSCredentialsProvider)invoker.invokeMethod(invoker.clientKlass, builder, "build", null, null);
-            if (invoker.exception != null)
-                throw invoker.exception; // gets caught below
-            return provider;
-        }
-        catch (Throwable ex)
-        {
-            throw new ClientFactoryException("failed to create assumed-role credentials provider", ex);
-        }
-    }
-
-
-    protected Object createSTSClient()
-    throws Throwable
-    {
-        ReflectionBasedInvoker invoker = new ReflectionBasedInvoker("com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder");
-        Object stsClient = invoker.invokeStatic(invoker.clientKlass, "defaultClient", null, null);
-        if (invoker.exception != null)
-            throw invoker.exception;
-        return stsClient;
-    }
-
-
-    protected AWSClientType tryConstructor()
-    {
-        logger.debug("creating client via constructor");
-
-        AWSClientType client = invokeConstructor();
-        if (client == null)
-            return null;
-
-        if (maybeSetAttribute(client, "setEndpoint", String.class, endpoint))
-        {
-            logger.debug("setting endpoint: " + endpoint);
-            return client;
-        }
-
-        String regionName = (region != null)
-                          ? region
-                          :  System.getenv("AWS_REGION");
-        if (regionName != null)
-        {
-            logger.debug("setting region: " + regionName);
-            try
-            {
-                Regions resolvedRegion = Regions.fromName(regionName);
-                maybeSetAttribute(client, "configureRegion", Regions.class, resolvedRegion);
-            }
-            catch (IllegalArgumentException ex)
-            {
-                throw new ClientFactoryException("invalid region: " + regionName);
-            }
-        }
-
-        return client;
-    }
-
-
-    // this is extracted so that it can be overridden by tests
-    protected AWSClientType invokeConstructor()
-    {
-        String clientClass = clientClasses.get(clientType.getName());
-        if (clientClass == null)
-        {
-            // should never happen, unless we're called from outside the library
-            logger.error("unsupported client type: " + clientType, null);
-            return null;
-        }
-
-        try
-        {
-            Class<?> klass = Class.forName(clientClass);
-            return (AWSClientType)klass.newInstance();
-        }
-        catch (Exception ex)
-        {
-            throw new ClientFactoryException("failed to instantiate service client: " + clientClass, ex);
-        }
-    }
-
-
-    protected boolean maybeSetAttribute(Object client, String setterName, Class<?> valueKlass, Object value)
-    {
-        if (value == null)
-            return false;
-
-        if ((value instanceof String) && ((String)value).isEmpty())
-            return false;
-
-        try
-        {
-            Method setter = client.getClass().getMethod(setterName, valueKlass);
-            setter.invoke(client, value);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            // this is only called internally, for user-configured values, so a bad attribute
-            // should be treated as an error and stop the appender (no fallback)
-            throw new ClientFactoryException("failed to set attribute: " + setterName + "(" + value + ")", ex);
-        }
+        throw new ClientFactoryException("I don't know how to create client (perhaps you're missing an SDK dependency?)");
     }
 }

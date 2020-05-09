@@ -9,19 +9,18 @@
     </parent>
 
     <groupId>com.kdgregory.logging.integration-test</groupId>
-    <artifactId>aws-shared-it</artifactId>
+    <artifactId>aws-shared-minver</artifactId>
 
-    <name>AWS-Shared Integration Tests</name>
+    <name>Minimum-Version AWS-Shared Integration Tests</name>
 
     <description>
-        Tests core functionality outside of the context of an appender.
-        All tests use AWSLogs as the sample client.
+        Tests core functionality outside of the context of an appender,
+        using the minimum supported SDK version.
     </description>
 
 
     <properties>
-        <!-- these tests use a recent-ish version of the SDK -->
-        <aws-sdk.version>1.11.600</aws-sdk.version>
+        <aws-sdk.version>1.11.0</aws-sdk.version>
     </properties>
 
     <dependencies>

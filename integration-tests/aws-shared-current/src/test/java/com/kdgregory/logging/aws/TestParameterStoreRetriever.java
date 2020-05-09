@@ -23,10 +23,10 @@ import static org.junit.Assert.*;
 
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagement;
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementClientBuilder;
-import com.amazonaws.services.simplesystemsmanagement.model.DeleteParameterRequest;
-import com.amazonaws.services.simplesystemsmanagement.model.*;
+import com.amazonaws.services.simplesystemsmanagement.model.ParameterType;
 
 import com.kdgregory.logging.aws.internal.retrievers.ParameterStoreRetriever;
+import com.kdgregory.logging.testhelpers.ParameterStoreTestHelper;
 
 
 /**
@@ -47,27 +47,6 @@ public class TestParameterStoreRetriever
     private static AWSSimpleSystemsManagement ssmClient;
 
 //----------------------------------------------------------------------------
-//  Helpers
-//----------------------------------------------------------------------------
-
-    private static void createParameter(String name, ParameterType type, String value)
-    {
-        PutParameterRequest putRequest = new PutParameterRequest()
-                                         .withName(name)
-                                         .withType(type)
-                                         .withValue(value);
-        ssmClient.putParameter(putRequest);
-    }
-
-
-    private static void deleteParameter(String name)
-    {
-        DeleteParameterRequest deleteRequest = new DeleteParameterRequest()
-                                               .withName(name);
-        ssmClient.deleteParameter(deleteRequest);
-    }
-
-//----------------------------------------------------------------------------
 //  JUnit scaffolding
 //----------------------------------------------------------------------------
 
@@ -76,18 +55,18 @@ public class TestParameterStoreRetriever
     {
         ssmClient = AWSSimpleSystemsManagementClientBuilder.defaultClient();
 
-        createParameter(BASIC_NAME, ParameterType.String, BASIC_VALUE);
-        createParameter(LIST_NAME, ParameterType.StringList, LIST_VALUE);
-        createParameter(SECURE_NAME, ParameterType.SecureString, SECURE_VALUE);
+        ParameterStoreTestHelper.createParameter(ssmClient, BASIC_NAME, ParameterType.String, BASIC_VALUE);
+        ParameterStoreTestHelper.createParameter(ssmClient, LIST_NAME, ParameterType.StringList, LIST_VALUE);
+        ParameterStoreTestHelper.createParameter(ssmClient, SECURE_NAME, ParameterType.SecureString, SECURE_VALUE);
     }
 
 
     @AfterClass
     public static void shutdown()
     {
-        deleteParameter(BASIC_NAME);
-        deleteParameter(LIST_NAME);
-        deleteParameter(SECURE_NAME);
+        ParameterStoreTestHelper.deleteParameter(ssmClient, BASIC_NAME);
+        ParameterStoreTestHelper.deleteParameter(ssmClient, LIST_NAME);
+        ParameterStoreTestHelper.deleteParameter(ssmClient, SECURE_NAME);
 
         ssmClient.shutdown();
     }

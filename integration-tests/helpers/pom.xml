@@ -16,12 +16,20 @@
 
     <description>
         Utility methods for configuring and retrieving AWS services.
-        Supports integration tests for the AWS log library. Not intended
+        Supports integration tests for the AWS loging library. Not intended
         for independent production use.
     </description>
 
 
-    <!-- note: no transitive dependencies; ensures consumer doesn't have hidden requirements -->
+    <properties>
+        <!-- we'll use a newish SDK version in able to support all tests
+             this means that helper classes can't unexpectedly use classes
+             that don't appear in minimum-supported SDK versions -->
+        <aws-sdk.version>1.11.600</aws-sdk.version>
+    </properties>
+
+
+    <!-- note: no transitive dependencies; ensures consumers don't have hidden requirements -->
     <dependencies>
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
@@ -57,6 +65,12 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sqs</artifactId>
+            <version>${aws-sdk.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-ssm</artifactId>
             <version>${aws-sdk.version}</version>
             <scope>provided</scope>
         </dependency>

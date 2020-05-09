@@ -198,6 +198,9 @@ public class AbstractRetriever
      */
     public <T> T getResponseValue(Object response, String methodName, Class<T> resultKlass)
     {
+        if (resultKlass == null)
+            return null;
+
         return resultKlass.cast(invokeMethod(responseKlass, response, methodName, null, null));
     }
 

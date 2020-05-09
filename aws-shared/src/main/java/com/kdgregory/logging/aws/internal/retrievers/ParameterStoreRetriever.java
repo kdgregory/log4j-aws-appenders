@@ -27,18 +27,19 @@ extends AbstractRetriever
 
     public ParameterStoreRetriever()
     {
-        super("com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementClient",
+        super("com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementClientBuilder",
+              "com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagement",
               "com.amazonaws.services.simplesystemsmanagement.model.GetParameterRequest",
               "com.amazonaws.services.simplesystemsmanagement.model.GetParameterResult");
         parameterKlass = loadClass("com.amazonaws.services.simplesystemsmanagement.model.Parameter");
     }
 
+
     public String invoke(String key)
     {
-        Object client = instantiate(clientKlass);
+        Object client = invokeBuilder();
         try
         {
-            // TODO - set region (add RegionRetriever)
             Object request = instantiate(requestKlass);
             setRequestValue(request, "setName", String.class, key);
             Object response = invokeRequest(client, "getParameter", request);

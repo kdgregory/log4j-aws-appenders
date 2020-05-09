@@ -32,7 +32,7 @@ public class TestParameterStoreRetriever
     public void testGracefulFailure() throws Exception
     {
         ParameterStoreRetriever retriever = new ParameterStoreRetriever();
-        
+
         assertNull("parameter class not available",
                    ClassUtil.getFieldValue(retriever, "parameterKlass", Object.class));
         assertNull("doesn't throw when invoked",

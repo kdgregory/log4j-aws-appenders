@@ -23,6 +23,7 @@ import java.util.TimeZone;
 import com.amazonaws.util.EC2MetadataUtils;
 
 import com.kdgregory.logging.aws.internal.retrievers.AccountIdRetriever;
+import com.kdgregory.logging.aws.internal.retrievers.ParameterStoreRetriever;
 
 
 /**
@@ -79,12 +80,13 @@ public class Substitutions
                      substituteStartupTimestamp(
                      substitutePid(
                      substituteHostname(
+                     substituteSysprop(
+                     substituteEnvar(
                      substituteAwsAccountId(
                      substituteEC2InstanceId(
                      substituteEC2Region(
-                     substituteSysprop(
-                     substituteEnvar(
-                     input))))))))))));
+                     substituteSSMParameter(
+                     input)))))))))))));
         }
         while (! output.equals(input));
         return output;
@@ -235,6 +237,40 @@ public class Substitutions
     }
 
 
+    private String substituteSysprop(String input)
+    {
+        String rawPropName = extractPropName("sysprop", input);
+        if (rawPropName == null)
+            return input;
+
+        String[] parts = rawPropName.split(":");
+        String propValue = parts[0].length() == 0
+                         ? null
+                         : System.getProperty(parts[0]);
+        if ((propValue == null) && (parts.length == 2))
+            propValue = parts[1];
+
+        return substitute("{" + "sysprop" + ":" + rawPropName + "}", propValue, input);
+    }
+
+
+    private String substituteEnvar(String input)
+    {
+        String rawPropName = extractPropName("env", input);
+        if (rawPropName == null)
+            return input;
+
+        String[] parts = rawPropName.split(":");
+        String propValue = parts[0].length() == 0
+                         ? null
+                         : System.getenv(parts[0]);
+        if ((propValue == null) && (parts.length == 2))
+            propValue = parts[1];
+
+        return substitute("{" + "env" + ":" + rawPropName + "}", propValue, input);
+    }
+
+
     private String substituteAwsAccountId(String input)
     {
         String tag = "{aws:accountId}";
@@ -304,43 +340,21 @@ public class Substitutions
         return substitute(tag, region, input);
     }
 
-    /**
-     *  Substitutes system properties, where the property depends on the tag.
-     */
-    private String substituteSysprop(String input)
+
+    private String substituteSSMParameter(String input)
     {
-        String rawPropName = extractPropName("sysprop", input);
+        String rawPropName = extractPropName("ssm", input);
         if (rawPropName == null)
             return input;
 
         String[] parts = rawPropName.split(":");
         String propValue = parts[0].length() == 0
                          ? null
-                         : System.getProperty(parts[0]);
+                         : new ParameterStoreRetriever().invoke(parts[0]);
         if ((propValue == null) && (parts.length == 2))
             propValue = parts[1];
 
-        return substitute("{" + "sysprop" + ":" + rawPropName + "}", propValue, input);
-    }
-
-
-    /**
-     *  Substitutes environment variables, where the variable depends on the tag.
-     */
-    private String substituteEnvar(String input)
-    {
-        String rawPropName = extractPropName("env", input);
-        if (rawPropName == null)
-            return input;
-
-        String[] parts = rawPropName.split(":");
-        String propValue = parts[0].length() == 0
-                         ? null
-                         : System.getenv(parts[0]);
-        if ((propValue == null) && (parts.length == 2))
-            propValue = parts[1];
-
-        return substitute("{" + "env" + ":" + rawPropName + "}", propValue, input);
+        return substitute("{" + "ssm" + ":" + rawPropName + "}", propValue, input);
     }
 
 

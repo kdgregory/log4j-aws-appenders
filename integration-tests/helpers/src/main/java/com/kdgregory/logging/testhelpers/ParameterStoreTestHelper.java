@@ -14,6 +14,9 @@
 
 package com.kdgregory.logging.testhelpers;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagement;
 import com.amazonaws.services.simplesystemsmanagement.model.*;
 
@@ -24,6 +27,9 @@ import com.amazonaws.services.simplesystemsmanagement.model.*;
  */
 public class ParameterStoreTestHelper
 {
+    private static Logger logger = LoggerFactory.getLogger(ParameterStoreTestHelper.class);
+
+
     /**
      * Creates a parameter.
      */
@@ -38,12 +44,19 @@ public class ParameterStoreTestHelper
 
 
     /**
-     *  Deletes a parameter.
+     *  Deletes a parameter, logging but otherwise suppressing any failure.
      */
     public static void deleteParameter(AWSSimpleSystemsManagement client, String name)
     {
-        DeleteParameterRequest deleteRequest = new DeleteParameterRequest()
-                                               .withName(name);
-        client.deleteParameter(deleteRequest);
+        try
+        {
+            DeleteParameterRequest deleteRequest = new DeleteParameterRequest()
+                                                   .withName(name);
+            client.deleteParameter(deleteRequest);
+        }
+        catch (Exception ex)
+        {
+            logger.warn("failed to delete parameter: {}", name, ex);
+        }
     }
 }

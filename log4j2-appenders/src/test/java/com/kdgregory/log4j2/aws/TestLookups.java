@@ -16,7 +16,6 @@ package com.kdgregory.log4j2.aws;
 
 import java.util.UUID;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -74,21 +73,4 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
                      "defaultValue",
                      strsub.replace("${awslogs:sysprop:" + propName + "x:defaultValue}"));
     }
-
-
-
-    @Test @Ignore
-    // this test can only be run on an EC2 instance
-    public void testAWSLookups() throws Exception
-    {
-        initialize("commonConfig");
-
-        StrSubstitutor strsub = logger.getContext().getConfiguration().getStrSubstitutor();
-
-        // these assertions just use regexes, rely on the underlying subtitutions tests for correctness
-        assertRegex("\\d{12}",          strsub.replace("${awslogs:awsAccountId}"));
-        assertRegex("i-[0-9a-f]+",      strsub.replace("${awslogs:ec2InstanceId}"));
-        assertRegex("..-.+-[0-9]",      strsub.replace("${awslogs:ec2Region}"));
-    }
-
 }

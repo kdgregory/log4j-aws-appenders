@@ -10,11 +10,13 @@ that write to various AWS destinations:
   and other analytics destinations.
 * [SNS](docs/sns.md): useful for real-time error notifications.
 
-In addition to the appenders, this library provides:
+In addition, this library provides the following features:
 
 * [JsonLayout](docs/jsonlayout.md), which lets you send data to an Elasticsearch/Kibana
   cluster without the need for parsing.
 * [JMX integration](docs/jmx.md), which allows the appenders to report operational data.
+* [Substitions](docs/substitutions.md), which allow you to configure the appenders with
+  information from the runtime environment, such as EC2 instance ID.
 
 
 ## Usage
@@ -57,27 +59,33 @@ to ensure that your project includes necessary dependencies for your destination
 * [`aws-java-sdk-kinesis`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-kinesis%22) to use `KinesisAppender`
 * [`aws-java-sdk-sns`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-sns%22) to use `SNSAppender`
 * [`aws-java-sdk-iam`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-iam%22) to use assumed roles.
-* [`aws-java-sdk-sts`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-sts%22) to use the `aws:accountId` substitution variable or assumed roles.
+* [`aws-java-sdk-ssm`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-ssm%22) to use the `ssm` substitution.
+* [`aws-java-sdk-sts`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-sts%22) to use the `aws:accountId` substitution or assumed roles.
 
 The minimum supported dependency versions are:
 
-* JDK: 1.7
-* Log4J 1.x: 1.2.16
+* **JDK**: 1.7
+
+* **Log4J 1.x**: 1.2.16  
   This is the first version that implements `LoggingEvent.getTimeStamp()`, which
   is needed to order messages when sending to AWS. It's been around since 2010,
   so if you haven't upgraded already you should.
-* Log4J 2.x: 2.10.0 
+
+* **Log4J 2.x**: 2.10.0   
   This is the first version that supports custom key/value pairs for `JsonLayout`.
   If that's not important to you, the library will work with version 2.8 (which
   had a breaking change in backwards compatibility).
-* Logback: 1.2.0
+
+* **Logback**: 1.2.0  
   This version is required to support `JsonAccessLayout`. If you don't use that,
   version 1.0.0 will work.
-* AWS SDK: 1.11.0
-  The appenders will work with all releases in the 1.11.x sequence. If you're using
-  a version that has client builders, they will be used to create service clients;
-  if not, the default client constructors will be used. For more information, see the
-  [FAQ](FAQ.md#whats-with-client-builders-vs-contructors).
+
+* **AWS SDK**: 1.11.0  
+  The appenders will work with all releases in the 1.11.x sequence, but some
+  features require later versions (eg, to access values from Parameter Store,
+  you need 1.11.63). If you're using a version that has client builders, they
+  will be used to create service clients; if not, the default client constructors
+  are used. For more information, see the [FAQ](FAQ.md#whats-with-client-builders-vs-contructors).
 
 I have made an intentional effort to limit dependencies to the bare minimum. This
 has in some cases meant that I write internal implementations for functions that

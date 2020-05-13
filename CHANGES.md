@@ -2,6 +2,9 @@
 
 ## 2.4.0 (TBD)
 
+* Allow substitutions to retrieve values from the Systems Manager
+  Parameter Store.
+  ([#68](https://github.com/kdgregory/log4j-aws-appenders/issues/68))
 * Allow appenders to assume a role. This supports cross-account logging.
   ([#92](https://github.com/kdgregory/log4j-aws-appenders/issues/92))
 * `JsonLayout` now optionally includes AWS account ID (Log4J1 and Logback).
@@ -16,6 +19,8 @@
 * If the configured client creation mechanism fails, do not fallback to
   an alternative mechanism (ie, don't blindly write in current account).
   ([#105](https://github.com/kdgregory/log4j-aws-appenders/issues/105))
+* Log4J2: lookups now delegate to substitutions for all values (still
+  supports the keys implemented in 2.3.0 for backwards compatibility).
 
 ## 2.3.0 (2020-03-21)
 

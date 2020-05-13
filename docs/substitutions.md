@@ -13,57 +13,78 @@ Variable            | Description
 `sequence`          | A sequence number that's incremented each time a log is rotated (only useful with appenders that rotate logs)
 `pid`               | Process ID (see below)
 `hostname`          | Hostname (see below)
+`env:XXX`           | Environment variable `XXX`; see below for complete syntax.
+`sysprop:XXX`       | System property `XXX`; see below for complete syntax.
 `instanceId`        | _Deprecated_: use `ec2:instanceId`
 `aws:accountId`     | AWS account ID. Useful for cross-account logging (eg, as part of a CloudWatch log stream name)
 `ec2:instanceId`    | EC2 instance ID; see below.
 `ec2:region`        | Region where the current instance is running; see below.
-`env:XXX`           | Environment variable `XXX`; see below for complete syntax.
-`sysprop:XXX`       | System property `XXX`; see below for complete syntax.
+`ssm:XXX`           | Parameter Store value `XXX`; see below.
 
 If unable to replace a substitution variable, the tag will be left in place. This could happen due
-to a bogus or unclosed tag, or an unresolvable system property or environment variable.
+to a incorrect or unclosed tag, or an unresolvable system property or environment variable.
 
 The `pid` and `hostname` values are parsed from `RuntimeMxBean.getName()` and may not be available
 on all JVMs (in particular non-OpenJDK JVMs may use a different format). When running in a Docker
 container, the container ID is reported as the hostname.
 
-The `aws` substitutions will connect to AWS to retrieve information. If you do not have network
-connectivity or properly configured credentials these will fail.
-
-The `ec2` substitutions retrieve their information from the EC2 metadata service. Using these variables
-in any other environment will result in a (long) wait as the SDK tries to make an HTTP request to the
-non-existent endpoint.
-
 The `env` and `sysprop` substitutions have two forms: `env:VARNAME` (or `sysprop:VARNAME`) and
 `env:VARNAME:DEFAULT` (ditto for sysprops). For example, if the environment variable `FOO` is
-undefined, then the first form (`env:FOO`) will result in `{env:FOO}` in the output. Using the
-form `env:FOO:bar` will succeed, resulting in `bar` in the output.
+undefined, then the using first form (`env:FOO`) results in `{env:FOO}`, while the second form
+(`env:FOO:bar`) results in `bar`.
+
+The `aws` substitutions connect to AWS to retrieve information. If you do not have network
+connectivity or properly configured credentials these will fail. You must also have the relevant
+AWS SDK library in your classpath.
+
+The `ec2` substitutions retrieve their information from the EC2 metadata service. Using these
+variables in any other environment will result in a (long) wait as the SDK tries to make an HTTP
+request to the (non-existent) metadata endpoint.
+
+The `ssm` substitutions retrieve their values from the [Systems Manager Parameter
+Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html).
+Like the `env` and `sysprop` substitutions, these have two forms: `ssm:XXX` will fail
+if the parameter named `XXX` doesn't exist, returning the un-substituted key, while
+`ssm:XXX:YYY` returns `YYY` if the parameter doesn't exist.
+
+> Caveats: to use SSM substitutions, you must be using at least version 1.11.63 of the SDK (earlier
+  versions did not support parameter store). All parameters must be defined in the "current"
+  region (even if you've configured your appender to write to a different region). And you
+  can't retrieve the values of secure string parameters.
 
 
 ## Log4J2 Support
 
 Log4J 2.x provides its own [substitution](https://logging.apache.org/log4j/2.x/manual/configuration.html#PropertySubstitution)
-mechanism. This library will apply Log4J2 substitutions in addition to the built-in substitutions,
-for any configuration properties that support substitutions. Although there are no current name
-conflicts, the Log4J2 substitutions are performed before in-library substitutions.
+mechanism, which works together with the substitutions described here. The type of substitution
+and order of application depends on the syntax:
 
-> Note that values specified using a single dollar sign (`${foo}`) are substituted by Log4J when
-  it builds its configuration, and are never seen by the appenders library. If you want to defer
-  substitutions until time-of-use, use a double dollar sign (`$${foo}`).
+1. `${key}` Log4J2 substitution that's resolved when the configuration is read.
+2. `$${key}` Log4J2 substitution that's resolved at runtime, when the log-writer
+   is created (in general, this is when the appender is created, but appenders
+   that rotate their log-writers will re-resolve for each new log-writer).
+3. `{key}` in-library substitution, that's resolved at runtime, after all Log4J2
+   substitutions have been resolved.
 
-This library also provides a set of lookups for use with Log4J2-style substitution expressions.
-These are identified by the `awslogs` key (so, for example, to get the process ID, you'd use
-`${awslogs:pid}`). These lookups generally follow the naming convention of the substitutions
-described above, but do not provide all values, and do not include embedded colons.
+This library also exposes all of the substitutions described above to the Log4J2
+lookup mechanism, using the prefix `awslogs`. Here are some examples:
 
-Key                         | Description
+Substitution                | Description
 ----------------------------|----------------------------------------------------------------
-`awslogs:startupTimestamp`  | UTC timestamp of JVM startup as returned by `RuntimeMxBean`: `YYYYMMDDHHMMSS`
-`awslogs:pid`               | Process ID (see aove)` and may not be available on all platforms)
-`awslogs:hostname`          | Hostname (see above)
-`awslogs:awsAccountId`      | AWS account ID. This exists to support SNS topic ARNs, probably not useful elsewhere.
-`awslogs:ec2InstanceId`     | EC2 instance ID; see below.
-`awslogs:ec2Region`         | Region where the current instance is running; see below.
+`${date:yyyyMMddHHmmss}`    | Log4J2 substitution, resolved when configuration is read.
+`$${date:yyyyMMddHHmmss}`   | Log4J2 substitution, resolved when log-writer is created.
+`{timestamp}`               | Library-defined substitution, resolved when log-writer is created.
+`${awslogs:timestamp}`      | Log4J2 syntax for invoking library substitution, resolved when configuration is read.
+`$${awslogs:timestamp}`     | Log4J2 syntax for invoking library substitution, resolved when log-writer is created.
+`{env:FOO}`                 | Library-defined substitution, reading environment variable `FOO` with no default.
+`{env:FOO:bar}`             | Library-defined substitution, reading environment variable `FOO` with default value of "bar".
+`${env:FOO}`                | Log4J2 config-time substitution, reading environment variable `FOO` with no default.
+`${env:ENV_NAME:-bar}`      | Log4J2 config-time substitution, reading environment variable `FOO` with default value of "bar".
+`${awslogs:env:FOO:bar}`    | Log4J2 config-time substitution, using library substitution to read environment variable `FOO` with default value of "bar" (yes, this is a silly example, but it shows the general behavior).
+
+Note: in the 2.3.0 release, there were some substitution variables that used different names
+(eg: `awslogs:awsAccountId` rather than `awslogs:aws:accountId`). These are still supported,
+but are deprecated and have been removed from the documentation.
 
 
 ## Caveats and additional information

@@ -14,8 +14,10 @@
 
 package com.kdgregory.log4j2.aws;
 
-import org.junit.Ignore;
+import java.util.UUID;
+
 import org.junit.Test;
+import static org.junit.Assert.*;
 
 import org.apache.logging.log4j.core.lookup.StrSubstitutor;
 
@@ -34,10 +36,9 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
 
     @Test
-    public void testLocalLookups() throws Exception
+    public void testSimpleLookups() throws Exception
     {
         initialize("commonConfig");
-
         StrSubstitutor strsub = logger.getContext().getConfiguration().getStrSubstitutor();
 
         // these assertions just use regexes, rely on the underlying subtitutions tests for correctness
@@ -47,18 +48,29 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
     }
 
 
-    @Test @Ignore
-    // this test can only be run on an EC2 instance
-    public void testAWSLookups() throws Exception
+    @Test
+    public void testCompoundLookup() throws Exception
     {
-        initialize("commonConfig");
+        // this test uses a sysprop lookup because it's a different prefix from the Log4J2 form
 
+        String propName = "testSyspropLookup" + UUID.randomUUID().toString();
+        String propValue = "this is something";
+
+        System.setProperty(propName, propValue);
+
+        initialize("commonConfig");
         StrSubstitutor strsub = logger.getContext().getConfiguration().getStrSubstitutor();
 
-        // these assertions just use regexes, rely on the underlying subtitutions tests for correctness
-        assertRegex("\\d{12}",          strsub.replace("${awslogs:awsAccountId}"));
-        assertRegex("i-[0-9a-f]+",      strsub.replace("${awslogs:ec2InstanceId}"));
-        assertRegex("..-.+-[0-9]",      strsub.replace("${awslogs:ec2Region}"));
-    }
+        assertEquals("testing property that's defined",
+                     propValue,
+                     strsub.replace("${awslogs:sysprop:" + propName + "}"));
 
+        assertEquals("testing property that's not defined",
+                     "${awslogs:sysprop:" + propName + "x}",
+                     strsub.replace("${awslogs:sysprop:" + propName + "x}"));
+
+        assertEquals("testing property that has a default",
+                     "defaultValue",
+                     strsub.replace("${awslogs:sysprop:" + propName + "x:defaultValue}"));
+    }
 }

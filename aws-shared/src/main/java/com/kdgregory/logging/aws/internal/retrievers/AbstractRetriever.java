@@ -47,16 +47,19 @@ public class AbstractRetriever
 {
     // these are public because otherwise I'd just need to add accessors; I promise not to misuse
     public Throwable exception;
+    public Class<?> builderKlass;
     public Class<?> clientKlass;
     public Class<?> requestKlass;
     public Class<?> responseKlass;
 
 
     /**
-     *  Constructs an instance for a "standard" operation.
+     *  Constructs an instance that will attempt to invoke the default builder rather than
+     *  directly instantiate the client.
      */
-    public AbstractRetriever(String clientClassName, String requestClassName, String responseClassName)
+    public AbstractRetriever(String builderClassName, String clientClassName, String requestClassName, String responseClassName)
     {
+        builderKlass = loadClass(builderClassName);
         clientKlass = loadClass(clientClassName);
         requestKlass = loadClass(requestClassName);
         responseKlass = loadClass(responseClassName);
@@ -64,11 +67,20 @@ public class AbstractRetriever
 
 
     /**
-     *  Constructs an instance for static method invocation. This loads the "client" class.
+     *  Constructs an instance that will use a direct client constructor.
+     */
+    public AbstractRetriever(String clientClassName, String requestClassName, String responseClassName)
+    {
+        this(null, clientClassName, requestClassName, responseClassName);
+    }
+
+
+    /**
+     *  Constructs an instance for static method invocation. This just loads the "client" class.
      */
     public AbstractRetriever(String className)
     {
-        clientKlass = loadClass(className);
+        this(null, className, null, null);
     }
 
 
@@ -120,6 +132,19 @@ public class AbstractRetriever
             exception = ex;
             return null;
         }
+    }
+
+
+    /**
+     *  Attempts to invoke the builder's "default client" method, returning null
+     *  if there's an error or the builder class is not available.
+     */
+    public Object invokeBuilder()
+    {
+        if ((exception != null) || (builderKlass == null) || (clientKlass == null))
+            return null;
+
+        return clientKlass.cast(invokeMethod(builderKlass, null, "defaultClient", null, null));
     }
 
 
@@ -198,6 +223,9 @@ public class AbstractRetriever
      */
     public <T> T getResponseValue(Object response, String methodName, Class<T> resultKlass)
     {
+        if (resultKlass == null)
+            return null;
+
         return resultKlass.cast(invokeMethod(responseKlass, response, methodName, null, null));
     }
 

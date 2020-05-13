@@ -1,0 +1,15 @@
+<Configuration status="warn" packages="com.kdgregory.log4j2.aws">
+
+    <Appenders>
+        <Console name="CONSOLE">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5p - %X{testName}: %m%n" />
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Root level="debug">
+            <AppenderRef ref="CONSOLE" />
+        </Root>
+    </Loggers>
+
+</Configuration>

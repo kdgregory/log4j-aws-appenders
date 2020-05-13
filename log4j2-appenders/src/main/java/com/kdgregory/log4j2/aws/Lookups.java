@@ -31,13 +31,10 @@ import com.kdgregory.logging.aws.common.Substitutions;
 public class Lookups
 implements StrLookup
 {
-    // translation table from lookup keys to substitution keys
+    // translation table from deprecated lookup keys to substitution keys
     private static HashMap<String,String> lookup2sub = new HashMap<>();
     static
     {
-        lookup2sub.put("startupTimestamp",  "{startupTimestamp}");
-        lookup2sub.put("pid",               "{pid}");
-        lookup2sub.put("hostname",          "{hostname}");
         lookup2sub.put("awsAccountId",      "{aws:accountId}");
         lookup2sub.put("ec2InstanceId",     "{ec2:instanceId}");
         lookup2sub.put("ec2Region",         "{ec2:region}");
@@ -53,9 +50,13 @@ implements StrLookup
     {
         String sub = lookup2sub.get(key);
         if (sub == null)
-            return null;
+            sub = "{" + key + "}";
 
-        return substitutions.perform(sub);
+        String result = substitutions.perform(sub);
+        if (sub.equals(result))
+            result = null;
+
+        return result;
     }
 
 

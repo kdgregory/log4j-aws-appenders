@@ -21,18 +21,18 @@ import java.util.Date;
 import java.util.TimeZone;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.StringUtil;
-import net.sf.kdgcommons.test.StringAsserts;
-
-import com.amazonaws.util.EC2MetadataUtils;
 
 import com.kdgregory.logging.aws.common.Substitutions;
 
 
+/**
+ *  This tests substituions that don't involve AWS. Look at the aws-shared
+ *  integration tests for those that do.
+ */
 public class TestSubstitutions
 {
     // most tests create a Substitutions instance with this date
@@ -126,38 +126,6 @@ public class TestSubstitutions
         Substitutions subs = new Substitutions(TEST_DATE, 0);
 
         assertEquals(hostname, subs.perform("{hostname}"));
-    }
-
-
-    @Test @Ignore
-    public void testAWSAccountId() throws Exception
-    {
-        Substitutions subs = new Substitutions(TEST_DATE, 0);
-
-        StringAsserts.assertRegex("[0-9]{12}", subs.perform("{aws:accountId}"));
-    }
-
-
-    // if not running on EC2 this test will take a long time to run and then fail
-    // ... trust me that I've tested it on EC2
-    @Test @Ignore
-    public void testInstanceId() throws Exception
-    {
-        Substitutions subs = new Substitutions(TEST_DATE, 0);
-
-        assertEquals(EC2MetadataUtils.getInstanceId(), subs.perform("{instanceId}"));
-        assertEquals(EC2MetadataUtils.getInstanceId(), subs.perform("{ec2:instanceId}"));
-    }
-
-
-    // if not running on EC2 this test will take a long time to run and then fail
-    // ... trust me that I've tested it on EC2
-    @Test @Ignore
-    public void testEC2Region() throws Exception
-    {
-        Substitutions subs = new Substitutions(TEST_DATE, 0);
-
-        assertEquals(EC2MetadataUtils.getEC2InstanceRegion(), subs.perform("{ec2:region}"));
     }
 
 

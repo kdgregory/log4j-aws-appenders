@@ -17,7 +17,7 @@ package com.kdgregory.logging.aws.internal.retrievers;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import com.kdgregory.logging.aws.internal.retrievers.AbstractRetriever;
+import net.sf.kdgcommons.lang.ClassUtil;
 
 
 public class TestAbstractRetriever
@@ -38,6 +38,7 @@ public class TestAbstractRetriever
 
         Object client = invoker.instantiate(invoker.clientKlass);
         assertNotNull("instantiate() succeeded", client);
+        assertEquals("was not instantiated by builder", Boolean.FALSE, ClassUtil.getFieldValue(client, "createdByBuilder", Boolean.class));
 
         Object request = invoker.instantiate(invoker.requestKlass);
         invoker.setRequestValue(request, "setValue", String.class, testValue);
@@ -50,6 +51,8 @@ public class TestAbstractRetriever
 
     public static class HappyPathClient
     {
+        public boolean createdByBuilder;
+
         public HappyPathResponse doSomething(HappyPathRequest request)
         {
             return new HappyPathResponse(request.value);
@@ -113,4 +116,35 @@ public class TestAbstractRetriever
         assertEquals("result", "123", result);
     }
 
+
+    @Test
+    public void testInvokeBuilder() throws Exception
+    {
+        AbstractRetriever invoker = new AbstractRetriever(
+                                                    HappyPathBuilder.class.getName(),
+                                                    HappyPathClient.class.getName(),
+                                                    HappyPathRequest.class.getName(),
+                                                    HappyPathResponse.class.getName());
+
+        assertNull("no exception reported", invoker.exception);
+        assertSame("builder class",         HappyPathBuilder.class,     invoker.builderKlass);
+        assertSame("client class",          HappyPathClient.class,      invoker.clientKlass);
+        assertSame("request class",         HappyPathRequest.class,     invoker.requestKlass);
+        assertSame("response class",        HappyPathResponse.class,    invoker.responseKlass);
+
+        HappyPathClient client = (HappyPathClient)invoker.invokeBuilder();
+        assertNotNull("builder succeeded", client);
+        assertTrue("client was created by builder", client.createdByBuilder);
+    }
+
+
+    public static class HappyPathBuilder
+    {
+        public static HappyPathClient defaultClient()
+        {
+            HappyPathClient client = new HappyPathClient();
+            client.createdByBuilder = true;
+            return client;
+        }
+    }
 }

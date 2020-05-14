@@ -50,6 +50,20 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
 //  LogWriter overrides
 //----------------------------------------------------------------------------
 
+    /**
+     *  Sets the subject for subsequent messages. Any substitutions must be
+     *  applied before calling this method.
+     */
+    public void setSubject(String subject)
+    {
+        config.subject = subject;
+        stats.setActualSubject(subject);
+    }
+
+//----------------------------------------------------------------------------
+//  LogWriter overrides
+//----------------------------------------------------------------------------
+
     @Override
     public boolean isMessageTooLarge(LogMessage message)
     {

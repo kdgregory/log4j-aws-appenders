@@ -128,7 +128,7 @@ extends AbstractUnitTest<TestableSNSAppender>
 
         assertEquals("configured topicName",            "name-{date}",                                          appender.getTopicName());
         assertEquals("configured topicArn",             "arn-{date}",                                           appender.getTopicArn());
-        assertEquals("configured subect",               "{sysprop:TestSNSAppender.testWriterInitialization}",   appender.getSubject());
+        assertEquals("configured subject",              "{sysprop:TestSNSAppender.testWriterInitialization}",   appender.getSubject());
 
         logger.debug("this triggers writer creation");
 
@@ -136,12 +136,29 @@ extends AbstractUnitTest<TestableSNSAppender>
 
         assertRegex("writer topicName",                 "name-20\\d{6}",                    writer.config.topicName);
         assertRegex("writer topicArn",                  "arn-20\\d{6}",                     writer.config.topicArn);
-        assertEquals("writer subect",                   "example",                          writer.config.subject);
+        assertEquals("writer subject",                  "example",                          writer.config.subject);
         assertTrue("writer autoCreate",                                                     writer.config.autoCreate);
         assertEquals("writer batch delay",              1L,                                 writer.config.batchDelay);
         assertEquals("writer discard threshold",        123,                                writer.config.discardThreshold);
         assertEquals("writer discard action",           DiscardAction.newest,               writer.config.discardAction);
         assertEquals("writer client factory method",    "com.example.Foo.bar",              writer.config.clientFactoryMethod);
         assertEquals("writer client endpoint",          "sns.us-east-2.amazonaws.com",      writer.config.clientEndpoint);
+    }
+
+
+    @Test
+    public void testChangeSubject() throws Exception
+    {
+        initialize("testChangeSubject");
+
+        logger.debug("this triggers writer creation");
+
+        MockSNSWriter writer = appender.getMockWriter();
+
+        assertEquals("initial subject",                 "First Subject",                    writer.config.subject);
+
+        appender.setSubject("Second Subject");
+
+        assertEquals("updated subject",                 "Second Subject",                   writer.config.subject);
     }
 }

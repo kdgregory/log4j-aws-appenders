@@ -96,21 +96,19 @@ In addition, to auto-create a topic you need to grant the following permissions:
 The SNS appender writes messages as simple text strings, formatted according to the layout manager;
 it does not support platform-specific payloads. Messages can have an optional subject, and this text
 may use [substitutions](substitutions.md). This is useful to identify the source of a message when
-sending to an email address. Note that substitutions are applied when the appender starts, not on a
-per-message basis.
+sending to an email address.
+
+> Note that substitutions are applied when the appender starts, not on a per-message basis. While
+  you can programmatically change the subject in Log4J1 and Logback (and reconfigure the logger
+  for Log4J2), all messages will have the same subject.
 
 You can specify the destination topic either by ARN or name. You would normally use ARN to reference
 a topic in a different account or region, name to reference a topic in the current account/region. If
 you specify the topic by name, you may also enable `autoCreate`, which will create the topic if it
 does not already exist (this is only appropriate for development/test environments).
 
-> The appender assumes that, when listing topics, it will only receive topics for the current region.
-  That constraint is _not_ explicitly stated in the [AWS API docs](http://docs.aws.amazon.com/sns/latest/api/API_ListTopics.html)
-  but is the current observed behavior. If this behavior ever changes, the appender may choose an
-  unexpected topic if configured by name.
-
-You may use [substitutions](substitutions.md) in either the topic name or ARN. When constructing an
-ARN it's particularly useful to use `{env:AWS_REGION}` or `{ec2:region}` along with `{aws:accountId}`.
+> When constructing an ARN it's particularly useful to use the `{env:AWS_REGION}` or `{ec2:region}`
+  substitutions, along with `{aws:accountId}`.
 
 While the appender exposes the batch delay configuration parameter, it is ignored. Each message is
 sent as soon as possible after it's passed to the appender, because SNS does not support message batching.

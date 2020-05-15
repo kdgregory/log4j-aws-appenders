@@ -400,8 +400,10 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     @Test
     public void testSubject() throws Exception
     {
+        final String testSubject = "This is OK";
+
         config.topicName = TEST_TOPIC_NAME;
-        config.subject = "This is OK";
+        config.subject = testSubject;
         createWriter();
 
         assertEquals("after init, invocations of listTopics",   1,                      mock.listTopicsInvocationCount);
@@ -411,15 +413,57 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertNull("after init, stats: no errors",                                      stats.getLastError());
         assertEquals("after init, stats: topic name",           TEST_TOPIC_NAME,        stats.getActualTopicName());
         assertEquals("after init, stats: topic ARN",            TEST_TOPIC_ARN,         stats.getActualTopicArn());
+        assertEquals("after init, stats: subject",              testSubject,            stats.getActualSubject());
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
         mock.allowWriterThread();
 
         assertEquals("after publish, invocation count",         1,                      mock.publishInvocationCount);
         assertEquals("after publish, arn",                      TEST_TOPIC_ARN,         mock.lastPublishArn);
-        assertEquals("after publish, subject",                  "This is OK",           mock.lastPublishSubject);
+        assertEquals("after publish, subject",                  testSubject,            mock.lastPublishSubject);
         assertEquals("after publish, body",                     "message one",          mock.lastPublishMessage);
         assertStatisticsTotalMessagesSent("after publish, messages sent", 1);
+
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "log writer initialization complete.*");
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testChangeSubject() throws Exception
+    {
+        final String firstSubject = "First Subject";
+        final String secondSubject = "Second Subject";
+
+        config.topicName = TEST_TOPIC_NAME;
+        config.subject = firstSubject;
+        createWriter();
+
+        assertEquals("after init, config: subject",             firstSubject,           config.subject);
+        assertEquals("after init, stats: subject",              firstSubject,           stats.getActualSubject());
+        assertNull("after init, stats: no errors",                                      stats.getLastError());
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        mock.allowWriterThread();
+
+        assertEquals("after first publish, invocation count",   1,                      mock.publishInvocationCount);
+        assertEquals("after first publish, subject",            firstSubject,           mock.lastPublishSubject);
+        assertEquals("after first publish, body",               "message one",          mock.lastPublishMessage);
+        assertStatisticsTotalMessagesSent("after first publish, messages sent", 1);
+
+        writer.setSubject(secondSubject);
+
+        assertEquals("after subject change, config",            secondSubject,          config.subject);
+        assertEquals("after subject change, stats",             secondSubject,          stats.getActualSubject());
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+        mock.allowWriterThread();
+
+        assertEquals("after second publish, invocation count",  2,                      mock.publishInvocationCount);
+        assertEquals("after second publish, subject",           secondSubject,           mock.lastPublishSubject);
+        assertEquals("after second publish, body",              "message two",          mock.lastPublishMessage);
+        assertStatisticsTotalMessagesSent("after first publish, messages sent", 2);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               "log writer initialization complete.*");

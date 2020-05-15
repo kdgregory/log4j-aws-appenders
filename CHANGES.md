@@ -9,6 +9,9 @@
   ([#92](https://github.com/kdgregory/log4j-aws-appenders/issues/92))
 * `JsonLayout` now optionally includes AWS account ID (Log4J1 and Logback).
   ([#95](https://github.com/kdgregory/log4j-aws-appenders/issues/95))
+* Can now change the SNS subject after configuration, for Log4J1 and
+  Logback.
+  ([#96](https://github.com/kdgregory/log4j-aws-appenders/issues/96))
 * Log4J2 appenders now use the layout's character set for subclasses of
   `StringLayout`.
   ([#101](https://github.com/kdgregory/log4j-aws-appenders/issues/101))

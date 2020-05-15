@@ -18,6 +18,7 @@ import java.util.Date;
 
 import com.kdgregory.log4j.aws.internal.AbstractAppender;
 import com.kdgregory.logging.aws.common.Substitutions;
+import com.kdgregory.logging.aws.internal.Utils;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSWriterStatisticsMXBean;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
@@ -215,6 +216,13 @@ extends AbstractAppender<SNSWriterConfig,SNSWriterStatistics,SNSWriterStatistics
     public void setSubject(String value)
     {
         this.subject = value;
+        if (writer == null)
+            return;
+
+        // I don't particularly like using reflection here, but the alternative
+        // is to create a whole set of LogWriter sub-interfaces (or get rid of
+        // the mock-object unit tests)
+        Utils.invokeSetterQuietly(writer, "setSubject", String.class, value);
     }
 
 

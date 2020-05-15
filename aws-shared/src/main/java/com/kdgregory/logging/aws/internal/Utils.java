@@ -191,7 +191,6 @@ public class Utils
      *  if successful, false if not.
      */
     public static boolean invokeSetterQuietly(Object obj, String setterName, Class<?> valueKlass, Object value)
-    throws Exception
     {
         if (obj == null)
             return false;

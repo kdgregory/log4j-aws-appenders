@@ -1,0 +1,17 @@
+<configuration debug="false">
+
+  <root level="off"/>
+
+  <appender name="SNS" class="com.kdgregory.logback.testhelpers.sns.TestableSNSAppender">
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <pattern>%msg</pattern>
+    </layout>
+    <topicName>example</topicName>
+    <subject>First Subject</subject>
+  </appender>
+
+  <logger name="com.kdgregory.logback.aws.TestSNSAppender" level="debug">
+    <appender-ref ref="SNS" />
+  </logger>
+
+</configuration>

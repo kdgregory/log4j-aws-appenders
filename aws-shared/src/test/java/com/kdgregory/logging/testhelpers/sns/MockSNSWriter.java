@@ -44,4 +44,11 @@ extends MockLogWriter<SNSWriterConfig>
         // there are no tests for this, so we'll pretend everything's great
         return false;
     }
+
+    // this doesn't actually test that the real writer would be updated, just
+    // that the appender tried to
+    public void setSubject(String subject)
+    {
+        config.subject = subject;
+    }
 }

@@ -76,6 +76,9 @@ public class SNSLogWriterIntegrationTest
 //  Helpers
 //----------------------------------------------------------------------------
 
+    private final static String DEFAULT_SUBJECT = "integration test";
+
+
     private void init(String testName, AmazonSNS snsClient, AmazonSQS sqsClient, String factoryMethod, String region, String endpoint)
     throws Exception
     {
@@ -88,7 +91,7 @@ public class SNSLogWriterIntegrationTest
 
         stats = new SNSWriterStatistics();
         internalLogger = new TestableInternalLogger();
-        config = new SNSWriterConfig(testHelper.getTopicName(), null, "integration test", true, 10000, DiscardAction.oldest, factoryMethod, null, region, endpoint);
+        config = new SNSWriterConfig(testHelper.getTopicName(), null, DEFAULT_SUBJECT, true, 10000, DiscardAction.oldest, factoryMethod, null, region, endpoint);
         factory = new SNSWriterFactory();
         writer = (SNSLogWriter)factory.newLogWriter(config, stats, internalLogger);
 
@@ -183,7 +186,31 @@ public class SNSLogWriterIntegrationTest
         List<String> messages = testHelper.retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
-        testHelper.assertMessageContent(messages, "integration test");
+        testHelper.assertMessageContent(messages, DEFAULT_SUBJECT);
+    }
+
+
+    @Test
+    public void testSubjectChange() throws Exception
+    {
+        final int numMessages = 5;
+        final String secondSubject = "this is not the default";
+
+        init("testSubjectChange", helperSNSclient, helperSQSclient, null, null, null);
+
+        new MessageWriter(numMessages).run();
+        List<String> messages = testHelper.retrieveMessages(numMessages);
+
+        assertEquals("first batch of messages, size", numMessages, messages.size());
+        testHelper.assertMessageContent(messages, DEFAULT_SUBJECT);
+
+        writer.setSubject(secondSubject);
+
+        new MessageWriter(numMessages).run();
+        messages = testHelper.retrieveMessages(numMessages);
+
+        assertEquals("second batch of messages, size", numMessages, messages.size());
+        testHelper.assertMessageContent(messages, secondSubject);
     }
 
 
@@ -199,7 +226,7 @@ public class SNSLogWriterIntegrationTest
         List<String> messages = testHelper.retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
-        testHelper.assertMessageContent(messages, "integration test");
+        testHelper.assertMessageContent(messages, DEFAULT_SUBJECT);
 
         assertNotNull("factory method was called", factoryClient);
         assertSame("factory-created client used by writer", factoryClient, ClassUtil.getFieldValue(writer, "client", AmazonSNS.class));
@@ -222,7 +249,7 @@ public class SNSLogWriterIntegrationTest
         List<String> messages = testHelper.retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
-        testHelper.assertMessageContent(messages, "integration test");
+        testHelper.assertMessageContent(messages, DEFAULT_SUBJECT);
 
         assertNull("topic does not exist in default region",
                    (new SNSTestHelper(testHelper, helperSNSclient, helperSQSclient)).lookupTopic());
@@ -247,7 +274,7 @@ public class SNSLogWriterIntegrationTest
         List<String> messages = testHelper.retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
-        testHelper.assertMessageContent(messages, "integration test");
+        testHelper.assertMessageContent(messages, DEFAULT_SUBJECT);
 
         assertNull("topic does not exist in default region",
                    (new SNSTestHelper(testHelper, helperSNSclient, helperSQSclient)).lookupTopic());

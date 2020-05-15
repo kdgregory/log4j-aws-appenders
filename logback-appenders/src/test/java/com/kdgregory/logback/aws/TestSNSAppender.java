@@ -121,4 +121,21 @@ extends AbstractUnitTest<TestableSNSAppender>
         assertEquals("writer client factory method",    "com.example.Foo.bar",              writer.config.clientFactoryMethod);
         assertEquals("writer client endpoint",          "sns.us-east-2.amazonaws.com",      writer.config.clientEndpoint);
     }
+
+
+    @Test
+    public void testChangeSubject() throws Exception
+    {
+        initialize("testChangeSubject");
+
+        logger.debug("this triggers writer creation");
+
+        MockSNSWriter writer = appender.getMockWriter();
+
+        assertEquals("initial subject",                 "First Subject",                    writer.config.subject);
+
+        appender.setSubject("Second Subject");
+
+        assertEquals("updated subject",                 "Second Subject",                   writer.config.subject);
+    }
 }

@@ -134,39 +134,6 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
 
     @Test
-    public void testShutdownHook() throws Exception
-    {
-        initialize("testShutdownHook");
-
-        MockCloudWatchWriter writer = appender.getMockWriter();
-
-        // this test needs to spin on writer creation because the mock writer assumes it's not on a thread
-        for (int ii = 0 ; ii < 100 ; ii++)
-        {
-            if (writer.writerThread != null)
-                break;
-            Thread.sleep(100);
-        }
-
-        assertNotNull("writer thread created", writer.writerThread);
-
-        // the run() method should save the thread and exit immediately; if not the test will hang
-        writer.writerThread.join();
-
-        assertNotNull("writer has shutdown hook", writer.shutdownHook);
-        assertFalse("writer has not yet been stopped", writer.stopped);
-        assertEquals("cleanup has not yet been called", 0, writer.cleanupInvocationCount);
-
-        writer.shutdownHook.start();
-        writer.shutdownHook.join();
-
-        assertTrue("writer has been stopped", writer.stopped);
-
-        // a real LogWriter will call cleanup being stopped; we'll assume logwriter tests cover that
-    }
-
-
-    @Test
     public void testAppendAfterStop() throws Exception
     {
         initialize("testLifecycle");

@@ -25,7 +25,7 @@ Name                | Description
 `synchronous`       | If `true`, the appender will operate in [synchronous mode](design.md#synchronous-mode), sending messages from the invoking thread on every call to `append()`.
 `discardThreshold`  | The threshold count for discarding messages; default is 10,000. See [design doc](design.md#message-discard) for more information.
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
-`useShutdownHook`   | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default; set to `false` to disable. See [docs](design.md#shutdown-hooks) for more information.
+`useShutdownHook`   | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default, set to `false` to disable. Ignored for Log4J2. See [docs](design.md#shutdown-hooks) for more information.
 
 Note: the `batchDelay` parameter is not used (although it can be configured); the SNS appender attempts to send messages immediately.
 

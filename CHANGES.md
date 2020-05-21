@@ -15,6 +15,8 @@
 * Log4J2 appenders now use the layout's character set for subclasses of
   `StringLayout`.
   ([#101](https://github.com/kdgregory/log4j-aws-appenders/issues/101))
+* There's no need to create a separate shutdown hook for Log4J2.
+  ([#100](https://github.com/kdgregory/log4j-aws-appenders/issues/100))
 * When creating a client via static factory method, you can now provide
   a method that receives configuration parameters `assumedRole`, `region`,
   and `endpoint` (see [client docs](docs/client.md#clientfactory)).

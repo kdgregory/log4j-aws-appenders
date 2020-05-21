@@ -102,10 +102,14 @@ prevent the application from shutting down when all of the non-daemon threads (n
 the main thread) exit. However, we want to avoid losing any messages that were still in the
 queue at shutdown.
 
-To avoid this problem, the appenders install a [shutdown hook](https://docs.oracle.com/javase/8/docs/api/java/lang/Runtime.html#addShutdownHook-java.lang.Thread-)
+To avoid this problem, the Log4J1 and Logback appenders install a
+[shutdown hook](https://docs.oracle.com/javase/8/docs/api/java/lang/Runtime.html#addShutdownHook)
 when they start the writer thread. This hook calls the writer's `stop()` method, and then
 joins to the writer thread, delaying shutdown until that thread finishes (which will take
 another `batchDelay` milliseconds).
+
+> Note: Log4J2 has its own shutdown hook, and the appender will leverage it. The configured
+  setting is ignored.
 
 Note that this still does not guarantee all messages will be delivered: aside from persistent
 errors writing to the destination, the JVM may not remain running long enough for shutdown
@@ -114,6 +118,5 @@ shutting down (ie, a scale-in operation): the OS typically gives applications a 
 to gracefully shut themselves down, then sends a SIGKILL to forcibly terminate them.
 
 If you do not want this shutdown hook, you can set the `useShutdownHook` configuration parameter
-to `false`. The only reasons that I can see for doing this (1) when using Log4J2, which offers a
-configurable shutdown timeout, and (2) in a web container, when using a context listener that
-explicitly shuts down the logging framework on undeploy.
+to `false`. The only reason that I can see for doing this is when running in a web container and
+using a context listener that explicitly shuts down the logging framework on undeploy.

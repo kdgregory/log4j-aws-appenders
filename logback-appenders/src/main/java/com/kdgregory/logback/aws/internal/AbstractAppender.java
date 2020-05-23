@@ -616,6 +616,10 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
                 {
                     writer.cleanup();
                 }
+                else
+                {
+                    writer.waitUntilStopped(batchDelay * 2);
+                }
             }
             catch (Exception ex)
             {

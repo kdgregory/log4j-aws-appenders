@@ -153,14 +153,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         initialize("testShutdownHook");
 
         MockCloudWatchWriter writer = appender.getMockWriter();
-
-        // this test needs to spin on writer creation because the mock writer assumes it's not on a thread
-        for (int ii = 0 ; ii < 100 ; ii++)
-        {
-            if (writer.writerThread != null)
-                break;
-            Thread.sleep(100);
-        }
+        writer.waitUntilInitialized(10000);
 
         assertNotNull("writer thread created", writer.writerThread);
 
@@ -177,6 +170,26 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertTrue("writer has been stopped", writer.stopped);
 
         // a real LogWriter will call cleanup being stopped; we'll assume logwriter tests cover that
+    }
+
+
+    @Test
+    public void testAppenderWaitsOnStop() throws Exception
+    {
+        initialize("testShutdownHook"); // this uses a real thread
+
+        MockCloudWatchWriter writer = appender.getMockWriter();
+        writer.waitUntilInitialized(10000);
+
+        assertEquals("wait count, before stop()", 0, writer.waitUntilStoppedInvocationCount);
+
+        appender.stop();
+
+        // this is here for synchronization -- the writer thread should have finished immediately,
+        // and stop() should have joined to it
+        writer.writerThread.join();
+
+        assertEquals("wait count, after stop()", 1, writer.waitUntilStoppedInvocationCount);
     }
 
 

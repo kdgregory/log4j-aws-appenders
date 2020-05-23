@@ -42,7 +42,8 @@ implements LogWriter
     public int initializeInvocationCount;
     public int processBatchInvocationCount;
     public long processBatchLastTimeout;
-    public long cleanupInvocationCount;
+    public int cleanupInvocationCount;
+    public int waitUntilStoppedInvocationCount;
 
 
     public MockLogWriter(T config)
@@ -145,6 +146,7 @@ implements LogWriter
     @Override
     public void waitUntilStopped(long millisToWait)
     {
+        waitUntilStoppedInvocationCount++;
         try
         {
             if ((writerThread != null) && (writerThread != Thread.currentThread()))
@@ -171,8 +173,8 @@ implements LogWriter
     @Override
     public void run()
     {
-        // most of the tests don't want the writer running on a thread, and
-        // don't care, but the life-cycle and synchronous-operation tests do
+        // most of the tests don't want the writer running on a thread, but
+        // for those that do, we need to track it
         writerThread = Thread.currentThread();
     }
 

@@ -3,6 +3,7 @@
   <root level="off"/>
 
   <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
+    <useDefaultThreadFactory>true</useDefaultThreadFactory>
     <layout class="ch.qos.logback.classic.PatternLayout">
       <pattern>%msg</pattern>
     </layout>

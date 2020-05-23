@@ -317,7 +317,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
                 }
                 else
                 {
-                    threadFactory.startLoggingThread(writer, config.isUseShutdownHook(), new UncaughtExceptionHandler()
+                    threadFactory.startLoggingThread(writer, false, new UncaughtExceptionHandler()
                     {
                         @Override
                         public void uncaughtException(Thread t, Throwable ex)

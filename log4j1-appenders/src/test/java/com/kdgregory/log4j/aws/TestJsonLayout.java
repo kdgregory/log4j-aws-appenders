@@ -68,7 +68,7 @@ public class TestJsonLayout
         logger = Logger.getLogger(getClass());
 
         Logger rootLogger = Logger.getRootLogger();
-        appender = (WriterAppender)rootLogger.getAppender("default");
+        appender = (WriterAppender)rootLogger.getAppender("test");
 
         writer = new StringWriter();
         appender.setWriter(writer);

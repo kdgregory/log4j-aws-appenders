@@ -76,7 +76,7 @@ public class TestJsonLayout
         configurator.doConfigure(config);
 
         logger = context.getLogger(getClass());
-        appender = (ConsoleAppender<ILoggingEvent>)logger.getAppender("test");
+        appender = (ConsoleAppender<ILoggingEvent>)logger.getAppender("TEST");
 
         out = new ByteArrayOutputStream();
         appender.setOutputStream(out);

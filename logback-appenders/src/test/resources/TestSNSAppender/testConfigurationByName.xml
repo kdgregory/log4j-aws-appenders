@@ -2,7 +2,7 @@
 
   <root level="off"/>
 
-  <appender name="SNS" class="com.kdgregory.logback.testhelpers.sns.TestableSNSAppender">
+  <appender name="TEST" class="com.kdgregory.logback.testhelpers.sns.TestableSNSAppender">
     <layout class="ch.qos.logback.classic.PatternLayout">
       <pattern>%msg</pattern>
     </layout>
@@ -20,7 +20,7 @@
   </appender>
 
   <logger name="com.kdgregory.logback.aws.TestSNSAppender" level="debug">
-    <appender-ref ref="SNS" />
+    <appender-ref ref="TEST" />
   </logger>
 
 </configuration>

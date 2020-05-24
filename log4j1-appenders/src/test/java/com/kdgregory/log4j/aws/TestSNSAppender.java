@@ -38,7 +38,7 @@ extends AbstractUnitTest<TestableSNSAppender>
 {
     public TestSNSAppender()
     {
-        super("TestSNSAppender/", "sns");
+        super("TestSNSAppender/", "test");
     }
 
 

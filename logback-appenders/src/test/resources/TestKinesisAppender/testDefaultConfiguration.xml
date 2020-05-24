@@ -2,7 +2,7 @@
 
   <root level="off"/>
 
-  <appender name="KINESIS" class="com.kdgregory.logback.testhelpers.kinesis.TestableKinesisAppender">
+  <appender name="TEST" class="com.kdgregory.logback.testhelpers.kinesis.TestableKinesisAppender">
     <layout class="ch.qos.logback.classic.PatternLayout">
       <pattern>%msg</pattern>
     </layout>
@@ -10,7 +10,7 @@
   </appender>
 
   <logger name="com.kdgregory.logback.aws.TestKinesisAppender" level="debug">
-    <appender-ref ref="KINESIS" />
+    <appender-ref ref="TEST" />
   </logger>
 
 </configuration>

@@ -34,7 +34,7 @@ extends AbstractUnitTest<TestableKinesisAppender>
 {
     public TestKinesisAppender()
     {
-        super("TestKinesisAppender/", "KINESIS");
+        super("TestKinesisAppender/", "TEST");
     }
 
 

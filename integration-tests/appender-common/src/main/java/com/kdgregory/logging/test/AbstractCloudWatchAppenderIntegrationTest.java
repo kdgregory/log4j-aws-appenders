@@ -413,8 +413,8 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
     protected void testSynchronousModeMultiThread(LoggerAccessor accessor)
     throws Exception
     {
-        // we could do a lot of messages, but that will run very slowly
-        final int messagesPerThread = 10;
+        // if we do too many messages we get throttled ... this will be a problem for real-world use
+        final int messagesPerThread = 5;
 
         MessageWriter[] writers = new MessageWriter[]
         {

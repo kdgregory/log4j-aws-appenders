@@ -14,6 +14,7 @@
 
 package com.kdgregory.logging.aws;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -187,7 +188,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: source record content",           "message one",
                                                                     new String(
                                                                         BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(0).getData()),
-                                                                        "UTF-8"));
+                                                                        StandardCharsets.UTF_8));
 
         assertStatisticsTotalMessagesSent(1);
         assertEquals("statistics: last batch messages sent",        1,                          stats.getMessagesSentLastBatch());
@@ -231,7 +232,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: source record content",           "message one",
                                                                     new String(
                                                                         BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(0).getData()),
-                                                                        "UTF-8"));
+                                                                        StandardCharsets.UTF_8));
 
         assertStatisticsTotalMessagesSent(1);
         assertEquals("statistics: last batch messages sent",        1,                          stats.getMessagesSentLastBatch());
@@ -563,7 +564,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: last call #/messages",    1,                  mock.putRecordsSourceRecords.size());
 
         byte[] lastMessageContent = BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(0).getData());
-        assertEquals("putRecords: last call content",       bigMessage,         new String(lastMessageContent, "UTF-8"));
+        assertEquals("putRecords: last call content",       bigMessage,         new String(lastMessageContent, StandardCharsets.UTF_8));
     }
 
 
@@ -693,7 +694,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: source record content",           testMessage,
                                                                     new String(
                                                                         BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(499).getData()),
-                                                                        "UTF-8"));
+                                                                        StandardCharsets.UTF_8));
 
         // second batch batch should pick up remaining records
 
@@ -708,7 +709,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: source record content",           testMessage,
                                                                     new String(
                                                                         BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(249).getData()),
-                                                                        "UTF-8"));
+                                                                        StandardCharsets.UTF_8));
 
         assertStatisticsTotalMessagesSent(numMessages);
 
@@ -752,7 +753,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: source record content",           testMessage,
                                                                     new String(
                                                                         BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(expected1stBatchCount - 1).getData()),
-                                                                        "UTF-8"));
+                                                                        StandardCharsets.UTF_8));
 
         // second batch batch should pick up remaining records
 
@@ -767,7 +768,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: source record content",           testMessage,
                                                                     new String(
                                                                         BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(expected2ndBatchCount - 1).getData()),
-                                                                        "UTF-8"));
+                                                                        StandardCharsets.UTF_8));
 
         assertStatisticsTotalMessagesSent(numMessages);
 
@@ -885,7 +886,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: source record content",           "message one",
                                                                     new String(
                                                                         BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(0).getData()),
-                                                                        "UTF-8"));
+                                                                        StandardCharsets.UTF_8));
         assertStatisticsTotalMessagesSent(1);
         assertEquals("stats: messages sent batch",                  1,                          stats.getMessagesSentLastBatch());
         assertEquals("stats: messages requeued batch",              0,                          stats.getMessagesRequeuedLastBatch());

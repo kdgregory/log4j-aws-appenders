@@ -14,7 +14,7 @@
 
 package com.kdgregory.log4j2.testhelpers;
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
@@ -38,7 +38,7 @@ extends AbstractStringLayout
 
     public ThrowingLayout()
     {
-        super(Charset.forName("UTF-8"));
+        super(StandardCharsets.UTF_8);
     }
 
 

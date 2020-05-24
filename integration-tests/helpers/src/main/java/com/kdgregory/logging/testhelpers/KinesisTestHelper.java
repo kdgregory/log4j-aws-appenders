@@ -14,6 +14,7 @@
 
 package com.kdgregory.logging.testhelpers;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -364,7 +365,7 @@ public class KinesisTestHelper
         {
             this.shardId = shardId;
             this.partitionKey = record.getPartitionKey();
-            this.message = new String(BinaryUtils.copyAllBytesFrom(record.getData()), "UTF-8").trim();
+            this.message = new String(BinaryUtils.copyAllBytesFrom(record.getData()), StandardCharsets.UTF_8).trim();
         }
     }
 }

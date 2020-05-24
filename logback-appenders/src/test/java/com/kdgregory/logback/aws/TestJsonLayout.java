@@ -18,6 +18,7 @@ import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -86,7 +87,7 @@ public class TestJsonLayout
     throws Exception
     {
         appender.stop();
-        rawJson = new String(out.toByteArray(), "UTF-8");
+        rawJson = new String(out.toByteArray(), StandardCharsets.UTF_8);
     }
 
 

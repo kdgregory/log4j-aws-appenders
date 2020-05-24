@@ -17,6 +17,7 @@ package com.kdgregory.logging.aws.internal;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+
 /**
  *  Various static utility functions. These are used by multiple classes and/or
  *  should be tested outside of the class where they're used.
@@ -204,5 +205,27 @@ public class Utils
         {
             return false;
         }
+    }
+
+
+    /**
+     *  Uses system properties and environment variables to identify the current region,
+     *  with an override (that's presumed to come from appender configuration). Returns
+     *  null if unable to identify the region.
+     */
+    public static String lookupRegion(String override)
+    {
+        if ((override != null) && (override.length() > 0))
+            return override;
+
+        String envar = System.getenv("AWS_REGION");
+        if ((envar != null) && (envar.length() > 0))
+            return envar;
+
+        String sysprop = System.getProperty("aws.region");
+        if ((sysprop != null) && (sysprop.length() > 0))
+            return sysprop;
+
+        return null;
     }
 }

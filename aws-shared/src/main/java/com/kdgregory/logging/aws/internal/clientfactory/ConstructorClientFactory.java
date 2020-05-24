@@ -97,9 +97,7 @@ implements ClientFactory<ClientType>
 
     protected boolean maybeSetRegion(ClientType client)
     {
-        String regionName = (region != null)
-                          ? region
-                          :  System.getenv("AWS_REGION");
+        String regionName = Utils.lookupRegion(region);
         if ((regionName == null) || (regionName.isEmpty()))
             return false;
 

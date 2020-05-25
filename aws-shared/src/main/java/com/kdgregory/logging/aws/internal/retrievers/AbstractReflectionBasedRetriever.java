@@ -33,19 +33,21 @@ import java.lang.reflect.Method;
  *  <li> Call {@link #shutdown} to shut down the client. Typically in a finally
  *       block.
  *  </ol>
- *  All variables involved in this process must be defined as <code>Object</code>.
- *  <p>
- *  In addition to the request-response methods, there are utility methods to load
- *  a class, instantiate that class, and invoke arbitrary 0- or 1-arity static or
- *  instance methods.
- *  <p>
  *  Any exceptions thrown during method invocations are retained, and short-circuit
  *  any subsequent operations. It is therefore safe to perform a chain of operations,
  *  as long as you can accept a null value at the end of the chain.
+ *  <p>
+ *  All variables involved in this process must be defined as <code>Object</code>,
+ *  to avoid hard references to the library.
+ *  <p>
+ *  In addition to the request-response methods, there are utility methods to load
+ *  a class, instantiate that class, and invoke arbitrary 0- or 1-arity static or
+ *  instance methods. These are preferable to similar functions in <code>Utils</code>
+ *  if you want to implement a sequence operations (due to exception handling).
  */
-public class AbstractRetriever
+public class AbstractReflectionBasedRetriever
 {
-    // these are public because otherwise I'd just need to add accessors; I promise not to misuse
+    // these are public because otherwise I'd just need to add accessors for testing
     public Throwable exception;
     public Class<?> builderKlass;
     public Class<?> clientKlass;
@@ -57,7 +59,7 @@ public class AbstractRetriever
      *  Constructs an instance that will attempt to invoke the default builder rather than
      *  directly instantiate the client.
      */
-    public AbstractRetriever(String builderClassName, String clientClassName, String requestClassName, String responseClassName)
+    public AbstractReflectionBasedRetriever(String builderClassName, String clientClassName, String requestClassName, String responseClassName)
     {
         builderKlass = loadClass(builderClassName);
         clientKlass = loadClass(clientClassName);
@@ -69,7 +71,7 @@ public class AbstractRetriever
     /**
      *  Constructs an instance that will use a direct client constructor.
      */
-    public AbstractRetriever(String clientClassName, String requestClassName, String responseClassName)
+    public AbstractReflectionBasedRetriever(String clientClassName, String requestClassName, String responseClassName)
     {
         this(null, clientClassName, requestClassName, responseClassName);
     }
@@ -78,7 +80,7 @@ public class AbstractRetriever
     /**
      *  Constructs an instance for static method invocation. This just loads the "client" class.
      */
-    public AbstractRetriever(String className)
+    public AbstractReflectionBasedRetriever(String className)
     {
         this(null, className, null, null);
     }
@@ -87,7 +89,7 @@ public class AbstractRetriever
     /**
      *  Constructs an instance for when you just want to use the utility methods.
      */
-    public AbstractRetriever()
+    public AbstractReflectionBasedRetriever()
     {
         // nothing happening here
     }

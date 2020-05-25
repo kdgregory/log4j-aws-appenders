@@ -20,13 +20,13 @@ import static org.junit.Assert.*;
 import net.sf.kdgcommons.lang.ClassUtil;
 
 
-public class TestAbstractRetriever
+public class TestAbstractReflectionBasedRetriever
 {
     @Test
     public void testHappyPath() throws Exception
     {
         final String testValue = "test";
-        AbstractRetriever invoker = new AbstractRetriever(
+        AbstractReflectionBasedRetriever invoker = new AbstractReflectionBasedRetriever(
                                                     HappyPathClient.class.getName(),
                                                     HappyPathRequest.class.getName(),
                                                     HappyPathResponse.class.getName());
@@ -90,7 +90,7 @@ public class TestAbstractRetriever
     @Test
     public void testBaseRetrieverBogusClass() throws Exception
     {
-        AbstractRetriever invoker = new AbstractRetriever("com.example.Bogus", "com.example.Bogus", "com.example.Bogus");
+        AbstractReflectionBasedRetriever invoker = new AbstractReflectionBasedRetriever("com.example.Bogus", "com.example.Bogus", "com.example.Bogus");
 
         assertNotNull("exception reported", invoker.exception);
         assertNull("client class",          invoker.clientKlass);
@@ -110,7 +110,7 @@ public class TestAbstractRetriever
     @Test
     public void testInvokeStatic() throws Exception
     {
-        AbstractRetriever invoker = new AbstractRetriever("java.lang.String");
+        AbstractReflectionBasedRetriever invoker = new AbstractReflectionBasedRetriever("java.lang.String");
 
         String result = (String)invoker.invokeStatic(invoker.clientKlass, "valueOf", Object.class, new Integer(123));
         assertEquals("result", "123", result);
@@ -120,7 +120,7 @@ public class TestAbstractRetriever
     @Test
     public void testInvokeBuilder() throws Exception
     {
-        AbstractRetriever invoker = new AbstractRetriever(
+        AbstractReflectionBasedRetriever invoker = new AbstractReflectionBasedRetriever(
                                                     HappyPathBuilder.class.getName(),
                                                     HappyPathClient.class.getName(),
                                                     HappyPathRequest.class.getName(),

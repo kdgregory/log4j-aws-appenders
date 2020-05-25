@@ -1,6 +1,11 @@
-<p> This package exists to allow retrieval of information from AWS for optional
-    functionality, such as assuming a role. This functionality is typically
-    invoked from common classes, so if it was implemented using actual client
-    classes it would establish a hard dependency on the relevant library. This
-    goes against my "minimal required dependencies" goal, so I use reflection
-    to instantiate and invoke the functionality.
+<p> This package exists to allow retrieval of information from AWS using
+    service clients other than the main "logging" clients.
+<p> In many cases, these alternate clients are found in optional libraries,
+    (such as IAM), and we don't want to establish hard dependencies on those
+    libraries. The solution is to perform retrievals using reflection, with
+    the retriever classes based on {@link AbstractReflectionBasedRetriever}.
+<p> Typically you will create a single retriever for a single retrieval.
+    Retrieval is a potentially long-running operation, so the results should
+    be cached.
+<p> There isn't (at this time) a <code>Retriever</code> interface. Maybe in
+    the future I'll adopt a more "DI" approach to using them.

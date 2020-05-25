@@ -20,7 +20,7 @@ import java.lang.reflect.Method;
 import com.amazonaws.auth.AWSCredentialsProvider;
 
 import com.kdgregory.logging.aws.internal.Utils;
-import com.kdgregory.logging.aws.internal.retrievers.AbstractRetriever;
+import com.kdgregory.logging.aws.internal.retrievers.AbstractReflectionBasedRetriever;
 import com.kdgregory.logging.aws.internal.retrievers.RoleArnRetriever;
 import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.factories.ClientFactoryException;
@@ -146,7 +146,7 @@ implements ClientFactory<ClientType>
 
     protected AWSCredentialsProvider createDefaultCredentialsProvider()
     {
-        AbstractRetriever invoker = new AbstractRetriever("com.amazonaws.auth.DefaultAWSCredentialsProviderChain");
+        AbstractReflectionBasedRetriever invoker = new AbstractReflectionBasedRetriever("com.amazonaws.auth.DefaultAWSCredentialsProviderChain");
         AWSCredentialsProvider provider = (AWSCredentialsProvider)invoker.invokeStatic(invoker.clientKlass, "getInstance", null, null);
         if (invoker.exception != null)
         {
@@ -172,7 +172,7 @@ implements ClientFactory<ClientType>
         // N-arity constructors, so we'll have to do that inside a try/catch; we'll do the initial loads
         // outside the try/catch, however, so we can return a custom exception
 
-        AbstractRetriever invoker = new AbstractRetriever(
+        AbstractReflectionBasedRetriever invoker = new AbstractReflectionBasedRetriever(
                                     "com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider$Builder",
                                     "com.amazonaws.services.securitytoken.AWSSecurityTokenService",
                                     null);

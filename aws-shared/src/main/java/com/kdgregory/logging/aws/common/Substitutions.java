@@ -20,9 +20,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
-import com.amazonaws.util.EC2MetadataUtils;
-
 import com.kdgregory.logging.aws.internal.retrievers.AccountIdRetriever;
+import com.kdgregory.logging.aws.internal.retrievers.EC2InstanceIdRetriever;
+import com.kdgregory.logging.aws.internal.retrievers.EC2RegionRetriever;
 import com.kdgregory.logging.aws.internal.retrievers.ParameterStoreRetriever;
 
 
@@ -310,7 +310,7 @@ public class Substitutions
 
         if (instanceId == null)
         {
-            instanceId = EC2MetadataUtils.getInstanceId();
+            instanceId = new EC2InstanceIdRetriever().invoke();
             if ((instanceId == null) || (instanceId.length() == 0))
             {
                 instanceId = "unknown-instance";
@@ -333,7 +333,7 @@ public class Substitutions
         if (index < 0)
             return input;
 
-        String region = EC2MetadataUtils.getEC2InstanceRegion();
+        String region = new EC2RegionRetriever().invoke();
         if ((region == null) || (region.length() == 0))
             return input;
 

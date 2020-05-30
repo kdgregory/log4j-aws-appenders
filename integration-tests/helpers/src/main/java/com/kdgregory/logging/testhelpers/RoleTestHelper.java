@@ -46,6 +46,7 @@ public class RoleTestHelper
     private Logger localLogger = LoggerFactory.getLogger(getClass());
 
 
+    @SuppressWarnings("deprecation")
     public RoleTestHelper()
     {
         iamClient = new AmazonIdentityManagementClient();

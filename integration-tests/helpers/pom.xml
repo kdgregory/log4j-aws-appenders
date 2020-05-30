@@ -22,9 +22,10 @@
 
 
     <properties>
-        <!-- we'll use a newish SDK version in able to support all tests
-             this means that helper classes can't unexpectedly use classes
-             that don't appear in minimum-supported SDK versions -->
+        <!-- we have to use a newish version of the SDK to support all tests
+           - BEWARE accidentally introducing dependencies that won't work
+           - on earlier versions!
+          -->
         <aws-sdk.version>1.11.600</aws-sdk.version>
     </properties>
 
@@ -80,7 +81,7 @@
             <version>${aws-sdk.version}</version>
             <scope>provided</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

@@ -255,3 +255,40 @@ you have not granted the correct permissions to the EC2 instance profile or Lamb
 10:15:03,806 |-ERROR in com.kdgregory.logback.aws.CloudWatchAppender[CLOUDWATCH] - unable to configure log group/stream com.amazonaws.services.logs.model.AWSLogsException: User: arn:aws:iam::123456789012:user/bogus is not authorized to perform: logs:DescribeLogGroups on resource: arn:aws:logs:us-east-1:123456789012:log-group::log-stream: (Service: AWSLogs; Status Code: 400; Error Code: AccessDeniedException; Request ID: 053990c8-0921-11e9-a644-2b737622361a)
 	at com.amazonaws.services.logs.model.AWSLogsException: User: arn:aws:iam::123456789012:user/bogus is not authorized to perform: logs:DescribeLogGroups on resource: arn:aws:logs:us-east-1:123456789012:log-group::log-stream: (Service: AWSLogs; Status Code: 400; Error Code: AccessDeniedException; Request ID: 053990c8-0921-11e9-a644-2b737622361a)
 ```
+
+
+## Missing SDK JARs on Classpath
+
+This error is the same for all of the appenders, although its specifics may differ depending on the
+appender type. Here's an example of using the CloudWatch appender without the `aws-java-sdk-logs` JAR:
+
+```
+Exception in thread "example-0" 2020-05-30 09:05:58,526 DEBUG [example-1] com.kdgregory.log4j.aws.example.Main - value is 52
+java.lang.NoClassDefFoundError: com/amazonaws/services/logs/model/InvalidSequenceTokenException
+	at com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterFactory.newLogWriter(CloudWatchWriterFactory.java:34)
+	at com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterFactory.newLogWriter(CloudWatchWriterFactory.java:28)
+	at com.kdgregory.log4j.aws.internal.AbstractAppender.startWriter(AbstractAppender.java:572)
+	at com.kdgregory.log4j.aws.internal.AbstractAppender.initialize(AbstractAppender.java:555)
+	at com.kdgregory.log4j.aws.internal.AbstractAppender.append(AbstractAppender.java:458)
+	at org.apache.log4j.AppenderSkeleton.doAppend(AppenderSkeleton.java:251)
+	at org.apache.log4j.helpers.AppenderAttachableImpl.appendLoopOnAppenders(AppenderAttachableImpl.java:66)
+	at org.apache.log4j.Category.callAppenders(Category.java:206)
+	at org.apache.log4j.Category.forcedLog(Category.java:391)
+	at org.apache.log4j.Category.debug(Category.java:260)
+	at com.kdgregory.log4j.aws.example.Main$LogGeneratorRunnable.updateValue(Main.java:119)
+	at com.kdgregory.log4j.aws.example.Main$LogGeneratorRunnable.run(Main.java:93)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: java.lang.ClassNotFoundException: com.amazonaws.services.logs.model.InvalidSequenceTokenException
+	at java.net.URLClassLoader.findClass(URLClassLoader.java:382)
+	at java.lang.ClassLoader.loadClass(ClassLoader.java:424)
+	at sun.misc.Launcher$AppClassLoader.loadClass(Launcher.java:349)
+	at java.lang.ClassLoader.loadClass(ClassLoader.java:357)
+```
+
+The key to this errors is the `ClassNotFoundException`, referencing a class in the SDK JAR (in this
+case, `InvalidSequenceTokenException`). Another clue is that it's thrown by the writer factory, when
+calling `newLogWriter()`.
+
+What's happening behind the scenes is that the log writer has hard references to objects within the
+SDK. When the JVM loads the log-writer class, it also tries to resolve the classes it references.
+If the SDK JAR isn't on the classpath, those references will fail.

@@ -55,7 +55,7 @@
         </dependency>
         <dependency>
             <groupId>com.kdgregory.logging.integration-test</groupId>
-            <artifactId>appender-shared</artifactId>
+            <artifactId>abstract-appender</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

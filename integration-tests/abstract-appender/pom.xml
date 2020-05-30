@@ -10,7 +10,7 @@
     </parent>
 
     <groupId>com.kdgregory.logging.integration-test</groupId>
-    <artifactId>appender-shared</artifactId>
+    <artifactId>abstract-appender</artifactId>
 
     <name>Abstract Appender Integration Tests</name>
 

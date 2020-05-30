@@ -85,11 +85,15 @@ integration tests require many more permissions: they have to create, examine, a
 resources. While I normally run using my personal "Administrator" permissions, I also run
 a pre-release test on EC2 using an instance role with the following policy.
 
+**Do not use this policy in production.** It is extremely over-powered, and includes
+permissions that are not needed for normal use of an appender.
+
 ```
 {
     "Version": "2012-10-17",
     "Statement": [
         {
+            "Sid": "CloudWatchLogs",
             "Effect": "Allow",
             "Action": [
                 "logs:CreateLogGroup",
@@ -99,11 +103,13 @@ a pre-release test on EC2 using an instance role with the following policy.
                 "logs:DescribeLogGroups",
                 "logs:DescribeLogStreams",
                 "logs:GetLogEvents",
-                "logs:PutLogEvents"
+                "logs:PutLogEvents",
+                "logs:PutRetentionPolicy"
             ],
             "Resource": "*"
         },
         {
+            "Sid": "Kinesis",
             "Effect": "Allow",
             "Action": [
                 "kinesis:CreateStream",
@@ -118,6 +124,7 @@ a pre-release test on EC2 using an instance role with the following policy.
             "Resource": "*"
         },
         {
+            "Sid": "SNS",
             "Effect": "Allow",
             "Action": [
                 "sns:CreateTopic",
@@ -127,13 +134,7 @@ a pre-release test on EC2 using an instance role with the following policy.
                 "sns:ListTopics",
                 "sns:Publish",
                 "sns:Subscribe",
-                "sns:Unsubscribe"
-            ],
-            "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
+                "sns:Unsubscribe",
                 "sqs:AddPermission",
                 "sqs:CreateQueue",
                 "sqs:DeleteMessage",
@@ -144,6 +145,31 @@ a pre-release test on EC2 using an instance role with the following policy.
                 "sqs:ReceiveMessage",
                 "sqs:SendMessage",
                 "sqs:SetQueueAttributes"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "ParameterStore",
+            "Effect": "Allow",
+            "Action": [
+                "kms:Encrypt",
+                "ssm:DeleteParameter",
+                "ssm:GetParameter",
+                "ssm:PutParameter"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "AssumedRole",
+            "Effect": "Allow",
+            "Action": [
+                "iam:CreateRole",
+                "iam:DeleteRole",
+                "iam:ListAttachedRolePolicies",
+                "iam:AttachRolePolicy",
+                "iam:DetachRolePolicy",
+                "iam:ListRoles",
+                "sts:AssumeRole"
             ],
             "Resource": "*"
         }

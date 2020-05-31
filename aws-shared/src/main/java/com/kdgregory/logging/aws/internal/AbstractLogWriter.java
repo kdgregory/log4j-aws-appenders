@@ -264,7 +264,7 @@ implements LogWriter
         try
         {
             // this test avoids hung tests
-            if (dispatchThread != Thread.currentThread())
+            if ((dispatchThread != null) && (dispatchThread != Thread.currentThread()))
             {
                 dispatchThread.join(millisToWait);
             }

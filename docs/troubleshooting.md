@@ -4,7 +4,7 @@ If you don't see logging output, it is almost always due to incorrect IAM permis
 for each appender lists the permissions that you will need to use that appender. It's also possible, when
 using the Kinesis and SNS appenders, that the destination doesn't exist (or is in another region).
 
-Fortunately, both logging frameworks support debug output, and the appenders report both successful and
+Fortunately, the logging frameworks support debug output, and the appenders report both successful and
 non-successful operation.
 
 
@@ -24,9 +24,7 @@ daemon you will need to redirect this output.
 
 For this example, I configured the [example program](../examples/log4j1-example) to
 use only the CloudWatch Logs appender. When it fist starts you'll see the following
-output, indicating that it was able to configure the appender. However, this doe
-_not_ mean that the appender is able to write to the destination, because it's
-initialized when the first message is written.
+output, indicating that it was able to configure the appender.
 
 ```
 log4j: Trying to find [log4j.xml] using context classloader sun.misc.Launcher$AppClassLoader@70dea4e.
@@ -57,9 +55,13 @@ log4j: Handling log4j.additivity.com.kdgregory.log4j.aws.example=[null]
 log4j: Finished configuring.
 ```
 
-Next up, you'll see the following output, as the appender initializes. Note that
-this output is interleaved with the log messages sent to the console: that is an
-artifact of the appender building a batch of messages.
+However, successfully initializing the appender _does not_ mean that it is able to write
+to the destination; you may still see an error when the log-writer attempts to write its
+first batch.
+
+The following output shows sucessful log-writer operation. Note that this output is
+interleaved with the log messages sent to the console: that is an artifact of the
+appender building a batch of messages.
 
 ```
 2018-12-26 09:56:48,534 [example-1] WARN  com.kdgregory.log4j.aws.example.Main  - value is 85
@@ -126,8 +128,8 @@ For Log4J 2.x, you can set the level of internal logging in the configuration fi
 
 ### Example: successful configuration
 
-I've just configured the CloudWatch appender in this example. You can follow through the process of building
-the appender plugins, and then see the CloudWatch writer thread write its messages.
+Unlike Log4J 1.x, Log4J 2.x starts the log-writer at the time of initialization. This
+example shows successful initialization along with the first batch of messages.
 
 ```
 2020-03-21 16:05:01,303 main DEBUG Initializing configuration XmlConfiguration[location=jar:file:/tmp/log4j2-example/target/log4j2-aws-appenders-example-2.3.0-SNAPSHOT.jar!/log4j2.xml]
@@ -225,35 +227,6 @@ completes before the first message is logged from the application:
 10:12:21,282 |-INFO in com.kdgregory.logback.aws.CloudWatchAppender[CLOUDWATCH] - log writer initialization complete (thread com-kdgregory-aws-logwriter-logback-cloudwatch-0)
 10:12:21.366 [example-1] WARN  c.kdgregory.logback.aws.example.Main - value is 85
 10:12:21.366 [example-0] DEBUG c.kdgregory.logback.aws.example.Main - value is 60
-```
-
-
-### Example: user does not have permissions
-
-For this example I created a user that did not have any permissions; you'd see the same output if
-you have not granted the correct permissions to the EC2 instance profile or Lambda execution role.
-
-```
-10:15:02,972 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
-10:15:02,972 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.groovy]
-10:15:02,972 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [jar:file:/tmp/examples/logback-example/target/logback-aws-appenders-example-2.1.0-SNAPSHOT.jar!/logback.xml]
-10:15:02,982 |-INFO in ch.qos.logback.core.joran.spi.ConfigurationWatchList@3d71d552 - URL [jar:file:/tmp/examples/logback-example/target/logback-aws-appenders-example-2.1.0-SNAPSHOT.jar!/logback.xml] is not of type file
-10:15:03,032 |-INFO in ch.qos.logback.classic.joran.action.JMXConfiguratorAction - begin
-10:15:03,082 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
-10:15:03,084 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - Naming appender as [CONSOLE]
-10:15:03,087 |-INFO in ch.qos.logback.core.joran.action.NestedComplexPropertyIA - Assuming default type [ch.qos.logback.classic.encoder.PatternLayoutEncoder] for [encoder] property
-10:15:03,105 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - About to instantiate appender of type [com.kdgregory.logback.aws.CloudWatchAppender]
-10:15:03,108 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - Naming appender as [CLOUDWATCH]
-10:15:03,119 |-INFO in com.kdgregory.logback.aws.CloudWatchAppender[CLOUDWATCH] - log writer starting on thread com-kdgregory-aws-logwriter-logback-cloudwatch-0
-10:15:03,120 |-INFO in ch.qos.logback.classic.joran.action.RootLoggerAction - Setting level of ROOT logger to WARN
-10:15:03,120 |-INFO in ch.qos.logback.core.joran.action.AppenderRefAction - Attaching appender named [CONSOLE] to Logger[ROOT]
-10:15:03,121 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting level of logger [com.kdgregory.logback.aws.example] to DEBUG
-10:15:03,121 |-INFO in ch.qos.logback.core.joran.action.AppenderRefAction - Attaching appender named [CLOUDWATCH] to Logger[com.kdgregory.logback.aws.example]
-10:15:03,121 |-INFO in ch.qos.logback.classic.joran.action.ConfigurationAction - End of configuration.
-10:15:03,122 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@30c7da1e - Registering current configuration as safe fallback point
-10:15:03,552 |-INFO in com.kdgregory.logback.aws.CloudWatchAppender[CLOUDWATCH] - created client from factory: com.amazonaws.services.logs.AWSLogsClientBuilder.defaultClient
-10:15:03,806 |-ERROR in com.kdgregory.logback.aws.CloudWatchAppender[CLOUDWATCH] - unable to configure log group/stream com.amazonaws.services.logs.model.AWSLogsException: User: arn:aws:iam::123456789012:user/bogus is not authorized to perform: logs:DescribeLogGroups on resource: arn:aws:logs:us-east-1:123456789012:log-group::log-stream: (Service: AWSLogs; Status Code: 400; Error Code: AccessDeniedException; Request ID: 053990c8-0921-11e9-a644-2b737622361a)
-	at com.amazonaws.services.logs.model.AWSLogsException: User: arn:aws:iam::123456789012:user/bogus is not authorized to perform: logs:DescribeLogGroups on resource: arn:aws:logs:us-east-1:123456789012:log-group::log-stream: (Service: AWSLogs; Status Code: 400; Error Code: AccessDeniedException; Request ID: 053990c8-0921-11e9-a644-2b737622361a)
 ```
 
 

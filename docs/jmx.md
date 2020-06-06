@@ -9,9 +9,9 @@ log writers. See [below](#attributes) for the description of each attribute.
 
 ## Enabling
 
-To enable JMX reporting you must register an instance of `com.kdgregory.log4j.aws.StatisticsMBean` with
-one or more MBeanServers. If you're using Log4J, you should register `HierarchyDynamicMBean` at the same
-time (for Logback, you enable JMX [in the configuration](https://logback.qos.ch/manual/jmxConfig.html)):
+To enable JMX reporting you must register an instance of `StatisticsMBean` with one or more
+MBeanServers. If you're using Log4J, you should register `HierarchyDynamicMBean` at the same
+time.
 
 ```
 ManagementFactory.getPlatformMBeanServer().createMBean(
@@ -23,10 +23,8 @@ ManagementFactory.getPlatformMBeanServer().createMBean(
         new ObjectName("log4j:name=Statistics"));
 ```
 
-The `ObjectName` that you use to register these beans can be anything. The individual statistics beans
-base their own name on the object name used for `StatisticsMBean`, but the Log4J and Logback beans use
-their own names. I find it easier, as here, to use a namespace that's consistent with the framework I'm
-using.
+The `ObjectName` that you use to register these beans can be anything. I find it easier, as here,
+to use a namespace that's consistent with the framework I'm using.
 
 > Note: this represents a change from version 1.0 of the appenders, which would also ignore the
   namespace used to register `StatisticsMBean` and instead pick a name that organized the

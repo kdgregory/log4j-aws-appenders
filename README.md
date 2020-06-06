@@ -52,7 +52,7 @@ I follow the standard `MAJOR.MINOR.PATCH` versioning scheme:
 ### Dependencies
 
 To avoid dependency hell, all dependencies are marked as "provided": you will need
-to ensure that your project includes necessary dependencies for your destination(s):
+to ensure that your project includes necessary dependencies for your destination(s).
 
 * Your logging framework of choice
 * [`aws-java-sdk-logs`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-logs%22) to use `CloudWatchAppender`
@@ -60,7 +60,7 @@ to ensure that your project includes necessary dependencies for your destination
 * [`aws-java-sdk-sns`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-sns%22) to use `SNSAppender`
 * [`aws-java-sdk-iam`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-iam%22) to use assumed roles.
 * [`aws-java-sdk-ssm`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-ssm%22) to use the `ssm` substitution.
-* [`aws-java-sdk-sts`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-sts%22) to use the `aws:accountId` substitution or assumed roles.
+* [`aws-java-sdk-sts`](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.amazonaws%22%20AND%20a%3A%22aws-java-sdk-sts%22) to use assumed roles or the `aws:accountId` substitution.
 
 The minimum supported dependency versions are:
 
@@ -74,7 +74,7 @@ The minimum supported dependency versions are:
 * **Log4J 2.x**: 2.10.0   
   This is the first version that supports custom key/value pairs for `JsonLayout`.
   If that's not important to you, the library will work with version 2.8 (which
-  had a breaking change in backwards compatibility).
+  introduced a breaking change in backwards compatibility).
 
 * **Logback**: 1.2.0  
   This version is required to support `JsonAccessLayout`. If you don't use that,
@@ -90,6 +90,13 @@ The minimum supported dependency versions are:
 I have made an intentional effort to limit dependencies to the bare minimum. This
 has in some cases meant that I write internal implementations for functions that
 are found in common libraries.
+
+
+## Contributions
+
+At this time I am not accepting contributions. If you find a bug in the code, please
+submit an issue that explains the problem and includes the filename and line number
+(or better, a link to the source) where the error exists.
 
 
 ## For more information

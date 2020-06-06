@@ -2,7 +2,7 @@
 
 The Kinesis Streams appender is intended to be an entry point for log analytics, either
 as a direct feed to an analytics application, or via Kinesis Firehose to ElasticSearch
-or other destinations (note that this can also be an easy way to back-up logs to S3).
+or other destinations (which is also an easy way to back-up logs to S3).
 
 The Kinesis appender provides the following features:
 
@@ -45,22 +45,6 @@ log4j.appender.kinesis.layout.tags=applicationName={env:APP_NAME},deployment={sy
 ```
 
 
-### Example: Logback
-
-```
-<appender name="KINESIS" class="com.kdgregory.logback.aws.KinesisAppender">
-    <streamName>logging-stream</streamName>
-    <partitionKey>{pid}</partitionKey>
-    <batchDelay>500</batchDelay>
-    <layout class="com.kdgregory.logback.aws.JsonLayout">
-        <enableHostname>true</enableHostname>
-        <enableLocation>true</enableLocation>
-        <tags>applicationName={env:APP_NAME},deployment={sysprop:deployment:dev}</tags>
-    </layout>
-</appender>
-```
-
-
 ### Example: Log4J2
 
 Note that this example uses Log4J [lookups](https://logging.apache.org/log4j/2.x/manual/lookups.html#EnvironmentLookup)
@@ -84,14 +68,30 @@ with additional fields, including a `timestamp` field that's compatible with the
 ```
 
 
+### Example: Logback
+
+```
+<appender name="KINESIS" class="com.kdgregory.logback.aws.KinesisAppender">
+    <streamName>logging-stream</streamName>
+    <partitionKey>{pid}</partitionKey>
+    <batchDelay>500</batchDelay>
+    <layout class="com.kdgregory.logback.aws.JsonLayout">
+        <enableHostname>true</enableHostname>
+        <enableLocation>true</enableLocation>
+        <tags>applicationName={env:APP_NAME},deployment={sysprop:deployment:dev}</tags>
+    </layout>
+</appender>
+```
+
+
 ## Permissions
 
-To use this appender you will need to grant the following IAM permissions:
+To use this appender you need following IAM permissions:
 
 * `kinesis:DescribeStream`
 * `kinesis:PutRecords`
 
-To auto-create a stream you must grant these additional permissions:
+To auto-create a stream you need these additional permissions:
 
 * `kinesis:CreateStream`
 * `kinesis:IncreaseStreamRetentionPeriod`
@@ -100,7 +100,7 @@ To auto-create a stream you must grant these additional permissions:
 ## Stream management
 
 You will normally pre-create the Kinesis stream and adjust its retention period and number of
-shards based on your environment.
+shards based on your deployment's needs.
 
 To support testing (and because it was the original behavior, copied from the CloudWatch appender),
 you can optionally configure the appender to create the stream if it does not already exist. Unlike
@@ -122,11 +122,10 @@ In most cases this is sufficient, and there's no reason to configure this parame
 
 If, however, you have an application that generates a high volume of log messages, you can
 get improved performance (or at least reduce the likelihood of throttling) by generating a
-per-record random partition key (note that you will also need to have multiple shards in
-the stream). 
+per-record random partition key (note that you will also to have multiple shards or this
+does nothing). 
 
-You enable this behavior by specifying `{random}` as the partition key value (note: this
-value is case sensitive):
+You enable this behavior by specifying `{random}` (case sensitive) as the partition key value:
 
 ```
 log4j.appender.kinesis.partitionKey={random}

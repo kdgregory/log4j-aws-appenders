@@ -74,9 +74,12 @@ Then you reference this listener in the applications `web.xml`:
 </web-app>
 ```
 
-For Logback, it's even easier: use or subclass [LogbackServletContextListener](https://logback.qos.ch/apidocs/ch/qos/logback/classic/servlet/LogbackServletContextListener.html).
+For Logback, you can use or subclass [LogbackServletContextListener](https://logback.qos.ch/apidocs/ch/qos/logback/classic/servlet/LogbackServletContextListener.html).
 
-Be aware that you will still see the error even if you explicitly shut down the logging
+And for Log4J 2.x, provided that you use a Servlet 3.0-compatible container, it [just
+works](https://logging.apache.org/log4j/2.x/manual/webapp.html).
+
+Be aware that you may still see the error even if you explicitly shut down the logging
 framework using a context listener, because the background thread remains running for a
 short time to send any queued messages. If you wait a few seconds after undeploying and
 run `jstack`, you will see that the thread's no longer running.

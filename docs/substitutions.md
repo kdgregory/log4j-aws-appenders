@@ -1,7 +1,8 @@
-# Substitution Variables
+# Substitutions
 
-Some configuration parameters (such as CloudWatch log group or Kinesis stream) may use substitution
-variables from the table below. To use, enclose the variable in braces (eg: `MyLog-{date}`).
+Some configuration parameters (such as CloudWatch log group or Kinesis stream name) may use
+substitution variables from the table below. To use, enclose the variable in braces (eg:
+`MyLog-{date}`).
 
 
 Variable            | Description

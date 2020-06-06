@@ -1,33 +1,31 @@
 # Client Connections
 
-This library provides several ways to create and configure an AWS service client;
-the following mechanisms are tried in order:
+This library provides several ways to create and configure an AWS service client:
 
 1. An application-provided static factory method, specified with the `clientFactory`
    configuration parameter. This allows you to perform any customization that you want.
 2. Using the client-specific "builder" object, optionally assuming a role. This is the
    mechanism used for all "modern" SDK versions.
-3. For early releases of the AWS SDK, which did not have client factories, calling the
+3. For early releases of the AWS SDK, which did not have builder objects, calling the
    relevant client constructor. This supports the credentials provider chain, but does
    not support the region provider chain (instead defaulting to `us-east-1`). You can,
    however, explicitly specify a region.
 
-> One thing that this library does not &mdash; _and will never_ &mdash; allow is 
-  providing access keys via configuration properties. Please follow the
-  [AWS best practices](https://docs.aws.amazon.com/general/latest/gr/aws-access-keys-best-practices.html)
-  for managing your credentials.
+Each of these mechanisms is tried in order. If the appender is not _able_ to use the
+method (_ie,_ no static factory method configured, SDK does not support builders), it
+will try the next mechanism.
+
+However, _if a mechanism fails due to configuration_ (_eg,_ an invalid region, or factory
+method that doesn't exist), the appender will not start. This prevents accidental
+misconfiguration from turning into a hidden security breach (_eg,_ if you assume a role
+to write sensitive log messages to a different account, you don't want an invalid role
+name to result in writing those messages in the current account).
 
 
 ## Configuration Properties
 
 All appenders provide the following connection properties, which are described in detail
 below.  These configuration properties cannot be changed once the appender has started.
-
-**Note:** since 2.4.0, if a client configuration property is specified but can not be
-applied, the appender will fail to start. This prevents accidental misconfiguration
-from turning into a hidden security breach (_eg,_ if you assume a role to write sensitive
-log messages to a different account, you don't want an invalid role name to result in
-writing those messages in the current account).
 
 Name                | Description
 --------------------|----------------------------------------------------------------
@@ -36,6 +34,12 @@ Name                | Description
 `clientRegion`      | Specifies a non-default region for the client.
 `clientEndpoint`    | Specifies a non-default endpoint; only supported for clients created via constructors.
 
+**Note:** One thing that this library does not &mdash; _and will never_ &mdash; allow is 
+providing access keys via configuration properties. Please follow the [AWS best
+practices](https://docs.aws.amazon.com/general/latest/gr/aws-access-keys-best-practices.html)
+for managing your credentials.
+
+
 
 ### `assumedRole`
 
@@ -43,16 +47,17 @@ If specified, the appender will attempt to assume a role before creating the cli
 connection. This is intended for writing logs to a destination owned by a different
 account.
 
-> Note: only applies when using a "builder" object to create the client, not when
-  using either a constructor or application-provided factory method.
+> Note: only applies when using a version of the SDK that provides "builder" objects
+  to create the client. Not supported for either constructor or application-provided
+  factory methods (although you can implement your own mechanism in the latter).
 
 May be specified as either a simple role name or an ARN. If specified as a name, a
 role with that name must exist in the current account.
 
 Permissions required:
 
+* `iam:ListRoles`
 * `sts:AssumeRole`
-* `iam:ListRoles` to provide a role name rather than an ARN.
 
 If unable to assume the role, the appender will report the error using the logging
 framework's internal status logger. It will not attempt to operate with the default
@@ -74,14 +79,16 @@ that isn't otherwise covered by the appender (for example, using an HTTP proxy).
 
 There are two supported variants for this method. The first takes no parameters; it
 must retrieve any configuration from an external source. The second is passed three
-parameters from the appender configuration. Examples, for `CloudWatchAppender`:
-
-* `public static AWSLogs createCloudWatchClient()`
-* `public static AWSLogs createCloudWatchClient(String assumedRole, String region, String endpoint)`
+parameters from the appender configuration.
 
 If unable to invoke the client method, the appender will report the error using the
 logging framework's internal status logger. It will not fallback to another client
 construction mechanism.
+
+Example method signatures:
+
+* `public static AWSLogs createCloudWatchClient()`
+* `public static AWSLogs createCloudWatchClient(String assumedRole, String region, String endpoint)`
 
 Example configuration:
 

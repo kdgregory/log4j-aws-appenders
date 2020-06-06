@@ -1,8 +1,9 @@
 # Simple Notification Service (SNS) Appender
 
-The SNS appender is intended to support real-time error notifications, operating concurrently
+The SNS appender is intended to provide real-time error notifications, operating concurrently
 with other logging outputs. You would configure the appender to only respond to messages with
-the ERROR level, and then hook the destination SNS topic to feed a messaging application.
+the ERROR level, and then configure the destination SNS topic to feed a messaging application
+such as PagerDuty.
 
 The SNS appender provides the following features:
 
@@ -27,12 +28,12 @@ Name                | Description
 `discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
 `useShutdownHook`   | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default, set to `false` to disable. Ignored for Log4J2. See [docs](design.md#shutdown-hooks) for more information.
 
-Note: the `batchDelay` parameter is not used (although it can be configured); the SNS appender attempts to send messages immediately.
+Note: the `batchDelay` parameter exists but is ignored; the SNS appender attempts to send messages immediately.
 
 
 ### Example: Log4J 1.x
 
-Note the `threshold` setting; this is a Log4J feature that allows different appenders to receive different levels of output.
+Note: the `threshold` setting ensures that this appender only receives ERROR-level messages.
 
 ```
 log4j.appender.sns=com.kdgregory.log4j.aws.SNSAppender
@@ -45,7 +46,26 @@ log4j.appender.sns.layout.ConversionPattern=%d %c - %m%n
 ```
 
 
+### Example: Log4J2
+
+Note: the `ThresholdFilter` ensures that this appender only receives ERROR-level messages.
+
+Note also that this example uses a Log4J [lookup](https://logging.apache.org/log4j/2.x/manual/lookups.html#EnvironmentLookup)
+for the application name rather than the library-provided substitutions.
+
+```
+<SNSAppender name="SNS">
+    <topicArn>arn:aws:sns:us-east-1:123456789012:LoggingExample</topicArn>
+    <subject>Error from ${env:APP_NAME}</subject>
+    <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] - %c %p - %m%n" />
+    <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+</SNSAppender>
+```
+
+
 ### Example: Logback
+
+Note: the `filter` configuration ensures that this appender only receives ERROR-level messages.
 
 ```
 <appender name="SNS" class="com.kdgregory.logback.aws.SNSAppender">
@@ -63,35 +83,27 @@ log4j.appender.sns.layout.ConversionPattern=%d %c - %m%n
 ```
 
 
-### Example: Log4J2
-
-Note that this example uses a Log4J [lookup](https://logging.apache.org/log4j/2.x/manual/lookups.html#EnvironmentLookup)
-for the application name rather than the library-provided substitutions. The
-latter is also supported.
-
-```
-<SNSAppender name="SNS">
-    <topicArn>arn:aws:sns:us-east-1:123456789012:LoggingExample</topicArn>
-    <subject>Error from ${env:APP_NAME}</subject>
-    <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] - %c %p - %m%n" />
-    <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
-</SNSAppender>
-```
-
-
 ## Permissions
 
-To use this appender you will need to grant the following IAM permissions:
+To use this appender you need the following IAM permissions:
 
 * `sns:ListTopics`
 * `sns:Publish`
 
-In addition, to auto-create a topic you need to grant the following permissions:
+To auto-create a topic you must also have the following permission:
 
 * `sns:CreateTopic`
 
 
 ## Operation
+
+You can specify the destination topic either by ARN or name. You would normally use ARN to reference
+a topic in a different account or region, name to reference a topic in the current account/region. If
+you specify the topic by name, you may also enable `autoCreate`, which will create the topic if it
+does not already exist (this is only appropriate for development/test environments).
+
+> When constructing an ARN it's particularly useful to use the `{env:AWS_REGION}` or `{ec2:region}`
+  substitutions, along with `{aws:accountId}`.
 
 The SNS appender writes messages as simple text strings, formatted according to the layout manager;
 it does not support platform-specific payloads. Messages can have an optional subject, and this text
@@ -102,15 +114,7 @@ sending to an email address.
   you can programmatically change the subject in Log4J1 and Logback (and reconfigure the logger
   for Log4J2), all messages will have the same subject.
 
-You can specify the destination topic either by ARN or name. You would normally use ARN to reference
-a topic in a different account or region, name to reference a topic in the current account/region. If
-you specify the topic by name, you may also enable `autoCreate`, which will create the topic if it
-does not already exist (this is only appropriate for development/test environments).
-
-> When constructing an ARN it's particularly useful to use the `{env:AWS_REGION}` or `{ec2:region}`
-  substitutions, along with `{aws:accountId}`.
-
 While the appender exposes the batch delay configuration parameter, it is ignored. Each message is
-sent as soon as possible after it's passed to the appender, because SNS does not support message batching.
-Note, however, that the messages are still sent on a background thread unless you enable
-[synchronous mode](docs/design.md#synchronous-mode).
+sent as soon as possible after it's passed to the appender, because SNS does not support message
+batching. Note, however, that the messages are still sent on a background thread unless you enable
+[synchronous mode](design.md#synchronous-mode).

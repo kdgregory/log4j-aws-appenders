@@ -15,7 +15,7 @@
 * Log4J2 appenders now use the layout's character set for subclasses of
   `StringLayout`.
   ([#101](https://github.com/kdgregory/log4j-aws-appenders/issues/101))
-* There's no need to create a separate shutdown hook for Log4J2.
+* Log4J2 appenders now rely on the framework's shutdown hook.
   ([#100](https://github.com/kdgregory/log4j-aws-appenders/issues/100))
 * When creating a client via static factory method, you can now provide
   a method that receives configuration parameters `assumedRole`, `region`,
@@ -24,8 +24,8 @@
 * If the configured client creation mechanism fails, do not fallback to
   an alternative mechanism (ie, don't blindly write in current account).
   ([#105](https://github.com/kdgregory/log4j-aws-appenders/issues/105))
-* Log4J2: lookups now delegate to substitutions for all values (still
-  supports the keys implemented in 2.3.0 for backwards compatibility).
+* Log4J2 lookups now delegate to substitutions for all values (but still
+  support the keys implemented in 2.3.0 for backwards compatibility).
 
 ## 2.3.0 (2020-03-21)
 

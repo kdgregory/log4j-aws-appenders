@@ -7,11 +7,11 @@ There are multiple projects in this repository:
 * [log4j1-appenders](../log4j1-appenders): appender implementations for Log4J 1.x.
 * [log4j2-appenders](../log4j2-appenders): appender implementations for Log4J 2.x.
 * [logback-appenders](../logback-appenders): appender implementations for Logback.
-* [examples](../examples): example programs that demonstrate using the appenders.
+* [examples](../examples): example programs that demonstrate the appenders in action.
 * [integration-tests](../integration-tests): integration tests that execute several
   scenarios against each set of appenders, using actual AWS resources.
 
-All sub-projects are built using [Apache Maven](http://maven.apache.org/). The build commands
+All projects are built [Apache Maven](http://maven.apache.org/). The build commands
 differ depending on project:
 
 * appenders (including aws-shared): `mvn clean install` run from the project root.
@@ -41,16 +41,16 @@ snapshot or release builds. Master will never be rebased: once a commit is made 
 part of history for better or worse.
 
 All development takes place on a branch. Branches are either feature branches, in which
-case they're named after an issue (eg: `dev-21`), or release-prep branches, in which case
-they're named `dev-MAJOR.MINOR.PATCH`. Development branches may be rebased as I see fit:
+case they're named after an issue (eg: `dev-issue-21`), or release-prep branches, in which
+case they're named `dev-MAJOR.MINOR.PATCH`. Development branches may be rebased as I see fit:
 I often make "checkpoint" commits to save my work and then rebase them into a single commit.
 Once a development branch is merged it is deleted.
 
 Features are merged into either a release-prep branch or master, using a pull request and
 squash merge. If multiple independent features are combined into a release, each feature
 commit is preserved in master (note that major functionality, such as a new logging framework,
-may be considered a single feature). If you want to see the individual commits that went into
-a branch, you can look at the closed PR.
+is considered a single feature). If you want to see the individual commits that went into a
+branch, you can look at the closed PR.
 
 Each "release" version is tagged with `release-MAJOR.MINOR.PATCH`.
 
@@ -67,23 +67,25 @@ There is a parent POM, which provides plugin configuration and version propertie
 throughout the project (other than the examples, which I want to be stand-alone).
 
 
-## Code coverage (or lack thereof)
+## Automated Tests
+
+The `aws-shared` and appenders library are heavily tested using mock objects. Since these mocks
+are only as good as my understanding of how the actual SDK works, there's also a full suite of
+integration tests that exercise the appenders using actual AWS resources.
 
 The library builds are configured to use the Cobertura code coverage tool. It appears to work
 successfully for the `aws-shared` directory, but generates a report indicating 0% coverage for
-the Log4J and Logback appenders library. It's unclear to me why this is happening: there aren't
-any errors in the build log, it shows Cobertura instrumenting classes before running tests, and
-then running again to generate the report.
-
-I will dig into this for a later release; for now, I consider all coverage numbers suspect.
+the appenders libraries. It's unclear to me why this is happening: there aren't any errors in
+the build log, it shows Cobertura instrumenting classes before running tests, and then running
+again to generate the report. As a result, I don't pay attention to the coverage report.
 
 
 ## AWS permissions needed for integration tests
 
 While the individual appender docs list the permissions needed to use those appenders, the
 integration tests require many more permissions: they have to create, examine, and delete
-resources. While I normally run using my personal "Administrator" permissions, I also run
-a pre-release test on EC2 using an instance role with the following policy.
+resources. While I normally run using "Administrator" permissions, I also run a pre-release
+test on EC2 using an instance role with the following policy.
 
 **Do not use this policy in production.** It is extremely over-powered, and includes
 permissions that are not needed for normal use of an appender.

@@ -106,26 +106,28 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
     }
 
 //----------------------------------------------------------------------------
-//  JUnit Scaffolding
-//  I'm assuming that JUnit doesn't go out of its way to find annotations on
-//  superclasses, so implementation classes have to replicate these functions
+//  JUnit Scaffolding -- must be overridden by subclasses (I'm assuming that
+//  JUnit doesn't go out of its way to find annotations on superclasses)
 //----------------------------------------------------------------------------
 
     public static void beforeClass()
+    throws Exception
     {
         helperClient = AWSLogsClientBuilder.defaultClient();
     }
 
 
     public void tearDown()
+    throws Exception
     {
-        // this is a static variable but set by a single test, so is cleared likewise
+        // set by single test, but easier to reset always (if needed)
         if (factoryClient != null)
         {
             factoryClient.shutdown();
             factoryClient = null;
         }
 
+        // set by single test, but easier to reset always (if needed)
         if (altClient != null)
         {
             altClient.shutdown();
@@ -137,6 +139,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
 
 
     public static void afterClass()
+    throws Exception
     {
         if (helperClient != null)
         {
@@ -185,6 +188,8 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
             accessor.setBatchDelay(1234L);
             assertEquals("batch delay", 1234L, accessor.getWriter().getBatchDelay());
         }
+
+        testHelper.deleteLogGroupIfExists();
     }
 
 
@@ -212,6 +217,8 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         testHelper.assertMessages(LOGSTREAM_BASE + "-2", rotationCount);
         testHelper.assertMessages(LOGSTREAM_BASE + "-3", rotationCount);
         testHelper.assertMessages(LOGSTREAM_BASE + "-4", (messagesPerThread * messageWriters.length) % rotationCount);
+
+        testHelper.deleteLogGroupIfExists();
     }
 
 
@@ -234,6 +241,8 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         testHelper.assertMessages(LOGSTREAM_BASE + "-1", messagesPerThread);
         testHelper.assertMessages(LOGSTREAM_BASE + "-2", messagesPerThread);
         testHelper.assertMessages(LOGSTREAM_BASE + "-3", messagesPerThread);
+
+        testHelper.deleteLogGroupIfExists();
     }
 
 
@@ -311,6 +320,8 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
 //        assertEquals("stats: all race retries recovered",   0,  unrecoveredRaceRetriesFromStats);
 
         assertNull("stats: last error (was: " + lastNonRaceErrorFromStats + ")", lastNonRaceErrorFromStats);
+
+        testHelper.deleteLogGroupIfExists();
     }
 
 
@@ -342,6 +353,8 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
 
         assertEquals("all messages reported in stats",  numMessages * 2, accessor.getStats().getMessagesSent());
         assertTrue("statistics has error message",      accessor.getStats().getLastErrorMessage().contains("log stream missing"));
+
+        testHelper.deleteLogGroupIfExists();
     }
 
 
@@ -360,6 +373,8 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
 
         AWSLogs writerClient = ClassUtil.getFieldValue(accessor.getWriter(), "client", AWSLogs.class);
         assertSame("factory should have been used to create client", factoryClient, writerClient);
+
+        testHelper.deleteLogGroupIfExists();
     }
 
 
@@ -376,6 +391,8 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
 
         altTestHelper.assertMessages(LOGSTREAM_BASE, numMessages);
         assertFalse("logstream does not exist in default region", testHelper.isLogStreamAvailable(LOGSTREAM_BASE));
+
+        altTestHelper.deleteLogGroupIfExists();
     }
 
 
@@ -395,6 +412,8 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
                      STSAssumeRoleSessionCredentialsProvider.class,
                      CommonTestHelper.getCredentialsProviderClass(accessor.getWriter())
                      );
+
+        testHelper.deleteLogGroupIfExists();
     }
 
 
@@ -407,6 +426,8 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         assertEquals("number of messages recorded in stats", 1, accessor.getStats().getMessagesSent());
 
         testHelper.assertMessages(LOGSTREAM_BASE, 1);
+
+        testHelper.deleteLogGroupIfExists();
     }
 
 
@@ -429,5 +450,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         assertEquals("number of messages recorded in stats", messagesPerThread * 5, accessor.getStats().getMessagesSent());
 
         testHelper.assertMessages(LOGSTREAM_BASE, messagesPerThread * 5);
+
+        testHelper.deleteLogGroupIfExists();
     }
 }

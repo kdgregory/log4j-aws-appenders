@@ -101,10 +101,12 @@ public abstract class AbstractSNSAppenderIntegrationTest
 
 
 //----------------------------------------------------------------------------
-//  JUnit Scaffolding
+//  JUnit Scaffolding -- must be overridden by subclasses (I'm assuming that
+//  JUnit doesn't go out of its way to find annotations on superclasses)
 //----------------------------------------------------------------------------
 
     protected static void beforeClass()
+    throws Exception
     {
         helperSNSclient = AmazonSNSClientBuilder.defaultClient();
         helperSQSclient = AmazonSQSClientBuilder.defaultClient();
@@ -112,20 +114,23 @@ public abstract class AbstractSNSAppenderIntegrationTest
 
 
     public void tearDown()
+    throws Exception
     {
-        // this is a static variable but set by a single test, so is cleared likewise
+        // set by single test, but easier to reset always (if needed)
         if (factoryClient != null)
         {
             factoryClient.shutdown();
             factoryClient = null;
         }
 
+        // set by single test, but easier to reset always (if needed)
         if (altSNSclient != null)
         {
             altSNSclient.shutdown();
             altSNSclient = null;
         }
 
+        // set by single test, but easier to reset always (if needed)
         if (altSQSclient != null)
         {
             altSQSclient.shutdown();
@@ -137,6 +142,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
 
 
     public static void afterClass()
+    throws Exception
     {
         if (helperSNSclient != null)
         {
@@ -171,6 +177,8 @@ public abstract class AbstractSNSAppenderIntegrationTest
         assertEquals("messages written, from stats",        numMessages,                    accessor.getStats().getMessagesSent());
 
         assertNull("factory should not have been used to create client", factoryClient);
+
+        testHelper.deleteTopicAndQueue();
     }
 
 
@@ -193,6 +201,8 @@ public abstract class AbstractSNSAppenderIntegrationTest
         assertEquals("messages written, from stats",        numMessages,                    accessor.getStats().getMessagesSent());
 
         assertNull("factory should not have been used to create client", factoryClient);
+
+        testHelper.deleteTopicAndQueue();
     }
 
 
@@ -215,6 +225,8 @@ public abstract class AbstractSNSAppenderIntegrationTest
         // no queue attached to this topic so we can't read messages directly
 
         CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
+
+        testHelper.deleteTopicAndQueue();
     }
 
 
@@ -231,6 +243,8 @@ public abstract class AbstractSNSAppenderIntegrationTest
         assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),      accessor.getStats().getActualTopicName());
         assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       accessor.getStats().getActualTopicArn());
         assertEquals("messages written, from stats",        0,                              accessor.getStats().getMessagesSent());
+
+        testHelper.deleteTopicAndQueue();
     }
 
 
@@ -255,6 +269,8 @@ public abstract class AbstractSNSAppenderIntegrationTest
         assertEquals("actual topic name, from statistics",  testHelper.getTopicName(),      accessor.getStats().getActualTopicName());
         assertEquals("actual topic ARN, from statistics",   testHelper.getTopicARN(),       accessor.getStats().getActualTopicArn());
         assertEquals("messages written, from stats",        totalMessages,                  accessor.getStats().getMessagesSent());
+
+        testHelper.deleteTopicAndQueue();
     }
 
 
@@ -281,6 +297,8 @@ public abstract class AbstractSNSAppenderIntegrationTest
         assertEquals("actual topic name, appender2, from statistics",   testHelper.getTopicName(),      accessor2.getStats().getActualTopicName());
         assertEquals("actual topic ARN, appender2, from statistics",    testHelper.getTopicARN(),       accessor2.getStats().getActualTopicArn());
         assertEquals("messages written, appender2, from stats",         numMessages,                    accessor2.getStats().getMessagesSent());
+
+        testHelper.deleteTopicAndQueue();
     }
 
 
@@ -301,6 +319,8 @@ public abstract class AbstractSNSAppenderIntegrationTest
         SNSLogWriter writer = accessor.getWriter();
         AmazonSNS actualClient = ClassUtil.getFieldValue(writer, "client", AmazonSNS.class);
         assertSame("factory should have been used to create client", factoryClient, actualClient);
+
+        testHelper.deleteTopicAndQueue();
     }
 
 
@@ -327,6 +347,8 @@ public abstract class AbstractSNSAppenderIntegrationTest
 
         assertEquals("actual topic name, from statistics",  altTestHelper.getTopicName(),      accessor.getStats().getActualTopicName());
         assertEquals("actual topic ARN, from statistics",   altTestHelper.getTopicARN(),       accessor.getStats().getActualTopicArn());
+
+        altTestHelper.deleteTopicAndQueue();
     }
 
 
@@ -348,5 +370,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
                      STSAssumeRoleSessionCredentialsProvider.class,
                      CommonTestHelper.getCredentialsProviderClass(accessor.getWriter())
                      );
+
+        testHelper.deleteTopicAndQueue();
     }
 }

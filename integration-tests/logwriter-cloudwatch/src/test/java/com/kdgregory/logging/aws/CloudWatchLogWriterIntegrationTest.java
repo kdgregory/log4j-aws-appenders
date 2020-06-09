@@ -232,6 +232,8 @@ public class CloudWatchLogWriterIntegrationTest
         assertNull("static factory method not called", factoryClient);
 
         assertNull("retention period not set", testHelper.describeLogGroup().getRetentionInDays());
+
+        testHelper.deleteLogGroupIfExists();
     }
 
 
@@ -253,6 +255,8 @@ public class CloudWatchLogWriterIntegrationTest
 
         assertNotNull("factory method was called", factoryClient);
         assertSame("factory-created client used by writer", factoryClient, ClassUtil.getFieldValue(writer, "client", AWSLogs.class));
+
+        testHelper.deleteLogGroupIfExists();
     }
 
 
@@ -278,6 +282,8 @@ public class CloudWatchLogWriterIntegrationTest
         assertFalse("stream does not exist in default region",
                     new CloudWatchTestHelper(helperClient, BASE_LOGGROUP_NAME, "testAlternateRegion")
                         .isLogStreamAvailable(logStreamName));
+
+        testHelper.deleteLogGroupIfExists();
     }
 
 
@@ -305,6 +311,8 @@ public class CloudWatchLogWriterIntegrationTest
         assertFalse("stream does not exist in default region",
                     new CloudWatchTestHelper(helperClient, BASE_LOGGROUP_NAME, "testAlternateEndpoint")
                         .isLogStreamAvailable(logStreamName));
+
+        testHelper.deleteLogGroupIfExists();
     }
 
 
@@ -322,6 +330,8 @@ public class CloudWatchLogWriterIntegrationTest
         CommonTestHelper.waitUntilMessagesSent(stats, 1, 30000);
 
         assertEquals("retention period", 3, testHelper.describeLogGroup().getRetentionInDays().intValue());
+
+        testHelper.deleteLogGroupIfExists();
     }
 
 
@@ -358,5 +368,7 @@ public class CloudWatchLogWriterIntegrationTest
 
         CommonTestHelper.waitUntilMessagesSent(stats, numWriters * numReps, 30000);
         internalLogger.assertInternalErrorLog();
+
+        testHelper.deleteLogGroupIfExists();
     }
 }

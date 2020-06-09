@@ -172,6 +172,8 @@ public class KinesisLogWriterIntegrationTest
         List<RetrievedRecord> records = testHelper.retrieveAllMessages(numMessages);
         testHelper.assertMessages(records, 1, numMessages);
         testHelper.assertRandomPartitionKeys(records, numMessages);
+
+        testHelper.deleteStreamIfExists();
     }
 
 
@@ -189,6 +191,8 @@ public class KinesisLogWriterIntegrationTest
 
         assertNotNull("factory method was called", factoryClient);
         assertSame("factory-created client used by writer", factoryClient, ClassUtil.getFieldValue(writer, "client", AmazonKinesis.class));
+
+        testHelper.deleteStreamIfExists();
     }
 
 
@@ -210,6 +214,8 @@ public class KinesisLogWriterIntegrationTest
 
         assertNull("stream does not exist in default region",
                    (new KinesisTestHelper(helperClient, "logwriter-testAlternateRegion")).describeStream());
+
+        testHelper.deleteStreamIfExists();
     }
 
 
@@ -233,5 +239,7 @@ public class KinesisLogWriterIntegrationTest
 
         assertNull("stream does not exist in default region",
                    (new KinesisTestHelper(helperClient, "logwriter-testAlternateEndpoint")).describeStream());
+
+        testHelper.deleteStreamIfExists();
     }
 }

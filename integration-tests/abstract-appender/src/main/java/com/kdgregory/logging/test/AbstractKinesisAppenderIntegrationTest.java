@@ -97,24 +97,28 @@ public abstract class AbstractKinesisAppenderIntegrationTest
     }
 
 //----------------------------------------------------------------------------
-//  JUnit Scaffolding
+//  JUnit Scaffolding -- must be overridden by subclasses (I'm assuming that
+//  JUnit doesn't go out of its way to find annotations on superclasses)
 //----------------------------------------------------------------------------
 
     protected static void beforeClass()
+    throws Exception
     {
         helperClient = AmazonKinesisClientBuilder.defaultClient();
     }
 
 
     public void tearDown()
+    throws Exception
     {
-        // this is a static variable but set by a single test, so is cleared likewise
+        // set by single test, but easier to reset always (if needed)
         if (factoryClient != null)
         {
             factoryClient.shutdown();
             factoryClient = null;
         }
 
+        // set by single test, but easier to reset always (if needed)
         if (altClient != null)
         {
             altClient.shutdown();
@@ -126,6 +130,7 @@ public abstract class AbstractKinesisAppenderIntegrationTest
 
 
     public static void afterClass()
+    throws Exception
     {
         if (helperClient != null)
         {
@@ -156,6 +161,8 @@ public abstract class AbstractKinesisAppenderIntegrationTest
         testHelper.assertStats(accessor.getStats(), numMessages);
 
         assertNull("factory should not have been used to create client", factoryClient);
+
+        testHelper.deleteStreamIfExists();
     }
 
 
@@ -187,6 +194,8 @@ public abstract class AbstractKinesisAppenderIntegrationTest
 
         testHelper.assertShardCount(2);
         testHelper.assertRetentionPeriod(24);
+
+        testHelper.deleteStreamIfExists();
     }
 
 
@@ -219,6 +228,8 @@ public abstract class AbstractKinesisAppenderIntegrationTest
 
         testHelper.assertShardCount(2);
         testHelper.assertRetentionPeriod(24);
+
+        testHelper.deleteStreamIfExists();
     }
 
 
@@ -235,6 +246,8 @@ public abstract class AbstractKinesisAppenderIntegrationTest
         testHelper.assertShardCount(2);
         testHelper.assertMessages(messages, 1, numMessages);
         testHelper.assertRandomPartitionKeys(messages, numMessages);
+
+        testHelper.deleteStreamIfExists();
     }
 
 
@@ -253,6 +266,8 @@ public abstract class AbstractKinesisAppenderIntegrationTest
             "initialization message did not indicate missing stream (was \"" + initializationMessage + "\")",
             ".*stream.*" + streamName + ".* not exist .*",
             initializationMessage);
+
+        testHelper.deleteStreamIfExists();
     }
 
 
@@ -275,6 +290,8 @@ public abstract class AbstractKinesisAppenderIntegrationTest
         KinesisLogWriter writer = accessor.getWriter();
         AmazonKinesis actualClient = ClassUtil.getFieldValue(writer, "client", AmazonKinesis.class);
         assertSame("factory should have been used to create client", factoryClient, actualClient);
+
+        testHelper.deleteStreamIfExists();
     }
 
 
@@ -291,6 +308,8 @@ public abstract class AbstractKinesisAppenderIntegrationTest
 
         testHelper.assertMessages(messages, 1, numMessages);
         assertNull("stream does not exist in default region", testHelper.describeStream());
+
+        altTestHelper.deleteStreamIfExists();
     }
 
 
@@ -313,5 +332,7 @@ public abstract class AbstractKinesisAppenderIntegrationTest
                      STSAssumeRoleSessionCredentialsProvider.class,
                      CommonTestHelper.getCredentialsProviderClass(accessor.getWriter())
                      );
+
+        testHelper.deleteStreamIfExists();
     }
 }

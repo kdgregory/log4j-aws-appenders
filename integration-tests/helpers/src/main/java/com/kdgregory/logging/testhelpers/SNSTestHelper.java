@@ -111,19 +111,28 @@ public class SNSTestHelper
 
 
     /**
-     *  Creates the topic and queue, and subscribes the queue to the topic. Returns
+     *  Creates a topic and queue, and subscribes the queue to the topic. Returns
      *  the topic ARN.
      */
     public String createTopicAndQueue()
     throws Exception
     {
-//        localLogger.info("creating queue and topic with name: " + resourceName);
         createTopic();
         createQueue();
         subscribeQueueToTopic();
         return topicArn;
     }
 
+
+    /**
+     *  Deletes the topic and queue created by {@link #createTopicAndQueue}.
+     */
+    public void deleteTopicAndQueue()
+    throws Exception
+    {
+        deleteTopic();
+        deleteQueue();
+    }
 
     /**
      *  Loops through all topic names, looking for the one that matches the provided name.
@@ -236,6 +245,7 @@ public class SNSTestHelper
         CreateTopicResult createTopicResponse = snsClient.createTopic(createTopicRequest);
         topicArn = createTopicResponse.getTopicArn();
 
+        // this is used so the tests don't have to construct a topic ARN from a random string
         System.setProperty("SNSAppenderIntegrationTest.topicArn", topicArn);
 
         for (int ii = 0 ; ii <  30 ; ii++)
@@ -259,8 +269,48 @@ public class SNSTestHelper
 
 
     /**
-     *  Creates the queue and waits for it to become available (assuming that
-     *  we won't get attributes until it's available).
+     *  Deletes the topic (if it exists), along with its subscriptions.
+     */
+    private void deleteTopic()
+    throws Exception
+    {
+        if (StringUtil.isEmpty(topicArn))
+            return;
+
+        localLogger.debug("deleting topic {}", topicArn);
+
+        // the SNS API docs claim that deleting a topic deletes all of its subscriptions, but I
+        // have observed this to be false
+        try
+        {
+            // there should not be more than one subscription per topic, so pagination is moot
+            ListSubscriptionsByTopicRequest listSubsRequest = new ListSubscriptionsByTopicRequest().withTopicArn(topicArn);
+            ListSubscriptionsByTopicResult listSubsResponse = snsClient.listSubscriptionsByTopic(listSubsRequest);
+            for (Subscription subscription : listSubsResponse.getSubscriptions())
+            {
+                snsClient.unsubscribe(subscription.getSubscriptionArn());
+            }
+        }
+        catch (Exception ex)
+        {
+            localLogger.warn("unexpected exception when removing subscriptions from topic {}: {}", topicArn, ex.getMessage());
+        }
+
+        try
+        {
+           // according to the docs, this won't throw if the topic doesn't exist
+            DeleteTopicRequest deleteRequest = new DeleteTopicRequest().withTopicArn(topicArn);
+            snsClient.deleteTopic(deleteRequest);
+        }
+        catch (Exception ex)
+        {
+            localLogger.warn("unexpected exception when deleting topic {}: {}", topicArn, ex.getMessage());
+        }
+    }
+
+
+    /**
+     *  Creates the queue and waits for it to become available.
      */
     private void createQueue()
     throws Exception
@@ -270,7 +320,31 @@ public class SNSTestHelper
         CreateQueueRequest createRequest = new CreateQueueRequest().withQueueName(resourceName);
         CreateQueueResult createResponse = sqsClient.createQueue(createRequest);
         queueUrl = createResponse.getQueueUrl();
+        // I'm going to assume that this won't succeed until the queue is available
         queueArn = retrieveQueueAttribute("QueueArn");
+    }
+
+
+    /**
+     *  Deletes the queue (if it exists).
+     */
+    private void deleteQueue()
+    throws Exception
+    {
+        if (StringUtil.isEmpty(queueArn))
+            return;
+
+        localLogger.debug("deleting queue {}", queueArn);
+
+        try
+        {
+            DeleteQueueRequest deleteRequest = new DeleteQueueRequest().withQueueUrl(queueUrl);
+            sqsClient.deleteQueue(deleteRequest);
+        }
+        catch (Exception ex)
+        {
+            localLogger.warn("unexpected exception when deleting queue {}: {}", queueArn, ex.getMessage());
+        }
     }
 
 

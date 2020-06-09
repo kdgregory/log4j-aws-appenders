@@ -18,10 +18,6 @@ differ depending on project:
 * examples: `mvn clean package` (see individual documentation for running the examples).
 * integration tests: `mvn clean test`.
 
-**Beware:** the integration tests and examples create AWS resources and do not delete them.
-You will be charged for those resources, including a per-hour charge for the Kinesis streams.
-To avoid charges, be sure to delete all resources when they're no longer needed.
-
 
 ## Interface Stability
 
@@ -73,6 +69,10 @@ The `aws-shared` and appenders library are heavily tested using mock objects. Si
 are only as good as my understanding of how the actual SDK works, there's also a full suite of
 integration tests that exercise the appenders using actual AWS resources.
 
+**BEWARE:** the integration tests incur AWS charges. These charges are small (well under $1),
+but test failures may leave resources that continue to incur charges. _If you choose to run
+the integration tests, you accept all charges that result._
+
 The library builds are configured to use the Cobertura code coverage tool. It appears to work
 successfully for the `aws-shared` directory, but generates a report indicating 0% coverage for
 the appenders libraries. It's unclear to me why this is happening: there aren't any errors in
@@ -80,7 +80,7 @@ the build log, it shows Cobertura instrumenting classes before running tests, an
 again to generate the report. As a result, I don't pay attention to the coverage report.
 
 
-## AWS permissions needed for integration tests
+### AWS permissions needed for integration tests
 
 While the individual appender docs list the permissions needed to use those appenders, the
 integration tests require many more permissions: they have to create, examine, and delete
@@ -180,19 +180,16 @@ permissions that are not needed for normal use of an appender.
 ```
 
 
-## Cleaning up after integration tests
+### Cleaning up after integration tests
 
-The integration tests create AWS resources but do not delete them. This is intentional, to
-support post-mortem debugging. However, some of those resources incur a per-hour charge,
-and in general you don't want to have a lot of unused/untagged resources in your account.
+The integration tests create live AWS resources. And while each test tries to delete the
+resources it creates on success, test failures leave these resources undeleted (this is
+intentional, to support post-mortem debugging).
 
-Assuming that you're using Bash, you can clean up these reources with this script. I save
-it in my personal `bin` directory with the name `cleanup.sh`. It assumes that you're running
-in the `us-east-1` region; if you're running elsewhere, add your region to each of the `for`
-statements.
+If you run the integration tests, I recommend running the following script afterward to
+identify any undeleted resources (note: if you have resources named "IntegrationTest" it
+will show them as well, so beware false positives!):
 
-**Beware:** this script deletes all resources with "IntegrationTest" in their name.  If you
-have resources that match, they will be deleted as well.
 
 ```
 #!/bin/bash
@@ -201,37 +198,57 @@ echo "CloudWatch Logs"
 for r in 'us-east-1' 'us-east-2' 'us-west-1' 'us-west-2' ; \
     do for g in $(aws logs describe-log-groups --region $r --query 'logGroups[].logGroupName' | grep IntegrationTest | sed -e 's/[ ",]*//g') ; \
         do echo $r " - " $g ; \
-        aws logs delete-log-group --region $r --log-group-name $g ; \
     done ; \
 done
 
 echo "Kinesis"
 for r in 'us-east-1' 'us-east-2' 'us-west-1' 'us-west-2' ; \
-    do for s in $(aws kinesis list-streams --region $r --output text | grep IntegrationTest | awk '{print $2}') ; \
+    do for s in $(aws kinesis list-streams --region $r --query 'StreamNames[]' | grep IntegrationTest | sed -e 's/[ ",]*//g') ; \
         do echo $r " - " $s ; \
-        aws kinesis delete-stream --region $r --stream-name $s ; \
     done ; \
 done
 
-echo "SNS"
-for r in 'us-east-1' 'us-east-2' 'us-west-1' 'us-west-2' ; \
-    do for t in $(aws sns list-topics --region $r --output text | grep IntegrationTest | awk '{print $2}') ; \
-        do echo $r " - " $t ; \
-        aws sns delete-topic --region $r --topic-arn $t ; \
-    done ; \
-done
-
+echo "SNS Subscriptions"
 for r in 'us-east-1' 'us-east-2' 'us-west-1' 'us-west-2' ; \
     do for s in $(aws sns list-subscriptions --region $r --query 'Subscriptions[].SubscriptionArn' | grep IntegrationTest | sed -e 's/[ ",]*//g') ; \
         do echo $r " - " $s ; \
-        aws sns unsubscribe --region $r --subscription-arn $s ; \
     done ; \
 done
 
+echo "SNS Topics"
 for r in 'us-east-1' 'us-east-2' 'us-west-1' 'us-west-2' ; \
-    do for q in $(aws sqs list-queues --region $r | grep IntegrationTest | sed -e 's/[ ",]*//g') ; \
+    do for t in $(aws sns list-topics --region $r --query 'Topics[].TopicArn' | grep IntegrationTest | sed -e 's/[ ",]*//g') ; \
+        do echo $r " - " $t ; \
+    done ; \
+done
+
+echo "SQS Queues"
+for r in 'us-east-1' 'us-east-2' 'us-west-1' 'us-west-2' ; \
+    do for q in $(aws sqs list-queues --region $r --query 'QueueUrls[]' | grep IntegrationTest | sed -e 's/[ ",]*//g') ; \
         do echo $r " - " $q ; \
-        aws sqs delete-queue --region $r --queue-url $q ; \
     done ; \
 done
 ```
+
+You can delete these resources with the following CLI commands (replacing the capitalized names with
+the output from the script above):
+
+* CloudWatch Logs
+
+  `aws logs delete-log-group --region REGION --log-group-name LOG_GROUP_NAME`
+
+* Kinesis
+
+  `aws kinesis delete-stream --region REGION --stream-name STREAM_NAME`
+
+* SNS Subscriptions
+
+  `aws sns unsubscribe --region REGION --subscription-arn SUBSCRIPTION_ARN`
+
+* SNS Topics
+
+  `aws sns delete-topic --region REGION --topic-arn TOPIC_ARN`
+
+* SQS Queues
+
+  `aws sqs delete-queue --region REGION --queue-url QUEUE_URL`

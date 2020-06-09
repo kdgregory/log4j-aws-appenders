@@ -131,6 +131,7 @@ extends AbstractSNSAppenderIntegrationTest
 
     @BeforeClass
     public static void beforeClass()
+    throws Exception
     {
         AbstractSNSAppenderIntegrationTest.beforeClass();
     }
@@ -139,6 +140,7 @@ extends AbstractSNSAppenderIntegrationTest
     @After
     @Override
     public void tearDown()
+    throws Exception
     {
         super.tearDown();
         MDC.clear();
@@ -147,6 +149,7 @@ extends AbstractSNSAppenderIntegrationTest
 
     @AfterClass
     public static void afterClass()
+    throws Exception
     {
         AbstractSNSAppenderIntegrationTest.afterClass();
     }

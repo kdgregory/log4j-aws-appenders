@@ -2,10 +2,12 @@ AWSTemplateFormatVersion:               "2010-09-09"
 Description:                            "A small Elasticsearch cluster that accessible from Firehose and specific end-user IPs"
 
 Parameters:
+
   ElasticsearchDomainName:
     Description:                        "Name of the Elasticsearch cluster"
     Type:                               "String"
     Default:                            "logging-example"
+
   AllowedIPs:
     Description:                        "Identifies the IP addresses that are allowed to access Elasticsearch/Kibana (leave blank for none)"
     Type:                               "CommaDelimitedList"

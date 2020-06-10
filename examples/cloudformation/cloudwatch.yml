@@ -41,7 +41,7 @@ Resources:
               -                         !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogGroup}"
               -                         !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogGroup}:*"
 
-  KinesisReaderPolicy:
+  CloudWatchReaderPolicy:
     Type:                               "AWS::IAM::ManagedPolicy"
     Properties:
       ManagedPolicyName:                !Sub "CloudWatchLogReader-${LogGroupName}"

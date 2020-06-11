@@ -4,7 +4,7 @@ You may see the following warning in your Tomcat logs when you undeploy an appli
 uses the AWS appenders:
 
 ```
-16-Nov-2018 21:15:57.834 WARNING [http-nio-8080-exec-37] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [log4j1-aws-appenders-webapp-2.1.0-SNAPSHOT] appears to have started a thread named [com-kdgregory-aws-logwriter-log4j-cloudwatch-0] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+16-Nov-2018 21:15:57.834 WARNING [http-nio-8080-exec-37] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [log4j1-aws-appenders-webapp-2.1.0] appears to have started a thread named [com-kdgregory-aws-logwriter-log4j-cloudwatch-0] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
  sun.misc.Unsafe.park(Native Method)
  java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:215)
  java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.awaitNanos(AbstractQueuedSynchronizer.java:2078)
@@ -74,9 +74,12 @@ Then you reference this listener in the applications `web.xml`:
 </web-app>
 ```
 
-For Logback, it's even easier: use or subclass [LogbackServletContextListener](https://logback.qos.ch/apidocs/ch/qos/logback/classic/servlet/LogbackServletContextListener.html).
+For Logback, you can use or subclass [LogbackServletContextListener](https://logback.qos.ch/apidocs/ch/qos/logback/classic/servlet/LogbackServletContextListener.html).
 
-Be aware that you will still see the error even if you explicitly shut down the logging
+And for Log4J 2.x, provided that you use a Servlet 3.0-compatible container, it [just
+works](https://logging.apache.org/log4j/2.x/manual/webapp.html).
+
+Be aware that you may still see the error even if you explicitly shut down the logging
 framework using a context listener, because the background thread remains running for a
 short time to send any queued messages. If you wait a few seconds after undeploying and
 run `jstack`, you will see that the thread's no longer running.

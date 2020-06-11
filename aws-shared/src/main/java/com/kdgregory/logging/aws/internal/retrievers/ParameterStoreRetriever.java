@@ -24,7 +24,7 @@ package com.kdgregory.logging.aws.internal.retrievers;
  *  client builder rather than a constructor (and therefore doesn't need to worry about region).
  */
 public class ParameterStoreRetriever
-extends AbstractRetriever
+extends AbstractReflectionBasedRetriever
 {
     private Class<?> parameterKlass;
 

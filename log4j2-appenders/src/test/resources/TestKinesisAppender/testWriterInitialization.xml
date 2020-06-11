@@ -1,7 +1,7 @@
 <Configuration status="warn" packages="com.kdgregory.log4j2.testhelpers">
 
     <Appenders>
-        <TestableKinesisAppender name="KINESIS">
+        <TestableKinesisAppender name="TEST">
             <PatternLayout pattern="%m" />
             <streamName>MyStream-{sysprop:TestKinesisAppender.testWriterInitialization}</streamName>
             <partitionKey>{date}-{bogus}</partitionKey>
@@ -20,7 +20,7 @@
         <Root level="off">
         </Root>
         <Logger name="com.kdgregory.log4j2.aws.TestKinesisAppender" level="debug">
-            <AppenderRef ref="KINESIS" />
+            <AppenderRef ref="TEST" />
         </Logger>
     </Loggers>
 

@@ -2,14 +2,14 @@
 
   <root level="off"/>
 
-  <appender name="CLOUDWATCH" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
+  <appender name="TEST" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
     <layout class="ch.qos.logback.classic.PatternLayout">
       <pattern>%msg</pattern>
     </layout>
   </appender>
 
   <logger name="com.kdgregory.logback.aws.TestCloudWatchAppender" level="debug">
-    <appender-ref ref="CLOUDWATCH" />
+    <appender-ref ref="TEST" />
   </logger>
 
 </configuration>

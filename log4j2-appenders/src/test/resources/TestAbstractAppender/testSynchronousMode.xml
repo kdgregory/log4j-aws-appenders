@@ -1,7 +1,7 @@
 <Configuration status="warn" packages="com.kdgregory.log4j2.testhelpers">
 
     <Appenders>
-        <TestableCloudWatchAppender name="CLOUDWATCH">
+        <TestableCloudWatchAppender name="TEST">
             <PatternLayout pattern="%d{yyyy} %c{1} %m" />
             <logGroup>argle</logGroup>
             <synchronous>true</synchronous>
@@ -12,7 +12,7 @@
         <Root level="off">
         </Root>
         <Logger name="com.kdgregory.log4j2.aws.TestAbstractAppender" level="debug">
-            <AppenderRef ref="CLOUDWATCH" />
+            <AppenderRef ref="TEST" />
         </Logger>
     </Loggers>
 

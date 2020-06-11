@@ -20,9 +20,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
-import com.amazonaws.util.EC2MetadataUtils;
-
 import com.kdgregory.logging.aws.internal.retrievers.AccountIdRetriever;
+import com.kdgregory.logging.aws.internal.retrievers.EC2InstanceIdRetriever;
+import com.kdgregory.logging.aws.internal.retrievers.EC2RegionRetriever;
 import com.kdgregory.logging.aws.internal.retrievers.ParameterStoreRetriever;
 
 
@@ -36,27 +36,39 @@ import com.kdgregory.logging.aws.internal.retrievers.ParameterStoreRetriever;
  */
 public class Substitutions
 {
-    // these are set by constructor
-    private Date currentDate;
-    private String sequence;
-    private RuntimeMXBean runtimeMx;
+    // all substitutors are created by constructor, most lazily compute their value
+    private SequenceSubstitutor sequenceSubstitutor;
+    private DateSubstitutor dateSubstitutor;
+    private TimestampSubstitutor timestampSubstitutor;
+    private HourlyTimestampSubstitutor hourlyTimestampSubstitutor;
+    private StartupTimestampSubstitutor startupTimestampSubstitutor;
+    private PidSubstitutor pidSubstitutor;
+    private HostnameSubstitutor hostnameSubstitutor;
+    private SyspropSubstitutor syspropSubstitutor;
+    private EnvarSubstitutor envarSubstitutor;
+    private AwsAccountIdSubstitutor awsAccountIdSubstitutor;
+    private EC2InstanceIdSubstitutor ec2InstanceIdSubstitutor;
+    private EC2RegionSubstitutor ec2RegionSubstitutor;
+    private SSMSubstitutor ssmSubstitutor;
 
-    // these are lazily retrieved; volatile as a habit
-    private volatile String date;
-    private volatile String timestamp;
-    private volatile String hourlyTimestamp;
-    private volatile String startupTimestamp;
-    private volatile String pid;
-    private volatile String hostname;
-    private volatile String accountId;
-    private volatile String instanceId;
 
-
-    public Substitutions(Date currentDate, int sequence)
+    public Substitutions(Date now, int sequence)
     {
-        this.currentDate = currentDate;
-        this.sequence = String.valueOf(sequence);
-        this.runtimeMx = ManagementFactory.getRuntimeMXBean();
+        RuntimeMXBean runtimeMx = ManagementFactory.getRuntimeMXBean();
+
+        sequenceSubstitutor = new SequenceSubstitutor(sequence);
+        dateSubstitutor = new DateSubstitutor(now);
+        timestampSubstitutor = new TimestampSubstitutor(now);
+        hourlyTimestampSubstitutor = new HourlyTimestampSubstitutor(now);
+        startupTimestampSubstitutor = new StartupTimestampSubstitutor(runtimeMx);
+        pidSubstitutor = new PidSubstitutor(runtimeMx);
+        hostnameSubstitutor = new HostnameSubstitutor(runtimeMx);
+        syspropSubstitutor = new SyspropSubstitutor();
+        envarSubstitutor = new EnvarSubstitutor();
+        awsAccountIdSubstitutor = new AwsAccountIdSubstitutor();
+        ec2InstanceIdSubstitutor = new EC2InstanceIdSubstitutor();
+        ec2RegionSubstitutor = new EC2RegionSubstitutor();
+        ssmSubstitutor = new SSMSubstitutor();
     }
 
 
@@ -73,306 +85,354 @@ public class Substitutions
         do
         {
             input = output;
-            output = substitute("{sequence}", sequence,
-                     substituteDate(
-                     substituteTimestamp(
-                     substituteHourlyTimestamp(
-                     substituteStartupTimestamp(
-                     substitutePid(
-                     substituteHostname(
-                     substituteSysprop(
-                     substituteEnvar(
-                     substituteAwsAccountId(
-                     substituteEC2InstanceId(
-                     substituteEC2Region(
-                     substituteSSMParameter(
+            output = sequenceSubstitutor.perform(
+                     dateSubstitutor.perform(
+                     timestampSubstitutor.perform(
+                     hourlyTimestampSubstitutor.perform(
+                     startupTimestampSubstitutor.perform(
+                     pidSubstitutor.perform(
+                     hostnameSubstitutor.perform(
+                     syspropSubstitutor.perform(
+                     envarSubstitutor.perform(
+                     awsAccountIdSubstitutor.perform(
+                     ec2InstanceIdSubstitutor.perform(
+                     ec2RegionSubstitutor.perform(
+                     ssmSubstitutor.perform(
                      input)))))))))))));
         }
         while (! output.equals(input));
         return output;
     }
 
+//----------------------------------------------------------------------------
+//  Substitutors
+//----------------------------------------------------------------------------
 
     /**
-     *  This function handles the actual replacement; it should only be called
-     *  if you know that there's a valud substitution.
+     *  Contains all of the boilerplate for various substitutions.
+     *  <p>
+     *  Construct with either the full tag ("{foo}") or (for tags with embedded
+     *  keys) the leading part of the tag ("{foo:").
+     *  <p>
+     *  The subclass must implement {@link #retrieveValue}, which is called with
+     *  any embedded tag or default (either or both of which may be null). It is
+     *  responsible for retrieving the value. If unable to retrieve the value,
+     *  it may return the default.
+     *  <p>
+     *  The subclass can also choose to cache retrieved values, to handle the
+     *  (unlikely) case where the same substitution is performed multiple times.
+     *  The cache variable is stored in the superclass (to avoid boilerplate),
+     *  and the subclass is responsible for setting it.
      */
-    private String substitute(String input, int start, String tag, String value)
+    private abstract class AbstractSubstitutor
     {
-        return input.substring(0, start) + value + input.substring(start + tag.length(), input.length());
+        private String[] tags;
+        protected String cachedValue;
+
+        public AbstractSubstitutor(String... tags)
+        {
+            this.tags = tags;
+        }
+
+        public String perform(String input)
+        {
+            if (input == null)
+                return "";
+
+            for (String tag : tags)
+            {
+                input = trySubstitution(input, tag);
+            }
+
+            return input;
+        }
+
+        private String trySubstitution(String input, String tag)
+        {
+            int start = input.indexOf(tag);
+            if (start < 0)
+                return input;
+
+            int end = input.indexOf("}", start) + 1;
+
+            String value = cachedValue;
+            if (value == null)
+            {
+                String actualTag = input.substring(start, end);
+                String embeddedKey = actualTag.replace(tag, "").replace("}", "");
+                String defaultValue = null;
+                int splitPoint = embeddedKey.indexOf(':');
+                if (splitPoint >= 0)
+                {
+                    defaultValue = embeddedKey.substring(splitPoint + 1);
+                    embeddedKey = embeddedKey.substring(0, splitPoint);
+                }
+
+                value = retrieveValue(embeddedKey);
+                if ((value == null) || value.isEmpty())
+                    value = defaultValue;
+            }
+
+            if ((value == null) || value.isEmpty())
+                return input;
+
+            return input.substring(0, start) + value + input.substring(end);
+        }
+
+        protected String retrieveValue(String embeddedKey)
+        {
+            // this won't be called if cachedValue is null
+            return cachedValue;
+        }
     }
 
-    // all of the following methods take the input string as their last parameter
-    // so that they can be chained together
 
-    private String substitute(String tag, String value, String input)
+    private class SequenceSubstitutor
+    extends AbstractSubstitutor
     {
-        if (input == null)
-            return "";
-
-        if (value == null)
-            return input;
-
-        int index = input.indexOf(tag);
-        if (index < 0)
-            return input;
-
-        return substitute(input, index, tag, value);
+        public SequenceSubstitutor(int sequence)
+        {
+            super("{sequence}");
+            cachedValue = String.valueOf(sequence);
+        }
     }
 
 
-    private String substituteDate(String input)
+    private class DateSubstitutor
+    extends AbstractSubstitutor
     {
-        String tag = "{date}";
+        private Date now;
 
-        int index = input.indexOf(tag);
-        if (index < 0)
-            return input;
+        public DateSubstitutor(Date now)
+        {
+            super("{date}");
+            this.now = now;
+        }
 
-        if (date == null)
+        @Override
+        protected String retrieveValue(String ignored)
         {
             SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd");
             formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-            date = formatter.format(currentDate);
+            cachedValue = formatter.format(now);
+            return cachedValue;
         }
-
-        return substitute(input, index, tag, date);
     }
 
 
-    private String substituteTimestamp(String input)
+    private class TimestampSubstitutor
+    extends AbstractSubstitutor
     {
-        String tag = "{timestamp}";
+        private Date now;
 
-        int index = input.indexOf(tag);
-        if (index < 0)
-            return input;
+        public TimestampSubstitutor(Date now)
+        {
+            super("{timestamp}");
+            this.now = now;
+        }
 
-        if (timestamp == null)
+        @Override
+        protected String retrieveValue(String ignored)
         {
             SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
             formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-            timestamp = formatter.format(currentDate);
+            cachedValue = formatter.format(now);
+            return cachedValue;
         }
-
-        return substitute(input, index, tag, timestamp);
     }
 
 
-    private String substituteHourlyTimestamp(String input)
+    private class HourlyTimestampSubstitutor
+    extends AbstractSubstitutor
     {
-        String tag = "{hourlyTimestamp}";
+        private Date now;
 
-        int index = input.indexOf(tag);
-        if (index < 0)
-            return input;
+        public HourlyTimestampSubstitutor(Date now)
+        {
+            super("{hourlyTimestamp}");
+            this.now = now;
+        }
 
-        if (hourlyTimestamp == null)
+        @Override
+        protected String retrieveValue(String ignored)
         {
             SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHH'0000'");
             formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-            hourlyTimestamp = formatter.format(currentDate);
+            cachedValue = formatter.format(now);
+            return cachedValue;
         }
-
-        return substitute(input, index, tag, hourlyTimestamp);
     }
 
 
-    private String substituteStartupTimestamp(String input)
+    private class StartupTimestampSubstitutor
+    extends AbstractSubstitutor
     {
-        String tag = "{startupTimestamp}";
+        private RuntimeMXBean runtimeMx;
 
-        int index = input.indexOf(tag);
-        if (index < 0)
-            return input;
+        public StartupTimestampSubstitutor(RuntimeMXBean runtimeMx)
+        {
+            super("{startupTimestamp}");
+            this.runtimeMx = runtimeMx;
+        }
 
-        if (startupTimestamp == null)
+        @Override
+        protected String retrieveValue(String ignored)
         {
             SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
             formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-            startupTimestamp = formatter.format(new Date(runtimeMx.getStartTime()));
+            cachedValue = formatter.format(new Date(runtimeMx.getStartTime()));
+            return cachedValue;
         }
-
-        return substitute(input, index, tag, startupTimestamp);
     }
 
 
-    private String substitutePid(String input)
+    private class PidSubstitutor
+    extends AbstractSubstitutor
     {
-        String tag = "{pid}";
+        private RuntimeMXBean runtimeMx;
 
-        int index = input.indexOf(tag);
-        if (index < 0)
-            return input;
+        public PidSubstitutor(RuntimeMXBean runtimeMx)
+        {
+            super("{pid}");
+            this.runtimeMx = runtimeMx;
+        }
 
-        if (pid == null)
+        @Override
+        protected String retrieveValue(String ignored)
         {
             String vmName = runtimeMx.getName();
-            pid = (vmName.indexOf('@') > 0)
-                ? vmName.substring(0, vmName.indexOf('@'))
-                : "unknown";
+            cachedValue = (vmName.indexOf('@') > 0)
+                        ? vmName.substring(0, vmName.indexOf('@'))
+                        : "unknown";
+            return cachedValue;
         }
-
-        return substitute(input, index, tag, pid);
     }
 
 
-    private String substituteHostname(String input)
+    private class HostnameSubstitutor
+    extends AbstractSubstitutor
     {
-        String tag = "{hostname}";
+        private RuntimeMXBean runtimeMx;
 
-        int index = input.indexOf(tag);
-        if (index < 0)
-            return input;
+        public HostnameSubstitutor(RuntimeMXBean runtimeMx)
+        {
+            super("{hostname}");
+            this.runtimeMx = runtimeMx;
+        }
 
-        if (hostname == null)
+        @Override
+        protected String retrieveValue(String ignored)
         {
             String vmName = runtimeMx.getName();
-            hostname = (vmName.indexOf('@') > 0)
-                     ? vmName.substring(vmName.indexOf('@') + 1, vmName.length())
-                     : "unknown";
+            cachedValue = (vmName.indexOf('@') > 0)
+                        ? vmName.substring(vmName.indexOf('@') + 1)
+                        : "unknown";
+            return cachedValue;
         }
-
-        return substitute(input, index, tag, hostname);
     }
 
 
-    private String substituteSysprop(String input)
+    private class SyspropSubstitutor
+    extends AbstractSubstitutor
     {
-        String rawPropName = extractPropName("sysprop", input);
-        if (rawPropName == null)
-            return input;
-
-        String[] parts = rawPropName.split(":");
-        String propValue = parts[0].length() == 0
-                         ? null
-                         : System.getProperty(parts[0]);
-        if ((propValue == null) && (parts.length == 2))
-            propValue = parts[1];
-
-        return substitute("{" + "sysprop" + ":" + rawPropName + "}", propValue, input);
-    }
-
-
-    private String substituteEnvar(String input)
-    {
-        String rawPropName = extractPropName("env", input);
-        if (rawPropName == null)
-            return input;
-
-        String[] parts = rawPropName.split(":");
-        String propValue = parts[0].length() == 0
-                         ? null
-                         : System.getenv(parts[0]);
-        if ((propValue == null) && (parts.length == 2))
-            propValue = parts[1];
-
-        return substitute("{" + "env" + ":" + rawPropName + "}", propValue, input);
-    }
-
-
-    private String substituteAwsAccountId(String input)
-    {
-        String tag = "{aws:accountId}";
-
-        int index = input.indexOf(tag);
-        if (index < 0)
-            return input;
-
-        if (accountId == null)
+        public SyspropSubstitutor()
         {
-            accountId = new AccountIdRetriever().invoke();
-            accountId = (accountId != null)
-                      ? accountId
-                      : "unknown-account";
+            super("{sysprop:");
         }
 
-        return substitute(input, index, tag, accountId);
-    }
-
-
-    /**
-     *  Substitutes the EC2 instance ID. If not running on EC2 we won't be able
-     *  to retrieve instance metadata (and it takes a long time to learn that,
-     *  waiting for a timeout) so this isn't handled as a "simple" substitution.
-     */
-    private String substituteEC2InstanceId(String input)
-    {
-        String tag = "{ec2:instanceId}";
-        int index = input.indexOf(tag);
-        if (index < 0)
+        @Override
+        protected String retrieveValue(String name)
         {
-            tag = "{instanceId}";
-            index = input.indexOf(tag);
-            if (index < 0)
-                return input;
-        }
+            if ((name == null) || name.isEmpty())
+                return null;
 
-        if (instanceId == null)
+            return System.getProperty(name);
+        }
+    }
+
+
+    private class EnvarSubstitutor
+    extends AbstractSubstitutor
+    {
+        public EnvarSubstitutor()
         {
-            instanceId = EC2MetadataUtils.getInstanceId();
-            if ((instanceId == null) || (instanceId.length() == 0))
-            {
-                instanceId = "unknown-instance";
-            }
+            super("{env:");
         }
 
-        return substitute(input, index, tag, instanceId);
+        @Override
+        protected String retrieveValue(String name)
+        {
+            if ((name == null) || name.isEmpty())
+                return null;
+
+            return System.getenv(name);
+        }
     }
 
 
-    /**
-     *  Substitutes the EC2 regsion. If not running on EC2 we won't be able
-     *  to retrieve instance metadata (and it takes a long time to learn that,
-     *  waiting for a timeout) so this isn't handled as a "simple" substitution.
-     */
-    private String substituteEC2Region(String input)
+    private class AwsAccountIdSubstitutor
+    extends AbstractSubstitutor
     {
-        String tag = "{ec2:region}";
-        int index = input.indexOf(tag);
-        if (index < 0)
-            return input;
+        public AwsAccountIdSubstitutor()
+        {
+            super("{aws:accountId}");
+        }
 
-        String region = EC2MetadataUtils.getEC2InstanceRegion();
-        if ((region == null) || (region.length() == 0))
-            return input;
-
-        return substitute(tag, region, input);
+        @Override
+        protected String retrieveValue(String ignored)
+        {
+            cachedValue = new AccountIdRetriever().invoke();
+            return cachedValue;
+        }
     }
 
 
-    private String substituteSSMParameter(String input)
+    private class EC2InstanceIdSubstitutor
+    extends AbstractSubstitutor
     {
-        String rawPropName = extractPropName("ssm", input);
-        if (rawPropName == null)
-            return input;
+        public EC2InstanceIdSubstitutor()
+        {
+            super("{ec2:instanceId}", "{instanceId}");
+        }
 
-        String[] parts = rawPropName.split(":");
-        String propValue = parts[0].length() == 0
-                         ? null
-                         : new ParameterStoreRetriever().invoke(parts[0]);
-        if ((propValue == null) && (parts.length == 2))
-            propValue = parts[1];
-
-        return substitute("{" + "ssm" + ":" + rawPropName + "}", propValue, input);
+        @Override
+        protected String retrieveValue(String ignored)
+        {
+            cachedValue = new EC2InstanceIdRetriever().invoke();
+            return cachedValue;
+        }
     }
 
 
-    /**
-     *  Extracts the property name for a colon-delimited tag, null if unable to
-     *  do so.
-     */
-    private String extractPropName(String tagType, String input)
+    private class EC2RegionSubstitutor
+    extends AbstractSubstitutor
     {
-        String tagForm = "{" + tagType + ":";
-        int index1 = input.indexOf(tagForm);
-        if (index1 < 0)
-            return null;
+        public EC2RegionSubstitutor()
+        {
+            super("{ec2:region}");
+        }
 
-        int index2 = input.indexOf("}", index1);
-        if (index2 < 0)
-            return null;
+        @Override
+        protected String retrieveValue(String ignored)
+        {
+            cachedValue = new EC2RegionRetriever().invoke();
+            return cachedValue;
+        }
+    }
 
-        return input.substring(index1 + tagForm.length(), index2);
+
+    private class SSMSubstitutor
+    extends AbstractSubstitutor
+    {
+        public SSMSubstitutor()
+        {
+            super("{ssm:");
+        }
+
+        @Override
+        protected String retrieveValue(String propName)
+        {
+            return new ParameterStoreRetriever().invoke(propName);
+        }
     }
 }

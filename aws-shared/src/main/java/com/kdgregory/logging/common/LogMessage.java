@@ -14,7 +14,7 @@
 
 package com.kdgregory.logging.common;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 
 /**
@@ -31,22 +31,12 @@ implements Comparable<LogMessage>
 
     /**
      *  Constructs an instance from a simple string.
-     *
-     *  @throws RuntimeException if UTF-8 encoding is not supported by the JVM (which
-     *          should never happen).
      */
     public LogMessage(long timestamp, String message)
     {
         this.timestamp = timestamp;
         this.message = message;
-        try
-        {
-            this.messageBytes = message.getBytes("UTF-8");
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException("UnsupportedEncodingException when converting to UTF-8");
-        }
+        this.messageBytes = message.getBytes(StandardCharsets.UTF_8);
     }
 
 

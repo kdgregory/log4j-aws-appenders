@@ -187,6 +187,8 @@ public class SNSLogWriterIntegrationTest
 
         assertEquals("number of messages", numMessages, messages.size());
         testHelper.assertMessageContent(messages, DEFAULT_SUBJECT);
+
+        testHelper.deleteTopicAndQueue();
     }
 
 
@@ -211,6 +213,8 @@ public class SNSLogWriterIntegrationTest
 
         assertEquals("second batch of messages, size", numMessages, messages.size());
         testHelper.assertMessageContent(messages, secondSubject);
+
+        testHelper.deleteTopicAndQueue();
     }
 
 
@@ -230,6 +234,8 @@ public class SNSLogWriterIntegrationTest
 
         assertNotNull("factory method was called", factoryClient);
         assertSame("factory-created client used by writer", factoryClient, ClassUtil.getFieldValue(writer, "client", AmazonSNS.class));
+
+        testHelper.deleteTopicAndQueue();
     }
 
 
@@ -253,6 +259,8 @@ public class SNSLogWriterIntegrationTest
 
         assertNull("topic does not exist in default region",
                    (new SNSTestHelper(testHelper, helperSNSclient, helperSQSclient)).lookupTopic());
+
+        testHelper.deleteTopicAndQueue();
     }
 
 
@@ -278,5 +286,7 @@ public class SNSLogWriterIntegrationTest
 
         assertNull("topic does not exist in default region",
                    (new SNSTestHelper(testHelper, helperSNSclient, helperSQSclient)).lookupTopic());
+
+        testHelper.deleteTopicAndQueue();
     }
 }

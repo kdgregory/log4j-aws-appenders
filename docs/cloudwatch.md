@@ -17,7 +17,7 @@ Name                | Description
 `logGroup`          | Name of the CloudWatch log group where messages are sent; may use [substitutions](substitutions.md). If this group doesn't exist it will be created. No default.
 `logStream`         | Name of the CloudWatch log stream where messages are sent; may use [substitutions](substitutions.md). If this stream doesn't exist it will be created. Defaults to `{startupTimestamp}`.
 `retentionPeriod`   | (optional) Specifies a non-default retention period for created CloudWatch log groups.
-`dedicatedWriter`   | If `true`, the appender assumes that it will be the only writer to the log stream, and will not retrieve a sequence token before each write. Defaults to `false` for legacy behavior. See below for more information.
+`dedicatedWriter`   | If `true`, the appender assumes that it will be the only writer to the log stream, and will not retrieve a sequence token before each write. Defaults to `false` for legacy behavior. See [below](#invalidsequencetokenexception-and-logstream-throttling) for more information.
 `rotationMode`      | Controls whether auto-rotation is enabled. Values are `none`, `count`, `interval`, `hourly`, and `daily`; default is `none`. See below for more information.
 `rotationInterval`  | Used only for `count` and `interval` rotation modes: for the former, the number of messages, and for the latter, the number of milliseconds between rotations.
 `sequence`          | A value that is incremented each time the stream is rotated. Defaults to 0.
@@ -42,21 +42,6 @@ log4j.appender.cloudwatch.layout.ConversionPattern=%d [%t] %-5p - %c - %m%n
 ```
 
 
-### Example: Logback
-
-```
-<appender name="CLOUDWATCH" class="com.kdgregory.logback.aws.CloudWatchAppender">
-    <logGroup>{env:APP_NAME}-{sysprop:deployment:dev}</logGroup>
-    <logStream>{hostname}-{startupTimestamp}-{sequence}</logStream>
-    <rotationMode>daily</rotationMode>
-    <dedicatedWriter>true</dedicatedWriter>
-    <layout class="ch.qos.logback.classic.PatternLayout">
-        <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level - %logger{36} - %msg%n</pattern>
-    </layout>
-</appender>
-```
-
-
 ### Example: Log4J2
 
 Note that this example uses Log4J [lookups](https://logging.apache.org/log4j/2.x/manual/lookups.html#EnvironmentLookup)
@@ -73,9 +58,24 @@ in addition to library-provided substitutions.
 ```
 
 
+### Example: Logback
+
+```
+<appender name="CLOUDWATCH" class="com.kdgregory.logback.aws.CloudWatchAppender">
+    <logGroup>{env:APP_NAME}-{sysprop:deployment:dev}</logGroup>
+    <logStream>{hostname}-{startupTimestamp}-{sequence}</logStream>
+    <rotationMode>daily</rotationMode>
+    <dedicatedWriter>true</dedicatedWriter>
+    <layout class="ch.qos.logback.classic.PatternLayout">
+        <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level - %logger{36} - %msg%n</pattern>
+    </layout>
+</appender>
+```
+
+
 ## Permissions
 
-To use this appender you will need to grant the following IAM permissions:
+To use this appender you need the following IAM permissions:
 
 * `logs:CreateLogGroup`
 * `logs:CreateLogStream`
@@ -99,10 +99,10 @@ a single log group.
 
 You can specify an optional retention period for a newly-created log group. CloudWatch will
 automatically delete any older messages. Beware, however, that CloudWatch does _not_ delete
-the log streams that held those messages; you may end up with a lot of empty streams (to clean
-up those streams, you can use [this Lambda](https://github.com/kdgregory/aws-misc/tree/master/lambda/cloudwatch-log-cleanup)).
+the log streams that held those messages; you may end up with a lot of empty streams (to
+delete those streams, you use [this Lambda](https://github.com/kdgregory/aws-misc/tree/master/lambda/cloudwatch-log-cleanup)).
 
-Also be aware that you can't pick any arbitrary number of days for this parameter: the
+Also be aware that you can't pick an arbitrary number of days for this parameter: the
 [CloudWatch API doc](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutRetentionPolicy.html)
 lists allowable values, and the appender will check your configured value against the
 list. If you pick an incorrect value, an error will be logged and the setting will be
@@ -118,7 +118,7 @@ While CloudWatch allows you to select arbitrary date ranges when viewing log mes
 to drill down to events if there's a separate log stream organized by time range. The `rotationMode`
 parameter, in concert with `rotationInterval`, controls how the appender switches to a new stream:
 
-* `none`
+* `none` (default)
 
   Automatic log rotation is disabled, although you can explicitly call the appender's `rotate()` method.
 
@@ -156,10 +156,10 @@ get this token from either the response to the previous call to `PutLogEvents`, 
 calls per second. However, if you have multiple appenders writing to the same stream, it's the
 only way to ensure that you get the latest token.
 
-The original (pre-2.2.2) implementation of the appender would always perform this two step
-(describe then write) process, because it assumed that another appender might be writing to
-the same log stream. However, if you _did_ give each appender its own stream, this was
-unnecessary, and could result in throttling, especially when deploying a large cluster.
+The original (pre-2.2.2) implementation of the appender would always call `DescribeLogStreams`,
+because it assumed that another appender might be writing to the same log stream. However, if
+you _did_ give each appender its own stream, this was unnecessary, and could result in throttling,
+especially when deploying a large cluster.
 
 To resolve that problem, the `dedicatedWriter` configuration parameter was introduced in the
 2.2.2 release. If set to `true`, it tells the appender to retrieve the sequence token from the
@@ -172,8 +172,8 @@ If you do have multiple writers, however, the two-step process is still necessar
 the possibility of a race condition: if two appenders write batches at the same time they might
 both get the same sequence token, but only one of the writes will succeed. As with any batch-level
 error, the appender will try again; there will be no message loss unless the error happens so
-frequently that the appender fills its message queue (which is extremely unlikely, as any given
-process is likely to win the race).
+frequently that the appender fills its message queue (which is extremely unlikely, as the chance
+of winning this race is equally likely for all appenders).
 
 In releases prior to 2.0.1, the appender would report this situation as an error, which was
 distracting. Retries are now transparent, unless they happen repeatedly, in which case they'll

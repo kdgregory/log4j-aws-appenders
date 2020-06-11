@@ -19,7 +19,7 @@ package com.kdgregory.logging.aws.internal.retrievers;
  *  the ID for any reason (generally a missing library or invalid credentials).
  */
 public class AccountIdRetriever
-extends AbstractRetriever
+extends AbstractReflectionBasedRetriever
 {
     public AccountIdRetriever()
     {

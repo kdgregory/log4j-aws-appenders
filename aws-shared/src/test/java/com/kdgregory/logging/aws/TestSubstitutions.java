@@ -129,35 +129,38 @@ public class TestSubstitutions
     }
 
 
-    // this test assumes that you're running on Linux and have the HOME variable
-    // defined; if not, feel free to @Ignore
+    // this test assumes that you're running on Linux and have the HOME and USER
+    // variables defined; if not, feel free to @Ignore
     @Test
     public void testEnvar() throws Exception  {
         Substitutions subs = new Substitutions(TEST_DATE, 0);
 
         // happy paths
-        assertEquals(System.getenv("HOME"),     subs.perform("{env:HOME}"));
-        assertEquals("zippy",                   subs.perform("{env:frobulator:zippy}"));
+        assertEquals(System.getenv("HOME"),                         subs.perform("{env:HOME}"));
+        assertEquals("zippy",                                       subs.perform("{env:frobulator:zippy}"));
+        assertEquals(System.getenv("HOME")+System.getenv("USER"),   subs.perform("{env:HOME}{env:USER}"));
 
         // sad paths
-        assertEquals("{env:frobulator}",        subs.perform("{env:frobulator}"));
-        assertEquals("{env:frobulator:}",       subs.perform("{env:frobulator:}"));
+        assertEquals("{env:frobulator}",                            subs.perform("{env:frobulator}"));
+        assertEquals("{env:frobulator:}",                           subs.perform("{env:frobulator:}"));
 
         // this is probably not what the user wanted, but it's how defaults work
-        assertEquals("frobulator",              subs.perform("{env::frobulator}"));
+        assertEquals("frobulator",                                  subs.perform("{env::frobulator}"));
     }
 
 
     @Test
     public void testSysprop() throws Exception  {
-        // contains characters that would be removed for most destinations
-        String value = "this-is_/a test!";
-        System.setProperty("TestSubstitutions.testSysprop", value);
+        String value1 = "this is a test";
+        System.setProperty("TestSubstitutions.testSysprop-1", value1);
+        String value2 = "this is another test";
+        System.setProperty("TestSubstitutions.testSysprop-2", value2);
 
         Substitutions subs = new Substitutions(TEST_DATE, 0);
 
         // happy paths
-        assertEquals(value,                         subs.perform("{sysprop:TestSubstitutions.testSysprop}"));
+        assertEquals(value1,                        subs.perform("{sysprop:TestSubstitutions.testSysprop-1}"));
+        assertEquals(value1 + value2,               subs.perform("{sysprop:TestSubstitutions.testSysprop-1}{sysprop:TestSubstitutions.testSysprop-2}"));
         assertEquals("zippy",                       subs.perform("{sysprop:frobulator:zippy}"));
 
         // sad paths
@@ -199,6 +202,6 @@ public class TestSubstitutions
     {
         Substitutions subs = new Substitutions(TEST_DATE, 0);
 
-        assertEquals("2017052920170529", subs.perform("{date}{date}"));
+        assertEquals("x20170529x20170529x", subs.perform("x{date}x{date}x"));
     }
 }

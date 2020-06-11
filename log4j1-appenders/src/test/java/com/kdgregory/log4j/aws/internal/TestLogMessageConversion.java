@@ -22,11 +22,11 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.Priority;
 import org.apache.log4j.spi.LoggingEvent;
 
-import com.kdgregory.log4j.aws.internal.Utils;
 import com.kdgregory.logging.common.LogMessage;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 
 
 public class TestLogMessageConversion
@@ -62,10 +62,10 @@ public class TestLogMessageConversion
         // the default pattern appends a newline
         String expectedText = text + "\n";
 
-        assertEquals("timestmap",               timestamp,                      message.getTimestamp());
-        assertEquals("message",                 expectedText,                   message.getMessage());
-        assertArrayEquals("message as bytes",   expectedText.getBytes("UTF-8"), message.getBytes());
-        assertEquals("size",                    5,                              message.size());
+        assertEquals("timestmap",               timestamp,                                      message.getTimestamp());
+        assertEquals("message",                 expectedText,                                   message.getMessage());
+        assertArrayEquals("message as bytes",   expectedText.getBytes(StandardCharsets.UTF_8),  message.getBytes());
+        assertEquals("size",                    5,                                              message.size());
     }
 
 
@@ -81,10 +81,10 @@ public class TestLogMessageConversion
         // the default pattern appends a newline
         String expectedText = text + "\n";
 
-        assertEquals("timestmap",               timestamp,                      message.getTimestamp());
-        assertEquals("message",                 expectedText,                   message.getMessage());
-        assertArrayEquals("message as bytes",   expectedText.getBytes("UTF-8"), message.getBytes());
-        assertEquals("size",                    7,                              message.size());
+        assertEquals("timestmap",               timestamp,                                      message.getTimestamp());
+        assertEquals("message",                 expectedText,                                   message.getMessage());
+        assertArrayEquals("message as bytes",   expectedText.getBytes(StandardCharsets.UTF_8),  message.getBytes());
+        assertEquals("size",                    7,                                              message.size());
     }
 
 

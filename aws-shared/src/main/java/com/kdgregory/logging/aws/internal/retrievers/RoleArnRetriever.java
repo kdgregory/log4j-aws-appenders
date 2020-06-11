@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
  *  for any other reason (generally a missing library or invalid credentials).
  */
 public class RoleArnRetriever
-extends AbstractRetriever
+extends AbstractReflectionBasedRetriever
 {
     private Class<?> roleKlass;
 

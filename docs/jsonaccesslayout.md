@@ -174,7 +174,7 @@ is not present):
         "host": "localhost:8080"
     },
     "requestMethod": "GET",
-    "requestURI": "/logback-aws-appenders-webapp-2.1.0-SNAPSHOT/example",
+    "requestURI": "/logback-aws-appenders-webapp-2.1.0/example",
     "statusCode": 200,
     "tags": {
         "app-server": "example",

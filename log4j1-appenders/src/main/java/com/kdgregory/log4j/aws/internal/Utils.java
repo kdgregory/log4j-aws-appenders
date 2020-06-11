@@ -16,12 +16,12 @@ package com.kdgregory.log4j.aws.internal;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 
 import org.apache.log4j.Layout;
 import org.apache.log4j.spi.LoggingEvent;
 
 import com.kdgregory.logging.common.LogMessage;
+
 
 /**
  *  Utility classes for working with Log4J. These methods may get absorbed elsewhere.
@@ -32,7 +32,6 @@ public class Utils
      *  Transforms a Log4J loggingEvent into a LogMessage.
      *
      *  @throws RuntimeException if any error occurred during formatting or conversion.
-     *          Will include any root cause other than UnsupportedEncodingException.
      */
     public static LogMessage convertToLogMessage(LoggingEvent event, Layout layout)
     {
@@ -51,11 +50,6 @@ public class Utils
             out.close();
 
             return new LogMessage(event.getTimeStamp(), out.toString());
-        }
-        catch (UnsupportedEncodingException ex)
-        {
-            // this should never happen
-            throw new RuntimeException("UnsupportedEncodingException when converting to UTF-8");
         }
         catch (IOException ex)
         {

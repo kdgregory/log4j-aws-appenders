@@ -14,8 +14,8 @@
 
 package com.kdgregory.logging.aws.kinesis;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -77,17 +77,9 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
                            || "".equals(config.partitionKey)
                            || (null == config.partitionKey);
 
-        try
-        {
-            partitionKeyLength = randomPartitionKeys
-                               ? 8
-                               : config.partitionKey.getBytes("UTF-8").length;
-        }
-        catch (UnsupportedEncodingException ex)
-        {
-            // this should never happen; if it does the appender can't do its job
-            throw new RuntimeException("JVM does not support UTF-8 encoding");
-        }
+        partitionKeyLength = randomPartitionKeys
+                           ? 8
+                           : config.partitionKey.getBytes(StandardCharsets.UTF_8).length;
 
         stats.setActualStreamName(config.streamName);
     }

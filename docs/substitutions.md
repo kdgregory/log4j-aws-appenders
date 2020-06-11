@@ -1,7 +1,8 @@
-# Substitution Variables
+# Substitutions
 
-Some configuration parameters (such as CloudWatch log group or Kinesis stream) may use substitution
-variables from the table below. To use, enclose the variable in braces (eg: `MyLog-{date}`).
+Some configuration parameters (such as CloudWatch log group or Kinesis stream name) may use
+substitution variables from the table below. To use, enclose the variable in braces (eg:
+`MyLog-{date}`).
 
 
 Variable            | Description
@@ -13,13 +14,13 @@ Variable            | Description
 `sequence`          | A sequence number that's incremented each time a log is rotated (only useful with appenders that rotate logs)
 `pid`               | Process ID (see below)
 `hostname`          | Hostname (see below)
-`env:XXX`           | Environment variable `XXX`; see below for complete syntax.
-`sysprop:XXX`       | System property `XXX`; see below for complete syntax.
+`env:XXX`           | Environment variable `XXX`; see [below](#default-values) for complete syntax.
+`sysprop:XXX`       | System property `XXX`; see [below](#default-values) for complete syntax.
 `instanceId`        | _Deprecated_: use `ec2:instanceId`
 `aws:accountId`     | AWS account ID. Useful for cross-account logging (eg, as part of a CloudWatch log stream name)
 `ec2:instanceId`    | EC2 instance ID; see below.
 `ec2:region`        | Region where the current instance is running; see below.
-`ssm:XXX`           | Parameter Store value `XXX`; see below.
+`ssm:XXX`           | Parameter Store value `XXX`; see [below](#default-values) for complete syntax.
 
 If unable to replace a substitution variable, the tag will be left in place. This could happen due
 to a incorrect or unclosed tag, or an unresolvable system property or environment variable.
@@ -27,11 +28,6 @@ to a incorrect or unclosed tag, or an unresolvable system property or environmen
 The `pid` and `hostname` values are parsed from `RuntimeMxBean.getName()` and may not be available
 on all JVMs (in particular non-OpenJDK JVMs may use a different format). When running in a Docker
 container, the container ID is reported as the hostname.
-
-The `env` and `sysprop` substitutions have two forms: `env:VARNAME` (or `sysprop:VARNAME`) and
-`env:VARNAME:DEFAULT` (ditto for sysprops). For example, if the environment variable `FOO` is
-undefined, then the using first form (`env:FOO`) results in `{env:FOO}`, while the second form
-(`env:FOO:bar`) results in `bar`.
 
 The `aws` substitutions connect to AWS to retrieve information. If you do not have network
 connectivity or properly configured credentials these will fail. You must also have the relevant
@@ -43,14 +39,20 @@ request to the (non-existent) metadata endpoint.
 
 The `ssm` substitutions retrieve their values from the [Systems Manager Parameter
 Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html).
-Like the `env` and `sysprop` substitutions, these have two forms: `ssm:XXX` will fail
-if the parameter named `XXX` doesn't exist, returning the un-substituted key, while
-`ssm:XXX:YYY` returns `YYY` if the parameter doesn't exist.
 
-> Caveats: to use SSM substitutions, you must be using at least version 1.11.63 of the SDK (earlier
-  versions did not support parameter store). All parameters must be defined in the "current"
-  region (even if you've configured your appender to write to a different region). And you
-  can't retrieve the values of secure string parameters.
+* To use SSM substitutions, you must have the `ssm:GetParameter` IAM privilege, and use
+  at least version 1.11.63 of the SDK (earlier versions did not support parameter store).
+* All parameters must exist in the "current" region, as returned by the default region
+  provider, even if you've configured your appender to write to a different region.
+* You can't retrieve the values of secure string parameters.
+
+
+## Default Values
+
+The `env`, `sysprop`, and `ssm` substitutions have two forms. The first just specifies a
+variable name (eg: `env:SOMETHING`); it will fail if the `SOMETHING` environment variable
+doesn't exist or is empty. The second specifies a default value (eg: `env:SOMETHING:bargle`);
+if the `SOMETHING` variable is empty, it returns `bargle`.
 
 
 ## Log4J2 Support

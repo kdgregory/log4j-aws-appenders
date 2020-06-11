@@ -1,0 +1,21 @@
+<Configuration status="warn" packages="com.kdgregory.log4j2.testhelpers">
+
+    <Appenders>
+        <TestableCloudWatchAppender name="TEST">
+            <PatternLayout pattern="%m" />
+            <logGroup>argle</logGroup>
+            <logStream>bargle-{sequence}</logStream>
+            <rotationMode>count</rotationMode>
+            <rotationInterval>3000</rotationInterval>
+        </TestableCloudWatchAppender>
+    </Appenders>
+
+    <Loggers>
+        <Root level="off">
+        </Root>
+        <Logger name="com.kdgregory.log4j2.aws.TestCloudWatchAppender" level="debug">
+            <AppenderRef ref="TEST" />
+        </Logger>
+    </Loggers>
+
+</Configuration>

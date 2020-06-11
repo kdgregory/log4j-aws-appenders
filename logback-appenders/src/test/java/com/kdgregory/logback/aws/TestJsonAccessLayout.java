@@ -14,6 +14,7 @@
 
 package com.kdgregory.logback.aws;
 
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -66,7 +67,7 @@ public class TestJsonAccessLayout
     private void constructMocks(final String requestUri, final String queryString, final String responseContent, String... headers)
     throws Exception
     {
-        final byte[] responseBytes = responseContent.getBytes("UTF-8");
+        final byte[] responseBytes = responseContent.getBytes(StandardCharsets.UTF_8);
 
         request = new MockHttpServletRequest(EXPECTED_REQUEST_METHOD, requestUri);
         response = new MockHttpServletResponse();
@@ -153,7 +154,7 @@ public class TestJsonAccessLayout
         DomAsserts.assertEquals("protocol",     "HTTP/1.1",             dom, "/data/protocol");
         DomAsserts.assertEquals("status code",  "200",                  dom, "/data/statusCode");
 
-        int expectedContentLength = content.getBytes("UTF-8").length;
+        int expectedContentLength = content.getBytes(StandardCharsets.UTF_8).length;
         int actualContentLength = new XPathWrapper("/data/bytesSent").evaluateAsNumber(dom).intValue();
         assertEquals("content length", expectedContentLength, actualContentLength);
 

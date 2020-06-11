@@ -125,6 +125,7 @@ extends AbstractKinesisAppenderIntegrationTest
 
     @BeforeClass
     public static void beforeClass()
+    throws Exception
     {
         AbstractKinesisAppenderIntegrationTest.beforeClass();
     }
@@ -133,6 +134,7 @@ extends AbstractKinesisAppenderIntegrationTest
     @After
     @Override
     public void tearDown()
+    throws Exception
     {
         super.tearDown();
         MDC.clear();
@@ -141,6 +143,7 @@ extends AbstractKinesisAppenderIntegrationTest
 
     @AfterClass
     public static void afterClass()
+    throws Exception
     {
         AbstractKinesisAppenderIntegrationTest.afterClass();
     }

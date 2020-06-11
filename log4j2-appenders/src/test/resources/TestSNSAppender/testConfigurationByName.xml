@@ -1,7 +1,7 @@
 <Configuration status="warn" packages="com.kdgregory.log4j2.testhelpers">
 
     <Appenders>
-        <TestableSNSAppender name="SNS">
+        <TestableSNSAppender name="TEST">
             <PatternLayout pattern="%m" />
             <topicName>example</topicName>
             <subject>This is a test</subject>
@@ -21,7 +21,7 @@
         <Root level="off">
         </Root>
         <Logger name="com.kdgregory.log4j2.aws.TestSNSAppender" level="debug">
-            <AppenderRef ref="SNS" />
+            <AppenderRef ref="TEST" />
         </Logger>
     </Loggers>
 

@@ -129,6 +129,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
 
     @BeforeClass
     public static void beforeClass()
+    throws Exception
     {
         AbstractCloudWatchAppenderIntegrationTest.beforeClass();
     }
@@ -137,6 +138,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
     @After
     @Override
     public void tearDown()
+    throws Exception
     {
         super.tearDown();
         MDC.clear();
@@ -145,6 +147,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
 
     @AfterClass
     public static void afterClass()
+    throws Exception
     {
         AbstractCloudWatchAppenderIntegrationTest.afterClass();
     }

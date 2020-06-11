@@ -14,12 +14,11 @@
 
 package com.kdgregory.logging.common;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
-
-import com.kdgregory.logging.common.LogMessage;
 
 
 public class TestLogMessage
@@ -32,10 +31,10 @@ public class TestLogMessage
 
         LogMessage message = new LogMessage(timestamp, text);
 
-        assertEquals("timestmap",               timestamp,              message.getTimestamp());
-        assertEquals("message",                 text,                   message.getMessage());
-        assertArrayEquals("message as bytes",   text.getBytes("UTF-8"), message.getBytes());
-        assertEquals("size",                    4,                      message.size());
+        assertEquals("timestmap",               timestamp,                              message.getTimestamp());
+        assertEquals("message",                 text,                                   message.getMessage());
+        assertArrayEquals("message as bytes",   text.getBytes(StandardCharsets.UTF_8),  message.getBytes());
+        assertEquals("size",                    4,                                      message.size());
     }
 
 
@@ -47,10 +46,10 @@ public class TestLogMessage
 
         LogMessage message = new LogMessage(timestamp, text);
 
-        assertEquals("timestmap",               timestamp,              message.getTimestamp());
-        assertEquals("message",                 text,                   message.getMessage());
-        assertArrayEquals("message as bytes",   text.getBytes("UTF-8"), message.getBytes());
-        assertEquals("size",                    6,                      message.size());
+        assertEquals("timestmap",               timestamp,                              message.getTimestamp());
+        assertEquals("message",                 text,                                   message.getMessage());
+        assertArrayEquals("message as bytes",   text.getBytes(StandardCharsets.UTF_8),  message.getBytes());
+        assertEquals("size",                    6,                                      message.size());
     }
 
 

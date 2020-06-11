@@ -160,7 +160,7 @@ implements ClientFactory<ClientType>
     {
         Object stsClient = new BuilderClientFactory<>(Object.class, "com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder", null, null, logger)
                            .createClient();
-        
+
         String roleArn = new RoleArnRetriever().invoke(assumedRole);
 
         // implementation note: there's no requirement for uniqueness on the role session

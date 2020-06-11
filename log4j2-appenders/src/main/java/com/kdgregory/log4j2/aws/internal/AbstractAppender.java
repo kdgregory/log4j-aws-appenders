@@ -104,7 +104,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
     // this is provided to us by subclass
 
     protected AppenderConfigType config;
-    
+
     // character set for handling header/footer; extracted from layout if possible
     protected Charset layoutCharset = StandardCharsets.UTF_8;
 
@@ -156,7 +156,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
         }
 
         rotationInterval = config.getRotationInterval();
-        
+
         Layout<?> layout = config.getLayout();
         if (layout instanceof StringLayout)
         {

@@ -1,6 +1,6 @@
 # Change History
 
-## 2.4.0 (TBD)
+## 2.4.0 (2020-06-13)
 
 * Allow substitutions to retrieve values from the Systems Manager
   Parameter Store.

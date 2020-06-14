@@ -87,6 +87,10 @@ The minimum supported dependency versions are:
   will be used to create service clients; if not, the default client constructors
   are used. For more information, see the [FAQ](FAQ.md#whats-with-client-builders-vs-contructors).
 
+  **Note:** this library does not support the AWS SDK for Java 2.0. If you
+  use that SDK, you will _also_ need to include the JARs for the 1.x SDK to
+  support this library.
+
 I have made an intentional effort to limit dependencies to the bare minimum. This
 has in some cases meant that I write internal implementations for functions that
 are found in common libraries.

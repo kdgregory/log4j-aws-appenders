@@ -329,7 +329,7 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterStatisti
 
         return new SNSWriterConfig(
             actualTopicName, actualTopicArn, actualSubject, config.isAutoCreate(),
-            config.getDiscardThreshold(), discardAction,
+            true, config.getDiscardThreshold(), discardAction,
             config.getClientFactory(), config.getAssumedRole(), config.getClientRegion(), config.getClientEndpoint());
 
     }

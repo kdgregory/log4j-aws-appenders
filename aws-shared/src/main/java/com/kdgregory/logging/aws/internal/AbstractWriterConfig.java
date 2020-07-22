@@ -21,6 +21,7 @@ import com.kdgregory.logging.common.util.DiscardAction;
  */
 public class AbstractWriterConfig
 {
+    public volatile boolean discardLargeMessages;
     public volatile long batchDelay;
     public volatile int discardThreshold;
     public volatile DiscardAction discardAction;
@@ -30,6 +31,8 @@ public class AbstractWriterConfig
     public String clientEndpoint;
 
     /**
+     *  @param discardLargeMessages If true, messages that are too large for the service
+     *                              will be discarded; if false, they will be truncated.
      *  @param batchDelay           Number of milliseconds to wait after receiving first
      *                              message in batch. May be updated while running.
      *  @param discardThreshold     Maximum number of messages to retain if unable to send.
@@ -40,9 +43,10 @@ public class AbstractWriterConfig
      *  @param clientEndpoint       Optional: explicit endpoint for client (only used with constructors).
      */
     public AbstractWriterConfig(
-        long batchDelay, int discardThreshold, DiscardAction discardAction,
+        boolean discardLargeMessages, long batchDelay, int discardThreshold, DiscardAction discardAction,
         String clientFactoryMethod, String assumedRole, String clientRegion, String clientEndpoint)
     {
+        this.discardLargeMessages = discardLargeMessages;
         this.batchDelay = batchDelay;
         this.discardThreshold = discardThreshold;
         this.discardAction = discardAction;

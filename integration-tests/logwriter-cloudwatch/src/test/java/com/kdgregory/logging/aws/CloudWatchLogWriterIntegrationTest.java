@@ -119,7 +119,7 @@ public class CloudWatchLogWriterIntegrationTest
      */
     private CloudWatchWriterConfig defaultConfig()
     {
-        return new CloudWatchWriterConfig(logGroupName, logStreamName, null, false, 250, 10000, DiscardAction.oldest, null, null, null, null);
+        return new CloudWatchWriterConfig(logGroupName, logStreamName, null, false, true, 250, 10000, DiscardAction.oldest, null, null, null, null);
     }
 
 

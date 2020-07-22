@@ -99,6 +99,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
             false,                      // autoCreate
             0,                          // shardCount
             null,                       // retentionPeriod
+            true,                       // discardLargeMessages
             100,                        // batchDelay
             10000,                      // discardThreshold
             DiscardAction.oldest,       // discardAction
@@ -137,6 +138,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
                 true,                                   // autoCreate
                 3,                                      // shardCount
                 48,                                     // retentionPeriod
+                true,                                   // discardLargeMessages
                 123,                                    // batchDelay
                 456,                                    // discardThreshold
                 DiscardAction.newest,                   // discardAction
@@ -150,6 +152,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertTrue("auto-create",                                                               config.autoCreate);
         assertEquals("shard count",                         3,                                  config.shardCount);
         assertEquals("retention period",                    Integer.valueOf(48),                config.retentionPeriod);
+        assertTrue("discard large messages",                                                    config.discardLargeMessages);
         assertEquals("factory method",                      "com.example.factory.Method",       config.clientFactoryMethod);
         assertEquals("assumed role",                        "SomeRole",                         config.assumedRole);
         assertEquals("client region",                       "us-west-1",                        config.clientRegion);

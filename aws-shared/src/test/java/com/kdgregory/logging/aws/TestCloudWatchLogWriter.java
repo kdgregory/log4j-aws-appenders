@@ -90,6 +90,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             "bargle",               // actualLogStream
             null,                   // retentionPeriod
             false,                  // dedicatedWriter
+            true,                   // discardLargeMessages
             100,                    // batchDelay -- short enough to keep tests fast, long enough that we can write a lot of messages
             10000,                  // discardThreshold
             DiscardAction.oldest,   // discardAction
@@ -125,6 +126,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
                 "bar",                              // actualLogStream
                 1,                                  // retentionPeriod
                 true,                               // dedicatedWriter
+                true,                               // discardLargeMessages
                 123,                                // batchDelay
                 456,                                // discardThreshold
                 DiscardAction.newest,               // discardAction
@@ -136,7 +138,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("log group name",                          "foo",                          config.logGroupName);
         assertEquals("log stream name",                         "bar",                          config.logStreamName);
         assertEquals("retention period",                        Integer.valueOf(1),             config.retentionPeriod);
-        assertEquals("dedicated stream",                        true,                           config.dedicatedWriter);
+        assertTrue("dedicated stream",                                                          config.dedicatedWriter);
+        assertTrue("discard large messages",                                                    config.discardLargeMessages);
         assertEquals("factory method",                          "com.example.factory.Method",   config.clientFactoryMethod);
         assertEquals("assumed role",                            "SomeRole",                     config.assumedRole);
         assertEquals("client region",                           "us-west-1",                    config.clientRegion);

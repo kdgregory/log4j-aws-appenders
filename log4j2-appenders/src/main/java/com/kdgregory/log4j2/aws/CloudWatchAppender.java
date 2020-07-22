@@ -446,9 +446,8 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
         String actualLogStream = subs.perform(l4jsubs.replace(config.getLogStream()));
 
         return new CloudWatchWriterConfig(
-            actualLogGroup, actualLogStream, retentionPeriod,
-            config.isDedicatedWriter(), config.getBatchDelay(),
-            config.getDiscardThreshold(), discardAction,
+            actualLogGroup, actualLogStream, retentionPeriod, config.isDedicatedWriter(),
+            true, config.getBatchDelay(), config.getDiscardThreshold(), discardAction,
             config.getClientFactory(), config.getAssumedRole(), config.getClientRegion(), config.getClientEndpoint());
     }
 }

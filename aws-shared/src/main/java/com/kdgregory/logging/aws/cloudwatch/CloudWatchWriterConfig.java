@@ -34,6 +34,8 @@ extends AbstractWriterConfig
      *  @param actualLogStream      Name of the log stream, with all substitutions applied.
      *  @param retentionPeriod      A non-default retention period to use when creating log group.
      *  @param dedicatedWriter      Indicates whether the stream will only be written by this writer.
+     *  @param discardLargeMessages If true, messages that are too large for the service
+     *                              will be discarded; if false, they will be truncated.
      *  @param batchDelay           Number of milliseconds to wait after receiving first
      *                              message in batch.
      *  @param discardThreshold     Maximum number of messages to retain if unable to send.
@@ -45,10 +47,10 @@ extends AbstractWriterConfig
      */
     public CloudWatchWriterConfig(
         String actualLogGroup, String actualLogStream, Integer retentionPeriod, boolean dedicatedWriter,
-        long batchDelay, int discardThreshold, DiscardAction discardAction,
+        boolean discardLargeMessages, long batchDelay, int discardThreshold, DiscardAction discardAction,
         String clientFactoryMethod, String assumedRole, String clientRegion, String clientEndpoint)
     {
-        super(batchDelay, discardThreshold, discardAction, clientFactoryMethod, assumedRole, clientRegion, clientEndpoint);
+        super(discardLargeMessages, batchDelay, discardThreshold, discardAction, clientFactoryMethod, assumedRole, clientRegion, clientEndpoint);
 
         this.logGroupName = actualLogGroup;
         this.logStreamName = actualLogStream;

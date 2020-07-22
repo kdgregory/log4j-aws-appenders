@@ -93,6 +93,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
                 null,                   // topicArn
                 null,                   // subject
                 false,                  // autoCreate
+                true,                   // discardLargeMessages
                 1000,                   // discardThreshold
                 DiscardAction.oldest,   // discardAction
                 null,                   // clientFactoryMethod
@@ -131,7 +132,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
                 "topic-arn",                        // topicArn
                 "subject",                          // subject
                 true,                               // autoCreate
-                123,                               // discardThreshold
+                true,                               // discardLargeMessages
+                123,                                // discardThreshold
                 DiscardAction.newest,               // discardAction
                 "com.example.factory.Method",       // clientFactoryMethod
                 "SomeRole",                         // assumedRole
@@ -142,6 +144,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("log stream name",             "topic-arn",                    config.topicArn);
         assertEquals("subject",                     "subject",                      config.subject);
         assertTrue("auto-create",                                                   config.autoCreate);
+        assertTrue("discard large messages",                                        config.discardLargeMessages);
         assertEquals("factory method",              "com.example.factory.Method",   config.clientFactoryMethod);
         assertEquals("assumed role",                "SomeRole",                     config.assumedRole);
         assertEquals("client region",               "us-west-1",                    config.clientRegion);

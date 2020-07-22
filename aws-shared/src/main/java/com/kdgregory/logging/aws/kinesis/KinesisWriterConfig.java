@@ -43,6 +43,8 @@ extends AbstractWriterConfig
      *  @param retentionPeriod      Retention period to use when creating the stream
      *                              (ignored if stream already exists); null indicates
      *                              use the default retention period.
+     *  @param discardLargeMessages If true, messages that are too large for the service
+     *                              will be discarded; if false, they will be truncated.
      *  @param batchDelay           Number of milliseconds to wait for messages to be
      *                              ready to send.
      *  @param discardThreshold     Maximum number of messages to retain if unable to send.
@@ -55,10 +57,10 @@ extends AbstractWriterConfig
     public KinesisWriterConfig(
         String streamName, String partitionKey,
         boolean autoCreate, int shardCount, Integer retentionPeriod,
-        long batchDelay, int discardThreshold, DiscardAction discardAction,
+        boolean discardLargeMessages, long batchDelay, int discardThreshold, DiscardAction discardAction,
         String clientFactoryMethod, String assumedRole, String clientRegion, String clientEndpoint)
     {
-        super(batchDelay, discardThreshold, discardAction, clientFactoryMethod, assumedRole, clientRegion, clientEndpoint);
+        super(discardLargeMessages, batchDelay, discardThreshold, discardAction, clientFactoryMethod, assumedRole, clientRegion, clientEndpoint);
 
         this.streamName = streamName;
         this.partitionKey = partitionKey;

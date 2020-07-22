@@ -305,7 +305,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
 
         return new CloudWatchWriterConfig(
             actualLogGroup, actualLogStream, retentionPeriod, dedicatedWriter,
-            batchDelay, discardThreshold, discardAction,
+            true, batchDelay, discardThreshold, discardAction,
             clientFactory, assumedRole, clientRegion, clientEndpoint);
     }
 }

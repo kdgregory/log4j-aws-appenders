@@ -22,6 +22,17 @@ package com.kdgregory.logging.aws.cloudwatch;
  */
 public class CloudWatchConstants
 {
+    /**
+     *  The maximum number of bytes in a single message, after conversion to UTF-8.
+     */
+    public final static int MAX_MESSAGE_SIZE = 262118;
+
+
+    /**
+     *  Overhead added to each message in a batch.
+     */
+    public final static int MESSAGE_OVERHEAD = 26;
+
 
     /**
      *  Maximum number of messages in a single batch.
@@ -34,12 +45,6 @@ public class CloudWatchConstants
      *  message bytes as well as overhead.
      */
     public final static int MAX_BATCH_BYTES = 1048576;
-
-
-    /**
-     *  Overhead added to each message.
-     */
-    public final static int MESSAGE_OVERHEAD = 26;
 
 
     /**

@@ -853,7 +853,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         final String biggerMessage              = bigMessage + "X";
 
         createWriter();
-        
+
         try
         {
             writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));

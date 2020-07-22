@@ -844,15 +844,16 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testMaximumMessageSize() throws Exception
     {
-        final int cloudwatchMaximumBatchSize    = 1048576;  // copied from http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
-        final int cloudwatchOverhead            = 26;       // ditto
+        final int cloudwatchMaximumEventSize    = 256 * 1024;   // copied from https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
+        final int cloudwatchOverhead            = 26;           // copied from https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
+        final int cloudwatchMaximumMessageSize  = cloudwatchMaximumEventSize - cloudwatchOverhead;
 
-        final int maxMessageSize                = cloudwatchMaximumBatchSize - cloudwatchOverhead;
-        final String bigMessage                 = StringUtil.repeat('A', maxMessageSize);
-        final String biggerMessage              = bigMessage + "1";
+        // note that we have to account for UTF-8 conversion
+        final String bigMessage                 = StringUtil.repeat('\u00b7', cloudwatchMaximumMessageSize / 2);
+        final String biggerMessage              = bigMessage + "X";
 
         createWriter();
-
+        
         try
         {
             writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));

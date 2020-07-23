@@ -845,7 +845,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
 
     @Test
-    public void testMaximumMessageSize() throws Exception
+    public void testOversizeMessageDiscard() throws Exception
     {
         final int cloudwatchMaximumEventSize    = 256 * 1024;   // copied from https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
         final int cloudwatchOverhead            = 26;           // copied from https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
@@ -857,21 +857,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         createWriter();
 
-        try
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
-            fail("writer allowed too-large message");
-        }
-        catch (IllegalArgumentException ex)
-        {
-            assertEquals("exception message", "attempted to enqueue a too-large message", ex.getMessage());
-        }
-        catch (Exception ex)
-        {
-            fail("writer threw " + ex.getClass().getName() + ", not IllegalArgumentException");
-        }
-
-        // we'll send an OK message through to verify that nothing bad happened
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
         writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
 
         mock.allowWriterThread();
@@ -879,6 +865,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
         assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",              bigMessage,         mock.mostRecentEvents.get(0).getMessage());
+        
+        internalLogger.assertInternalWarningLog(
+            "discarded oversize.*" + (cloudwatchMaximumMessageSize + 1) + ".*"
+            );
     }
 
 

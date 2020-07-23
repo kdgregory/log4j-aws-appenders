@@ -170,10 +170,11 @@ implements LogWriter
     @Override
     public void addMessage(LogMessage message)
     {
-        // we're going to assume that the appender has already checked this, and
-        // fail hard if that assumption is not valid
         if (isMessageTooLarge(message))
-            throw new IllegalArgumentException("attempted to enqueue a too-large message");
+        {
+            logger.warn("discarded oversize message (" + message.size() + ") bytes");
+            return;
+        }
 
         messageQueue.enqueue(message);
     }

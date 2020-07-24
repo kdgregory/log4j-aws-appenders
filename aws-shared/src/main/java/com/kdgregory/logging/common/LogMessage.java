@@ -77,6 +77,50 @@ implements Comparable<LogMessage>
 
 
     /**
+     *  Ensures that the message has no more than the specified number of bytes,
+     *  truncating if necessary. This is a "semi-smart" truncate, in that it won't
+     *  break UTF-8 character sequences, but it isn't smart enough to recognize
+     *  Unicode code points that consist of multiple UTF-8 sequences. It also
+     *  assumes that it will be given valid UTF-8, with indeterminate results if
+     *  not.
+     */
+    public void truncate(int maxSize)
+    {
+        if (size() <= maxSize)
+            return;
+
+        // skip any UTF-8 continuation characters that cross the truncation boundary
+        // (that means starting past the boundary)
+
+        int idx = maxSize;
+        int curFlag = 0;
+        while (idx > 0)
+        {
+            curFlag = messageBytes[idx] & 0x00C0;
+            if (curFlag != 0x0080)
+                break;
+            idx--;
+        }
+
+        // at this point we either have an ASCI character or a UTF-8 start character
+        // need to adjust index if the latter
+
+        if (curFlag == 0x00C0)
+            idx--;
+
+        // the actual truncation size will be index + 1; however, since we started past
+        // the boundary, if there was an ASCII character at that point we're off-by-one
+        // already, so need to compensate
+
+        int newSize = Math.min(maxSize, idx + 1);
+        byte[] newBytes = new byte[newSize];
+        System.arraycopy(messageBytes, 0, newBytes, 0, newSize);
+        messageBytes = newBytes;
+        message = new String(messageBytes, StandardCharsets.UTF_8);
+    }
+
+
+    /**
      *  Compares instances based on their timestamp.
      *  <p>
      *  Note that an "equal" comparison is not consistent with <code>equals()</code>,

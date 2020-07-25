@@ -90,7 +90,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             "bargle",               // actualLogStream
             null,                   // retentionPeriod
             false,                  // dedicatedWriter
-            true,                   // discardLargeMessages
+            false,                  // truncateOversizeMessages
             100,                    // batchDelay -- short enough to keep tests fast, long enough that we can write a lot of messages
             10000,                  // discardThreshold
             DiscardAction.oldest,   // discardAction
@@ -126,7 +126,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
                 "bar",                              // actualLogStream
                 1,                                  // retentionPeriod
                 true,                               // dedicatedWriter
-                true,                               // discardLargeMessages
+                true,                               // truncateOversizeMessages
                 123,                                // batchDelay
                 456,                                // discardThreshold
                 DiscardAction.newest,               // discardAction
@@ -139,7 +139,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("log stream name",                         "bar",                          config.logStreamName);
         assertEquals("retention period",                        Integer.valueOf(1),             config.retentionPeriod);
         assertTrue("dedicated stream",                                                          config.dedicatedWriter);
-        assertTrue("discard large messages",                                                    config.discardLargeMessages);
+        assertTrue("truncate large messages",                                                   config.truncateOversizeMessages);
         assertEquals("factory method",                          "com.example.factory.Method",   config.clientFactoryMethod);
         assertEquals("assumed role",                            "SomeRole",                     config.assumedRole);
         assertEquals("client region",                           "us-west-1",                    config.clientRegion);
@@ -883,7 +883,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         final String bigMessage                 = StringUtil.repeat('X', cloudwatchMaximumMessageSize - 1) + "Y";
         final String biggerMessage              = bigMessage + "X";
 
-        config.discardLargeMessages = false;
+        config.truncateOversizeMessages = true;
         createWriter();
 
         // first message should go through with no problems

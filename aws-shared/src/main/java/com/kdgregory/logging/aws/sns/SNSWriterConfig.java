@@ -32,25 +32,25 @@ extends AbstractWriterConfig
 
 
     /**
-     *  @param topicName            Identifies the destination topic by name; may be null.
-     *  @param topicArn             Identifies the destination topic by ARN; may be null.
-     *  @param subject              The subject to be applied to outgoing messages; blank disables.
-     *  @param autoCreate           Flag to indicate topic should be created if it doesn't exist.
-     *  @param discardLargeMessages If true, messages that are too large for the service
-     *                              will be discarded; if false, they will be truncated.
-     *  @param discardThreshold     The maximum number of messages that will be retained in the queue.
-     *  @param discardAction        Controls how messages are discarded from the queue to remain within threshold.
-     *  @param clientFactoryMethod  Optional: fully-qualified name of a static method to create client.
-     *  @param assumedRole          Optional: name or ARN of a role to assume when creating client.
-     *  @param clientRegion         Optional: explicit region for client (used with ctor and SDK builder).
-     *  @param clientEndpoint       Optional: explicit endpoint for client (only used with constructors).
+     *  @param topicName                Identifies the destination topic by name; may be null.
+     *  @param topicArn                 Identifies the destination topic by ARN; may be null.
+     *  @param subject                  The subject to be applied to outgoing messages; blank disables.
+     *  @param autoCreate               Flag to indicate topic should be created if it doesn't exist.
+     *  @param truncateOversizeMessages If true, messages that are too large for the service are
+     *                                  truncated to fit; if false, they are discarded.
+     *  @param discardThreshold         The maximum number of messages that will be retained in the queue.
+     *  @param discardAction            Controls how messages are discarded from the queue to remain within threshold.
+     *  @param clientFactoryMethod      Optional: fully-qualified name of a static method to create client.
+     *  @param assumedRole              Optional: name or ARN of a role to assume when creating client.
+     *  @param clientRegion             Optional: explicit region for client (used with ctor and SDK builder).
+     *  @param clientEndpoint           Optional: explicit endpoint for client (only used with constructors).
      */
     public SNSWriterConfig(
         String topicName, String topicArn, String subject, boolean autoCreate,
-        boolean discardLargeMessages, int discardThreshold, DiscardAction discardAction,
+        boolean truncateOversizeMessages, int discardThreshold, DiscardAction discardAction,
         String clientFactoryMethod, String assumedRole, String clientRegion, String clientEndpoint)
     {
-        super(discardLargeMessages, 1, discardThreshold, discardAction, clientFactoryMethod, assumedRole, clientRegion, clientEndpoint);
+        super(truncateOversizeMessages, 1, discardThreshold, discardAction, clientFactoryMethod, assumedRole, clientRegion, clientEndpoint);
 
         this.topicName = topicName;
         this.topicArn = topicArn;

@@ -172,15 +172,15 @@ implements LogWriter
     {
         if (message.size() > maxMessageSize())
         {
-            if (config.discardLargeMessages)
-            {
-                logger.warn("discarded oversize message (" + message.size() + " bytes, limit is " + maxMessageSize() + ")");
-                return;
-            }
-            else
+            if (config.truncateOversizeMessages)
             {
                 logger.warn("truncated oversize message (" + message.size() + " bytes to " + maxMessageSize() + ")");
                 message.truncate(maxMessageSize());
+            }
+            else
+            {
+                logger.warn("discarded oversize message (" + message.size() + " bytes, limit is " + maxMessageSize() + ")");
+                return;
             }
         }
 

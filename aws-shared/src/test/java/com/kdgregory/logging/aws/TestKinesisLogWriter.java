@@ -534,40 +534,68 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
 
     @Test
-    public void testMaximumMessageSize() throws Exception
+    public void testOversizeMessageDiscard() throws Exception
     {
         final int kinesisMaxMessageSize = 1024 * 1024;  // per https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html
 
         final int maxMessageSize        = kinesisMaxMessageSize - DEFAULT_PARTITION_KEY.length();   // DEFAULT_PARTITION_KEY is ASCII
-        final String bigMessage         = StringUtil.repeat('A', maxMessageSize);
-        final String biggerMessage      = bigMessage + "1";
+
+        // using different characters at the end of the message makes JUnit output easer to read
+        final String bigMessage                 = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
+        final String biggerMessage              = bigMessage + "X";
 
         createWriter();
 
-        try
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
-            fail("writer allowed too-large message");
-        }
-        catch (IllegalArgumentException ex)
-        {
-            assertEquals("exception message", "attempted to enqueue a too-large message", ex.getMessage());
-        }
-        catch (Exception ex)
-        {
-            fail("writer threw " + ex.getClass().getName() + ", not IllegalArgumentException");
-        }
-
-        // we'll send an OK message through to verify that nothing bad happened
+        // have to write both messages at once, in this order, otherwise we don't know that the first was discarded
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
         writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
-
         mock.allowWriterThread();
 
         assertEquals("putRecords: invocation count",        1,                  mock.putRecordsInvocationCount);
         assertEquals("putRecords: last call #/messages",    1,                  mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: last call content",       bigMessage,         mock.getPuRecordsSourceText(0));
 
-        byte[] lastMessageContent = BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(0).getData());
-        assertEquals("putRecords: last call content",       bigMessage,         new String(lastMessageContent, StandardCharsets.UTF_8));
+        internalLogger.assertInternalWarningLog(
+            "discarded oversize.*" + (maxMessageSize + 1) + ".*"
+            );
+    }
+
+
+    @Test
+    public void testOversizeMessageTruncate() throws Exception
+    {
+        final int kinesisMaxMessageSize = 1024 * 1024;  // per https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html
+
+        final int maxMessageSize        = kinesisMaxMessageSize - DEFAULT_PARTITION_KEY.length();   // DEFAULT_PARTITION_KEY is ASCII
+
+        // using different characters at the end of the message makes JUnit output easer to read
+        final String bigMessage                 = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
+        final String biggerMessage              = bigMessage + "X";
+
+        config.discardLargeMessages = false;
+        createWriter();
+
+        // first message should succeed
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
+        mock.allowWriterThread();
+
+        assertEquals("putRecords: invocation count",        1,                  mock.putRecordsInvocationCount);
+        assertEquals("putRecords: last call #/messages",    1,                  mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: last call content",       bigMessage,         mock.getPuRecordsSourceText(0));
+
+        internalLogger.assertInternalWarningLog();
+
+        // second message should be truncated, resulting in bigMessage
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
+        mock.allowWriterThread();
+
+        assertEquals("putRecords: invocation count",        2,                  mock.putRecordsInvocationCount);
+        assertEquals("putRecords: last call #/messages",    1,                  mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: last call content",       bigMessage,         mock.getPuRecordsSourceText(0));
+
+        internalLogger.assertInternalWarningLog(
+            "truncated oversize.*" + (maxMessageSize + 1) + ".*"
+            );
     }
 
 

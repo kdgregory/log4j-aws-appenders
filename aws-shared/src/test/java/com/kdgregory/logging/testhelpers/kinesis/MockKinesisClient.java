@@ -17,6 +17,7 @@ package com.kdgregory.logging.testhelpers.kinesis;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.concurrent.Semaphore;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
+import com.amazonaws.util.BinaryUtils;
 
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
@@ -176,6 +178,16 @@ implements InvocationHandler
         allowWriterThread.release();
         Thread.sleep(100);
         allowMainThread.acquire();
+    }
+
+
+    /**
+     *  Returns the text written as a given source record.
+     */
+    public String getPuRecordsSourceText(int recnum)
+    {
+        byte[] bytes = BinaryUtils.copyAllBytesFrom(putRecordsSourceRecords.get(0).getData());
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
 //----------------------------------------------------------------------------

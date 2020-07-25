@@ -851,15 +851,15 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         final int cloudwatchOverhead            = 26;           // copied from https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
         final int cloudwatchMaximumMessageSize  = cloudwatchMaximumEventSize - cloudwatchOverhead;
 
-        // note that we have to account for UTF-8 conversion
-        final String bigMessage                 = StringUtil.repeat('\u00b7', cloudwatchMaximumMessageSize / 2);
+        // using different characters at the end of the message makes JUnit output easer to read
+        final String bigMessage                 = StringUtil.repeat('X', cloudwatchMaximumMessageSize - 1) + "Y";
         final String biggerMessage              = bigMessage + "X";
 
         createWriter();
 
+        // have to write both messages at once, in this order, to allow writer thread
         writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
         writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
-
         mock.allowWriterThread();
 
         assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
@@ -867,7 +867,45 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: last message",              bigMessage,         mock.mostRecentEvents.get(0).getMessage());
 
         internalLogger.assertInternalWarningLog(
-            "discarded oversize.*" + (cloudwatchMaximumMessageSize + 1) + ".*"
+            "discarded oversize.*" + biggerMessage.length() + ".*"
+            );
+    }
+
+
+    @Test
+    public void testOversizeMessageTruncate() throws Exception
+    {
+        final int cloudwatchMaximumEventSize    = 256 * 1024;   // copied from https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
+        final int cloudwatchOverhead            = 26;           // copied from https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
+        final int cloudwatchMaximumMessageSize  = cloudwatchMaximumEventSize - cloudwatchOverhead;
+
+        // using different characters at the end of the message makes JUnit output easer to read
+        final String bigMessage                 = StringUtil.repeat('X', cloudwatchMaximumMessageSize - 1) + "Y";
+        final String biggerMessage              = bigMessage + "X";
+
+        config.discardLargeMessages = false;
+        createWriter();
+
+        // first message should go through with no problems
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
+        mock.allowWriterThread();
+
+        assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",              bigMessage,         mock.mostRecentEvents.get(0).getMessage());
+
+        internalLogger.assertInternalWarningLog();
+
+        // second message should be truncated (note that truncation results in bigMessage)
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
+        mock.allowWriterThread();
+
+        assertEquals("putLogEvents: invocation count",          2,                  mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",              bigMessage,         mock.mostRecentEvents.get(0).getMessage());
+
+        internalLogger.assertInternalWarningLog(
+            "truncated oversize.*" + biggerMessage.length() + ".*"
             );
     }
 

@@ -179,7 +179,7 @@ implements LogWriter
             }
             else
             {
-                logger.warn("truncating oversize message (" + message.size() + " bytes to " + maxMessageSize() + ")");
+                logger.warn("truncated oversize message (" + message.size() + " bytes to " + maxMessageSize() + ")");
                 message.truncate(maxMessageSize());
             }
         }

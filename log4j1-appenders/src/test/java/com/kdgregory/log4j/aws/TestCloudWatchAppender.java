@@ -74,22 +74,23 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
     {
         initialize("testConfiguration");
 
-        assertEquals("log group name",      "argle",                        appender.getLogGroup());
-        assertEquals("log stream name",     "bargle",                       appender.getLogStream());
-        assertEquals("retention period",    7,                              appender.getRetentionPeriod());
-        assertTrue("dedicated writer",                                      appender.getDedicatedWriter());
-        assertEquals("batch delay",         9876L,                          appender.getBatchDelay());
-        assertEquals("sequence",            2,                              appender.getSequence());
-        assertEquals("rotation mode",       "interval",                     appender.getRotationMode());
-        assertEquals("rotation interval",   7200000L,                       appender.getRotationInterval());
-        assertEquals("discard threshold",   12345,                          appender.getDiscardThreshold());
-        assertEquals("discard action",      "newest",                       appender.getDiscardAction());
-        assertFalse("synchronous mode",                                     appender.getSynchronous());
-        assertFalse("use shutdown hook",                                    appender.getUseShutdownHook());
-        assertEquals("assumed role",        "AssumableRole",                appender.getAssumedRole());
-        assertEquals("client factory",      "com.example.Foo.bar",          appender.getClientFactory());
-        assertEquals("client region",       "us-west-1",                    appender.getClientRegion());
-        assertEquals("client endpoint",     "logs.us-west-2.amazonaws.com", appender.getClientEndpoint());
+        assertEquals("log group name",          "argle",                        appender.getLogGroup());
+        assertEquals("log stream name",         "bargle",                       appender.getLogStream());
+        assertEquals("retention period",        7,                              appender.getRetentionPeriod());
+        assertTrue("dedicated writer",                                          appender.getDedicatedWriter());
+        assertEquals("batch delay",             9876L,                          appender.getBatchDelay());
+        assertEquals("sequence",                2,                              appender.getSequence());
+        assertEquals("rotation mode",           "interval",                     appender.getRotationMode());
+        assertEquals("rotation interval",       7200000L,                       appender.getRotationInterval());
+        assertTrue("truncate oversize messages",                                appender.getTruncateOversizeMessages());
+        assertEquals("discard threshold",       12345,                          appender.getDiscardThreshold());
+        assertEquals("discard action",          "newest",                       appender.getDiscardAction());
+        assertFalse("synchronous mode",                                         appender.getSynchronous());
+        assertFalse("use shutdown hook",                                        appender.getUseShutdownHook());
+        assertEquals("assumed role",            "AssumableRole",                appender.getAssumedRole());
+        assertEquals("client factory",          "com.example.Foo.bar",          appender.getClientFactory());
+        assertEquals("client region",           "us-west-1",                    appender.getClientRegion());
+        assertEquals("client endpoint",         "logs.us-west-2.amazonaws.com", appender.getClientEndpoint());
     }
 
 
@@ -99,23 +100,24 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         initialize("testDefaultConfiguration");
 
         // note: this is allowed at time of configuration, would disable logger if we try to append
-        assertNull("log group name",                                        appender.getLogGroup());
+        assertNull("log group name",                                            appender.getLogGroup());
 
-        assertEquals("log stream name",     "{startupTimestamp}",           appender.getLogStream());
-        assertEquals("retention period",    0,                              appender.getRetentionPeriod());
-        assertFalse("dedicated writer",                                     appender.getDedicatedWriter());
-        assertEquals("batch delay",         2000L,                          appender.getBatchDelay());
-        assertEquals("sequence",            0,                              appender.getSequence());
-        assertEquals("rotation mode",       "none",                         appender.getRotationMode());
-        assertEquals("rotation interval",   -1,                             appender.getRotationInterval());
-        assertEquals("discard threshold",   10000,                          appender.getDiscardThreshold());
-        assertEquals("discard action",      "oldest",                       appender.getDiscardAction());
-        assertFalse("synchronous mode",                                     appender.getSynchronous());
-        assertTrue("use shutdown hook",                                     appender.getUseShutdownHook());
-        assertEquals("assumed role",        null,                           appender.getAssumedRole());
-        assertEquals("client factory",      null,                           appender.getClientFactory());
-        assertEquals("client region",       null,                           appender.getClientRegion());
-        assertEquals("client endpoint",     null,                           appender.getClientEndpoint());
+        assertEquals("log stream name",         "{startupTimestamp}",           appender.getLogStream());
+        assertEquals("retention period",        0,                              appender.getRetentionPeriod());
+        assertFalse("dedicated writer",                                         appender.getDedicatedWriter());
+        assertEquals("batch delay",             2000L,                          appender.getBatchDelay());
+        assertEquals("sequence",                0,                              appender.getSequence());
+        assertEquals("rotation mode",           "none",                         appender.getRotationMode());
+        assertEquals("rotation interval",       -1,                             appender.getRotationInterval());
+        assertFalse("truncate oversize messages",                               appender.getTruncateOversizeMessages());
+        assertEquals("discard threshold",       10000,                          appender.getDiscardThreshold());
+        assertEquals("discard action",          "oldest",                       appender.getDiscardAction());
+        assertFalse("synchronous mode",                                         appender.getSynchronous());
+        assertTrue("use shutdown hook",                                         appender.getUseShutdownHook());
+        assertEquals("assumed role",            null,                           appender.getAssumedRole());
+        assertEquals("client factory",          null,                           appender.getClientFactory());
+        assertEquals("client region",           null,                           appender.getClientRegion());
+        assertEquals("client endpoint",         null,                           appender.getClientEndpoint());
     }
 
 

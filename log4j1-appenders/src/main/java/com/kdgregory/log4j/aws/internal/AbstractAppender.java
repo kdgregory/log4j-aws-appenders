@@ -105,6 +105,7 @@ extends AppenderSkeleton
 
     protected boolean               synchronous;
     protected long                  batchDelay;
+    protected boolean               truncateOversizeMessages;
     protected int                   discardThreshold;
     protected DiscardAction         discardAction;
     protected volatile RotationMode rotationMode;
@@ -269,6 +270,24 @@ extends AppenderSkeleton
     public long getBatchDelay()
     {
         return batchDelay;
+    }
+
+
+    /**
+     *  Sets the <code>truncateOversizeMessages</code> configuration property.
+     */
+    public void setTruncateOversizeMessages(boolean value)
+    {
+        this.truncateOversizeMessages = value;
+    }
+
+
+    /**
+     *  Returns the <code>truncateOversizeMessages</code> configuration property.
+     */
+    public boolean getTruncateOversizeMessages()
+    {
+        return this.truncateOversizeMessages;
     }
 
 

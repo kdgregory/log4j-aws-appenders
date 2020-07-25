@@ -117,6 +117,13 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *           If the appender is in synchronous mode, this setting is ignored.
  *
  *  <tr VALIGN="top">
+ *      <th> truncateOversizeMessages
+ *      <td> If <code>true</code>, oversize messages will be truncated to the maximum
+ *           length permitted by CloudWatch Logs. If <code>false</code> (the default)
+ *           they are discarded. In either case, the oversized message is reported
+ *           to the Log4J debug log.
+ *
+ *  <tr VALIGN="top">
  *      <th> discardThreshold
  *      <td> The number of unsent messages that will trigger message discard. A
  *           high value is useful when network connectivity is intermittent and/or
@@ -305,7 +312,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
 
         return new CloudWatchWriterConfig(
             actualLogGroup, actualLogStream, retentionPeriod, dedicatedWriter,
-            false, batchDelay, discardThreshold, discardAction,
+            truncateOversizeMessages, batchDelay, discardThreshold, discardAction,
             clientFactory, assumedRole, clientRegion, clientEndpoint);
     }
 }

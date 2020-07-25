@@ -689,12 +689,6 @@ extends AppenderSkeleton
                 }
             }
 
-            if (writer.isMessageTooLarge(message))
-            {
-                internalLogger.warn("attempted to append a message > AWS batch size; ignored");
-                return;
-            }
-
             writer.addMessage(message);
             messagesSinceLastRotation++;
         }

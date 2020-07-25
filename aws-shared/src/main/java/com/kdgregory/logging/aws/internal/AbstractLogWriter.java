@@ -170,10 +170,18 @@ implements LogWriter
     @Override
     public void addMessage(LogMessage message)
     {
-        if (isMessageTooLarge(message))
+        if (message.size() > maxMessageSize())
         {
-            logger.warn("discarded oversize message (" + message.size() + ") bytes");
-            return;
+            if (config.discardLargeMessages)
+            {
+                logger.warn("discarded oversize message (" + message.size() + " bytes, limit is " + maxMessageSize() + ")");
+                return;
+            }
+            else
+            {
+                logger.warn("truncating oversize message (" + message.size() + " bytes to " + maxMessageSize() + ")");
+                message.truncate(maxMessageSize());
+            }
         }
 
         messageQueue.enqueue(message);
@@ -404,7 +412,8 @@ implements LogWriter
 
     /**
      *  Calculates the effective size of the message. This includes the message
-     *  bytes plus any overhead.
+     *  bytes plus any overhead. It is used to calculate the number of bytes the
+     *  message will add to a batch.
      */
     protected abstract int effectiveSize(LogMessage message);
 

@@ -58,12 +58,20 @@ extends Runnable
 
 
     /**
-     *  Determines whether the passed message size exceeds the service limits.
-     *  This is exposed so that the appender can do a check before calling
-     *  {@link #addMessage}, because that method throws if given a too-large
-     *  message.
+     *  @deprecated
+     *  This was formerly used by appenders to check message size before appending. It has
+     *  been replaced by checks within {@link #append} that rely on {@link #maxMessageSize}.
+     *  <p>
+     *  To be removed in 3.0.
      */
-    boolean isMessageTooLarge(LogMessage message);
+    @Deprecated
+    public boolean isMessageTooLarge(LogMessage message);
+
+
+    /**
+     *  Returns the maximum allowed UTF-8 message size for the destination.
+     */
+    int maxMessageSize();
 
 
     /**

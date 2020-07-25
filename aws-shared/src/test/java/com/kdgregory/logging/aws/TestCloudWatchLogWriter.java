@@ -865,7 +865,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
         assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",              bigMessage,         mock.mostRecentEvents.get(0).getMessage());
-        
+
         internalLogger.assertInternalWarningLog(
             "discarded oversize.*" + (cloudwatchMaximumMessageSize + 1) + ".*"
             );

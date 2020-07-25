@@ -92,6 +92,14 @@ implements LogWriter
 
 
     @Override
+    public int maxMessageSize()
+    {
+        // destination-specific subclasses should override this
+        return 0;
+    }
+
+
+    @Override
     public void addMessage(LogMessage message)
     {
         messages.add(message);

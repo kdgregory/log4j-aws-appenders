@@ -48,25 +48,26 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
     {
         initialize("testConfiguration");
 
-        assertEquals("log group name",      "argle",                        appender.getConfig().getLogGroup());
-        assertEquals("log stream name",     "bargle",                       appender.getConfig().getLogStream());
-        assertTrue("dedicated writer",                                      appender.getConfig().isDedicatedWriter());
-        assertEquals("batch delay",         9876L,                          appender.getConfig().getBatchDelay());
-        assertEquals("sequence",            2,                              appender.getConfig().getSequence());
-        assertEquals("rotation mode",       "interval",                     appender.getConfig().getRotationMode());
-        assertEquals("rotation interval",   7200000L,                       appender.getConfig().getRotationInterval());
-        assertEquals("discard threshold",   12345,                          appender.getConfig().getDiscardThreshold());
-        assertEquals("discard action",      "newest",                       appender.getConfig().getDiscardAction());
-        assertFalse("synchronous mode",                                     appender.getConfig().isSynchronous());
-        assertFalse("use shutdown hook",                                    appender.getConfig().isUseShutdownHook());
-        assertEquals("assumed role",        "AssumableRole",                appender.getConfig().getAssumedRole());
-        assertEquals("client factory",      "com.example.Foo.bar",          appender.getConfig().getClientFactory());
-        assertEquals("client region",       "us-west-1",                    appender.getConfig().getClientRegion());
-        assertEquals("client endpoint",     "logs.us-west-2.amazonaws.com", appender.getConfig().getClientEndpoint());
+        assertEquals("log group name",          "argle",                        appender.getConfig().getLogGroup());
+        assertEquals("log stream name",         "bargle",                       appender.getConfig().getLogStream());
+        assertTrue("dedicated writer",                                          appender.getConfig().isDedicatedWriter());
+        assertEquals("batch delay",             9876L,                          appender.getConfig().getBatchDelay());
+        assertEquals("sequence",                2,                              appender.getConfig().getSequence());
+        assertEquals("rotation mode",           "interval",                     appender.getConfig().getRotationMode());
+        assertEquals("rotation interval",       7200000L,                       appender.getConfig().getRotationInterval());
+        assertTrue("truncate oversize messages",                                appender.getConfig().getTruncateOversizeMessages());
+        assertEquals("discard threshold",       12345,                          appender.getConfig().getDiscardThreshold());
+        assertEquals("discard action",          "newest",                       appender.getConfig().getDiscardAction());
+        assertFalse("synchronous mode",                                         appender.getConfig().isSynchronous());
+        assertFalse("use shutdown hook",                                        appender.getConfig().isUseShutdownHook());
+        assertEquals("assumed role",            "AssumableRole",                appender.getConfig().getAssumedRole());
+        assertEquals("client factory",          "com.example.Foo.bar",          appender.getConfig().getClientFactory());
+        assertEquals("client region",           "us-west-1",                    appender.getConfig().getClientRegion());
+        assertEquals("client endpoint",         "logs.us-west-2.amazonaws.com", appender.getConfig().getClientEndpoint());
 
         // the appender holds retention period separate from configuration, so check it separately
 
-        assertEquals("retention period",    Integer.valueOf(7),             appender.getRetentionPeriod());
+        assertEquals("retention period",    Integer.valueOf(7),                 appender.getRetentionPeriod());
     }
 
 
@@ -76,26 +77,27 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         initialize("testDefaultConfiguration");
 
         // note: this is allowed at time of configuration, would disable logger if we try to append
-        assertNull("log group name",                                        appender.getConfig().getLogGroup());
+        assertNull("log group name",                                            appender.getConfig().getLogGroup());
 
-        assertEquals("log stream name",     "{startupTimestamp}",           appender.getConfig().getLogStream());
-        assertFalse("dedicated writer",                                     appender.getConfig().isDedicatedWriter());
-        assertEquals("batch delay",         2000L,                          appender.getConfig().getBatchDelay());
-        assertEquals("sequence",            0,                              appender.getConfig().getSequence());
-        assertEquals("rotation mode",       "none",                         appender.getConfig().getRotationMode());
-        assertEquals("rotation interval",   -1,                             appender.getConfig().getRotationInterval());
-        assertEquals("discard threshold",   10000,                          appender.getConfig().getDiscardThreshold());
-        assertEquals("discard action",      "oldest",                       appender.getConfig().getDiscardAction());
-        assertFalse("synchronous mode",                                     appender.getConfig().isSynchronous());
-        assertTrue("use shutdown hook",                                     appender.getConfig().isUseShutdownHook());
-        assertEquals("assumed role",        null,                           appender.getConfig().getAssumedRole());
-        assertEquals("client factory",      null,                           appender.getConfig().getClientFactory());
-        assertEquals("client region",       null,                           appender.getConfig().getClientRegion());
-        assertEquals("client endpoint",     null,                           appender.getConfig().getClientEndpoint());
+        assertEquals("log stream name",         "{startupTimestamp}",           appender.getConfig().getLogStream());
+        assertFalse("dedicated writer",                                         appender.getConfig().isDedicatedWriter());
+        assertEquals("batch delay",             2000L,                          appender.getConfig().getBatchDelay());
+        assertEquals("sequence",                0,                              appender.getConfig().getSequence());
+        assertEquals("rotation mode",           "none",                         appender.getConfig().getRotationMode());
+        assertEquals("rotation interval",       -1,                             appender.getConfig().getRotationInterval());
+        assertFalse("truncate oversize messages",                               appender.getConfig().getTruncateOversizeMessages());
+        assertEquals("discard threshold",       10000,                          appender.getConfig().getDiscardThreshold());
+        assertEquals("discard action",          "oldest",                       appender.getConfig().getDiscardAction());
+        assertFalse("synchronous mode",                                         appender.getConfig().isSynchronous());
+        assertTrue("use shutdown hook",                                         appender.getConfig().isUseShutdownHook());
+        assertEquals("assumed role",            null,                           appender.getConfig().getAssumedRole());
+        assertEquals("client factory",          null,                           appender.getConfig().getClientFactory());
+        assertEquals("client region",           null,                           appender.getConfig().getClientRegion());
+        assertEquals("client endpoint",         null,                           appender.getConfig().getClientEndpoint());
 
         // the appender holds retention period separate from configuration, so check it separately
 
-        assertEquals("retention period",    null,                           appender.getRetentionPeriod());
+        assertEquals("retention period",    null,                               appender.getRetentionPeriod());
     }
 
 

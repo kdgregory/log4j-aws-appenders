@@ -13,6 +13,7 @@
     <retentionPeriod>48</retentionPeriod>
     <synchronous>false</synchronous> <!-- explicitly set to default value -->
     <batchDelay>1234</batchDelay>
+    <truncateOversizeMessages>true</truncateOversizeMessages>
     <discardThreshold>54321</discardThreshold>
     <discardAction>newest</discardAction>
     <assumedRole>AssumableRole</assumedRole>

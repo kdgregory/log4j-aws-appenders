@@ -16,7 +16,9 @@ package com.kdgregory.logging.aws;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -30,11 +32,14 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import net.sf.kdgcommons.lang.ClassUtil;
+import net.sf.kdgcommons.lang.StringUtil;
 
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClient;
+import com.amazonaws.services.logs.model.OutputLogEvent;
 
+import com.kdgregory.logging.aws.cloudwatch.CloudWatchConstants;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterFactory;
@@ -368,6 +373,48 @@ public class CloudWatchLogWriterIntegrationTest
 
         CommonTestHelper.waitUntilMessagesSent(stats, numWriters * numReps, 30000);
         internalLogger.assertInternalErrorLog();
+
+        testHelper.deleteLogGroupIfExists();
+    }
+
+
+    @Test
+    public void testOversizeMessageTruncation() throws Exception
+    {
+        final int numMessages = 100;
+
+        // this test verifies that what I think is the maximum message size is acceptable to CloudWatch
+        final int maxMessageSize = CloudWatchConstants.MAX_MESSAGE_SIZE;
+
+        final String expectedMessage = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
+        final String messageToWrite = expectedMessage + "Z";
+
+        init("testOversizeMessageTruncation", helperClient);
+
+        CloudWatchWriterConfig config = defaultConfig();
+        config.truncateOversizeMessages = true;
+        CloudWatchLogWriter writer = createWriter(config);
+
+        new MessageWriter(writer, numMessages)
+        {
+            @Override
+            protected void writeLogMessage(String ignored)
+            {
+                super.writeLogMessage(messageToWrite);
+            }
+        }.run();
+
+        CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
+        List<OutputLogEvent> logEvents = testHelper.retrieveAllMessages(logStreamName, numMessages);
+
+        Set<String> messages = new HashSet<>();
+        for (OutputLogEvent event : logEvents)
+        {
+            messages.add(event.getMessage());
+        }
+
+        assertEquals("all messages should be truncated to same value", 1, messages.size());
+        assertEquals("message actually written",                       expectedMessage, messages.iterator().next());
 
         testHelper.deleteLogGroupIfExists();
     }

@@ -686,8 +686,9 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
         mock.allowWriterThread();
 
-        assertEquals("publish: invocation count",        1,                  mock.publishInvocationCount);
-        assertEquals("publish: last call #/messages",    bigMessage,         mock.lastPublishMessage);
+        assertEquals("publish: invocation count",               1,                  mock.publishInvocationCount);
+        assertEquals("publish: last call #/messages",           bigMessage,         mock.lastPublishMessage);
+        assertEquals("stats: recorded oversize message",        1,                  stats.getOversizeMessages());
 
         internalLogger.assertInternalWarningLog(
             "discarded oversize.*" + (snsMaxMessageSize + 1) + ".*"
@@ -713,8 +714,9 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
         mock.allowWriterThread();
 
-        assertEquals("publish: invocation count",        1,                  mock.publishInvocationCount);
-        assertEquals("publish: last call #/messages",    bigMessage,         mock.lastPublishMessage);
+        assertEquals("publish: invocation count",               1,                  mock.publishInvocationCount);
+        assertEquals("publish: last call #/messages",           bigMessage,         mock.lastPublishMessage);
+        assertEquals("stats: no oversize messages",             0,                  stats.getOversizeMessages());
 
         internalLogger.assertInternalWarningLog();
 
@@ -722,8 +724,9 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
         mock.allowWriterThread();
 
-        assertEquals("publish: invocation count",        2,                  mock.publishInvocationCount);
-        assertEquals("publish: last call #/messages",    bigMessage,         mock.lastPublishMessage);
+        assertEquals("publish: invocation count",               2,                  mock.publishInvocationCount);
+        assertEquals("publish: last call #/messages",           bigMessage,         mock.lastPublishMessage);
+        assertEquals("stats: recorded oversize message",        1,                  stats.getOversizeMessages());
 
         internalLogger.assertInternalWarningLog(
             "truncated oversize.*" + (snsMaxMessageSize + 1) + ".*"

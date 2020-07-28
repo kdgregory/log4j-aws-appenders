@@ -172,12 +172,13 @@ implements LogWriter
     {
         if (message.size() == 0)
         {
-            logger.warn("discarded empty message");
+            logger.debug("discarded empty message");
             return;
         }
 
         if (message.size() > maxMessageSize())
         {
+            stats.incrementOversizeMessages();
             if (config.truncateOversizeMessages)
             {
                 logger.warn("truncated oversize message (" + message.size() + " bytes to " + maxMessageSize() + ")");

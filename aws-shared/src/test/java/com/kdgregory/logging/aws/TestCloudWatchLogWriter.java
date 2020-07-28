@@ -888,6 +888,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
         assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",              bigMessage,         mock.mostRecentEvents.get(0).getMessage());
+        assertEquals("stats: recorded oversize message",        1,                  stats.getOversizeMessages());
 
         internalLogger.assertInternalWarningLog(
             "discarded oversize.*" + biggerMessage.length() + ".*"
@@ -916,6 +917,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
         assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",              bigMessage,         mock.mostRecentEvents.get(0).getMessage());
+        assertEquals("stats: no oversize messages",             0,                  stats.getOversizeMessages());
 
         internalLogger.assertInternalWarningLog();
 
@@ -926,6 +928,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putLogEvents: invocation count",          2,                  mock.putLogEventsInvocationCount);
         assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",              bigMessage,         mock.mostRecentEvents.get(0).getMessage());
+        assertEquals("stats: recorded oversize message",        1,                  stats.getOversizeMessages());
 
         internalLogger.assertInternalWarningLog(
             "truncated oversize.*" + biggerMessage.length() + ".*"

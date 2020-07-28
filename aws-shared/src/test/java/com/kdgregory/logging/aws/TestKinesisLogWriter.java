@@ -568,6 +568,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: invocation count",        1,                  mock.putRecordsInvocationCount);
         assertEquals("putRecords: last call #/messages",    1,                  mock.putRecordsSourceRecords.size());
         assertEquals("putRecords: last call content",       bigMessage,         mock.getPuRecordsSourceText(0));
+        assertEquals("stats: recorded oversize message",    1,                  stats.getOversizeMessages());
 
         internalLogger.assertInternalWarningLog(
             "discarded oversize.*" + (maxMessageSize + 1) + ".*"
@@ -593,9 +594,10 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
         mock.allowWriterThread();
 
-        assertEquals("putRecords: invocation count",        1,                  mock.putRecordsInvocationCount);
-        assertEquals("putRecords: last call #/messages",    1,                  mock.putRecordsSourceRecords.size());
-        assertEquals("putRecords: last call content",       bigMessage,         mock.getPuRecordsSourceText(0));
+        assertEquals("putRecords: invocation count",            1,                  mock.putRecordsInvocationCount);
+        assertEquals("putRecords: last call #/messages",        1,                  mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: last call content",           bigMessage,         mock.getPuRecordsSourceText(0));
+        assertEquals("stats: no oversize messages",             0,                  stats.getOversizeMessages());
 
         internalLogger.assertInternalWarningLog();
 
@@ -603,9 +605,10 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
         mock.allowWriterThread();
 
-        assertEquals("putRecords: invocation count",        2,                  mock.putRecordsInvocationCount);
-        assertEquals("putRecords: last call #/messages",    1,                  mock.putRecordsSourceRecords.size());
-        assertEquals("putRecords: last call content",       bigMessage,         mock.getPuRecordsSourceText(0));
+        assertEquals("putRecords: invocation count",            2,                  mock.putRecordsInvocationCount);
+        assertEquals("putRecords: last call #/messages",        1,                  mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: last call content",           bigMessage,         mock.getPuRecordsSourceText(0));
+        assertEquals("stats: recorded oversize message",        1,                  stats.getOversizeMessages());
 
         internalLogger.assertInternalWarningLog(
             "truncated oversize.*" + (maxMessageSize + 1) + ".*"

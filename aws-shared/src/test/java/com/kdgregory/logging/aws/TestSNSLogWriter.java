@@ -662,7 +662,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("publish: invocation count",        1,                  mock.publishInvocationCount);
         assertEquals("publish: last call #/messages",    validMessage,       mock.lastPublishMessage);
 
-        internalLogger.assertInternalWarningLog(
+        internalLogger.assertInternalDebugLogContains(
             "discarded empty message"
             );
     }
@@ -690,7 +690,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("publish: last call #/messages",           bigMessage,         mock.lastPublishMessage);
         assertEquals("stats: recorded oversize message",        1,                  stats.getOversizeMessages());
 
-        internalLogger.assertInternalWarningLog(
+        internalLogger.assertInternalDebugLogContains(
             "discarded oversize.*" + (snsMaxMessageSize + 1) + ".*"
             );
     }
@@ -728,7 +728,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("publish: last call #/messages",           bigMessage,         mock.lastPublishMessage);
         assertEquals("stats: recorded oversize message",        1,                  stats.getOversizeMessages());
 
-        internalLogger.assertInternalWarningLog(
+        internalLogger.assertInternalDebugLogContains(
             "truncated oversize.*" + (snsMaxMessageSize + 1) + ".*"
             );
     }

@@ -181,12 +181,12 @@ implements LogWriter
             stats.incrementOversizeMessages();
             if (config.truncateOversizeMessages)
             {
-                logger.warn("truncated oversize message (" + message.size() + " bytes to " + maxMessageSize() + ")");
+                logger.debug("truncated oversize message (" + message.size() + " bytes to " + maxMessageSize() + ")");
                 message.truncate(maxMessageSize());
             }
             else
             {
-                logger.warn("discarded oversize message (" + message.size() + " bytes, limit is " + maxMessageSize() + ")");
+                logger.debug("discarded oversize message (" + message.size() + " bytes, limit is " + maxMessageSize() + ")");
                 return;
             }
         }

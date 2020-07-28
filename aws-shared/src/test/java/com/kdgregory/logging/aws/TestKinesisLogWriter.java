@@ -541,7 +541,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: last call #/messages",    1,                  mock.putRecordsSourceRecords.size());
         assertEquals("putRecords: last call content",       validMessage,       mock.getPuRecordsSourceText(0));
 
-        internalLogger.assertInternalWarningLog(
+        internalLogger.assertInternalDebugLogContains(
             "discarded empty message"
             );
     }
@@ -570,7 +570,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: last call content",       bigMessage,         mock.getPuRecordsSourceText(0));
         assertEquals("stats: recorded oversize message",    1,                  stats.getOversizeMessages());
 
-        internalLogger.assertInternalWarningLog(
+        internalLogger.assertInternalDebugLogContains(
             "discarded oversize.*" + (maxMessageSize + 1) + ".*"
             );
     }
@@ -610,7 +610,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: last call content",           bigMessage,         mock.getPuRecordsSourceText(0));
         assertEquals("stats: recorded oversize message",        1,                  stats.getOversizeMessages());
 
-        internalLogger.assertInternalWarningLog(
+        internalLogger.assertInternalDebugLogContains(
             "truncated oversize.*" + (maxMessageSize + 1) + ".*"
             );
     }

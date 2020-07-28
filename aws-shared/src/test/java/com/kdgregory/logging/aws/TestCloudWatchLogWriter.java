@@ -845,6 +845,29 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
 
     @Test
+    public void testEmptyMessageDiscard() throws Exception
+    {
+        final String invalidMessage = "";
+        final String validMessage = "this one works";
+
+        createWriter();
+
+        // have to write both messages at once, in this order, to allow writer thread
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), invalidMessage));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), validMessage));
+        mock.allowWriterThread();
+
+        assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",              validMessage,       mock.mostRecentEvents.get(0).getMessage());
+
+        internalLogger.assertInternalWarningLog(
+            "discarded empty message"
+            );
+    }
+
+
+    @Test
     public void testOversizeMessageDiscard() throws Exception
     {
         final int cloudwatchMaximumEventSize    = 256 * 1024;   // copied from https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html

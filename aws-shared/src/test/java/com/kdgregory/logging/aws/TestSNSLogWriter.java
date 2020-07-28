@@ -646,6 +646,29 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
 
     @Test
+    public void testEmptyMessageDiscard() throws Exception
+    {
+        final String invalidMessage = "";
+        final String validMessage = "this one works";
+
+        config.topicName = TEST_TOPIC_NAME;
+        createWriter();
+
+        // have to write both messages at once, in this order, to allow writer thread
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), invalidMessage));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), validMessage));
+        mock.allowWriterThread();
+
+        assertEquals("publish: invocation count",        1,                  mock.publishInvocationCount);
+        assertEquals("publish: last call #/messages",    validMessage,       mock.lastPublishMessage);
+
+        internalLogger.assertInternalWarningLog(
+            "discarded empty message"
+            );
+    }
+
+
+    @Test
     public void testOversizeMessageDiscard() throws Exception
     {
         final int snsMaxMessageSize     = 262144;  // per https://docs.aws.amazon.com/sns/latest/api/API_Publish.html
@@ -656,7 +679,6 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         config.topicName = TEST_TOPIC_NAME;
         config.subject = "example";
-
         createWriter();
 
         // have to write both messages at once, in this order, otherwise we don't know that the first was discarded

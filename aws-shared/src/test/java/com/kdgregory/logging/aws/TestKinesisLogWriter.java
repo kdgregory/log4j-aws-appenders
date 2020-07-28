@@ -525,6 +525,29 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
 
     @Test
+    public void testEmptyMessageDiscard() throws Exception
+    {
+        final String invalidMessage = "";
+        final String validMessage = "this one works";
+
+        createWriter();
+
+        // have to write both messages at once, in this order, to allow writer thread
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), invalidMessage));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), validMessage));
+        mock.allowWriterThread();
+
+        assertEquals("putRecords: invocation count",        1,                  mock.putRecordsInvocationCount);
+        assertEquals("putRecords: last call #/messages",    1,                  mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: last call content",       validMessage,       mock.getPuRecordsSourceText(0));
+
+        internalLogger.assertInternalWarningLog(
+            "discarded empty message"
+            );
+    }
+
+
+    @Test
     public void testOversizeMessageDiscard() throws Exception
     {
         final int kinesisMaxMessageSize = 1024 * 1024;  // per https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html

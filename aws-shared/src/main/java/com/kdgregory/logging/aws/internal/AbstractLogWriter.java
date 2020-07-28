@@ -170,6 +170,12 @@ implements LogWriter
     @Override
     public void addMessage(LogMessage message)
     {
+        if (message.size() == 0)
+        {
+            logger.warn("discarded empty message");
+            return;
+        }
+
         if (message.size() > maxMessageSize())
         {
             if (config.truncateOversizeMessages)

@@ -12,20 +12,21 @@ The CloudWatch appender provides the following features:
 
 This appender provides the following configuration properties, along with the common [connection properties](client.md#configuration-properties).
 
-Name                | Description
---------------------|----------------------------------------------------------------
-`logGroup`          | Name of the CloudWatch log group where messages are sent; may use [substitutions](substitutions.md). If this group doesn't exist it will be created. No default.
-`logStream`         | Name of the CloudWatch log stream where messages are sent; may use [substitutions](substitutions.md). If this stream doesn't exist it will be created. Defaults to `{startupTimestamp}`.
-`retentionPeriod`   | (optional) Specifies a non-default retention period for created CloudWatch log groups.
-`dedicatedWriter`   | If `true`, the appender assumes that it will be the only writer to the log stream, and will not retrieve a sequence token before each write. Defaults to `false` for legacy behavior. See [below](#invalidsequencetokenexception-and-logstream-throttling) for more information.
-`rotationMode`      | Controls whether auto-rotation is enabled. Values are `none`, `count`, `interval`, `hourly`, and `daily`; default is `none`. See below for more information.
-`rotationInterval`  | Used only for `count` and `interval` rotation modes: for the former, the number of messages, and for the latter, the number of milliseconds between rotations.
-`sequence`          | A value that is incremented each time the stream is rotated. Defaults to 0.
-`synchronous`       | If `true`, the appender will operate in [synchronous mode](design.md#synchronous-mode), sending messages from the invoking thread on every call to `append()`.
-`batchDelay`        | The time, in milliseconds, that the writer will wait to accumulate messages for a batch. See the [design doc](design.md#message-batches) for more information.
-`discardThreshold`  | The threshold count for discarding messages; default is 10,000. See the [design doc](design.md#message-discard) for more information.
-`discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
-`useShutdownHook`   | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default, set to `false` to disable. Ignored for Log4J2. See [docs](design.md#shutdown-hooks) for more information.
+Name                        | Description
+----------------------------|----------------------------------------------------------------
+`logGroup`                  | Name of the CloudWatch log group where messages are sent; may use [substitutions](substitutions.md). If this group doesn't exist it will be created. No default.
+`logStream`                 | Name of the CloudWatch log stream where messages are sent; may use [substitutions](substitutions.md). If this stream doesn't exist it will be created. Defaults to `{startupTimestamp}`.
+`retentionPeriod`           | (optional) Specifies a non-default retention period for created CloudWatch log groups.
+`dedicatedWriter`           | If `true`, the appender assumes that it will be the only writer to the log stream, and will not retrieve a sequence token before each write. Defaults to `false` for legacy behavior. See [below](#invalidsequencetokenexception-and-logstream-throttling) for more information.
+`rotationMode`              | Controls whether auto-rotation is enabled. Values are `none`, `count`, `interval`, `hourly`, and `daily`; default is `none`. See below for more information.
+`rotationInterval`          | Used only for `count` and `interval` rotation modes: for the former, the number of messages, and for the latter, the number of milliseconds between rotations.
+`sequence`                  | A value that is incremented each time the stream is rotated. Defaults to 0.
+`synchronous`               | If `true`, the appender will operate in [synchronous mode](design.md#synchronous-mode), sending messages from the invoking thread on every call to `append()`.
+`batchDelay`                | The time, in milliseconds, that the writer will wait to accumulate messages for a batch. See the [design doc](design.md#message-batches) for more information.
+`truncateOversizeMessages`  | If `true` (the default), truncate any messages that are too large for CloudWatch; if `false`, discard them. See [below](#oversize-messages) for more information.
+`discardThreshold`          | The threshold count for discarding messages; default is 10,000. See the [design doc](design.md#message-discard) for more information.
+`discardAction`             | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
+`useShutdownHook`           | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default, set to `false` to disable. Ignored for Log4J2. See [docs](design.md#shutdown-hooks) for more information.
 
 
 ### Example: Log4J 1.x
@@ -183,3 +184,20 @@ retries are also reported as logger statistics, available via JMX.
 
 If you do have a large number of writer races, you can either switch to a single stream per
 appender (preferred), or increase the batch delay so that writes happen less frequently.
+
+
+## Oversize Messages
+
+CloudWatch has a maximum message size of 262,118 bytes (the 
+[documented event size](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html)
+is 256k, but this includes 26 bytes of overhead). While most logged messages won't exceed
+this limit, some (in particular, Spring exception traces) might. How the appender handles
+this depends on the `truncateOversizeMessages` configuration setting:
+
+* If `true` (the default), the message is truncated to the maximum allowed size. This is appropriate
+  for simple text messages, as it preserves as much information as possible. However, it will corrupt
+  messages formatted using JSON.
+* If `false`, the message is discarded.
+
+In either case, the oversize message is logged in the framework's internal status logger. The number
+of oversize messages is available through the JMX `oversizeMessages` attribute.

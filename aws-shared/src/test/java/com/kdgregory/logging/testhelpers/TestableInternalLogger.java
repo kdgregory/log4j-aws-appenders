@@ -15,7 +15,10 @@
 package com.kdgregory.logging.testhelpers;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import static org.junit.Assert.*;
 
@@ -79,6 +82,31 @@ implements InternalLogger
     {
         assertLogBecomesExpectedSize("debug", debugMessages, expectedRegexes.length, 1000);
         assertLogMessages("debug", debugMessages, expectedRegexes);
+    }
+
+
+    /**
+     *  Asserts that the debug log contains the expected regexes, ignoring any
+     *  other lines (used to verify that a specific test's output exists).
+     */
+    public void assertInternalDebugLogContains(String... expectedRegexes)
+    {
+        List<String> testedRegexes = new ArrayList<>(Arrays.asList(expectedRegexes));
+        Iterator<String> testItx = testedRegexes.iterator();
+        while (testItx.hasNext())
+        {
+            String expected = testItx.next();
+            Pattern pattern = Pattern.compile(expected);
+            for (String actual : debugMessages)
+            {
+                if (pattern.matcher(actual).matches())
+                    testItx.remove();
+            }
+        }
+        if (testedRegexes.size() == 0)
+            return;
+
+        fail("did not find log messages: " + testedRegexes);
     }
 
 

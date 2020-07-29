@@ -37,6 +37,7 @@ public interface AbstractAppenderConfig
     long getRotationInterval();
 
     long getBatchDelay();
+    boolean getTruncateOversizeMessages();
     int getDiscardThreshold();
     String getDiscardAction();
     boolean isSynchronous();

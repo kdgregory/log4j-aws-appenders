@@ -95,6 +95,13 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *           If the appender is in synchronous mode, this setting is ignored.
  *
  *  <tr VALIGN="top">
+ *      <th> truncateOversizeMessages
+ *      <td> If <code>true</code> (the default), oversize messages are truncated to
+ *           the maximum length permitted by Kinesis. If <code>false</code> they are
+ *           discarded. In either case, the oversized message is reported to the
+ *           Log4J debug log.
+ *
+ *  <tr VALIGN="top">
  *      <th> discardThreshold
  *      <td> The number of unsent messages that will trigger message discard. A
  *           high value is useful when network connectivity is intermittent and/or
@@ -351,7 +358,7 @@ extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWr
         return new KinesisWriterConfig(
             actualStreamName, actualPartitionKey,
             config.getAutoCreate(), config.getShardCount(), config.getRetentionPeriod(),
-            config.getBatchDelay(), config.getDiscardThreshold(), discardAction,
+            false, config.getBatchDelay(), config.getDiscardThreshold(), discardAction,
             config.getClientFactory(), config.getAssumedRole(), config.getClientRegion(), config.getClientEndpoint());
     }
 

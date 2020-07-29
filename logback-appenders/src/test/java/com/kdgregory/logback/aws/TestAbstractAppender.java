@@ -24,8 +24,6 @@ import static org.junit.Assert.*;
 
 import org.slf4j.LoggerFactory;
 
-import net.sf.kdgcommons.lang.StringUtil;
-
 import com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.common.LogMessage;
@@ -222,29 +220,6 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("nothing was written", 0, writer.messages.size());
 
         appenderInternalLogger.assertWarningLog();
-    }
-
-
-    @Test
-    public void testMaximumMessageSize() throws Exception
-    {
-        final int cloudwatchMaximumBatchSize    = 1048576;  // copied from http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
-        final int cloudwatchOverhead            = 26;       // ditto
-        final int layoutOverhead                = 1;        // newline after message
-
-        final int maxMessageSize                = cloudwatchMaximumBatchSize - (cloudwatchOverhead + layoutOverhead);
-        final String bigMessage                 = StringUtil.repeat('A', maxMessageSize);
-        final String biggerMessage              = bigMessage + "1";
-
-        initialize("testMaximumMessageSize");
-
-        logger.debug(biggerMessage);
-        logger.debug(bigMessage);
-
-        MockCloudWatchWriter writer = appender.getMockWriter();
-
-        assertEquals("number of messages",  1,                  writer.messages.size());
-        assertEquals("successful message",  bigMessage,         writer.getMessage(0));
     }
 
 

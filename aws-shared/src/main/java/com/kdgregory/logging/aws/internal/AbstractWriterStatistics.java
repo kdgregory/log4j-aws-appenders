@@ -46,6 +46,8 @@ public abstract class AbstractWriterStatistics
     private volatile Date lastErrorTimestamp;
     private volatile List<String> lastErrorStacktrace;
 
+    private volatile int messageSizeViolations;
+
     private volatile int messagesSent;
     private volatile int messagesSentLastBatch;
     private volatile int messagesRequeuedLastBatch;
@@ -113,6 +115,18 @@ public abstract class AbstractWriterStatistics
     public List<String> getLastErrorStacktrace()
     {
         return lastErrorStacktrace;
+    }
+
+
+    public synchronized void incrementOversizeMessages()
+    {
+        messageSizeViolations++;
+    }
+
+
+    public int getOversizeMessages()
+    {
+        return messageSizeViolations;
     }
 
 

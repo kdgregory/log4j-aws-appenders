@@ -41,20 +41,21 @@ extends AbstractUnitTest<TestableSNSAppender>
         // note: this also tests non-default configuration
         initialize("testConfigurationByName");
 
-        assertEquals("topicName",           "example",                      appender.getConfig().getTopicName());
-        assertEquals("topicArn",            null,                           appender.getConfig().getTopicArn());
+        assertEquals("topicName",               "example",                      appender.getConfig().getTopicName());
+        assertEquals("topicArn",                null,                           appender.getConfig().getTopicArn());
 
-        assertEquals("subject",             "This is a test",               appender.getConfig().getSubject());
-        assertTrue("autoCreate",                                            appender.getConfig().isAutoCreate());
-        assertEquals("batch delay",         1L,                             appender.getConfig().getBatchDelay());
-        assertEquals("discard threshold",   123,                            appender.getConfig().getDiscardThreshold());
-        assertEquals("discard action",      "newest",                       appender.getConfig().getDiscardAction());
-        assertFalse("use shutdown hook",                                    appender.getConfig().isUseShutdownHook());
-        assertFalse("synchronous mode",                                     appender.getConfig().isSynchronous());
-        assertEquals("assumed role",        "AssumableRole",                appender.getConfig().getAssumedRole());
-        assertEquals("client factory",      "com.example.Foo.bar",          appender.getConfig().getClientFactory());
-        assertEquals("client region",       "us-west-1",                    appender.getConfig().getClientRegion());
-        assertEquals("client endpoint",     "sns.us-west-2.amazonaws.com",  appender.getConfig().getClientEndpoint());
+        assertEquals("subject",                 "This is a test",               appender.getConfig().getSubject());
+        assertTrue("autoCreate",                                                appender.getConfig().isAutoCreate());
+        assertEquals("batch delay",             1L,                             appender.getConfig().getBatchDelay());
+        assertFalse("truncate oversize messages",                                appender.getConfig().getTruncateOversizeMessages());
+        assertEquals("discard threshold",       123,                            appender.getConfig().getDiscardThreshold());
+        assertEquals("discard action",          "newest",                       appender.getConfig().getDiscardAction());
+        assertFalse("use shutdown hook",                                        appender.getConfig().isUseShutdownHook());
+        assertFalse("synchronous mode",                                         appender.getConfig().isSynchronous());
+        assertEquals("assumed role",            "AssumableRole",                appender.getConfig().getAssumedRole());
+        assertEquals("client factory",          "com.example.Foo.bar",          appender.getConfig().getClientFactory());
+        assertEquals("client region",           "us-west-1",                    appender.getConfig().getClientRegion());
+        assertEquals("client endpoint",         "sns.us-west-2.amazonaws.com",  appender.getConfig().getClientEndpoint());
     }
 
 
@@ -64,20 +65,21 @@ extends AbstractUnitTest<TestableSNSAppender>
         // note: this also tests default configuration
         initialize("testConfigurationByArn");
 
-        assertEquals("topicName",           null,                           appender.getConfig().getTopicName());
-        assertEquals("topicArn",            "arn-example",                  appender.getConfig().getTopicArn());
+        assertEquals("topicName",               null,                           appender.getConfig().getTopicName());
+        assertEquals("topicArn",                "arn-example",                  appender.getConfig().getTopicArn());
 
-        assertEquals("subject",             null,                           appender.getConfig().getSubject());
-        assertFalse("autoCreate",                                           appender.getConfig().isAutoCreate());
-        assertEquals("batch delay",         1L,                             appender.getConfig().getBatchDelay());
-        assertEquals("discard threshold",   1000,                           appender.getConfig().getDiscardThreshold());
-        assertEquals("discard action",      "oldest",                       appender.getConfig().getDiscardAction());
-        assertTrue("use shutdown hook",                                     appender.getConfig().isUseShutdownHook());
-        assertFalse("synchronous mode",                                     appender.getConfig().isSynchronous());
-        assertEquals("assumed role",        null,                           appender.getConfig().getAssumedRole());
-        assertEquals("client factory",      null,                           appender.getConfig().getClientFactory());
-        assertEquals("client region",       null,                           appender.getConfig().getClientRegion());
-        assertEquals("client endpoint",     null,                           appender.getConfig().getClientEndpoint());
+        assertEquals("subject",                 null,                           appender.getConfig().getSubject());
+        assertFalse("autoCreate",                                               appender.getConfig().isAutoCreate());
+        assertEquals("batch delay",             1L,                             appender.getConfig().getBatchDelay());
+        assertTrue("truncate oversize messages",                                appender.getConfig().getTruncateOversizeMessages());
+        assertEquals("discard threshold",       1000,                           appender.getConfig().getDiscardThreshold());
+        assertEquals("discard action",          "oldest",                       appender.getConfig().getDiscardAction());
+        assertTrue("use shutdown hook",                                         appender.getConfig().isUseShutdownHook());
+        assertFalse("synchronous mode",                                         appender.getConfig().isSynchronous());
+        assertEquals("assumed role",            null,                           appender.getConfig().getAssumedRole());
+        assertEquals("client factory",          null,                           appender.getConfig().getClientFactory());
+        assertEquals("client region",           null,                           appender.getConfig().getClientRegion());
+        assertEquals("client endpoint",         null,                           appender.getConfig().getClientEndpoint());
     }
 
 

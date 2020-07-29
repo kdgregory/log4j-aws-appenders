@@ -116,6 +116,29 @@ implements AbstractAppenderConfig
     }
 
 
+    @PluginBuilderAttribute("truncateOversizeMessages")
+    private boolean truncateOversizeMessages = true;
+
+
+    /**
+     *  Sets the <code>truncateOversizeMessages</code> configuration property.
+     */
+    public void setTruncateOversizeMessages(boolean value)
+    {
+        this.truncateOversizeMessages = value;
+    }
+
+
+    /**
+     *  Returns the <code>truncateOversizeMessages</code> configuration property.
+     */
+    @Override
+    public boolean getTruncateOversizeMessages()
+    {
+        return this.truncateOversizeMessages;
+    }
+
+
     @PluginBuilderAttribute("discardThreshold")
     private int discardThreshold = 10000;
 

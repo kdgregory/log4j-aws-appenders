@@ -61,7 +61,6 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *      <th> shardCount
  *      <td> For auto-created streams, the number of shards in the stream.
  *
- *
  *  <tr VALIGN="top">
  *      <th> retentionPeriod
  *      <td> For auto-created streams, the number of hours that messages will be
@@ -82,6 +81,13 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *           The default value is 2000, which is rather arbitrarily chosen.
  *           <p>
  *           If the appender is in synchronous mode, this setting is ignored.
+ *
+ *  <tr VALIGN="top">
+ *      <th> truncateOversizeMessages
+ *      <td> If <code>true</code> (the default), oversize messages are truncated to
+ *           the maximum length permitted by Kinesis. If <code>false</code> they are
+ *           discarded. In either case, the oversized message is reported to the
+ *           Logback debug log.
  *
  *  <tr VALIGN="top">
  *      <th> discardThreshold
@@ -302,10 +308,11 @@ extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWrit
         actualStreamName   = subs.perform(streamName);
         actualPartitionKey = subs.perform(partitionKey);
 
-        return new KinesisWriterConfig(actualStreamName, actualPartitionKey,
-                                       autoCreate, shardCount, retentionPeriod,
-                                       batchDelay, discardThreshold, discardAction,
-                                       clientFactory, assumedRole, clientRegion, clientEndpoint);
+        return new KinesisWriterConfig(
+            actualStreamName, actualPartitionKey,
+            autoCreate, shardCount, retentionPeriod,
+            false, batchDelay, discardThreshold, discardAction,
+            clientFactory, assumedRole, clientRegion, clientEndpoint);
     }
 
 

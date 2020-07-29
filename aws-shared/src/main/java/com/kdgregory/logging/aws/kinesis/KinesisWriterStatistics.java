@@ -34,5 +34,4 @@ implements KinesisWriterStatisticsMXBean
     {
         return actualStreamName;
     }
-
 }

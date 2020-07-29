@@ -10,6 +10,7 @@
     <subject>This is a test</subject>
     <autoCreate>true</autoCreate>
     <synchronous>false</synchronous> <!-- explicitly set to default value -->
+    <truncateOversizeMessages>false</truncateOversizeMessages>
     <discardThreshold>123</discardThreshold>
     <discardAction>newest</discardAction>
     <assumedRole>AssumableRole</assumedRole>

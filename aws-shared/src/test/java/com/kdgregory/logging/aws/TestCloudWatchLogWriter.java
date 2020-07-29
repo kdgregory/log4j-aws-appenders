@@ -90,6 +90,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             "bargle",               // actualLogStream
             null,                   // retentionPeriod
             false,                  // dedicatedWriter
+            false,                  // truncateOversizeMessages
             100,                    // batchDelay -- short enough to keep tests fast, long enough that we can write a lot of messages
             10000,                  // discardThreshold
             DiscardAction.oldest,   // discardAction
@@ -125,6 +126,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
                 "bar",                              // actualLogStream
                 1,                                  // retentionPeriod
                 true,                               // dedicatedWriter
+                true,                               // truncateOversizeMessages
                 123,                                // batchDelay
                 456,                                // discardThreshold
                 DiscardAction.newest,               // discardAction
@@ -136,7 +138,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("log group name",                          "foo",                          config.logGroupName);
         assertEquals("log stream name",                         "bar",                          config.logStreamName);
         assertEquals("retention period",                        Integer.valueOf(1),             config.retentionPeriod);
-        assertEquals("dedicated stream",                        true,                           config.dedicatedWriter);
+        assertTrue("dedicated stream",                                                          config.dedicatedWriter);
+        assertTrue("truncate large messages",                                                   config.truncateOversizeMessages);
         assertEquals("factory method",                          "com.example.factory.Method",   config.clientFactoryMethod);
         assertEquals("assumed role",                            "SomeRole",                     config.assumedRole);
         assertEquals("client region",                           "us-west-1",                    config.clientRegion);
@@ -842,39 +845,94 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
 
     @Test
-    public void testMaximumMessageSize() throws Exception
+    public void testEmptyMessageDiscard() throws Exception
     {
-        final int cloudwatchMaximumBatchSize    = 1048576;  // copied from http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
-        final int cloudwatchOverhead            = 26;       // ditto
-
-        final int maxMessageSize                = cloudwatchMaximumBatchSize - cloudwatchOverhead;
-        final String bigMessage                 = StringUtil.repeat('A', maxMessageSize);
-        final String biggerMessage              = bigMessage + "1";
+        final String invalidMessage = "";
+        final String validMessage = "this one works";
 
         createWriter();
 
-        try
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
-            fail("writer allowed too-large message");
-        }
-        catch (IllegalArgumentException ex)
-        {
-            assertEquals("exception message", "attempted to enqueue a too-large message", ex.getMessage());
-        }
-        catch (Exception ex)
-        {
-            fail("writer threw " + ex.getClass().getName() + ", not IllegalArgumentException");
-        }
+        // have to write both messages at once, in this order, to allow writer thread
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), invalidMessage));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), validMessage));
+        mock.allowWriterThread();
 
-        // we'll send an OK message through to verify that nothing bad happened
+        assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",              validMessage,       mock.mostRecentEvents.get(0).getMessage());
+
+        internalLogger.assertInternalDebugLogContains(
+            "discarded empty message"
+            );
+    }
+
+
+    @Test
+    public void testOversizeMessageDiscard() throws Exception
+    {
+        final int cloudwatchMaximumEventSize    = 256 * 1024;   // copied from https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
+        final int cloudwatchOverhead            = 26;           // copied from https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
+        final int cloudwatchMaximumMessageSize  = cloudwatchMaximumEventSize - cloudwatchOverhead;
+
+        // using different characters at the end of the message makes JUnit output easer to read
+        final String bigMessage                 = StringUtil.repeat('X', cloudwatchMaximumMessageSize - 1) + "Y";
+        final String biggerMessage              = bigMessage + "X";
+
+        createWriter();
+
+        // have to write both messages at once, in this order, to allow writer thread
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
         writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
-
         mock.allowWriterThread();
 
         assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
         assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
         assertEquals("putLogEvents: last message",              bigMessage,         mock.mostRecentEvents.get(0).getMessage());
+        assertEquals("stats: recorded oversize message",        1,                  stats.getOversizeMessages());
+
+        internalLogger.assertInternalDebugLogContains(
+            "discarded oversize.*" + biggerMessage.length() + ".*"
+            );
+    }
+
+
+    @Test
+    public void testOversizeMessageTruncate() throws Exception
+    {
+        final int cloudwatchMaximumEventSize    = 256 * 1024;   // copied from https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
+        final int cloudwatchOverhead            = 26;           // copied from https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
+        final int cloudwatchMaximumMessageSize  = cloudwatchMaximumEventSize - cloudwatchOverhead;
+
+        // using different characters at the end of the message makes JUnit output easer to read
+        final String bigMessage                 = StringUtil.repeat('X', cloudwatchMaximumMessageSize - 1) + "Y";
+        final String biggerMessage              = bigMessage + "X";
+
+        config.truncateOversizeMessages = true;
+        createWriter();
+
+        // first message should go through with no problems
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
+        mock.allowWriterThread();
+
+        assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",              bigMessage,         mock.mostRecentEvents.get(0).getMessage());
+        assertEquals("stats: no oversize messages",             0,                  stats.getOversizeMessages());
+
+        internalLogger.assertInternalWarningLog();
+
+        // second message should be truncated (note that truncation results in bigMessage)
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
+        mock.allowWriterThread();
+
+        assertEquals("putLogEvents: invocation count",          2,                  mock.putLogEventsInvocationCount);
+        assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
+        assertEquals("putLogEvents: last message",              bigMessage,         mock.mostRecentEvents.get(0).getMessage());
+        assertEquals("stats: recorded oversize message",        1,                  stats.getOversizeMessages());
+
+        internalLogger.assertInternalDebugLogContains(
+            "truncated oversize.*" + biggerMessage.length() + ".*"
+            );
     }
 
 

@@ -70,6 +70,13 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
         return message.size() > SNSConstants.MAX_MESSAGE_BYTES;
     }
 
+
+    @Override
+    public int maxMessageSize()
+    {
+        return SNSConstants.MAX_MESSAGE_BYTES;
+    }
+
 //----------------------------------------------------------------------------
 //  Hooks for superclass
 //----------------------------------------------------------------------------

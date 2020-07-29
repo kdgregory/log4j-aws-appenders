@@ -17,6 +17,7 @@ package com.kdgregory.logging.test;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -167,7 +168,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
         accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("reading messages");
-        List<String> messages = testHelper.retrieveMessages(numMessages);
+        List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
         testHelper.assertMessageContent(messages);
@@ -191,7 +192,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
         accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("reading messages");
-        List<String> messages = testHelper.retrieveMessages(numMessages);
+        List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
         testHelper.assertMessageContent(messages, "Example");
@@ -261,7 +262,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
         }
 
         localLogger.info("reading messages");
-        List<String> messages = testHelper.retrieveMessages(totalMessages);
+        List<Map<String,Object>> messages = testHelper.retrieveMessages(totalMessages);
 
         assertEquals("number of messages", totalMessages, messages.size());
         testHelper.assertMessageContent(messages, "Example");
@@ -285,7 +286,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
         accessor1.newMessageWriter(numMessages).run();
 
         localLogger.info("reading messages");
-        List<String> messages = testHelper.retrieveMessages(totalMessages);
+        List<Map<String,Object>> messages = testHelper.retrieveMessages(totalMessages);
 
         assertEquals("number of messages", totalMessages, messages.size());
         testHelper.assertMessageContent(messages, "Example1", "Example2");
@@ -311,7 +312,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
         accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("reading messages");
-        List<String> messages = testHelper.retrieveMessages(numMessages);
+        List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
         testHelper.assertMessageContent(messages);
@@ -361,7 +362,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
         accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("reading messages");
-        List<String> messages = testHelper.retrieveMessages(numMessages);
+        List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
         testHelper.assertMessageContent(messages);

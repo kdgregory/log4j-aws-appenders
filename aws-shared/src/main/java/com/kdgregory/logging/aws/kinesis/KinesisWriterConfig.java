@@ -33,32 +33,34 @@ extends AbstractWriterConfig
 
 
     /**
-     *  @param streamName           Name of the stream where messages will be written.
-     *  @param partitionKey         Partition key for messages written to stream. If blank
-     *                              we'll generate a random partition key for each message.
-     *  @param autoCreate           If true, stream will be created if it doesn't already
-     *                              exist. If false, writer will fail to start.
-     *  @param shardCount           Number of shards to use when creating the stream
-     *                              (ignored if stream already exists).
-     *  @param retentionPeriod      Retention period to use when creating the stream
-     *                              (ignored if stream already exists); null indicates
-     *                              use the default retention period.
-     *  @param batchDelay           Number of milliseconds to wait for messages to be
-     *                              ready to send.
-     *  @param discardThreshold     Maximum number of messages to retain if unable to send.
-     *  @param discardAction        What to do with unsent messages over the threshold.
-     *  @param clientFactoryMethod  Optional: fully-qualified name of a static method to create client.
-     *  @param assumedRole          Optional: name or ARN of a role to assume when creating client.
-     *  @param clientRegion         Optional: explicit region for client (used with ctor and SDK builder).
-     *  @param clientEndpoint       Optional: explicit endpoint for client (only used with constructors).
+     *  @param streamName               Name of the stream where messages will be written.
+     *  @param partitionKey             Partition key for messages written to stream. If blank
+     *                                  we'll generate a random partition key for each message.
+     *  @param autoCreate               If true, stream will be created if it doesn't already
+     *                                  exist. If false, writer will fail to start.
+     *  @param shardCount               Number of shards to use when creating the stream
+     *                                  (ignored if stream already exists).
+     *  @param retentionPeriod          Retention period to use when creating the stream
+     *                                  (ignored if stream already exists); null indicates
+     *                                  use the default retention period.
+     *  @param truncateOversizeMessages If true, messages that are too large for the service are
+     *                                  truncated to fit; if false, they are discarded.
+     *  @param batchDelay               Number of milliseconds to wait for messages to be
+     *                                  ready to send.
+     *  @param discardThreshold         Maximum number of messages to retain if unable to send.
+     *  @param discardAction            What to do with unsent messages over the threshold.
+     *  @param clientFactoryMethod      Optional: fully-qualified name of a static method to create client.
+     *  @param assumedRole              Optional: name or ARN of a role to assume when creating client.
+     *  @param clientRegion             Optional: explicit region for client (used with ctor and SDK builder).
+     *  @param clientEndpoint           Optional: explicit endpoint for client (only used with constructors).
      */
     public KinesisWriterConfig(
         String streamName, String partitionKey,
         boolean autoCreate, int shardCount, Integer retentionPeriod,
-        long batchDelay, int discardThreshold, DiscardAction discardAction,
+        boolean truncateOversizeMessages, long batchDelay, int discardThreshold, DiscardAction discardAction,
         String clientFactoryMethod, String assumedRole, String clientRegion, String clientEndpoint)
     {
-        super(batchDelay, discardThreshold, discardAction, clientFactoryMethod, assumedRole, clientRegion, clientEndpoint);
+        super(truncateOversizeMessages, batchDelay, discardThreshold, discardAction, clientFactoryMethod, assumedRole, clientRegion, clientEndpoint);
 
         this.streamName = streamName;
         this.partitionKey = partitionKey;

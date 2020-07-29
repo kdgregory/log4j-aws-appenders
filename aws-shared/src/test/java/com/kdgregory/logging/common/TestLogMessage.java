@@ -54,6 +54,81 @@ public class TestLogMessage
 
 
     @Test
+    public void testTruncate() throws Exception
+    {
+        final String ascii = "abcdefg";
+        final String utf8  = "\u00c1\u00c2\u2440";    // encodes as 2, 2, 3
+        final String mixed = "\u00c1\u00c2X\u2440";   // encodes as 2, 2, 1, 3
+
+        LogMessage e1 = new LogMessage(0, "");
+        e1.truncate(Integer.MAX_VALUE);
+        assertArrayEquals("empty array", new byte[0], e1.getBytes());
+
+        LogMessage e2 = new LogMessage(0, "this is a test");
+        e2.truncate(0);
+        assertArrayEquals("truncate to empty", new byte[0], e1.getBytes());
+
+        // the rest of the tests reconstitute the string, both because it's easier to read, and as a secondary check for valid truncation
+
+        LogMessage a1 = new LogMessage(0, ascii);
+        a1.truncate(7);
+        assertEquals("truncate size == array size, USASCII",                        "abcdefg",              new String(a1.getBytes(), StandardCharsets.UTF_8));
+        assertEquals("truncate size == array size, USASCII",                        "abcdefg",              a1.getMessage());
+
+        LogMessage a2 = new LogMessage(0, ascii);
+        a2.truncate(Integer.MAX_VALUE);
+        assertEquals("truncate size > array size, USASCII",                         "abcdefg",              new String(a2.getBytes(), StandardCharsets.UTF_8));
+        assertEquals("truncate size > array size, USASCII",                         "abcdefg",              a2.getMessage());
+
+        LogMessage a3 = new LogMessage(0, ascii);
+        a3.truncate(3);
+        assertEquals("truncate size < array size, USASCII",                         "abc",                  new String(a3.getBytes(), StandardCharsets.UTF_8));
+        assertEquals("truncate size < array size, USASCII",                         "abc",                  a3.getMessage());
+
+        LogMessage a4 = new LogMessage(0, ascii);
+        a4.truncate(6);
+        assertEquals("truncate size == array size - 1, USASCII",                    "abcdef",               new String(a4.getBytes(), StandardCharsets.UTF_8));
+        assertEquals("truncate size == array size - 1, USASCII",                    "abcdef",               a4.getMessage());
+
+        LogMessage u1 = new LogMessage(0, utf8);
+        u1.truncate(7);
+        assertEquals("truncate size == array size, UTF-8",                          "\u00c1\u00c2\u2440",   new String(u1.getBytes(), StandardCharsets.UTF_8));
+        assertEquals("truncate size == array size, UTF-8",                          "\u00c1\u00c2\u2440",   u1.getMessage());
+
+        LogMessage u2 = new LogMessage(0, utf8);
+        u2.truncate(Integer.MAX_VALUE);
+        assertEquals("truncate size > array size, UTF-8",                           "\u00c1\u00c2\u2440",   new String(u2.getBytes(), StandardCharsets.UTF_8));
+        assertEquals("truncate size > array size, UTF-8",                           "\u00c1\u00c2\u2440",   u2.getMessage());
+
+        LogMessage u3 = new LogMessage(0, utf8);
+        u3.truncate(4);
+        assertEquals("truncate size < array size, UTF-8, at boundary",              "\u00c1\u00c2",         new String(u3.getBytes(), StandardCharsets.UTF_8));
+        assertEquals("truncate size < array size, UTF-8, at boundary",              "\u00c1\u00c2",         u3.getMessage());
+
+        LogMessage u4 = new LogMessage(0, utf8);
+        u4.truncate(5);
+        assertEquals("truncate size < array size, UTF-8, start-of-sequence",        "\u00c1\u00c2",         new String(u4.getBytes(), StandardCharsets.UTF_8));
+        assertEquals("truncate size < array size, UTF-8, start-of-sequence",        "\u00c1\u00c2",         u4.getMessage());
+
+        LogMessage u5 = new LogMessage(0, utf8);
+        u5.truncate(6);
+        assertEquals("truncate size < array size, UTF-8, mid-sequence",             "\u00c1\u00c2",         new String(u5.getBytes(), StandardCharsets.UTF_8));
+        assertEquals("truncate size < array size, UTF-8, mid-sequence",             "\u00c1\u00c2",         u5.getMessage());
+
+        LogMessage m1 = new LogMessage(0, mixed);
+        m1.truncate(5);
+        assertEquals("truncate size < array size, mixed, ASCII before boundary",    "\u00c1\u00c2X",        new String(m1.getBytes(), StandardCharsets.UTF_8));
+        assertEquals("truncate size < array size, mixed, ASCII before boundary",    "\u00c1\u00c2X",        m1.getMessage());
+
+        LogMessage m2 = new LogMessage(0, mixed);
+        m2.truncate(4);
+        assertEquals("truncate size < array size, mixed, ASCII after boundary",     "\u00c1\u00c2",         new String(m2.getBytes(), StandardCharsets.UTF_8));
+        assertEquals("truncate size < array size, mixed, ASCII after boundary",     "\u00c1\u00c2",         m2.getMessage());
+    }
+
+
+
+    @Test
     public void testOrdering() throws Exception
     {
         final long timestamp = System.currentTimeMillis();

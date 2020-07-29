@@ -14,7 +14,6 @@
 
 package com.kdgregory.logging.aws;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -99,6 +98,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
             false,                      // autoCreate
             0,                          // shardCount
             null,                       // retentionPeriod
+            false,                      // truncateOversizeMessages
             100,                        // batchDelay
             10000,                      // discardThreshold
             DiscardAction.oldest,       // discardAction
@@ -137,6 +137,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
                 true,                                   // autoCreate
                 3,                                      // shardCount
                 48,                                     // retentionPeriod
+                true,                                   // truncateOversizeMessages
                 123,                                    // batchDelay
                 456,                                    // discardThreshold
                 DiscardAction.newest,                   // discardAction
@@ -150,6 +151,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertTrue("auto-create",                                                               config.autoCreate);
         assertEquals("shard count",                         3,                                  config.shardCount);
         assertEquals("retention period",                    Integer.valueOf(48),                config.retentionPeriod);
+        assertTrue("truncate large messages",                                                   config.truncateOversizeMessages);
         assertEquals("factory method",                      "com.example.factory.Method",       config.clientFactoryMethod);
         assertEquals("assumed role",                        "SomeRole",                         config.assumedRole);
         assertEquals("client region",                       "us-west-1",                        config.clientRegion);
@@ -185,10 +187,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: invocation count",                1,                          mock.putRecordsInvocationCount);
         assertEquals("putRecords: source record count",             1,                          mock.putRecordsSourceRecords.size());
         assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,      mock.putRecordsSourceRecords.get(0).getPartitionKey());
-        assertEquals("putRecords: source record content",           "message one",
-                                                                    new String(
-                                                                        BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(0).getData()),
-                                                                        StandardCharsets.UTF_8));
+        assertEquals("putRecords: source record content",           "message one",              mock.getPuRecordsSourceText(0));
 
         assertStatisticsTotalMessagesSent(1);
         assertEquals("statistics: last batch messages sent",        1,                          stats.getMessagesSentLastBatch());
@@ -229,10 +228,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: invocation count",                1,                          mock.putRecordsInvocationCount);
         assertEquals("putRecords: source record count",             1,                          mock.putRecordsSourceRecords.size());
         assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,      mock.putRecordsSourceRecords.get(0).getPartitionKey());
-        assertEquals("putRecords: source record content",           "message one",
-                                                                    new String(
-                                                                        BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(0).getData()),
-                                                                        StandardCharsets.UTF_8));
+        assertEquals("putRecords: source record content",           "message one",              mock.getPuRecordsSourceText(0));
 
         assertStatisticsTotalMessagesSent(1);
         assertEquals("statistics: last batch messages sent",        1,                          stats.getMessagesSentLastBatch());
@@ -504,14 +500,12 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("stats: messages sent in second batch",                            2,      stats.getMessagesSentLastBatch());
         assertEquals("stats: messages requeued in second batch",                        1,      stats.getMessagesRequeuedLastBatch());
 
-        assertTrue("first failure is now first success",
-                   Arrays.equals(
+        assertArrayEquals("first failure is now first success",
                        BinaryUtils.copyAllBytesFrom(savedFailure1.getData()),
-                       BinaryUtils.copyAllBytesFrom(mock.putRecordsSuccesses.get(0).getData())));
-        assertTrue("third failure is now second success (second failure failed again)",
-                   Arrays.equals(
+                       BinaryUtils.copyAllBytesFrom(mock.putRecordsSuccesses.get(0).getData()));
+        assertArrayEquals("third failure is now second success (second failure failed again)",
                        BinaryUtils.copyAllBytesFrom(savedFailure3.getData()),
-                       BinaryUtils.copyAllBytesFrom(mock.putRecordsSuccesses.get(1).getData())));
+                       BinaryUtils.copyAllBytesFrom(mock.putRecordsSuccesses.get(1).getData()));
 
         mock.allowWriterThread();
 
@@ -531,40 +525,94 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
 
     @Test
-    public void testMaximumMessageSize() throws Exception
+    public void testEmptyMessageDiscard() throws Exception
     {
-        final int kinesisMaxMessageSize = 1024 * 1024;  // per https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html
-
-        final int maxMessageSize        = kinesisMaxMessageSize - DEFAULT_PARTITION_KEY.length();   // DEFAULT_PARTITION_KEY is ASCII
-        final String bigMessage         = StringUtil.repeat('A', maxMessageSize);
-        final String biggerMessage      = bigMessage + "1";
+        final String invalidMessage = "";
+        final String validMessage = "this one works";
 
         createWriter();
 
-        try
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
-            fail("writer allowed too-large message");
-        }
-        catch (IllegalArgumentException ex)
-        {
-            assertEquals("exception message", "attempted to enqueue a too-large message", ex.getMessage());
-        }
-        catch (Exception ex)
-        {
-            fail("writer threw " + ex.getClass().getName() + ", not IllegalArgumentException");
-        }
-
-        // we'll send an OK message through to verify that nothing bad happened
-        writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
-
+        // have to write both messages at once, in this order, to allow writer thread
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), invalidMessage));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), validMessage));
         mock.allowWriterThread();
 
         assertEquals("putRecords: invocation count",        1,                  mock.putRecordsInvocationCount);
         assertEquals("putRecords: last call #/messages",    1,                  mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: last call content",       validMessage,       mock.getPuRecordsSourceText(0));
 
-        byte[] lastMessageContent = BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(0).getData());
-        assertEquals("putRecords: last call content",       bigMessage,         new String(lastMessageContent, StandardCharsets.UTF_8));
+        internalLogger.assertInternalDebugLogContains(
+            "discarded empty message"
+            );
+    }
+
+
+    @Test
+    public void testOversizeMessageDiscard() throws Exception
+    {
+        final int kinesisMaxMessageSize = 1024 * 1024;  // per https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html
+
+        final int maxMessageSize        = kinesisMaxMessageSize - DEFAULT_PARTITION_KEY.length();   // DEFAULT_PARTITION_KEY is ASCII
+
+        // using different characters at the end of the message makes JUnit output easer to read
+        final String bigMessage                 = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
+        final String biggerMessage              = bigMessage + "X";
+
+        createWriter();
+
+        // have to write both messages at once, in this order, otherwise we don't know that the first was discarded
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
+        mock.allowWriterThread();
+
+        assertEquals("putRecords: invocation count",        1,                  mock.putRecordsInvocationCount);
+        assertEquals("putRecords: last call #/messages",    1,                  mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: last call content",       bigMessage,         mock.getPuRecordsSourceText(0));
+        assertEquals("stats: recorded oversize message",    1,                  stats.getOversizeMessages());
+
+        internalLogger.assertInternalDebugLogContains(
+            "discarded oversize.*" + (maxMessageSize + 1) + ".*"
+            );
+    }
+
+
+    @Test
+    public void testOversizeMessageTruncate() throws Exception
+    {
+        final int kinesisMaxMessageSize = 1024 * 1024;  // per https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html
+
+        final int maxMessageSize        = kinesisMaxMessageSize - DEFAULT_PARTITION_KEY.length();   // DEFAULT_PARTITION_KEY is ASCII
+
+        // using different characters at the end of the message makes JUnit output easer to read
+        final String bigMessage                 = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
+        final String biggerMessage              = bigMessage + "X";
+
+        config.truncateOversizeMessages = true;
+        createWriter();
+
+        // first message should succeed
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
+        mock.allowWriterThread();
+
+        assertEquals("putRecords: invocation count",            1,                  mock.putRecordsInvocationCount);
+        assertEquals("putRecords: last call #/messages",        1,                  mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: last call content",           bigMessage,         mock.getPuRecordsSourceText(0));
+        assertEquals("stats: no oversize messages",             0,                  stats.getOversizeMessages());
+
+        internalLogger.assertInternalWarningLog();
+
+        // second message should be truncated, resulting in bigMessage
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
+        mock.allowWriterThread();
+
+        assertEquals("putRecords: invocation count",            2,                  mock.putRecordsInvocationCount);
+        assertEquals("putRecords: last call #/messages",        1,                  mock.putRecordsSourceRecords.size());
+        assertEquals("putRecords: last call content",           bigMessage,         mock.getPuRecordsSourceText(0));
+        assertEquals("stats: recorded oversize message",        1,                  stats.getOversizeMessages());
+
+        internalLogger.assertInternalDebugLogContains(
+            "truncated oversize.*" + (maxMessageSize + 1) + ".*"
+            );
     }
 
 
@@ -691,10 +739,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: invocation count",                1,                      mock.putRecordsInvocationCount);
         assertEquals("putRecords: source record count",             500,                    mock.putRecordsSourceRecords.size());
         assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,  mock.putRecordsSourceRecords.get(0).getPartitionKey());
-        assertEquals("putRecords: source record content",           testMessage,
-                                                                    new String(
-                                                                        BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(499).getData()),
-                                                                        StandardCharsets.UTF_8));
+        assertEquals("putRecords: source record content",           testMessage,            mock.getPuRecordsSourceText(499));
 
         // second batch batch should pick up remaining records
 
@@ -706,10 +751,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: invocation count",                2,                      mock.putRecordsInvocationCount);
         assertEquals("putRecords: source record count",             250,                    mock.putRecordsSourceRecords.size());
         assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,  mock.putRecordsSourceRecords.get(0).getPartitionKey());
-        assertEquals("putRecords: source record content",           testMessage,
-                                                                    new String(
-                                                                        BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(249).getData()),
-                                                                        StandardCharsets.UTF_8));
+        assertEquals("putRecords: source record content",           testMessage,            mock.getPuRecordsSourceText(249));
 
         assertStatisticsTotalMessagesSent(numMessages);
 
@@ -750,10 +792,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: invocation count",                1,                      mock.putRecordsInvocationCount);
         assertEquals("putRecords: source record count",             expected1stBatchCount,  mock.putRecordsSourceRecords.size());
         assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,  mock.putRecordsSourceRecords.get(0).getPartitionKey());
-        assertEquals("putRecords: source record content",           testMessage,
-                                                                    new String(
-                                                                        BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(expected1stBatchCount - 1).getData()),
-                                                                        StandardCharsets.UTF_8));
+        assertEquals("putRecords: source record content",           testMessage,            mock.getPuRecordsSourceText(expected1stBatchCount - 1));
 
         // second batch batch should pick up remaining records
 
@@ -765,10 +804,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: invocation count",                2,                      mock.putRecordsInvocationCount);
         assertEquals("putRecords: source record count",             expected2ndBatchCount,  mock.putRecordsSourceRecords.size());
         assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,  mock.putRecordsSourceRecords.get(0).getPartitionKey());
-        assertEquals("putRecords: source record content",           testMessage,
-                                                                    new String(
-                                                                        BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(expected2ndBatchCount - 1).getData()),
-                                                                        StandardCharsets.UTF_8));
+        assertEquals("putRecords: source record content",           testMessage,            mock.getPuRecordsSourceText(expected2ndBatchCount - 1));
 
         assertStatisticsTotalMessagesSent(numMessages);
 
@@ -883,10 +919,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords: invocation count",                1,                          mock.putRecordsInvocationCount);
         assertEquals("putRecords: source record count",             1,                          mock.putRecordsSourceRecords.size());
         assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,      mock.putRecordsSourceRecords.get(0).getPartitionKey());
-        assertEquals("putRecords: source record content",           "message one",
-                                                                    new String(
-                                                                        BinaryUtils.copyAllBytesFrom(mock.putRecordsSourceRecords.get(0).getData()),
-                                                                        StandardCharsets.UTF_8));
+        assertEquals("putRecords: source record content",           "message one",              mock.getPuRecordsSourceText(0));
         assertStatisticsTotalMessagesSent(1);
         assertEquals("stats: messages sent batch",                  1,                          stats.getMessagesSentLastBatch());
         assertEquals("stats: messages requeued batch",              0,                          stats.getMessagesRequeuedLastBatch());

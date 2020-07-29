@@ -14,8 +14,6 @@
 
 package com.kdgregory.logging.testhelpers;
 
-import static net.sf.kdgcommons.test.StringAsserts.*;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -24,21 +22,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.w3c.dom.Element;
-
 import static org.junit.Assert.*;
+import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.sf.kdgcommons.lang.StringUtil;
-import net.sf.practicalxml.converter.json.Json2XmlConverter;
-import net.sf.practicalxml.xpath.XPathWrapper;
 
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.*;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 /**
@@ -49,6 +45,18 @@ import com.amazonaws.services.sqs.model.*;
  */
 public class SNSTestHelper
 {
+    // the top-level keys in an SQS message body
+    public final static String SQS_KEY_MESSAGE_TYPE        = "Type";
+    public final static String SQS_KEY_MESSAGE_ID          = "MessageId";
+    public final static String SQS_KEY_TIMESTAMP           = "Timestamp";
+    public final static String SQS_KEY_TOPIC_ARN           = "TopicArn";
+    public final static String SQS_KEY_SUBJECT             = "Subject";
+    public final static String SQS_KEY_MESSAGE             = "Message";
+    public final static String SQS_KEY_SIGNATURE           = "Signature";
+    public final static String SQS_KEY_SIGNATURE_VERSION   = "SignatureVersion";
+    public final static String SQS_KEY_SIGNATURE_CERT      = "SigningCertURL";
+    public final static String SQS_KEY_UNSUBSCRIBE_URL     = "UnsubscribeURL";
+
     private Logger localLogger = LoggerFactory.getLogger(getClass());
 
     private AmazonSNS snsClient;
@@ -60,6 +68,8 @@ public class SNSTestHelper
     private String topicArn;        // these are set by createTopicAndQueue()
     private String queueArn;
     private String queueUrl;
+
+    private ObjectMapper objectMapper = new ObjectMapper();
 
 
     /**
@@ -167,12 +177,12 @@ public class SNSTestHelper
      *  Attempts to read the expected number of messages from the queue, extracting
      *  the message message body (which is a JSON blob).
      */
-    public List<String> retrieveMessages(int expectedMessageCount)
+    public List<Map<String,Object>> retrieveMessages(int expectedMessageCount)
     throws Exception
     {
         localLogger.debug("retrieving messages from queue {}", queueUrl);
 
-        List<String> result = new ArrayList<String>();
+        List<Map<String,Object>> result = new ArrayList<>();
         int emptyBatchCount = 0;
         while ((expectedMessageCount > 0) && (emptyBatchCount < 3))
         {
@@ -188,7 +198,9 @@ public class SNSTestHelper
             {
                 for (Message message : retrieveResponse.getMessages())
                 {
-                    result.add(message.getBody());
+                    String messageBody = message.getBody();
+                    Map<String,Object> converted = objectMapper.readValue(messageBody, Map.class);
+                    result.add(converted);
                     sqsClient.deleteMessage(queueUrl, message.getReceiptHandle());
                 }
             }
@@ -199,29 +211,19 @@ public class SNSTestHelper
 
     /**
      *  Performs assertions on the content of each message. In general, these should
-     *  fail on the first message.
-     *  <p>
-     *  It may seem strange that I'm converting the message JSON to XML for assertions.
-     *  The answer is that I have a library that makes XPath easy, and also transforms
-     *  JSON into XML, so JSON looks like an angle-bracketed nail.
+     *  fail on the first bad message.
      */
-    public void assertMessageContent(List<String> messages, String... expectedSubjects0)
+    public void assertMessageContent(List<Map<String,Object>> messages, String... expectedSubjects0)
     {
-        XPathWrapper arnXPath = new XPathWrapper("//TopicArn");
-        XPathWrapper subjectXPath = new XPathWrapper("//Subject");
-        XPathWrapper messageXPath = new XPathWrapper("//Message");
-
         Set<String> expectedSubjects = new TreeSet<String>(Arrays.asList(expectedSubjects0));
         Set<String> actualSubjects = new TreeSet<String>();
 
-        for (String message : messages)
+        for (Map<String,Object> message : messages)
         {
-            Element root = new Json2XmlConverter(message).convert();
+            assertEquals("topic ARN",       topicArn,               message.get(SQS_KEY_TOPIC_ARN));
+            assertRegex("message text",     MessageWriter.REGEX,    (String)message.get(SQS_KEY_MESSAGE));
 
-            assertEquals("topic ARN",       topicArn,               arnXPath.evaluateAsString(root));
-            assertRegex("message text",     MessageWriter.REGEX,    messageXPath.evaluateAsString(root));
-
-            String actualSubject = subjectXPath.evaluateAsString(root);
+            String actualSubject = (String)message.get(SQS_KEY_SUBJECT);
             if (! StringUtil.isEmpty(actualSubject))
                 actualSubjects.add(actualSubject);
         }

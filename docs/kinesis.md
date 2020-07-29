@@ -16,18 +16,19 @@ The Kinesis appender provides the following features:
 
 This appender provides the following configuration properties, along with the common [connection properties](client.md#configuration-properties).
 
-Name                | Description
---------------------|----------------------------------------------------------------
-`streamName`        | The name of the Kinesis stream that will receive messages; may use [substitutions](substitutions.md). No default value.
-`partitionKey`      | A string used to assign messages to shards; see below for more information.
-`autoCreate`        | If present and "true", the stream will be created if it does not already exist.
-`shardCount`        | When creating a stream, specifies the number of shards to use. Defaults to 1.
-`retentionPeriod`   | When creating a stream, specifies the retention period for messages in hours. Per AWS, the minimum is 24 (the default) and the maximum is 168 (7 days). Note that increasing retention time increases the per-hour shard cost.
-`synchronous`       | If `true`, the appender will operate in [synchronous mode](design.md#synchronous-mode), sending messages from the invoking thread on every call to `append()`.
-`batchDelay`        | The time, in milliseconds, that the writer will wait to accumulate messages for a batch. See the [design doc](design.md#message-batches) for more information.
-`discardThreshold`  | The threshold count for discarding messages; default is 10,000. See the [design doc](design.md#message-discard) for more information.
-`discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
-`useShutdownHook`   | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default, set to `false` to disable. Ignored for Log4J2. See [docs](design.md#shutdown-hooks) for more information.
+Name                        | Description
+----------------------------|----------------------------------------------------------------
+`streamName`                | The name of the Kinesis stream that will receive messages; may use [substitutions](substitutions.md). No default value.
+`partitionKey`              | A string used to assign messages to shards; see below for more information.
+`autoCreate`                | If present and "true", the stream will be created if it does not already exist.
+`shardCount`                | When creating a stream, specifies the number of shards to use. Defaults to 1.
+`retentionPeriod`           | When creating a stream, specifies the retention period for messages in hours. Per AWS, the minimum is 24 (the default) and the maximum is 168 (7 days). Note that increasing retention time increases the per-hour shard cost.
+`synchronous`               | If `true`, the appender will operate in [synchronous mode](design.md#synchronous-mode), sending messages from the invoking thread on every call to `append()`.
+`batchDelay`                | The time, in milliseconds, that the writer will wait to accumulate messages for a batch. See the [design doc](design.md#message-batches) for more information.
+`truncateOversizeMessages`  | If `true` (the default), truncate any messages that are too large for Kinesis; if `false`, discard them. See [below](#oversize-messages) for more information.
+`discardThreshold`          | The threshold count for discarding messages; default is 10,000. See the [design doc](design.md#message-discard) for more information.
+`discardAction`             | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
+`useShutdownHook`           | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default, set to `false` to disable. Ignored for Log4J2. See [docs](design.md#shutdown-hooks) for more information.
 
 
 ### Example: Log4J 1.x
@@ -135,3 +136,19 @@ For backwards compatibility, you may specify an empty partition key for Log4J 1.
 the original behavior, but Logback doesn't support empty configuration values). Note that
 `getPartitionKey()` returns whatever value you set (ie, it doesn't translate an empty string
 to `"{random}"`).
+
+
+## Oversize Messages
+
+Kinesis has a maximum message size of 1,048,576 bytes minus the length of the partion key
+([doc](https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecordsRequestEntry.html).
+While most logged messages won't exceed this limit, some (in particular, Spring exception traces)
+might. How the appender handles this depends on the `truncateOversizeMessages` configuration setting:
+
+* If `true` (the default), the message is truncated to the maximum allowed size. This is appropriate
+  for simple text messages, as it preserves as much information as possible. However, it will corrupt
+  messages formatted using JSON.
+* If `false`, the message is discarded.
+
+In either case, the oversize message is logged in the framework's internal status logger. The number
+of oversize messages is available through the JMX `oversizeMessages` attribute.

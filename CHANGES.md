@@ -1,5 +1,12 @@
 # Change History
 
+## 2.4.1 (2020-07-29)
+
+* Move handling of oversize/zero-length messages into log-writer. Fix
+  incorrect oversize message test for CloudWatch.
+  ([#121](https://github.com/kdgregory/log4j-aws-appenders/issues/121))
+* Update Log4J2 dependency versions in examples, per DependaBot warning.
+
 ## 2.4.0 (2020-06-13)
 
 * Allow substitutions to retrieve values from the Systems Manager

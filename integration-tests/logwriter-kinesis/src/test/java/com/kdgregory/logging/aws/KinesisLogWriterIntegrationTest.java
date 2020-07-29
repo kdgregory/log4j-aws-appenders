@@ -15,7 +15,9 @@
 package com.kdgregory.logging.aws;
 
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -27,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import net.sf.kdgcommons.lang.ClassUtil;
+import net.sf.kdgcommons.lang.StringUtil;
 
 import org.slf4j.Logger;
 
@@ -34,6 +37,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
 
+import com.kdgregory.logging.aws.kinesis.KinesisConstants;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterFactory;
@@ -60,11 +64,13 @@ public class KinesisLogWriterIntegrationTest
     // this is for logging within the test
     private Logger localLogger = LoggerFactory.getLogger(getClass());
 
+    // this will be configued prior to ini()
+    private KinesisWriterConfig config = new KinesisWriterConfig(null, "{random}", true, 1, null, false, 250, 10000, DiscardAction.oldest, null, null, null, null);
+
     // these are all assigned by init()
     private KinesisTestHelper testHelper;
     private KinesisWriterStatistics stats;
     private TestableInternalLogger internalLogger;
-    private KinesisWriterConfig config;
     private KinesisWriterFactory factory;
     private KinesisLogWriter writer;
 
@@ -72,7 +78,7 @@ public class KinesisLogWriterIntegrationTest
 //  Helpers
 //----------------------------------------------------------------------------
 
-    private void init(String testName, AmazonKinesis client, String factoryMethod, String region, String endpoint)
+    private void init(String testName, AmazonKinesis client)
     throws Exception
     {
         MDC.put("testName", testName);
@@ -82,9 +88,10 @@ public class KinesisLogWriterIntegrationTest
 
         testHelper.deleteStreamIfExists();
 
+        config.streamName = testHelper.getStreamName();
+
         stats = new KinesisWriterStatistics();
         internalLogger = new TestableInternalLogger();
-        config = new KinesisWriterConfig(testHelper.getStreamName(), "{random}", true, 1, null, 250, 10000, DiscardAction.oldest, factoryMethod, null, region, endpoint);
         factory = new KinesisWriterFactory();
         writer = (KinesisLogWriter)factory.newLogWriter(config, stats, internalLogger);
 
@@ -165,7 +172,7 @@ public class KinesisLogWriterIntegrationTest
     {
         final int numMessages = 1001;
 
-        init("logwriter-smoketest", helperClient, null, null, null);
+        init("logwriter-smoketest", helperClient);
 
         new MessageWriter(numMessages).run();
 
@@ -182,7 +189,8 @@ public class KinesisLogWriterIntegrationTest
     {
         final int numMessages = 1001;
 
-        init("testFactoryMethod", helperClient, getClass().getName() + ".staticClientFactory", null, null);
+        config.clientFactoryMethod = getClass().getName() + ".staticClientFactory";
+        init("testFactoryMethod", helperClient);
 
         new MessageWriter(numMessages).run();
 
@@ -204,7 +212,8 @@ public class KinesisLogWriterIntegrationTest
         // default region for constructor is always us-east-1
         altClient = new AmazonKinesisClient().withRegion(Regions.US_WEST_1);
 
-        init("logwriter-testAlternateRegion", altClient, null, "us-west-1", null);
+        config.clientRegion = "us-west-1";
+        init("logwriter-testAlternateRegion", altClient);
 
         new MessageWriter(numMessages).run();
 
@@ -229,7 +238,8 @@ public class KinesisLogWriterIntegrationTest
         //         if that is your default, then the test will fail
         altClient = new AmazonKinesisClient().withEndpoint("kinesis.us-east-2.amazonaws.com");
 
-        init("logwriter-testAlternateEndpoint", altClient, null, null, "kinesis.us-east-2.amazonaws.com");
+        config.clientEndpoint = "kinesis.us-east-2.amazonaws.com";
+        init("logwriter-testAlternateEndpoint", altClient);
 
         new MessageWriter(numMessages).run();
 
@@ -239,6 +249,44 @@ public class KinesisLogWriterIntegrationTest
 
         assertNull("stream does not exist in default region",
                    (new KinesisTestHelper(helperClient, "logwriter-testAlternateEndpoint")).describeStream());
+
+        testHelper.deleteStreamIfExists();
+    }
+
+
+    @Test
+    public void testOversizeMessageTruncation() throws Exception
+    {
+        final int numMessages = 100;
+
+        // this test verifies that what I think is the maximum message size is acceptable to Kinesis
+        final int maxMessageSize = KinesisConstants.MAX_MESSAGE_BYTES - 7;
+
+        final String expectedMessage = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
+        final String messageToWrite = expectedMessage + "Z";
+
+        config.partitionKey = "abcdefg";
+        config.truncateOversizeMessages = true;
+        init("testOversizeMessageTruncation", helperClient);
+
+        new MessageWriter(numMessages)
+        {
+            @Override
+            protected void writeLogMessage(String ignored)
+            {
+                super.writeLogMessage(messageToWrite);
+            }
+        }.run();
+
+        List<RetrievedRecord> records = testHelper.retrieveAllMessages(numMessages);
+        Set<String> messages = new HashSet<>();
+        for (RetrievedRecord record : records)
+        {
+            messages.add(record.message);
+        }
+
+        assertEquals("all messages should be truncated to same value", 1, messages.size());
+        assertEquals("message actually written",                       expectedMessage, messages.iterator().next());
 
         testHelper.deleteStreamIfExists();
     }

@@ -93,6 +93,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
                 null,                   // topicArn
                 null,                   // subject
                 false,                  // autoCreate
+                false,                  // truncateOversizeMessages
                 1000,                   // discardThreshold
                 DiscardAction.oldest,   // discardAction
                 null,                   // clientFactoryMethod
@@ -131,7 +132,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
                 "topic-arn",                        // topicArn
                 "subject",                          // subject
                 true,                               // autoCreate
-                123,                               // discardThreshold
+                true,                               // truncateOversizeMessages
+                123,                                // discardThreshold
                 DiscardAction.newest,               // discardAction
                 "com.example.factory.Method",       // clientFactoryMethod
                 "SomeRole",                         // assumedRole
@@ -142,6 +144,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("log stream name",             "topic-arn",                    config.topicArn);
         assertEquals("subject",                     "subject",                      config.subject);
         assertTrue("auto-create",                                                   config.autoCreate);
+        assertTrue("truncate large messages",                                       config.truncateOversizeMessages);
         assertEquals("factory method",              "com.example.factory.Method",   config.clientFactoryMethod);
         assertEquals("assumed role",                "SomeRole",                     config.assumedRole);
         assertEquals("client region",               "us-west-1",                    config.clientRegion);
@@ -643,38 +646,91 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
 
     @Test
-    public void testMaximumMessageSize() throws Exception
+    public void testEmptyMessageDiscard() throws Exception
+    {
+        final String invalidMessage = "";
+        final String validMessage = "this one works";
+
+        config.topicName = TEST_TOPIC_NAME;
+        createWriter();
+
+        // have to write both messages at once, in this order, to allow writer thread
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), invalidMessage));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), validMessage));
+        mock.allowWriterThread();
+
+        assertEquals("publish: invocation count",        1,                  mock.publishInvocationCount);
+        assertEquals("publish: last call #/messages",    validMessage,       mock.lastPublishMessage);
+
+        internalLogger.assertInternalDebugLogContains(
+            "discarded empty message"
+            );
+    }
+
+
+    @Test
+    public void testOversizeMessageDiscard() throws Exception
     {
         final int snsMaxMessageSize     = 262144;  // per https://docs.aws.amazon.com/sns/latest/api/API_Publish.html
 
-        final String bigMessage         = StringUtil.repeat('A', snsMaxMessageSize);
-        final String biggerMessage      = bigMessage + "1";
+        // using different characters at the end of the message makes JUnit output easer to read
+        final String bigMessage         = StringUtil.repeat('X', snsMaxMessageSize - 1) + "Y";
+        final String biggerMessage      = bigMessage + "Z";
 
         config.topicName = TEST_TOPIC_NAME;
         config.subject = "example";
         createWriter();
 
-        try
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
-            fail("writer allowed too-large message");
-        }
-        catch (IllegalArgumentException ex)
-        {
-            assertEquals("exception message", "attempted to enqueue a too-large message", ex.getMessage());
-        }
-        catch (Exception ex)
-        {
-            fail("writer threw " + ex.getClass().getName() + ", not IllegalArgumentException");
-        }
-
-        // we'll send an OK message through to verify that nothing bad happened
+        // have to write both messages at once, in this order, otherwise we don't know that the first was discarded
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
         writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
-
         mock.allowWriterThread();
 
-        assertEquals("publish: invocation count",        1,                  mock.publishInvocationCount);
-        assertEquals("publish: last call #/messages",    bigMessage,                  mock.lastPublishMessage);
+        assertEquals("publish: invocation count",               1,                  mock.publishInvocationCount);
+        assertEquals("publish: last call #/messages",           bigMessage,         mock.lastPublishMessage);
+        assertEquals("stats: recorded oversize message",        1,                  stats.getOversizeMessages());
+
+        internalLogger.assertInternalDebugLogContains(
+            "discarded oversize.*" + (snsMaxMessageSize + 1) + ".*"
+            );
+    }
+
+
+    @Test
+    public void testOversizeMessageTruncate() throws Exception
+    {
+        final int snsMaxMessageSize     = 262144;  // per https://docs.aws.amazon.com/sns/latest/api/API_Publish.html
+
+        // using different characters at the end of the message makes JUnit output easer to read
+        final String bigMessage         = StringUtil.repeat('X', snsMaxMessageSize - 1) + "Y";
+        final String biggerMessage      = bigMessage + "Z";
+
+        config.topicName = TEST_TOPIC_NAME;
+        config.subject = "example";
+        config.truncateOversizeMessages = true;
+        createWriter();
+
+        // first message should succeed
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
+        mock.allowWriterThread();
+
+        assertEquals("publish: invocation count",               1,                  mock.publishInvocationCount);
+        assertEquals("publish: last call #/messages",           bigMessage,         mock.lastPublishMessage);
+        assertEquals("stats: no oversize messages",             0,                  stats.getOversizeMessages());
+
+        internalLogger.assertInternalWarningLog();
+
+        // second message should be truncated
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
+        mock.allowWriterThread();
+
+        assertEquals("publish: invocation count",               2,                  mock.publishInvocationCount);
+        assertEquals("publish: last call #/messages",           bigMessage,         mock.lastPublishMessage);
+        assertEquals("stats: recorded oversize message",        1,                  stats.getOversizeMessages());
+
+        internalLogger.assertInternalDebugLogContains(
+            "truncated oversize.*" + (snsMaxMessageSize + 1) + ".*"
+            );
     }
 
 

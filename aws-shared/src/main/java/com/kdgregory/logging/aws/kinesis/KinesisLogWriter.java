@@ -94,6 +94,13 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
         return (effectiveSize(message)) > KinesisConstants.MAX_MESSAGE_BYTES;
     }
 
+
+    @Override
+    public int maxMessageSize()
+    {
+        return KinesisConstants.MAX_MESSAGE_BYTES - partitionKeyLength;
+    }
+
 //----------------------------------------------------------------------------
 //  Hooks for superclass
 //----------------------------------------------------------------------------

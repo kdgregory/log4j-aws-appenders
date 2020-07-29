@@ -104,6 +104,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
 
     protected boolean                   synchronous;
     protected long                      batchDelay;
+    protected boolean                   truncateOversizeMessages;
     protected int                       discardThreshold;
     protected DiscardAction             discardAction;
     protected volatile RotationMode     rotationMode;
@@ -130,6 +131,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
         this.internalLogger = new LogbackInternalLogger(this);
 
         batchDelay = 2000;
+        truncateOversizeMessages = true;
         discardThreshold = 10000;
         discardAction = DiscardAction.oldest;
         rotationMode = RotationMode.none;
@@ -271,6 +273,24 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     public long getBatchDelay()
     {
         return batchDelay;
+    }
+
+
+    /**
+     *  Sets the <code>truncateOversizeMessages</code> configuration property.
+     */
+    public void setTruncateOversizeMessages(boolean value)
+    {
+        this.truncateOversizeMessages = value;
+    }
+
+
+    /**
+     *  Returns the <code>truncateOversizeMessages</code> configuration property.
+     */
+    public boolean getTruncateOversizeMessages()
+    {
+        return this.truncateOversizeMessages;
     }
 
 
@@ -678,12 +698,6 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
                     internalLogger.error("failed to rotate writer", null);
                     return;
                 }
-            }
-
-            if (writer.isMessageTooLarge(message))
-            {
-                internalLogger.warn("attempted to append a message > AWS batch size; ignored");
-                return;
             }
 
             writer.addMessage(message);

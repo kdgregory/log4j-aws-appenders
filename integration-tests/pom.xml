@@ -4,7 +4,7 @@
 
     <groupId>com.kdgregory.logging</groupId>
     <artifactId>integration-tests</artifactId>
-    <version>2.4.0</version>
+    <version>2.4.1</version>
     <packaging>pom</packaging>
 
     <name>AWS Logging Appenders - Integration Tests</name>

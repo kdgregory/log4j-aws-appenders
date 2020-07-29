@@ -15,7 +15,10 @@
 package com.kdgregory.logging.aws;
 
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -28,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import net.sf.kdgcommons.lang.ClassUtil;
+import net.sf.kdgcommons.lang.StringUtil;
 
 import org.slf4j.Logger;
 
@@ -37,6 +41,7 @@ import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 
+import com.kdgregory.logging.aws.sns.SNSConstants;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterFactory;
@@ -64,11 +69,13 @@ public class SNSLogWriterIntegrationTest
     // this is for logging within the test
     private Logger localLogger = LoggerFactory.getLogger(getClass());
 
+    // this can be modified before calling init()
+    private SNSWriterConfig config = new SNSWriterConfig(null, null, DEFAULT_SUBJECT, true, false, 10000, DiscardAction.oldest, null, null, null, null);
+
     // these are all assigned by init()
     private SNSTestHelper testHelper;
     private TestableInternalLogger internalLogger;
     private SNSWriterStatistics stats;
-    private SNSWriterConfig config;
     private SNSWriterFactory factory;
     private SNSLogWriter writer;
 
@@ -79,7 +86,7 @@ public class SNSLogWriterIntegrationTest
     private final static String DEFAULT_SUBJECT = "integration test";
 
 
-    private void init(String testName, AmazonSNS snsClient, AmazonSQS sqsClient, String factoryMethod, String region, String endpoint)
+    private void init(String testName, AmazonSNS snsClient, AmazonSQS sqsClient)
     throws Exception
     {
         MDC.put("testName", testName);
@@ -89,9 +96,10 @@ public class SNSLogWriterIntegrationTest
 
         testHelper.createTopicAndQueue();
 
+        config.topicName = testHelper.getTopicName();
+
         stats = new SNSWriterStatistics();
         internalLogger = new TestableInternalLogger();
-        config = new SNSWriterConfig(testHelper.getTopicName(), null, DEFAULT_SUBJECT, true, 10000, DiscardAction.oldest, factoryMethod, null, region, endpoint);
         factory = new SNSWriterFactory();
         writer = (SNSLogWriter)factory.newLogWriter(config, stats, internalLogger);
 
@@ -179,11 +187,11 @@ public class SNSLogWriterIntegrationTest
     {
         final int numMessages = 11;
 
-        init("smoketest", helperSNSclient, helperSQSclient, null, null, null);
+        init("smoketest", helperSNSclient, helperSQSclient);
 
         new MessageWriter(numMessages).run();
 
-        List<String> messages = testHelper.retrieveMessages(numMessages);
+        List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
         testHelper.assertMessageContent(messages, DEFAULT_SUBJECT);
@@ -198,10 +206,10 @@ public class SNSLogWriterIntegrationTest
         final int numMessages = 5;
         final String secondSubject = "this is not the default";
 
-        init("testSubjectChange", helperSNSclient, helperSQSclient, null, null, null);
+        init("testSubjectChange", helperSNSclient, helperSQSclient);
 
         new MessageWriter(numMessages).run();
-        List<String> messages = testHelper.retrieveMessages(numMessages);
+        List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
 
         assertEquals("first batch of messages, size", numMessages, messages.size());
         testHelper.assertMessageContent(messages, DEFAULT_SUBJECT);
@@ -223,11 +231,12 @@ public class SNSLogWriterIntegrationTest
     {
         final int numMessages = 11;
 
-        init("testFactoryMethod", helperSNSclient, helperSQSclient,  getClass().getName() + ".staticClientFactory", null, null);
+        config.clientFactoryMethod = getClass().getName() + ".staticClientFactory";
+        init("testFactoryMethod", helperSNSclient, helperSQSclient);
 
         new MessageWriter(numMessages).run();
 
-        List<String> messages = testHelper.retrieveMessages(numMessages);
+        List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
         testHelper.assertMessageContent(messages, DEFAULT_SUBJECT);
@@ -248,11 +257,12 @@ public class SNSLogWriterIntegrationTest
         altSNSclient = new AmazonSNSClient().withRegion(Regions.US_WEST_1);
         altSQSclient = new AmazonSQSClient().withRegion(Regions.US_WEST_1);
 
-        init("testAlternateRegion", altSNSclient, altSQSclient, null, "us-west-1", null);
+        config.clientRegion = "us-west-1";
+        init("testAlternateRegion", altSNSclient, altSQSclient);
 
         new MessageWriter(numMessages).run();
 
-        List<String> messages = testHelper.retrieveMessages(numMessages);
+        List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
         testHelper.assertMessageContent(messages, DEFAULT_SUBJECT);
@@ -275,17 +285,55 @@ public class SNSLogWriterIntegrationTest
         altSNSclient = new AmazonSNSClient().withEndpoint("sns.us-east-2.amazonaws.com");
         altSQSclient = new AmazonSQSClient().withEndpoint("sqs.us-east-2.amazonaws.com");
 
-        init("testAlternateEndpoint", altSNSclient, altSQSclient, null, null, "sns.us-east-2.amazonaws.com");
+        config.clientEndpoint = "sns.us-east-2.amazonaws.com";
+        init("testAlternateEndpoint", altSNSclient, altSQSclient);
 
         new MessageWriter(numMessages).run();
 
-        List<String> messages = testHelper.retrieveMessages(numMessages);
+        List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
 
         assertEquals("number of messages", numMessages, messages.size());
         testHelper.assertMessageContent(messages, DEFAULT_SUBJECT);
 
         assertNull("topic does not exist in default region",
                    (new SNSTestHelper(testHelper, helperSNSclient, helperSQSclient)).lookupTopic());
+
+        testHelper.deleteTopicAndQueue();
+    }
+
+
+    @Test
+    public void testOversizeMessageTruncation() throws Exception
+    {
+        final int numMessages = 11;
+
+        // this test verifies that what I think is the maximum message size is acceptable to SNS
+        final int maxMessageSize = SNSConstants.MAX_MESSAGE_BYTES;
+
+        final String expectedMessage = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
+        final String messageToWrite = expectedMessage + "Z";
+
+        config.truncateOversizeMessages = true;
+        init("testOversizeMessageTruncation", helperSNSclient, helperSQSclient);
+
+        new MessageWriter(numMessages)
+        {
+            @Override
+            protected void writeLogMessage(String ignored)
+            {
+                super.writeLogMessage(messageToWrite);
+            }
+        }.run();
+
+        List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
+        Set<String> messageBodies = new HashSet<>();
+        for (Map<String,Object> message : messages)
+        {
+            messageBodies.add((String)message.get(SNSTestHelper.SQS_KEY_MESSAGE));
+        }
+
+        assertEquals("all messages should be truncated to same value",  1, messageBodies.size());
+        assertEquals("message was truncated",                           expectedMessage, messageBodies.iterator().next());
 
         testHelper.deleteTopicAndQueue();
     }

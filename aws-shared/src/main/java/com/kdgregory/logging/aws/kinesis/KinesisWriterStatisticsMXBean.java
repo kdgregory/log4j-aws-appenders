@@ -55,6 +55,13 @@ public interface KinesisWriterStatisticsMXBean
 
 
     /**
+     *  Returns the number of messages that were either dropped or truncated because
+     *  they were too large for the service to accept.
+     */
+    int getOversizeMessages();
+
+
+    /**
      *  Returns the number of messages successfully sent to the stream.
      */
     int getMessagesSent();

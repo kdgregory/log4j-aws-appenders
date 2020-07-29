@@ -105,6 +105,7 @@ extends AppenderSkeleton
 
     protected boolean               synchronous;
     protected long                  batchDelay;
+    protected boolean               truncateOversizeMessages;
     protected int                   discardThreshold;
     protected DiscardAction         discardAction;
     protected volatile RotationMode rotationMode;
@@ -134,6 +135,7 @@ extends AppenderSkeleton
         this.internalLogger = new Log4JInternalLogger(getClass().getSimpleName());
 
         batchDelay = 2000;
+        truncateOversizeMessages = true;
         discardThreshold = 10000;
         discardAction = DiscardAction.oldest;
         rotationMode = RotationMode.none;
@@ -269,6 +271,24 @@ extends AppenderSkeleton
     public long getBatchDelay()
     {
         return batchDelay;
+    }
+
+
+    /**
+     *  Sets the <code>truncateOversizeMessages</code> configuration property.
+     */
+    public void setTruncateOversizeMessages(boolean value)
+    {
+        this.truncateOversizeMessages = value;
+    }
+
+
+    /**
+     *  Returns the <code>truncateOversizeMessages</code> configuration property.
+     */
+    public boolean getTruncateOversizeMessages()
+    {
+        return this.truncateOversizeMessages;
     }
 
 
@@ -687,12 +707,6 @@ extends AppenderSkeleton
                     internalLogger.error("failed to rotate writer", null);
                     return;
                 }
-            }
-
-            if (writer.isMessageTooLarge(message))
-            {
-                internalLogger.warn("attempted to append a message > AWS batch size; ignored");
-                return;
             }
 
             writer.addMessage(message);

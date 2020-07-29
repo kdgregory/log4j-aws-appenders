@@ -17,16 +17,17 @@ The SNS appender provides the following features:
 
 This appender provides the following configuration properties, along with the common [connection properties](client.md#configuration-properties).
 
-Name                | Description
---------------------|----------------------------------------------------------------
-`topicName`         | The name of the SNS topic that will receive messages; may use [substitutions](substitutions.md). No default value. See below for more information.
-`topicArn`          | The ARN of the SNS topic that will receive messages; may use [substitutions](substitutions.md). No default value. See below for more information.
-`autoCreate`        | If present and "true", the topic will be created if it does not already exist. This may only be used when specifying topic by name, not ARN.
-`subject`           | If used, attaches a subject to each message sent; no default value. See below for more information.
-`synchronous`       | If `true`, the appender will operate in [synchronous mode](design.md#synchronous-mode), sending messages from the invoking thread on every call to `append()`.
-`discardThreshold`  | The threshold count for discarding messages; default is 10,000. See [design doc](design.md#message-discard) for more information.
-`discardAction`     | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
-`useShutdownHook`   | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default, set to `false` to disable. Ignored for Log4J2. See [docs](design.md#shutdown-hooks) for more information.
+Name                        | Description
+----------------------------|----------------------------------------------------------------
+`topicName`                 | The name of the SNS topic that will receive messages; may use [substitutions](substitutions.md). No default value. See below for more information.
+`topicArn`                  | The ARN of the SNS topic that will receive messages; may use [substitutions](substitutions.md). No default value. See below for more information.
+`autoCreate`                | If present and "true", the topic will be created if it does not already exist. This may only be used when specifying topic by name, not ARN.
+`subject`                   | If used, attaches a subject to each message sent; no default value. See below for more information.
+`synchronous`               | If `true`, the appender will operate in [synchronous mode](design.md#synchronous-mode), sending messages from the invoking thread on every call to `append()`.
+`truncateOversizeMessages`  | If `true` (the default), truncate any messages that are too large for SNS; if `false`, discard them. See [below](#oversize-messages) for more information.
+`discardThreshold`          | The threshold count for discarding messages; default is 10,000. See [design doc](design.md#message-discard) for more information.
+`discardAction`             | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
+`useShutdownHook`           | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default, set to `false` to disable. Ignored for Log4J2. See [docs](design.md#shutdown-hooks) for more information.
 
 Note: the `batchDelay` parameter exists but is ignored; the SNS appender attempts to send messages immediately.
 
@@ -118,3 +119,18 @@ While the appender exposes the batch delay configuration parameter, it is ignore
 sent as soon as possible after it's passed to the appender, because SNS does not support message
 batching. Note, however, that the messages are still sent on a background thread unless you enable
 [synchronous mode](design.md#synchronous-mode).
+
+
+## Oversize Messages
+
+SNS has a maximum message size of 262,144 bytes ([doc](https://docs.aws.amazon.com/sns/latest/api/API_Publish.html).
+While most logged messages won't exceed this limit, some (in particular, Spring exception traces)
+might. How the appender handles this depends on the `truncateOversizeMessages` configuration setting:
+
+* If `true` (the default), the message is truncated to the maximum allowed size. This is appropriate
+  for simple text messages, as it preserves as much information as possible. However, it will corrupt
+  messages formatted using JSON.
+* If `false`, the message is discarded.
+
+In either case, the oversize message is logged in the framework's internal status logger. The number
+of oversize messages is available through the JMX `oversizeMessages` attribute.

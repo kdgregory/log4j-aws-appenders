@@ -78,10 +78,10 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *
  *  <tr VALIGN="top">
  *      <th> truncateOversizeMessages
- *      <td> If <code>true</code>, oversize messages will be truncated to the maximum
- *           length permitted by SNS. If <code>false</code> (the default) they are
- *           discarded. In either case, the oversized message is reported to the Log4J
- *           debug log.
+ *      <td> If <code>true</code> (the default), oversize messages are truncated to
+ *           the maximum length permitted by SNS. If <code>false</code>, they are
+ *           discarded. In either case, the oversized message is reported to the
+ *           Log4J debug log.
  *
  *  <tr VALIGN="top">
  *      <th> discardThreshold

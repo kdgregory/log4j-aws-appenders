@@ -8,7 +8,7 @@
             <autoCreate>true</autoCreate>
             <synchronous>false</synchronous> <!-- explicitly set to default value -->
             <discardThreshold>123</discardThreshold>
-            <truncateOversizeMessages>true</truncateOversizeMessages>
+            <truncateOversizeMessages>false</truncateOversizeMessages>
             <discardAction>newest</discardAction>
             <assumedRole>AssumableRole</assumedRole>
             <clientFactory>com.example.Foo.bar</clientFactory>

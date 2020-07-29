@@ -55,7 +55,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("sequence",                2,                              appender.getConfig().getSequence());
         assertEquals("rotation mode",           "interval",                     appender.getConfig().getRotationMode());
         assertEquals("rotation interval",       7200000L,                       appender.getConfig().getRotationInterval());
-        assertTrue("truncate oversize messages",                                appender.getConfig().getTruncateOversizeMessages());
+        assertFalse("truncate oversize messages",                               appender.getConfig().getTruncateOversizeMessages());
         assertEquals("discard threshold",       12345,                          appender.getConfig().getDiscardThreshold());
         assertEquals("discard action",          "newest",                       appender.getConfig().getDiscardAction());
         assertFalse("synchronous mode",                                         appender.getConfig().isSynchronous());
@@ -85,7 +85,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("sequence",                0,                              appender.getConfig().getSequence());
         assertEquals("rotation mode",           "none",                         appender.getConfig().getRotationMode());
         assertEquals("rotation interval",       -1,                             appender.getConfig().getRotationInterval());
-        assertFalse("truncate oversize messages",                               appender.getConfig().getTruncateOversizeMessages());
+        assertTrue("truncate oversize messages",                                appender.getConfig().getTruncateOversizeMessages());
         assertEquals("discard threshold",       10000,                          appender.getConfig().getDiscardThreshold());
         assertEquals("discard action",          "oldest",                       appender.getConfig().getDiscardAction());
         assertFalse("synchronous mode",                                         appender.getConfig().isSynchronous());

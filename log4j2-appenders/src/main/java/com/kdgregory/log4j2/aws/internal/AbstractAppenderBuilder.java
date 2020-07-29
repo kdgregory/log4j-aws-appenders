@@ -117,7 +117,7 @@ implements AbstractAppenderConfig
 
 
     @PluginBuilderAttribute("truncateOversizeMessages")
-    private boolean truncateOversizeMessages = false;
+    private boolean truncateOversizeMessages = true;
 
 
     /**

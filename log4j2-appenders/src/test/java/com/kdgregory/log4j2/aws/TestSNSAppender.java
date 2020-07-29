@@ -47,7 +47,7 @@ extends AbstractUnitTest<TestableSNSAppender>
         assertEquals("subject",                 "This is a test",               appender.getConfig().getSubject());
         assertTrue("autoCreate",                                                appender.getConfig().isAutoCreate());
         assertEquals("batch delay",             1L,                             appender.getConfig().getBatchDelay());
-        assertTrue("truncate oversize messages",                                appender.getConfig().getTruncateOversizeMessages());
+        assertFalse("truncate oversize messages",                                appender.getConfig().getTruncateOversizeMessages());
         assertEquals("discard threshold",       123,                            appender.getConfig().getDiscardThreshold());
         assertEquals("discard action",          "newest",                       appender.getConfig().getDiscardAction());
         assertFalse("use shutdown hook",                                        appender.getConfig().isUseShutdownHook());
@@ -71,7 +71,7 @@ extends AbstractUnitTest<TestableSNSAppender>
         assertEquals("subject",                 null,                           appender.getConfig().getSubject());
         assertFalse("autoCreate",                                               appender.getConfig().isAutoCreate());
         assertEquals("batch delay",             1L,                             appender.getConfig().getBatchDelay());
-        assertFalse("truncate oversize messages",                               appender.getConfig().getTruncateOversizeMessages());
+        assertTrue("truncate oversize messages",                                appender.getConfig().getTruncateOversizeMessages());
         assertEquals("discard threshold",       1000,                           appender.getConfig().getDiscardThreshold());
         assertEquals("discard action",          "oldest",                       appender.getConfig().getDiscardAction());
         assertTrue("use shutdown hook",                                         appender.getConfig().isUseShutdownHook());

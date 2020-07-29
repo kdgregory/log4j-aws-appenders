@@ -135,6 +135,7 @@ extends AppenderSkeleton
         this.internalLogger = new Log4JInternalLogger(getClass().getSimpleName());
 
         batchDelay = 2000;
+        truncateOversizeMessages = true;
         discardThreshold = 10000;
         discardAction = DiscardAction.oldest;
         rotationMode = RotationMode.none;

@@ -131,6 +131,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
         this.internalLogger = new LogbackInternalLogger(this);
 
         batchDelay = 2000;
+        truncateOversizeMessages = true;
         discardThreshold = 10000;
         discardAction = DiscardAction.oldest;
         rotationMode = RotationMode.none;

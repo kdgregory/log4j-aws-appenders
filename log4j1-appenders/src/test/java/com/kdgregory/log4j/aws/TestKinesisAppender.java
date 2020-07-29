@@ -73,7 +73,7 @@ extends AbstractUnitTest<TestableKinesisAppender>
         assertEquals("shard count",             7,                                  appender.getShardCount());
         assertEquals("retention period",        48,                                 appender.getRetentionPeriod());
         assertEquals("batch delay",             1234L,                              appender.getBatchDelay());
-        assertTrue("truncate oversize messages",                                    appender.getTruncateOversizeMessages());
+        assertFalse("truncate oversize messages",                                   appender.getTruncateOversizeMessages());
         assertEquals("discard threshold",       54321,                              appender.getDiscardThreshold());
         assertEquals("discard action",          "newest",                           appender.getDiscardAction());
         assertFalse("synchronous mode",                                             appender.getSynchronous());
@@ -95,7 +95,7 @@ extends AbstractUnitTest<TestableKinesisAppender>
         assertFalse("autoCreate",                                                   appender.isAutoCreate());
         assertEquals("shard count",             1,                                  appender.getShardCount());
         assertEquals("retention period",        24,                                 appender.getRetentionPeriod());
-        assertFalse("truncate oversize messages",                                   appender.getTruncateOversizeMessages());
+        assertTrue("truncate oversize messages",                                    appender.getTruncateOversizeMessages());
         assertEquals("batch delay",             2000L,                              appender.getBatchDelay());
         assertEquals("discard threshold",       10000,                              appender.getDiscardThreshold());
         assertEquals("discard action",          "oldest",                           appender.getDiscardAction());

@@ -82,7 +82,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("sequence",                2,                              appender.getSequence());
         assertEquals("rotation mode",           "interval",                     appender.getRotationMode());
         assertEquals("rotation interval",       7200000L,                       appender.getRotationInterval());
-        assertTrue("truncate oversize messages",                                appender.getTruncateOversizeMessages());
+        assertFalse("truncate oversize messages",                               appender.getTruncateOversizeMessages());
         assertEquals("discard threshold",       12345,                          appender.getDiscardThreshold());
         assertEquals("discard action",          "newest",                       appender.getDiscardAction());
         assertFalse("synchronous mode",                                         appender.getSynchronous());
@@ -109,7 +109,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("sequence",                0,                              appender.getSequence());
         assertEquals("rotation mode",           "none",                         appender.getRotationMode());
         assertEquals("rotation interval",       -1,                             appender.getRotationInterval());
-        assertFalse("truncate oversize messages",                               appender.getTruncateOversizeMessages());
+        assertTrue("truncate oversize messages",                                appender.getTruncateOversizeMessages());
         assertEquals("discard threshold",       10000,                          appender.getDiscardThreshold());
         assertEquals("discard action",          "oldest",                       appender.getDiscardAction());
         assertFalse("synchronous mode",                                         appender.getSynchronous());

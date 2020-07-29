@@ -49,7 +49,7 @@ extends AbstractUnitTest<TestableSNSAppender>
         assertEquals("subject",                 "This is a test",               appender.getSubject());
         assertTrue("autoCreate",                                                appender.getAutoCreate());
         assertEquals("batch delay",             1L,                             appender.getBatchDelay());
-        assertTrue("truncate oversize messages",                                appender.getTruncateOversizeMessages());
+        assertFalse("truncate oversize messages",                               appender.getTruncateOversizeMessages());
         assertEquals("discard threshold",       123,                            appender.getDiscardThreshold());
         assertEquals("discard action",          "newest",                       appender.getDiscardAction());
         assertFalse("use shutdown hook",                                        appender.getUseShutdownHook());
@@ -73,7 +73,7 @@ extends AbstractUnitTest<TestableSNSAppender>
         assertEquals("subject",                 null,                           appender.getSubject());
         assertFalse("autoCreate",                                               appender.getAutoCreate());
         assertEquals("batch delay",             1L,                             appender.getBatchDelay());
-        assertFalse("truncate oversize messages",                               appender.getTruncateOversizeMessages());
+        assertTrue("truncate oversize messages",                                appender.getTruncateOversizeMessages());
         assertEquals("discard threshold",       1000,                           appender.getDiscardThreshold());
         assertEquals("discard action",          "oldest",                       appender.getDiscardAction());
         assertTrue("use shutdown hook",                                         appender.getUseShutdownHook());

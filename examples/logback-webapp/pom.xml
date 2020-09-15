@@ -28,6 +28,7 @@
         <servlet-api.version>3.0.1</servlet-api.version>
 
         <plugin.compiler.version>3.1</plugin.compiler.version>
+        <plugin.jetty.version>9.4.31.v20200723</plugin.jetty.version>
     </properties>
 
 
@@ -94,6 +95,11 @@
                     <target>${jdk.version}</target>
                     <debug>true</debug>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-maven-plugin</artifactId>
+                <version>${plugin.jetty.version}</version>
             </plugin>
         </plugins>
     </build>

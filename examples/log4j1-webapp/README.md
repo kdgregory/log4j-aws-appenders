@@ -26,11 +26,24 @@ Logs the destination is auto-created. You can create them using the CloudFormati
 
 To build the example program, use Maven:
 
-    mvn clean package
+```
+mvn clean package
+```
 
 This will produce a WAR in the `target` directory, which you can then deploy to Tomcat or
 another application server (the WAR name starts with `log4j1-aws-appenders-webapp`, and
 ends with the current library version number).
+
+You can also run using the Jetty plugin:
+
+```
+mvn jetty:run
+```
+
+This runs the server in the current terminal, accepting requests at http://localhost:8080/.
+All logging is sent to the terminal; note that Jetty has its own logging configuration,
+which just prefixes messages with the logging level (eg, "INFO"). You won't see the webapp's
+own logging until you invoke one of its operations.
 
 
 ## Features

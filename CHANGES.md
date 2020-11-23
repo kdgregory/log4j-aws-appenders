@@ -1,5 +1,14 @@
 # Change History
 
+## 3.0.0 (TBD)
+
+* Support AWS SDK v2.
+  ([#118](https://github.com/kdgregory/log4j-aws-appenders/issues/118))
+* Removed support for early versions of the AWS SDK. See the [client
+  docs](docs/client.md) for more information.
+* Multiple configuration and behavioral changes. For more information,
+  see [3.0 changelist](docs/changes-3.0.md):
+
 ## 2.4.1 (2020-07-29)
 
 * Move handling of oversize/zero-length messages into log-writer. Fix

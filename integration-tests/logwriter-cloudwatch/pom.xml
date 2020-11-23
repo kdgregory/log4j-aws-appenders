@@ -18,7 +18,9 @@
         Tests the CloudWatch back-end in isolation.
     </description>
 
-    <!-- logwriter integration tests use the base (1.11.0) SDK version -->
+    <properties>
+        <aws-sdk.version>1.11.0</aws-sdk.version>
+    </properties>
 
     <dependencies>
         <dependency>

@@ -104,25 +104,26 @@ public class TestConstructorClientFactory
     }
 
 
-    @Test
-    public void testConstructorWithBogusRegion() throws Exception
-    {
-        // this region didn't exist when SDK 1.11.0 came out
-        final String region = "eu-west-3";
-
-        // we're using an actual client, not a mock
-        ConstructorClientFactory<AWSLogs> factory = new ConstructorClientFactory<AWSLogs>(AWSLogs.class, AWSLogsClient.class.getName(), region, null, logger);
-
-        try
-        {
-            factory.createClient();
-            fail("did not throw when constructing client");
-        }
-        catch (ClientFactoryException ex)
-        {
-            assertRegex("failed to set region.*" + region, ex.getMessage());
-        }
-    }
+// will be removed
+//    @Test
+//    public void testConstructorWithBogusRegion() throws Exception
+//    {
+//        // this region didn't exist when SDK 1.11.0 came out
+//        final String region = "eu-west-3";
+//
+//        // we're using an actual client, not a mock
+//        ConstructorClientFactory<AWSLogs> factory = new ConstructorClientFactory<AWSLogs>(AWSLogs.class, AWSLogsClient.class.getName(), region, null, logger);
+//
+//        try
+//        {
+//            factory.createClient();
+//            fail("did not throw when constructing client");
+//        }
+//        catch (ClientFactoryException ex)
+//        {
+//            assertRegex("failed to set region.*" + region, ex.getMessage());
+//        }
+//    }
 
 
     @Test

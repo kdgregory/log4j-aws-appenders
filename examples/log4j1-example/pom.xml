@@ -37,10 +37,17 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.kdgregory.logging</groupId>
+            <artifactId>aws-facade-v1</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>${log4j1.version}</version>
         </dependency>
+
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-logs</artifactId>

@@ -38,6 +38,11 @@
             <artifactId>log4j1-aws-appenders</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.kdgregory.logging</groupId>
+            <artifactId>aws-facade-v1</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>log4j</groupId>

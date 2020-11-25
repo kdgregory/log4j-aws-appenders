@@ -49,6 +49,6 @@ extends MockLogWriter<SNSWriterConfig>
     // that the appender tried to
     public void setSubject(String subject)
     {
-        config.subject = subject;
+        config.setSubject(subject);
     }
 }

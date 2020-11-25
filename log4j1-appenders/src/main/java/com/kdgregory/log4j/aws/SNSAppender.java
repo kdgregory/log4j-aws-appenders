@@ -265,10 +265,18 @@ extends AbstractAppender<SNSWriterConfig,SNSWriterStatistics,SNSWriterStatistics
         String actualTopicArn   = subs.perform(topicArn);
         String actualSubject    = subs.perform(subject);
 
-        return new SNSWriterConfig(
-            actualTopicName, actualTopicArn, actualSubject, autoCreate,
-            truncateOversizeMessages, discardThreshold, discardAction,
-            clientFactory, assumedRole, clientRegion, clientEndpoint);
+        return new SNSWriterConfig()
+               .setTopicName(actualTopicName)
+               .setTopicArn(actualTopicArn)
+               .setSubject(actualSubject)
+               .setAutoCreate(autoCreate)
+               .setTruncateOversizeMessages(truncateOversizeMessages)
+               .setDiscardThreshold(discardThreshold)
+               .setDiscardAction(discardAction)
+               .setClientFactoryMethod(clientFactory)
+               .setAssumedRole(assumedRole)
+               .setClientRegion(clientRegion)
+               .setClientEndpoint(clientEndpoint);
     }
 
 

@@ -51,8 +51,8 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
     {
         super(config, stats, logger, clientFactory);
 
-        this.stats.setActualLogGroupName(config.logGroupName);
-        this.stats.setActualLogStreamName(config.logStreamName);
+        this.stats.setActualLogGroupName(config.getLogGroupName());
+        this.stats.setActualLogStreamName(config.getLogStreamName());
     }
 
 //----------------------------------------------------------------------------
@@ -79,15 +79,15 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
     @Override
     protected boolean ensureDestinationAvailable()
     {
-        if (! Pattern.matches(CloudWatchConstants.ALLOWED_GROUP_NAME_REGEX, config.logGroupName))
+        if (! Pattern.matches(CloudWatchConstants.ALLOWED_GROUP_NAME_REGEX, config.getLogGroupName()))
         {
-            reportError("invalid log group name: " + config.logGroupName, null);
+            reportError("invalid log group name: " + config.getLogGroupName(), null);
             return false;
         }
 
-        if (! Pattern.matches(CloudWatchConstants.ALLOWED_STREAM_NAME_REGEX, config.logStreamName))
+        if (! Pattern.matches(CloudWatchConstants.ALLOWED_STREAM_NAME_REGEX, config.getLogStreamName()))
         {
-            reportError("invalid log stream name: " + config.logStreamName, null);
+            reportError("invalid log stream name: " + config.getLogStreamName(), null);
             return false;
         }
 
@@ -96,24 +96,24 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             LogGroup logGroup = findLogGroup();
             if (logGroup == null)
             {
-                logger.debug("creating CloudWatch log group: " + config.logGroupName);
+                logger.debug("creating CloudWatch log group: " + config.getLogGroupName());
                 createLogGroup();
             }
             else
             {
-                logger.debug("using existing CloudWatch log group: " + config.logGroupName);
+                logger.debug("using existing CloudWatch log group: " + config.getLogGroupName());
             }
 
 
             LogStream logStream = findLogStream();
             if (logStream == null)
             {
-                logger.debug("creating CloudWatch log stream: " + config.logStreamName);
+                logger.debug("creating CloudWatch log stream: " + config.getLogStreamName());
                 createLogStream();
             }
             else
             {
-                logger.debug("using existing CloudWatch log stream: " + config.logStreamName);
+                logger.debug("using existing CloudWatch log stream: " + config.getLogStreamName());
             }
 
             return true;
@@ -165,8 +165,8 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             return batch;
 
         PutLogEventsRequest request = new PutLogEventsRequest()
-                                      .withLogGroupName(config.logGroupName)
-                                      .withLogStreamName(config.logStreamName)
+                                      .withLogGroupName(config.getLogGroupName())
+                                      .withLogStreamName(config.getLogStreamName())
                                       .withLogEvents(constructLogEvents(batch));
 
         // sending is all-or-nothing with CloudWatch: if we receive any error
@@ -199,7 +199,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             }
             catch (ResourceNotFoundException ex)
             {
-                reportError("log stream missing: " + config.logStreamName, null);
+                reportError("log stream missing: " + config.getLogStreamName(), null);
                 ensureDestinationAvailable();
                 return batch;
             }
@@ -236,7 +236,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
 
     private String getSequenceToken()
     {
-        if (config.dedicatedWriter && (sequenceToken != null))
+        if (config.getDedicatedWriter() && (sequenceToken != null))
         {
             return sequenceToken;
         }
@@ -251,14 +251,14 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
 
     private LogGroup findLogGroup()
     {
-        DescribeLogGroupsRequest request = new DescribeLogGroupsRequest().withLogGroupNamePrefix(config.logGroupName);
+        DescribeLogGroupsRequest request = new DescribeLogGroupsRequest().withLogGroupNamePrefix(config.getLogGroupName());
         DescribeLogGroupsResult result;
         do
         {
             result = client.describeLogGroups(request);
             for (LogGroup group : result.getLogGroups())
             {
-                if (group.getLogGroupName().equals(config.logGroupName))
+                if (group.getLogGroupName().equals(config.getLogGroupName()))
                     return group;
             }
             request.setNextToken(result.getNextToken());
@@ -274,7 +274,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         {
             try
             {
-                CreateLogGroupRequest request = new CreateLogGroupRequest().withLogGroupName(config.logGroupName);
+                CreateLogGroupRequest request = new CreateLogGroupRequest().withLogGroupName(config.getLogGroupName());
                 client.createLogGroup(request);
                 for (int ii = 0 ; ii < 300 ; ii++)
                 {
@@ -304,21 +304,21 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
 
     private void optSetLogGroupRetentionPolicy()
     {
-        if (config.retentionPeriod == null)
+        if (config.getRetentionPeriod() == null)
             return;
 
-        logger.debug("setting retention policy on " + config.logGroupName
-                     + " to " + config.retentionPeriod + " days");
+        logger.debug("setting retention policy on " + config.getLogGroupName()
+                     + " to " + config.getRetentionPeriod() + " days");
 
         try
         {
             client.putRetentionPolicy(
                 new PutRetentionPolicyRequest(
-                    config.logGroupName, config.retentionPeriod));
+                    config.getLogGroupName(), config.getRetentionPeriod()));
         }
         catch (Exception ex)
         {
-            reportError("failed to set retention policy on log group " + config.logGroupName, ex);
+            reportError("failed to set retention policy on log group " + config.getLogGroupName(), ex);
         }
     }
 
@@ -326,8 +326,8 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
     private LogStream findLogStream()
     {
         DescribeLogStreamsRequest request = new DescribeLogStreamsRequest()
-                                            .withLogGroupName(config.logGroupName)
-                                            .withLogStreamNamePrefix(config.logStreamName);
+                                            .withLogGroupName(config.getLogGroupName())
+                                            .withLogStreamNamePrefix(config.getLogStreamName());
         DescribeLogStreamsResult result;
         try
         {
@@ -336,7 +336,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
                 result = describeStreamsWithRetry(request);
                 for (LogStream stream : result.getLogStreams())
                 {
-                    if (stream.getLogStreamName().equals(config.logStreamName))
+                    if (stream.getLogStreamName().equals(config.getLogStreamName()))
                         return stream;
                 }
                 request.setNextToken(result.getNextToken());
@@ -381,8 +381,8 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
         try
         {
             CreateLogStreamRequest request = new CreateLogStreamRequest()
-                                             .withLogGroupName(config.logGroupName)
-                                             .withLogStreamName(config.logStreamName);
+                                             .withLogGroupName(config.getLogGroupName())
+                                             .withLogStreamName(config.getLogStreamName());
             client.createLogStream(request);
 
             for (int ii = 0 ; ii < 300 ; ii++)

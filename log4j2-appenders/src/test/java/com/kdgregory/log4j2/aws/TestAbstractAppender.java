@@ -53,8 +53,8 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("post-initialization: calls to writer factory",                1,              writerFactory.invocationCount);
         assertNotNull("post-initialization: writer created",                                        writer);
         assertNotNull("post-initialization: writer running on background thread",                   writer.writerThread);
-        assertEquals("post-initialization: actual log-group name",                  "argle",        writer.config.logGroupName);
-        assertRegex("post-initialization: actual log-stream name",                  "20\\d{12}",    writer.config.logStreamName);
+        assertEquals("post-initialization: actual log-group name",                  "argle",        writer.config.getLogGroupName());
+        assertRegex("post-initialization: actual log-stream name",                  "20\\d{12}",    writer.config.getLogStreamName());
 
         long initialTimestamp = System.currentTimeMillis();
         logger.debug("first message");
@@ -226,7 +226,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         MockCloudWatchWriter writer = appender.getMockWriter();
 
         assertEquals("discard action, from appender",    DiscardAction.oldest,  appender.getDiscardAction());
-        assertEquals("discard action, from writer",      DiscardAction.oldest,  writer.config.discardAction);
+        assertEquals("discard action, from writer",      DiscardAction.oldest,  writer.config.getDiscardAction());
 
         appenderInternalLogger.assertDebugLog();
         appenderInternalLogger.assertErrorLog("invalid discard action.*bogus.*");

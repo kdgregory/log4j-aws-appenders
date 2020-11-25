@@ -124,7 +124,12 @@ public class CloudWatchLogWriterIntegrationTest
      */
     private CloudWatchWriterConfig defaultConfig()
     {
-        return new CloudWatchWriterConfig(logGroupName, logStreamName, null, false, false, 250, 10000, DiscardAction.oldest, null, null, null, null);
+        return new CloudWatchWriterConfig()
+               .setLogGroupName(logGroupName)
+               .setLogStreamName(logStreamName)
+               .setBatchDelay(250)
+               .setDiscardThreshold(10000)
+               .setDiscardAction(DiscardAction.oldest);
     }
 
 
@@ -250,7 +255,7 @@ public class CloudWatchLogWriterIntegrationTest
         init("testFactoryMethod", helperClient);
 
         CloudWatchWriterConfig config = defaultConfig();
-        config.clientFactoryMethod = getClass().getName() + ".staticClientFactory";
+        config.setClientFactoryMethod(getClass().getName() + ".staticClientFactory");
         CloudWatchLogWriter writer = createWriter(config);
 
         new MessageWriter(writer, numMessages).run();
@@ -276,7 +281,7 @@ public class CloudWatchLogWriterIntegrationTest
         init("testAlternateRegion", altClient);
 
         CloudWatchWriterConfig config = defaultConfig();
-        config.clientRegion = "us-west-1";
+        config.setClientRegion("us-west-1");
         CloudWatchLogWriter writer = createWriter(config);
 
         new MessageWriter(writer, numMessages).run();
@@ -305,7 +310,7 @@ public class CloudWatchLogWriterIntegrationTest
         init("testAlternateEndpoint", altClient);
 
         CloudWatchWriterConfig config = defaultConfig();
-        config.clientEndpoint = "logs.us-east-2.amazonaws.com";
+        config.setClientEndpoint("logs.us-east-2.amazonaws.com");
         CloudWatchLogWriter writer = createWriter(config);
 
         new MessageWriter(writer, numMessages).run();
@@ -327,7 +332,7 @@ public class CloudWatchLogWriterIntegrationTest
         init("testRetentionPeriod", helperClient);
 
         CloudWatchWriterConfig config = defaultConfig();
-        config.retentionPeriod = 3;
+        config.setRetentionPeriod(3);
         CloudWatchLogWriter writer = createWriter(config);
 
         // will write a single message so that we have something to wait for
@@ -352,8 +357,8 @@ public class CloudWatchLogWriterIntegrationTest
         {
             localLogger.debug("creating writer {}", ii);
             CloudWatchWriterConfig config = defaultConfig();
-            config.logStreamName = "testDedicatedWriter-" + ii;
-            config.dedicatedWriter = true;
+            config.setLogStreamName("testDedicatedWriter-" + ii);
+            config.setDedicatedWriter(true);
             createWriter(config);
         }
 
@@ -392,7 +397,7 @@ public class CloudWatchLogWriterIntegrationTest
         init("testOversizeMessageTruncation", helperClient);
 
         CloudWatchWriterConfig config = defaultConfig();
-        config.truncateOversizeMessages = true;
+        config.setTruncateOversizeMessages(true);
         CloudWatchLogWriter writer = createWriter(config);
 
         new MessageWriter(writer, numMessages)

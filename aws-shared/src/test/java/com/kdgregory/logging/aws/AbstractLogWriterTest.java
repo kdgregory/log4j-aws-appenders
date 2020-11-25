@@ -33,6 +33,7 @@ import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.MessageQueue;
 import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 
+
 /**
  *  Base class for the writer tests. Defines utility methods and variables
  *  used by all tests.
@@ -40,7 +41,7 @@ import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 public abstract class AbstractLogWriterTest
 <
     WriterType extends AbstractLogWriter<?,?,?>,
-    ConfigType extends AbstractWriterConfig,
+    ConfigType extends AbstractWriterConfig<ConfigType>,
     StatsType extends AbstractWriterStatistics,
     AWSClientType
 >

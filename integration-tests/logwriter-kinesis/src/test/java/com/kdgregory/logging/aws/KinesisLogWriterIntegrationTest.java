@@ -65,7 +65,13 @@ public class KinesisLogWriterIntegrationTest
     private Logger localLogger = LoggerFactory.getLogger(getClass());
 
     // this will be configued prior to ini()
-    private KinesisWriterConfig config = new KinesisWriterConfig(null, "{random}", true, 1, null, false, 250, 10000, DiscardAction.oldest, null, null, null, null);
+    private KinesisWriterConfig config = new KinesisWriterConfig()
+                                         .setPartitionKey("{random}")
+                                         .setAutoCreate(true)
+                                         .setShardCount(1)
+                                         .setBatchDelay(250)
+                                         .setDiscardThreshold(10000)
+                                         .setDiscardAction(DiscardAction.oldest);
 
     // these are all assigned by init()
     private KinesisTestHelper testHelper;
@@ -88,7 +94,7 @@ public class KinesisLogWriterIntegrationTest
 
         testHelper.deleteStreamIfExists();
 
-        config.streamName = testHelper.getStreamName();
+        config.setStreamName(testHelper.getStreamName());
 
         stats = new KinesisWriterStatistics();
         internalLogger = new TestableInternalLogger();
@@ -189,7 +195,7 @@ public class KinesisLogWriterIntegrationTest
     {
         final int numMessages = 1001;
 
-        config.clientFactoryMethod = getClass().getName() + ".staticClientFactory";
+        config.setClientFactoryMethod(getClass().getName() + ".staticClientFactory");
         init("testFactoryMethod", helperClient);
 
         new MessageWriter(numMessages).run();
@@ -212,7 +218,7 @@ public class KinesisLogWriterIntegrationTest
         // default region for constructor is always us-east-1
         altClient = new AmazonKinesisClient().withRegion(Regions.US_WEST_1);
 
-        config.clientRegion = "us-west-1";
+        config.setClientRegion("us-west-1");
         init("logwriter-testAlternateRegion", altClient);
 
         new MessageWriter(numMessages).run();
@@ -238,7 +244,7 @@ public class KinesisLogWriterIntegrationTest
         //         if that is your default, then the test will fail
         altClient = new AmazonKinesisClient().withEndpoint("kinesis.us-east-2.amazonaws.com");
 
-        config.clientEndpoint = "kinesis.us-east-2.amazonaws.com";
+        config.setClientEndpoint("kinesis.us-east-2.amazonaws.com");
         init("logwriter-testAlternateEndpoint", altClient);
 
         new MessageWriter(numMessages).run();
@@ -265,8 +271,8 @@ public class KinesisLogWriterIntegrationTest
         final String expectedMessage = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
         final String messageToWrite = expectedMessage + "Z";
 
-        config.partitionKey = "abcdefg";
-        config.truncateOversizeMessages = true;
+        config.setPartitionKey("abcdefg");
+        config.setTruncateOversizeMessages(true);
         init("testOversizeMessageTruncation", helperClient);
 
         new MessageWriter(numMessages)

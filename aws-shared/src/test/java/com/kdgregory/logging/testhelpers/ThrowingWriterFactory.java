@@ -27,12 +27,12 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *  This factory creates a LogWriter that throws on its second invocation.
  *  It's used to test the uncaught exception handling in the appender.
  */
-public class ThrowingWriterFactory<C extends AbstractWriterConfig,S> implements WriterFactory<C,S>
+public class ThrowingWriterFactory<C extends AbstractWriterConfig<?>,S> implements WriterFactory<C,S>
 {
         @Override
         public LogWriter newLogWriter(C ignored1, S ignored2, InternalLogger ignored3)
         {
-            return new MockLogWriter<AbstractWriterConfig>(ignored1)
+            return new MockLogWriter<AbstractWriterConfig<?>>(ignored1)
             {
                 private CountDownLatch appendLatch = new CountDownLatch(2);
 

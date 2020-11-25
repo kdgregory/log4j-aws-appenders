@@ -334,11 +334,18 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterStatisti
         String actualTopicArn   = subs.perform(l4jsubs.replace(config.getTopicArn()));
         String actualSubject    = subs.perform(l4jsubs.replace(config.getSubject()));
 
-        return new SNSWriterConfig(
-            actualTopicName, actualTopicArn, actualSubject, config.isAutoCreate(),
-            false, config.getDiscardThreshold(), discardAction,
-            config.getClientFactory(), config.getAssumedRole(), config.getClientRegion(), config.getClientEndpoint());
-
+        return new SNSWriterConfig()
+               .setTopicName(actualTopicName)
+               .setTopicArn(actualTopicArn)
+               .setSubject(actualSubject)
+               .setAutoCreate(config.isAutoCreate())
+               .setTruncateOversizeMessages(false)
+               .setDiscardThreshold(config.getDiscardThreshold())
+               .setDiscardAction(discardAction)
+               .setClientFactoryMethod(config.getClientFactory())
+               .setAssumedRole(config.getAssumedRole())
+               .setClientRegion(config.getClientRegion())
+               .setClientEndpoint(config.getClientEndpoint());
     }
 
 

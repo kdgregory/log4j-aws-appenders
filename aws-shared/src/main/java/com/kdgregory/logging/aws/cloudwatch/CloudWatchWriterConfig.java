@@ -15,46 +15,64 @@
 package com.kdgregory.logging.aws.cloudwatch;
 
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
-import com.kdgregory.logging.common.util.DiscardAction;
+
 
 /**
- *  Holds configuration that is passed to the writer factory.
+ *  Configuration for CloudWatchLogWriter.
  */
 public class CloudWatchWriterConfig
-extends AbstractWriterConfig
+extends AbstractWriterConfig<CloudWatchWriterConfig>
 {
-    public String logGroupName;
-    public String logStreamName;
-    public Integer retentionPeriod;
-    public boolean dedicatedWriter;
+    private String  logGroupName;
+    private String  logStreamName;
+    private Integer retentionPeriod;
+    private boolean dedicatedWriter;
 
 
-    /**
-     *  @param actualLogGroup           Name of the log group, with all substitutions applied.
-     *  @param actualLogStream          Name of the log stream, with all substitutions applied.
-     *  @param retentionPeriod          A non-default retention period to use when creating log group.
-     *  @param dedicatedWriter          Indicates whether the stream will only be written by this writer.
-     *  @param truncateOversizeMessages If true, messages that are too large for the service are
-     *                                  truncated to fit; if false, they are discarded.
-     *  @param batchDelay               Number of milliseconds to wait after receiving first
-     *                                  message in batch.
-     *  @param discardThreshold         Maximum number of messages to retain if unable to send.
-     *  @param discardAction            What to do with unsent messages over the threshold.
-     *  @param clientFactoryMethod      Optional: fully-qualified name of a static method to create client.
-     *  @param assumedRole              Optional: name or ARN of a role to assume when creating client.
-     *  @param clientRegion             Optional: explicit region for client (used with ctor and SDK builder).
-     *  @param clientEndpoint           Optional: explicit endpoint for client (only used with constructors).
-     */
-    public CloudWatchWriterConfig(
-        String actualLogGroup, String actualLogStream, Integer retentionPeriod, boolean dedicatedWriter,
-        boolean truncateOversizeMessages, long batchDelay, int discardThreshold, DiscardAction discardAction,
-        String clientFactoryMethod, String assumedRole, String clientRegion, String clientEndpoint)
+    public String getLogGroupName()
     {
-        super(truncateOversizeMessages, batchDelay, discardThreshold, discardAction, clientFactoryMethod, assumedRole, clientRegion, clientEndpoint);
+        return logGroupName;
+    }
 
-        this.logGroupName = actualLogGroup;
-        this.logStreamName = actualLogStream;
-        this.retentionPeriod = retentionPeriod;
-        this.dedicatedWriter = dedicatedWriter;
+    public CloudWatchWriterConfig setLogGroupName(String value)
+    {
+        logGroupName = value;
+        return this;
+    }
+
+
+    public String getLogStreamName()
+    {
+        return logStreamName;
+    }
+
+    public CloudWatchWriterConfig setLogStreamName(String value)
+    {
+        logStreamName = value;
+        return this;
+    }
+
+
+    public Integer getRetentionPeriod()
+    {
+        return retentionPeriod;
+    }
+
+    public CloudWatchWriterConfig setRetentionPeriod(Integer value)
+    {
+        retentionPeriod = value;
+        return this;
+    }
+
+
+    public boolean getDedicatedWriter()
+    {
+        return dedicatedWriter;
+    }
+
+    public CloudWatchWriterConfig setDedicatedWriter(boolean value)
+    {
+        dedicatedWriter = value;
+        return this;
     }
 }

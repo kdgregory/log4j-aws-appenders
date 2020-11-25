@@ -151,14 +151,14 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
         MockCloudWatchWriter writer = appender.getMockWriter();
 
-        assertEquals("writer log group name",           "MyLog-example",                    writer.config.logGroupName);
-        assertRegex("writer log stream name",           "MyStream-20\\d{6}-\\{bogus}",      writer.config.logStreamName);
-        assertEquals("writer retention period",         Integer.valueOf(14),                writer.config.retentionPeriod);
-        assertEquals("writer batch delay",              9876L,                              writer.config.batchDelay);
-        assertEquals("writer discard threshold",        12345,                              writer.config.discardThreshold);
-        assertEquals("writer discard action",           DiscardAction.newest,               writer.config.discardAction);
-        assertEquals("writer client factory method",    "com.example.Foo.bar",              writer.config.clientFactoryMethod);
-        assertEquals("writer client endpoint",          "logs.us-west-2.amazonaws.com",     writer.config.clientEndpoint);
+        assertEquals("writer log group name",           "MyLog-example",                    writer.config.getLogGroupName());
+        assertRegex("writer log stream name",           "MyStream-20\\d{6}-\\{bogus}",      writer.config.getLogStreamName());
+        assertEquals("writer retention period",         Integer.valueOf(14),                writer.config.getRetentionPeriod());
+        assertEquals("writer batch delay",              9876L,                              writer.config.getBatchDelay());
+        assertEquals("writer discard threshold",        12345,                              writer.config.getDiscardThreshold());
+        assertEquals("writer discard action",           DiscardAction.newest,               writer.config.getDiscardAction());
+        assertEquals("writer client factory method",    "com.example.Foo.bar",              writer.config.getClientFactoryMethod());
+        assertEquals("writer client endpoint",          "logs.us-west-2.amazonaws.com",     writer.config.getClientEndpoint());
     }
 
 
@@ -174,7 +174,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         MockCloudWatchWriter writer0 = appender.getMockWriter();
 
         assertEquals("pre-rotate, writer factory calls",            1,          writerFactory.invocationCount);
-        assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.config.logStreamName);
+        assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.config.getLogStreamName());
 
         appender.rotate();
 
@@ -182,7 +182,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
         assertEquals("post-rotate, writer factory calls",           2,          writerFactory.invocationCount);
         assertNotSame("post-rotate, writer has been replaced",      writer0,    writer1);
-        assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.config.logStreamName);
+        assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.config.getLogStreamName());
 
         assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
         assertEquals("post-rotate, messages passed to new writer",  0,          writer1.messages.size());
@@ -199,7 +199,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
         MockCloudWatchWriter writer0 = appender.getMockWriter();
 
-        assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.config.logStreamName);
+        assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.config.getLogStreamName());
 
         // these messages should trigger rotation
 
@@ -210,7 +210,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
         MockCloudWatchWriter writer1 = appender.getMockWriter();
 
-        assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.config.logStreamName);
+        assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.config.getLogStreamName());
         assertEquals("post-rotate, messages passed to old writer",  3,          writer0.messages.size());
         assertEquals("post-rotate, messages passed to new writer",  1,          writer1.messages.size());
 
@@ -228,7 +228,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
         logger.debug("first message");
 
-        assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.config.logStreamName);
+        assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.config.getLogStreamName());
 
         appender.updateLastRotationTimestamp(-20000);
 
@@ -237,7 +237,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         MockCloudWatchWriter writer1 = appender.getMockWriter();
 
         assertNotSame("post-rotate, writer has been replaced",      writer0,    writer1);
-        assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.config.logStreamName);
+        assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.config.getLogStreamName());
         assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
         assertEquals("post-rotate, messages passed to new writer",  1,          writer1.messages.size());
 
@@ -255,7 +255,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
         logger.debug("first message");
 
-        assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.config.logStreamName);
+        assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.config.getLogStreamName());
 
         appender.updateLastRotationTimestamp(-3600000);
 
@@ -264,7 +264,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         MockCloudWatchWriter writer1 = appender.getMockWriter();
 
         assertNotSame("post-rotate, writer has been replaced",      writer0,    writer1);
-        assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.config.logStreamName);
+        assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.config.getLogStreamName());
         assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
         assertEquals("post-rotate, messages passed to new writer",  1,          writer1.messages.size());
 
@@ -282,7 +282,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
         logger.debug("first message");
 
-        assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.config.logStreamName);
+        assertEquals("pre-rotate, logstream name",                  "bargle-0", writer0.config.getLogStreamName());
 
         appender.updateLastRotationTimestamp(-86400000);
 
@@ -291,7 +291,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         MockCloudWatchWriter writer1 = appender.getMockWriter();
 
         assertNotSame("post-rotate, writer has been replaced",      writer0,    writer1);
-        assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.config.logStreamName);
+        assertEquals("post-rotate, logstream name",                 "bargle-1", writer1.config.getLogStreamName());
         assertEquals("post-rotate, messages passed to old writer",  1,          writer0.messages.size());
         assertEquals("post-rotate, messages passed to new writer",  1,          writer1.messages.size());
 

@@ -88,25 +88,12 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     @Before
     public void setUp()
     {
-        config = new SNSWriterConfig(
-                null,                   // topicName
-                null,                   // topicArn
-                null,                   // subject
-                false,                  // autoCreate
-                false,                  // truncateOversizeMessages
-                1000,                   // discardThreshold
-                DiscardAction.oldest,   // discardAction
-                null,                   // clientFactoryMethod
-                null,                   // assumedRole
-                null,                   // clientRegion
-                null);                  // clientEndpoint
-
+        config = new SNSWriterConfig()
+                 .setDiscardThreshold(1000);
         stats = new SNSWriterStatistics();
-
         mock = new MockSNSClient(
                 TEST_TOPIC_NAME,
                 Arrays.asList(TEST_TOPIC_NAME));
-
         staticFactoryMock = null;
     }
 
@@ -127,28 +114,29 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     public void testConfiguration() throws Exception
     {
         // note: the client endpoint configuration is ignored when creating a writer
-        config = new SNSWriterConfig(
-                "topic-name",                       // topicName
-                "topic-arn",                        // topicArn
-                "subject",                          // subject
-                true,                               // autoCreate
-                true,                               // truncateOversizeMessages
-                123,                                // discardThreshold
-                DiscardAction.newest,               // discardAction
-                "com.example.factory.Method",       // clientFactoryMethod
-                "SomeRole",                         // assumedRole
-                "us-west-1",                        // clientRegion
-                "sns.us-west-1.amazonaws.com");     // clientEndpoint
+        config = new SNSWriterConfig()
+                 .setTopicName("topic-name")
+                 .setTopicArn("topic-arn")
+                 .setSubject("subject")
+                 .setAutoCreate(true)
+                 .setTruncateOversizeMessages(true)
+                 .setBatchDelay(123)
+                 .setDiscardThreshold(456)
+                 .setDiscardAction(DiscardAction.newest)
+                 .setClientFactoryMethod("com.example.factory.Method")
+                 .setAssumedRole("SomeRole")
+                 .setClientRegion("us-west-1")
+                 .setClientEndpoint("sns.us-west-1.amazonaws.com");
 
-        assertEquals("topic name",                  "topic-name",                   config.topicName);
-        assertEquals("log stream name",             "topic-arn",                    config.topicArn);
-        assertEquals("subject",                     "subject",                      config.subject);
-        assertTrue("auto-create",                                                   config.autoCreate);
-        assertTrue("truncate large messages",                                       config.truncateOversizeMessages);
-        assertEquals("factory method",              "com.example.factory.Method",   config.clientFactoryMethod);
-        assertEquals("assumed role",                "SomeRole",                     config.assumedRole);
-        assertEquals("client region",               "us-west-1",                    config.clientRegion);
-        assertEquals("client endpoint",             "sns.us-west-1.amazonaws.com",  config.clientEndpoint);
+        assertEquals("topic name",                  "topic-name",                   config.getTopicName());
+        assertEquals("log stream name",             "topic-arn",                    config.getTopicArn());
+        assertEquals("subject",                     "subject",                      config.getSubject());
+        assertTrue("auto-create",                                                   config.getAutoCreate());
+        assertTrue("truncate large messages",                                       config.getTruncateOversizeMessages());
+        assertEquals("factory method",              "com.example.factory.Method",   config.getClientFactoryMethod());
+        assertEquals("assumed role",                "SomeRole",                     config.getAssumedRole());
+        assertEquals("client region",               "us-west-1",                    config.getClientRegion());
+        assertEquals("client endpoint",             "sns.us-west-1.amazonaws.com",  config.getClientEndpoint());
 
         writer = new SNSLogWriter(config, stats, internalLogger, dummyClientFactory);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
@@ -158,14 +146,14 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         assertEquals("writer batch delay",                      1L,                     writer.getBatchDelay());
         assertEquals("message queue discard policy",            DiscardAction.newest,   messageQueue.getDiscardAction());
-        assertEquals("message queue discard threshold",         123,                    messageQueue.getDiscardThreshold());
+        assertEquals("message queue discard threshold",         456,                    messageQueue.getDiscardThreshold());
     }
 
 
     @Test
     public void testOperationByName() throws Exception
     {
-        config.topicName = TEST_TOPIC_NAME;
+        config.setTopicName(TEST_TOPIC_NAME);
         createWriter();
 
         assertNull("after init, stats: no errors",                                      stats.getLastError());
@@ -213,7 +201,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     {
         mock = new MockSNSClient(TEST_TOPIC_NAME, Arrays.asList("argle", "bargle", TEST_TOPIC_NAME), 2);
 
-        config.topicName = TEST_TOPIC_NAME;
+        config.setTopicName(TEST_TOPIC_NAME);
         createWriter();
 
         assertEquals("after init, invocations of listTopics",   2,                      mock.listTopicsInvocationCount);
@@ -246,7 +234,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     {
         mock = new MockSNSClient(TEST_TOPIC_NAME, Arrays.asList("argle", "bargle"));
 
-        config.topicName = TEST_TOPIC_NAME;
+        config.setTopicName(TEST_TOPIC_NAME);
         createWriter();
 
         assertEquals("invocations of listTopics",           1,                      mock.listTopicsInvocationCount);
@@ -268,8 +256,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     {
         mock = new MockSNSClient(TEST_TOPIC_NAME, Arrays.asList("argle", "bargle"));
 
-        config.topicName = TEST_TOPIC_NAME;
-        config.autoCreate = true;
+        config.setTopicName(TEST_TOPIC_NAME);
+        config.setAutoCreate(true);
         createWriter();
 
         assertEquals("after init, invocations of listTopics",   1,                      mock.listTopicsInvocationCount);
@@ -303,7 +291,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     @Test
     public void testOperationByArn() throws Exception
     {
-        config.topicArn = TEST_TOPIC_ARN;
+        config.setTopicArn(TEST_TOPIC_ARN);
         createWriter();
 
         assertEquals("after init, invocations of listTopics",   1,                      mock.listTopicsInvocationCount);
@@ -351,7 +339,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     {
         mock = new MockSNSClient(TEST_TOPIC_NAME, Arrays.asList("argle", "bargle", TEST_TOPIC_NAME), 2);
 
-        config.topicArn = TEST_TOPIC_ARN;
+        config.setTopicArn(TEST_TOPIC_ARN);
         createWriter();
 
         assertEquals("after init, invocations of listTopics",   2,                      mock.listTopicsInvocationCount);
@@ -383,7 +371,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     {
         mock = new MockSNSClient(TEST_TOPIC_NAME, Arrays.asList("argle", "bargle"));
 
-        config.topicArn = TEST_TOPIC_ARN;
+        config.setTopicArn(TEST_TOPIC_ARN);
         createWriter();
 
         assertEquals("invocations of listTopics",           1,                      mock.listTopicsInvocationCount);
@@ -405,8 +393,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     {
         final String testSubject = "This is OK";
 
-        config.topicName = TEST_TOPIC_NAME;
-        config.subject = testSubject;
+        config.setTopicName(TEST_TOPIC_NAME);
+        config.setSubject(testSubject);
         createWriter();
 
         assertEquals("after init, invocations of listTopics",   1,                      mock.listTopicsInvocationCount);
@@ -439,11 +427,11 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         final String firstSubject = "First Subject";
         final String secondSubject = "Second Subject";
 
-        config.topicName = TEST_TOPIC_NAME;
-        config.subject = firstSubject;
+        config.setTopicName(TEST_TOPIC_NAME);
+        config.setSubject(firstSubject);
         createWriter();
 
-        assertEquals("after init, config: subject",             firstSubject,           config.subject);
+        assertEquals("after init, config: subject",             firstSubject,           config.getSubject());
         assertEquals("after init, stats: subject",              firstSubject,           stats.getActualSubject());
         assertNull("after init, stats: no errors",                                      stats.getLastError());
 
@@ -457,7 +445,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         writer.setSubject(secondSubject);
 
-        assertEquals("after subject change, config",            secondSubject,          config.subject);
+        assertEquals("after subject change, config",            secondSubject,          config.getSubject());
         assertEquals("after subject change, stats",             secondSubject,          stats.getActualSubject());
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
@@ -477,7 +465,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     @Test
     public void testInvalidTopicName() throws Exception
     {
-        config.topicName = "x%$!";
+        config.setTopicName("x%$!");
         createWriter();
 
         assertStatisticsErrorMessage("invalid topic name: .*"); // invalid name has special regex characters
@@ -497,8 +485,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     @Test
     public void testInvalidSubjectTooLong() throws Exception
     {
-        config.topicName = TEST_TOPIC_NAME;
-        config.subject = StringUtil.repeat('A', 100);
+        config.setTopicName(TEST_TOPIC_NAME);
+        config.setSubject(StringUtil.repeat('A', 100));
         createWriter();
 
         assertStatisticsErrorMessage("invalid subject.*too long.*");
@@ -518,8 +506,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     @Test
     public void testInvalidSubjectBadCharacters() throws Exception
     {
-        config.topicName = TEST_TOPIC_NAME;
-        config.subject = "This is \t not OK";
+        config.setTopicName(TEST_TOPIC_NAME);
+        config.setSubject("This is \t not OK");
         createWriter();
 
         assertStatisticsErrorMessage("invalid subject.*disallowed characters.*");
@@ -539,8 +527,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     @Test
     public void testInvalidSubjectBeginsWithSpace() throws Exception
     {
-        config.topicName = TEST_TOPIC_NAME;
-        config.subject = " not OK";
+        config.setTopicName(TEST_TOPIC_NAME);
+        config.setSubject(" not OK");
         createWriter();
 
         assertStatisticsErrorMessage("invalid subject.*starts with space.*");
@@ -569,7 +557,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
             }
         };
 
-        config.topicName = TEST_TOPIC_NAME;
+        config.setTopicName(TEST_TOPIC_NAME);
         createWriter();
 
         assertEquals("invocation count: listTopics",                    1,                          mock.listTopicsInvocationCount);
@@ -602,7 +590,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
             }
         };
 
-        config.topicName = TEST_TOPIC_NAME;
+        config.setTopicName(TEST_TOPIC_NAME);
         createWriter();
 
         assertNull("no initialization error",                                       stats.getLastError());
@@ -651,7 +639,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         final String invalidMessage = "";
         final String validMessage = "this one works";
 
-        config.topicName = TEST_TOPIC_NAME;
+        config.setTopicName(TEST_TOPIC_NAME);
         createWriter();
 
         // have to write both messages at once, in this order, to allow writer thread
@@ -677,8 +665,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         final String bigMessage         = StringUtil.repeat('X', snsMaxMessageSize - 1) + "Y";
         final String biggerMessage      = bigMessage + "Z";
 
-        config.topicName = TEST_TOPIC_NAME;
-        config.subject = "example";
+        config.setTopicName(TEST_TOPIC_NAME);
+        config.setSubject("example");
         createWriter();
 
         // have to write both messages at once, in this order, otherwise we don't know that the first was discarded
@@ -705,9 +693,9 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         final String bigMessage         = StringUtil.repeat('X', snsMaxMessageSize - 1) + "Y";
         final String biggerMessage      = bigMessage + "Z";
 
-        config.topicName = TEST_TOPIC_NAME;
-        config.subject = "example";
-        config.truncateOversizeMessages = true;
+        config.setTopicName(TEST_TOPIC_NAME);
+        config.setSubject("example");
+        config.setTruncateOversizeMessages(true);
         createWriter();
 
         // first message should succeed
@@ -737,8 +725,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     @Test
     public void testDiscardOldest() throws Exception
     {
-        config.discardAction = DiscardAction.oldest;
-        config.discardThreshold = 10;
+        config.setDiscardAction(DiscardAction.oldest);
+        config.setDiscardThreshold(10);
 
         // this test doesn't need a background thread running
 
@@ -761,8 +749,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     @Test
     public void testDiscardNewest() throws Exception
     {
-        config.discardAction = DiscardAction.newest;
-        config.discardThreshold = 10;
+        config.setDiscardAction(DiscardAction.newest);
+        config.setDiscardThreshold(10);
 
         // this test doesn't need a background thread running
 
@@ -785,8 +773,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     @Test
     public void testDiscardNone() throws Exception
     {
-        config.discardAction = DiscardAction.none;
-        config.discardThreshold = 10;
+        config.setDiscardAction(DiscardAction.none);
+        config.setDiscardThreshold(10);
 
         // this test doesn't need a background thread running
 
@@ -809,8 +797,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     @Test
     public void testReconfigureDiscardProperties() throws Exception
     {
-        config.discardAction = DiscardAction.none;
-        config.discardThreshold = 123;
+        config.setDiscardAction(DiscardAction.none);
+        config.setDiscardThreshold(123);
 
         // this test doesn't need a background thread running
 
@@ -831,8 +819,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     @Test
     public void testStaticClientFactory() throws Exception
     {
-        config.topicName = TEST_TOPIC_NAME;
-        config.clientFactoryMethod = getClass().getName() + ".createMockClient";
+        config.setTopicName(TEST_TOPIC_NAME);
+        config.setClientFactoryMethod(getClass().getName() + ".createMockClient");
 
         createWriter(new SNSWriterFactory());
 
@@ -848,7 +836,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("stats: topic ARN",                        TEST_TOPIC_ARN,             stats.getActualTopicArn());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
-                                              "creating client via factory.*" + config.clientFactoryMethod,
+                                              "creating client via factory.*" + config.getClientFactoryMethod(),
                                               "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
@@ -863,7 +851,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         // it actually tests functionality in AbstractAppender, but I've replicated for all concrete
         // subclasses simply because it's a key piece of functionality
 
-        config.topicName = TEST_TOPIC_NAME;
+        config.setTopicName(TEST_TOPIC_NAME);
         createWriter();
 
         assertEquals("after creation, shutdown time should be infinite", Long.MAX_VALUE, getShutdownTime());
@@ -875,7 +863,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
         long now = System.currentTimeMillis();
         long shutdownTime = getShutdownTime();
-        assertInRange("after stop(), shutdown time should be based on batch delay", now, now + config.batchDelay + 100, shutdownTime);
+        assertInRange("after stop(), shutdown time should be based on batch delay", now, now + config.getBatchDelay() + 100, shutdownTime);
 
         // the batch should still be processed
         mock.allowWriterThread();
@@ -905,9 +893,10 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     @Test
     public void testSynchronousOperation() throws Exception
     {
+        config.setTopicName(TEST_TOPIC_NAME);
+
         // appender is expected to set batch delay in synchronous mode
-        config.batchDelay = 1;
-        config.topicName = TEST_TOPIC_NAME;
+        config.setBatchDelay(1);
 
         // we just have one thread, so don't want any locks getting in the way
         mock.disableThreadSynchronization();

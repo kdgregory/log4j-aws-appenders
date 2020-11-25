@@ -73,15 +73,15 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
     {
         super(config, stats, logger, clientFactory);
 
-        randomPartitionKeys = RANDOM_PARTITION_KEY_CONFIG.equals(config.partitionKey)
-                           || "".equals(config.partitionKey)
-                           || (null == config.partitionKey);
+        randomPartitionKeys = RANDOM_PARTITION_KEY_CONFIG.equals(config.getPartitionKey())
+                           || "".equals(config.getPartitionKey())
+                           || (null == config.getPartitionKey());
 
         partitionKeyLength = randomPartitionKeys
                            ? 8
-                           : config.partitionKey.getBytes(StandardCharsets.UTF_8).length;
+                           : config.getPartitionKey().getBytes(StandardCharsets.UTF_8).length;
 
-        stats.setActualStreamName(config.streamName);
+        stats.setActualStreamName(config.getStreamName());
     }
 
 //----------------------------------------------------------------------------
@@ -108,13 +108,13 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
     @Override
     protected boolean ensureDestinationAvailable()
     {
-        if (! Pattern.matches(KinesisConstants.ALLOWED_STREAM_NAME_REGEX, config.streamName))
+        if (! Pattern.matches(KinesisConstants.ALLOWED_STREAM_NAME_REGEX, config.getStreamName()))
         {
-            reportError("invalid stream name: " + config.streamName, null);
+            reportError("invalid stream name: " + config.getStreamName(), null);
             return false;
         }
 
-        if ((config.partitionKey == null) || (config.partitionKey.length() > 256))
+        if ((config.getPartitionKey() == null) || (config.getPartitionKey().length() > 256))
         {
             reportError("invalid partition key: length must be 1-256", null);
             return false;
@@ -125,7 +125,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
             String streamStatus = getStreamStatus();
             if (streamStatus == null)
             {
-                if (config.autoCreate)
+                if (config.getAutoCreate())
                 {
                     createStream();
                     waitForStreamToBeActive();
@@ -133,7 +133,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
                 }
                 else
                 {
-                    reportError("stream \"" + config.streamName + "\" does not exist and auto-create not enabled", null);
+                    reportError("stream \"" + config.getStreamName() + "\" does not exist and auto-create not enabled", null);
                     return false;
                 }
             }
@@ -146,7 +146,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
         }
         catch (Exception ex)
         {
-            reportError("unable to configure stream: " + config.streamName, ex);
+            reportError("unable to configure stream: " + config.getStreamName(), ex);
             return false;
         }
     }
@@ -202,10 +202,10 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
         {
             try
             {
-                logger.debug("creating Kinesis stream: " + config.streamName + " with " + config.shardCount + " shards");
+                logger.debug("creating Kinesis stream: " + config.getStreamName() + " with " + config.getShardCount() + " shards");
                 CreateStreamRequest request = new CreateStreamRequest()
-                                              .withStreamName(config.streamName)
-                                              .withShardCount(config.shardCount);
+                                              .withStreamName(config.getStreamName())
+                                              .withShardCount(config.getShardCount());
                 client.createStream(request);
                 return;
             }
@@ -255,7 +255,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
         {
             try
             {
-                DescribeStreamRequest request = new DescribeStreamRequest().withStreamName(config.streamName);
+                DescribeStreamRequest request = new DescribeStreamRequest().withStreamName(config.getStreamName());
                 DescribeStreamResult response = client.describeStream(request);
                 return response.getStreamDescription().getStreamStatus();
             }
@@ -277,13 +277,13 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
      */
     private void setRetentionPeriodIfNeeded()
     {
-        if (config.retentionPeriod != null)
+        if (config.getRetentionPeriod() != null)
         {
             try
             {
                 client.increaseStreamRetentionPeriod(new IncreaseStreamRetentionPeriodRequest()
-                                                     .withStreamName(config.streamName)
-                                                     .withRetentionPeriodHours(config.retentionPeriod));
+                                                     .withStreamName(config.getStreamName())
+                                                     .withRetentionPeriodHours(config.getRetentionPeriod()));
                 waitForStreamToBeActive();
             }
             catch (InvalidArgumentException ignored)
@@ -308,7 +308,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
         }
 
         return new PutRecordsRequest()
-                   .withStreamName(config.streamName)
+                   .withStreamName(config.getStreamName())
                    .withRecords(requestRecords);
     }
 
@@ -392,7 +392,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
         }
         else
         {
-            return config.partitionKey;
+            return config.getPartitionKey();
         }
     }
 }

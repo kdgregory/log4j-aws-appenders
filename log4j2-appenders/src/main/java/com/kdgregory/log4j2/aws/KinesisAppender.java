@@ -355,11 +355,20 @@ extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWr
         String actualStreamName   = subs.perform(l4jsubs.replace(config.getStreamName()));
         String actualPartitionKey = subs.perform(l4jsubs.replace(config.getPartitionKey()));
 
-        return new KinesisWriterConfig(
-            actualStreamName, actualPartitionKey,
-            config.getAutoCreate(), config.getShardCount(), config.getRetentionPeriod(),
-            false, config.getBatchDelay(), config.getDiscardThreshold(), discardAction,
-            config.getClientFactory(), config.getAssumedRole(), config.getClientRegion(), config.getClientEndpoint());
+        return new KinesisWriterConfig()
+               .setStreamName(actualStreamName)
+               .setPartitionKey(actualPartitionKey)
+               .setAutoCreate(config.getAutoCreate())
+               .setShardCount(config.getShardCount())
+               .setRetentionPeriod(config.getRetentionPeriod())
+               .setTruncateOversizeMessages(false)
+               .setBatchDelay(config.getBatchDelay())
+               .setDiscardThreshold(config.getDiscardThreshold())
+               .setDiscardAction(discardAction)
+               .setClientFactoryMethod(config.getClientFactory())
+               .setAssumedRole(config.getAssumedRole())
+               .setClientRegion(config.getClientRegion())
+               .setClientEndpoint(config.getClientEndpoint());
     }
 
 

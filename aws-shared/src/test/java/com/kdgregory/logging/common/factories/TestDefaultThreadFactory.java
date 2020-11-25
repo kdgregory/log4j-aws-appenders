@@ -89,7 +89,7 @@ public class TestDefaultThreadFactory
     public void testBasicOperation() throws Exception
     {
         TestableDefaultThreadFactory factory = new TestableDefaultThreadFactory("test");
-        MockLogWriter<AbstractWriterConfig> writer = new MockLogWriter<>(null);
+        MockLogWriter<AbstractWriterConfig<?>> writer = new MockLogWriter<>(null);
 
         factory.startLoggingThread(writer);
         assertTrue("writer was started", writer.waitUntilInitialized(1000));

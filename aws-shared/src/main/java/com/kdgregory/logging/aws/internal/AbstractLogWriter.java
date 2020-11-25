@@ -31,7 +31,7 @@ import com.kdgregory.logging.common.util.MessageQueue;
  */
 public abstract class AbstractLogWriter
 <
-    ConfigType extends AbstractWriterConfig,
+    ConfigType extends AbstractWriterConfig<ConfigType>,
     StatsType extends AbstractWriterStatistics,
     AWSClientType
 >
@@ -76,7 +76,7 @@ implements LogWriter
         this.logger = logger;
         this.clientFactory = clientFactory;
 
-        messageQueue = new MessageQueue(config.discardThreshold, config.discardAction);
+        messageQueue = new MessageQueue(config.getDiscardThreshold(), config.getDiscardAction());
         this.stats.setMessageQueue(messageQueue);
     }
 
@@ -89,7 +89,7 @@ implements LogWriter
      */
     public long getBatchDelay()
     {
-        return config.batchDelay;
+        return config.getBatchDelay();
     }
 
 
@@ -142,7 +142,7 @@ implements LogWriter
     @Override
     public void setBatchDelay(long value)
     {
-        config.batchDelay = value;
+        config.setBatchDelay(value);
     }
 
 
@@ -179,7 +179,7 @@ implements LogWriter
         if (message.size() > maxMessageSize())
         {
             stats.incrementOversizeMessages();
-            if (config.truncateOversizeMessages)
+            if (config.getTruncateOversizeMessages())
             {
                 logger.debug("truncated oversize message (" + message.size() + " bytes to " + maxMessageSize() + ")");
                 message.truncate(maxMessageSize());
@@ -266,7 +266,7 @@ implements LogWriter
         if (shutdownTime != NEVER_SHUTDOWN)
             return;
 
-        shutdownTime = System.currentTimeMillis() + config.batchDelay;
+        shutdownTime = System.currentTimeMillis() + config.getBatchDelay();
         if (dispatchThread != null)
         {
             dispatchThread.interrupt();
@@ -348,7 +348,7 @@ implements LogWriter
         if (message == null)
             return batch;
 
-        long batchTimeout = System.currentTimeMillis() + config.batchDelay;
+        long batchTimeout = System.currentTimeMillis() + config.getBatchDelay();
         int batchBytes = 0;
         int batchMsgs = 0;
         while (message != null)

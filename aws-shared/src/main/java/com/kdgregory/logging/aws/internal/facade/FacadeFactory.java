@@ -32,7 +32,7 @@ public class FacadeFactory
      *  @throws IllegalArgumentException if unable to instantiate. Exception
      *          message will provide more information.
      */
-    public static <T> T createFacade(Class<T> facadeType, AbstractWriterConfig config)
+    public static <T> T createFacade(Class<T> facadeType, AbstractWriterConfig<?> config)
     {
         Class<?> implClass = findImplementationClass(facadeType);
         if (implClass == null)

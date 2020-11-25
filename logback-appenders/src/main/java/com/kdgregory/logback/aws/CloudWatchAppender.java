@@ -307,9 +307,18 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
         String actualLogGroup  = subs.perform(logGroup);
         String actualLogStream = subs.perform(logStream);
 
-        return new CloudWatchWriterConfig(
-            actualLogGroup, actualLogStream, retentionPeriod, dedicatedWriter,
-            false, batchDelay, discardThreshold, discardAction,
-            clientFactory, assumedRole, clientRegion, clientEndpoint);
+        return new CloudWatchWriterConfig()
+               .setLogGroupName(actualLogGroup)
+               .setLogStreamName(actualLogStream)
+               .setRetentionPeriod(retentionPeriod)
+               .setDedicatedWriter(dedicatedWriter)
+               .setTruncateOversizeMessages(truncateOversizeMessages)
+               .setBatchDelay(batchDelay)
+               .setDiscardThreshold(discardThreshold)
+               .setDiscardAction(discardAction)
+               .setClientFactoryMethod(clientFactory)
+               .setAssumedRole(assumedRole)
+               .setClientRegion(clientRegion)
+               .setClientEndpoint(clientEndpoint);
     }
 }

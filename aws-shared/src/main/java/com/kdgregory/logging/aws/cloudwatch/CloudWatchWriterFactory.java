@@ -34,7 +34,7 @@ implements WriterFactory<CloudWatchWriterConfig,CloudWatchWriterStatistics>
         return new CloudWatchLogWriter(
                 config, stats, logger,
                 new DefaultClientFactory<AWSLogs>(
-                    AWSLogs.class, config.clientFactoryMethod, config.assumedRole,
-                    config.clientRegion, config.clientEndpoint, logger));
+                    AWSLogs.class, config.getClientFactoryMethod(), config.getAssumedRole(),
+                    config.getClientRegion(), config.getClientEndpoint(), logger));
     }
 }

@@ -60,8 +60,8 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("post-initialization: calls to writer factory",                1,              writerFactory.invocationCount);
         assertNotNull("post-initialization: writer created",                                        writer);
         assertNotNull("post-initialization: writer running on background thread",                   writer.writerThread);
-        assertEquals("post-initialization: actual log-group name",                  "argle",        writer.config.logGroupName);
-        assertRegex("post-initialization: actual log-stream name",                  "20\\d{12}",    writer.config.logStreamName);
+        assertEquals("post-initialization: actual log-group name",                  "argle",        writer.config.getLogGroupName());
+        assertRegex("post-initialization: actual log-stream name",                  "20\\d{12}",    writer.config.getLogStreamName());
 
         long initialTimestamp = System.currentTimeMillis();
         logger.debug("first message");
@@ -96,7 +96,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         // since we have the writer, we can verify that setting the batch delay gets propagated
 
         appender.setBatchDelay(1234567);
-        assertEquals("writer batch delay propagated", 1234567, writer.config.batchDelay);
+        assertEquals("writer batch delay propagated", 1234567, writer.config.getBatchDelay());
 
         // finish off the life-cycle
 
@@ -276,8 +276,8 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("initial discard threshold, from appender",    12345,                              appender.getDiscardThreshold());
         assertEquals("initial discard action, from appender",       DiscardAction.newest.toString(),    appender.getDiscardAction());
 
-        assertEquals("initial discard threshold, from writer",      12345,                              writer.config.discardThreshold);
-        assertEquals("initial discard action, from writer",         DiscardAction.newest,               writer.config.discardAction);
+        assertEquals("initial discard threshold, from writer",      12345,                              writer.config.getDiscardThreshold());
+        assertEquals("initial discard action, from writer",         DiscardAction.newest,               writer.config.getDiscardAction());
 
         appender.setDiscardThreshold(54321);
         appender.setDiscardAction(DiscardAction.oldest.toString());
@@ -285,8 +285,8 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("updated discard threshold, from appender",    54321,                              appender.getDiscardThreshold());
         assertEquals("updated discard action, from appender",       DiscardAction.oldest.toString(),    appender.getDiscardAction());
 
-        assertEquals("updated discard threshold, from writer",      54321,                              writer.config.discardThreshold);
-        assertEquals("updated discard action, from writer",         DiscardAction.oldest,               writer.config.discardAction);
+        assertEquals("updated discard threshold, from writer",      54321,                              writer.config.getDiscardThreshold());
+        assertEquals("updated discard action, from writer",         DiscardAction.oldest,               writer.config.getDiscardAction());
 
         appenderInternalLogger.assertDebugLog();
         appenderInternalLogger.assertErrorLog();
@@ -301,7 +301,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         MockCloudWatchWriter writer = appender.getMockWriter();
 
         assertEquals("discard action, from appender",    DiscardAction.oldest.toString(),    appender.getDiscardAction());
-        assertEquals("discard action, from writer",      DiscardAction.oldest,               writer.config.discardAction);
+        assertEquals("discard action, from writer",      DiscardAction.oldest,               writer.config.getDiscardAction());
 
         appenderInternalLogger.assertDebugLog();
         appenderInternalLogger.assertErrorLog("invalid discard action.*bogus.*");

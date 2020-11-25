@@ -15,57 +15,77 @@
 package com.kdgregory.logging.aws.kinesis;
 
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
-import com.kdgregory.logging.common.util.DiscardAction;
 
 
 /**
- *  Holds configuration for the LogWriter. This is a simple struct, with writable fields
- *  (because config can change). It is not exposed to the outside world.
+ *  Configuration for KinesisLogWriter.
  */
 public class KinesisWriterConfig
-extends AbstractWriterConfig
+extends AbstractWriterConfig<KinesisWriterConfig>
 {
-    public String           streamName;
-    public String           partitionKey;
-    public boolean          autoCreate;
-    public int              shardCount;
-    public Integer          retentionPeriod;
+    private String  streamName;
+    private String  partitionKey;
+    private boolean autoCreate;
+    private int     shardCount;
+    private Integer retentionPeriod;
 
 
-    /**
-     *  @param streamName               Name of the stream where messages will be written.
-     *  @param partitionKey             Partition key for messages written to stream. If blank
-     *                                  we'll generate a random partition key for each message.
-     *  @param autoCreate               If true, stream will be created if it doesn't already
-     *                                  exist. If false, writer will fail to start.
-     *  @param shardCount               Number of shards to use when creating the stream
-     *                                  (ignored if stream already exists).
-     *  @param retentionPeriod          Retention period to use when creating the stream
-     *                                  (ignored if stream already exists); null indicates
-     *                                  use the default retention period.
-     *  @param truncateOversizeMessages If true, messages that are too large for the service are
-     *                                  truncated to fit; if false, they are discarded.
-     *  @param batchDelay               Number of milliseconds to wait for messages to be
-     *                                  ready to send.
-     *  @param discardThreshold         Maximum number of messages to retain if unable to send.
-     *  @param discardAction            What to do with unsent messages over the threshold.
-     *  @param clientFactoryMethod      Optional: fully-qualified name of a static method to create client.
-     *  @param assumedRole              Optional: name or ARN of a role to assume when creating client.
-     *  @param clientRegion             Optional: explicit region for client (used with ctor and SDK builder).
-     *  @param clientEndpoint           Optional: explicit endpoint for client (only used with constructors).
-     */
-    public KinesisWriterConfig(
-        String streamName, String partitionKey,
-        boolean autoCreate, int shardCount, Integer retentionPeriod,
-        boolean truncateOversizeMessages, long batchDelay, int discardThreshold, DiscardAction discardAction,
-        String clientFactoryMethod, String assumedRole, String clientRegion, String clientEndpoint)
+    public String getStreamName()
     {
-        super(truncateOversizeMessages, batchDelay, discardThreshold, discardAction, clientFactoryMethod, assumedRole, clientRegion, clientEndpoint);
+        return streamName;
+    }
 
-        this.streamName = streamName;
-        this.partitionKey = partitionKey;
-        this.autoCreate = autoCreate;
-        this.shardCount = shardCount;
-        this.retentionPeriod = retentionPeriod;
+    public KinesisWriterConfig setStreamName(String value)
+    {
+        streamName = value;
+        return this;
+    }
+
+
+    public String getPartitionKey()
+    {
+        return partitionKey;
+    }
+
+    public KinesisWriterConfig setPartitionKey(String value)
+    {
+        partitionKey = value;
+        return this;
+    }
+
+
+    public boolean getAutoCreate()
+    {
+        return autoCreate;
+    }
+
+    public KinesisWriterConfig setAutoCreate(boolean value)
+    {
+        autoCreate = value;
+        return this;
+    }
+
+
+    public int getShardCount()
+    {
+        return shardCount;
+    }
+
+    public KinesisWriterConfig setShardCount(int value)
+    {
+        shardCount = value;
+        return this;
+    }
+
+
+    public Integer getRetentionPeriod()
+    {
+        return retentionPeriod;
+    }
+
+    public KinesisWriterConfig setRetentionPeriod(Integer value)
+    {
+        retentionPeriod = value;
+        return this;
     }
 }

@@ -70,7 +70,11 @@ public class SNSLogWriterIntegrationTest
     private Logger localLogger = LoggerFactory.getLogger(getClass());
 
     // this can be modified before calling init()
-    private SNSWriterConfig config = new SNSWriterConfig(null, null, DEFAULT_SUBJECT, true, false, 10000, DiscardAction.oldest, null, null, null, null);
+    private SNSWriterConfig config = new SNSWriterConfig()
+                                     .setSubject(DEFAULT_SUBJECT)
+                                     .setAutoCreate(true)
+                                     .setDiscardThreshold(10000)
+                                     .setDiscardAction(DiscardAction.oldest);
 
     // these are all assigned by init()
     private SNSTestHelper testHelper;
@@ -96,7 +100,7 @@ public class SNSLogWriterIntegrationTest
 
         testHelper.createTopicAndQueue();
 
-        config.topicName = testHelper.getTopicName();
+        config.setTopicName(testHelper.getTopicName());
 
         stats = new SNSWriterStatistics();
         internalLogger = new TestableInternalLogger();
@@ -231,7 +235,7 @@ public class SNSLogWriterIntegrationTest
     {
         final int numMessages = 11;
 
-        config.clientFactoryMethod = getClass().getName() + ".staticClientFactory";
+        config.setClientFactoryMethod(getClass().getName() + ".staticClientFactory");
         init("testFactoryMethod", helperSNSclient, helperSQSclient);
 
         new MessageWriter(numMessages).run();
@@ -257,7 +261,7 @@ public class SNSLogWriterIntegrationTest
         altSNSclient = new AmazonSNSClient().withRegion(Regions.US_WEST_1);
         altSQSclient = new AmazonSQSClient().withRegion(Regions.US_WEST_1);
 
-        config.clientRegion = "us-west-1";
+        config.setClientRegion("us-west-1");
         init("testAlternateRegion", altSNSclient, altSQSclient);
 
         new MessageWriter(numMessages).run();
@@ -285,7 +289,7 @@ public class SNSLogWriterIntegrationTest
         altSNSclient = new AmazonSNSClient().withEndpoint("sns.us-east-2.amazonaws.com");
         altSQSclient = new AmazonSQSClient().withEndpoint("sqs.us-east-2.amazonaws.com");
 
-        config.clientEndpoint = "sns.us-east-2.amazonaws.com";
+        config.setClientEndpoint("sns.us-east-2.amazonaws.com");
         init("testAlternateEndpoint", altSNSclient, altSQSclient);
 
         new MessageWriter(numMessages).run();
@@ -313,7 +317,7 @@ public class SNSLogWriterIntegrationTest
         final String expectedMessage = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
         final String messageToWrite = expectedMessage + "Z";
 
-        config.truncateOversizeMessages = true;
+        config.setTruncateOversizeMessages(true);
         init("testOversizeMessageTruncation", helperSNSclient, helperSQSclient);
 
         new MessageWriter(numMessages)

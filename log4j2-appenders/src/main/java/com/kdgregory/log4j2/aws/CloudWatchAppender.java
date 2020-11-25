@@ -452,9 +452,17 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
         String actualLogGroup  = subs.perform(l4jsubs.replace(config.getLogGroup()));
         String actualLogStream = subs.perform(l4jsubs.replace(config.getLogStream()));
 
-        return new CloudWatchWriterConfig(
-            actualLogGroup, actualLogStream, retentionPeriod, config.isDedicatedWriter(),
-            false, config.getBatchDelay(), config.getDiscardThreshold(), discardAction,
-            config.getClientFactory(), config.getAssumedRole(), config.getClientRegion(), config.getClientEndpoint());
-    }
+        return new CloudWatchWriterConfig()
+               .setLogGroupName(actualLogGroup)
+               .setLogStreamName(actualLogStream)
+               .setRetentionPeriod(retentionPeriod)
+               .setDedicatedWriter(config.isDedicatedWriter())
+               .setTruncateOversizeMessages(false)    // TODO - why?
+               .setBatchDelay(config.getBatchDelay())
+               .setDiscardThreshold(config.getDiscardThreshold())
+               .setDiscardAction(discardAction)
+               .setClientFactoryMethod(config.getClientFactory())
+               .setAssumedRole(config.getAssumedRole())
+               .setClientRegion(config.getClientRegion())
+               .setClientEndpoint(config.getClientEndpoint());    }
 }

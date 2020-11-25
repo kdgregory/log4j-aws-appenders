@@ -21,6 +21,7 @@ import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
 
+
 /**
  *  Factory to create <code>SNSLogWriter</code> instances.
  */
@@ -33,7 +34,7 @@ implements WriterFactory<SNSWriterConfig,SNSWriterStatistics>
         return new SNSLogWriter(
                 config, stats, logger,
                 new DefaultClientFactory<AmazonSNS>(
-                    AmazonSNS.class, config.clientFactoryMethod, config.assumedRole,
-                    config.clientRegion, config.clientEndpoint, logger));
+                    AmazonSNS.class, config.getClientFactoryMethod(), config.getAssumedRole(),
+                    config.getClientRegion(), config.getClientEndpoint(), logger));
     }
 }

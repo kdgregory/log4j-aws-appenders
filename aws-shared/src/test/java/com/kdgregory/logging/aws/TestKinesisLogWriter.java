@@ -92,25 +92,14 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     @Before
     public void setUp()
     {
-        config = new KinesisWriterConfig(
-            DEFAULT_STREAM_NAME,
-            DEFAULT_PARTITION_KEY,
-            false,                      // autoCreate
-            0,                          // shardCount
-            null,                       // retentionPeriod
-            false,                      // truncateOversizeMessages
-            100,                        // batchDelay
-            10000,                      // discardThreshold
-            DiscardAction.oldest,       // discardAction
-            null,                       // clientFactoryMethod
-            null,                       // assumedRole
-            null,                       // clientRegion
-            null);                      // clientEndpoint
-
+        config = new KinesisWriterConfig()
+                 .setStreamName(DEFAULT_STREAM_NAME)
+                 .setPartitionKey(DEFAULT_PARTITION_KEY)
+                 .setBatchDelay(100)
+                 .setDiscardThreshold(10000)
+                 .setDiscardAction(DiscardAction.oldest);
         stats = new KinesisWriterStatistics();
-
         mock = new MockKinesisClient(DEFAULT_STREAM_NAME);
-
         staticFactoryMock = null;
     }
 
@@ -131,31 +120,31 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     public void testConfiguration() throws Exception
     {
         // note: the client endpoint configuration is ignored when creating the writer
-        config = new KinesisWriterConfig(
-                "argle",                                // streamName
-                "bargle",                               // partitionKey
-                true,                                   // autoCreate
-                3,                                      // shardCount
-                48,                                     // retentionPeriod
-                true,                                   // truncateOversizeMessages
-                123,                                    // batchDelay
-                456,                                    // discardThreshold
-                DiscardAction.newest,                   // discardAction
-                "com.example.factory.Method",           // clientFactoryMethod
-                "SomeRole",                             // assumedRole
-                "us-west-1",                            // clientRegion
-                "kinesis.us-west-1.amazonaws.com");     // clientEndpoint
+        config = new KinesisWriterConfig()
+                 .setStreamName("argle")
+                 .setPartitionKey("bargle")
+                 .setAutoCreate(true)
+                 .setShardCount(3)
+                 .setRetentionPeriod(48)
+                 .setTruncateOversizeMessages(true)
+                 .setBatchDelay(123)
+                 .setDiscardThreshold(456)
+                 .setDiscardAction(DiscardAction.newest)
+                 .setClientFactoryMethod("com.example.factory.Method")
+                 .setAssumedRole("SomeRole")
+                 .setClientRegion("us-west-1")
+                 .setClientEndpoint("kinesis.us-west-1.amazonaws.com");
 
-        assertEquals("stream name",                         "argle",                            config.streamName);
-        assertEquals("partition key",                       "bargle",                           config.partitionKey);
-        assertTrue("auto-create",                                                               config.autoCreate);
-        assertEquals("shard count",                         3,                                  config.shardCount);
-        assertEquals("retention period",                    Integer.valueOf(48),                config.retentionPeriod);
-        assertTrue("truncate large messages",                                                   config.truncateOversizeMessages);
-        assertEquals("factory method",                      "com.example.factory.Method",       config.clientFactoryMethod);
-        assertEquals("assumed role",                        "SomeRole",                         config.assumedRole);
-        assertEquals("client region",                       "us-west-1",                        config.clientRegion);
-        assertEquals("client endpoint",                     "kinesis.us-west-1.amazonaws.com",  config.clientEndpoint);
+        assertEquals("stream name",                         "argle",                            config.getStreamName());
+        assertEquals("partition key",                       "bargle",                           config.getPartitionKey());
+        assertTrue("auto-create",                                                               config.getAutoCreate());
+        assertEquals("shard count",                         3,                                  config.getShardCount());
+        assertEquals("retention period",                    Integer.valueOf(48),                config.getRetentionPeriod());
+        assertTrue("truncate large messages",                                                   config.getTruncateOversizeMessages());
+        assertEquals("factory method",                      "com.example.factory.Method",       config.getClientFactoryMethod());
+        assertEquals("assumed role",                        "SomeRole",                         config.getAssumedRole());
+        assertEquals("client region",                       "us-west-1",                        config.getClientRegion());
+        assertEquals("client endpoint",                     "kinesis.us-west-1.amazonaws.com",  config.getClientEndpoint());
 
         writer = new KinesisLogWriter(config, stats, internalLogger, dummyClientFactory);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
@@ -201,9 +190,9 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     @Test
     public void testWriterCreatesStream() throws Exception
     {
-        config.autoCreate = true;
-        config.shardCount = 3;
-        config.retentionPeriod = 48;
+        config.setAutoCreate(true)
+              .setShardCount(3)
+              .setRetentionPeriod(48);
 
         mock = new MockKinesisClient(1);
 
@@ -262,7 +251,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     @Test
     public void testInvalidStreamName() throws Exception
     {
-        config.streamName = "I'm No Good!";
+        config.setStreamName("I'm No Good!");
 
         createWriter();
 
@@ -270,7 +259,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("createStream: invocation count",              0,                      mock.createStreamInvocationCount);
         assertEquals("putRecords: invocation count",                0,                      mock.putRecordsInvocationCount);
 
-        assertStatisticsErrorMessage("invalid stream name.*" + config.streamName);
+        assertStatisticsErrorMessage("invalid stream name.*" + config.getStreamName());
 
         internalLogger.assertInternalDebugLog("log writer starting.*");
         internalLogger.assertInternalErrorLog(".*invalid.*stream.*");
@@ -280,7 +269,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     @Test
     public void testInvalidPartitionKey() throws Exception
     {
-        config.partitionKey = StringUtil.repeat('X', 300);
+        config.setPartitionKey(StringUtil.repeat('X', 300));
 
         createWriter();
 
@@ -324,7 +313,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     @Test
     public void testRandomPartitionKey() throws Exception
     {
-        config.partitionKey = "";
+        config.setPartitionKey("");
 
         final Set<String> partitionKeys = new HashSet<String>();
         mock = new MockKinesisClient(DEFAULT_STREAM_NAME)
@@ -587,7 +576,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         final String bigMessage                 = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
         final String biggerMessage              = bigMessage + "X";
 
-        config.truncateOversizeMessages = true;
+        config.setTruncateOversizeMessages(true);
         createWriter();
 
         // first message should succeed
@@ -619,8 +608,8 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     @Test
     public void testDiscardOldest() throws Exception
     {
-        config.discardAction = DiscardAction.oldest;
-        config.discardThreshold = 10;
+        config.setDiscardAction(DiscardAction.oldest);
+        config.setDiscardThreshold(10);
 
         // this test doesn't need a background thread running
 
@@ -643,8 +632,8 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     @Test
     public void testDiscardNewest() throws Exception
     {
-        config.discardAction = DiscardAction.newest;
-        config.discardThreshold = 10;
+        config.setDiscardAction(DiscardAction.newest);
+        config.setDiscardThreshold(10);
 
         // this test doesn't need a background thread running
 
@@ -667,8 +656,8 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     @Test
     public void testDiscardNone() throws Exception
     {
-        config.discardAction = DiscardAction.none;
-        config.discardThreshold = 10;
+        config.setDiscardAction(DiscardAction.none);
+        config.setDiscardThreshold(10);
 
         // this test doesn't need a background thread running
 
@@ -691,8 +680,8 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     @Test
     public void testReconfigureDiscardProperties() throws Exception
     {
-        config.discardAction = DiscardAction.none;
-        config.discardThreshold = 123;
+        config.setDiscardAction(DiscardAction.none);
+        config.setDiscardThreshold(123);
 
         // this test doesn't need a background thread running
 
@@ -714,11 +703,11 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     public void testCountBasedBatching() throws Exception
     {
         // don't let discard threshold get in the way of the test
-        config.discardThreshold = Integer.MAX_VALUE;
-        config.discardAction = DiscardAction.none;
+        config.setDiscardAction(DiscardAction.none);
+        config.setDiscardThreshold(Integer.MAX_VALUE);
 
         // increasing delay because it will take time to create the messages
-        config.batchDelay = 300;
+        config.setBatchDelay(300);
 
         final String testMessage = "test";    // this won't trigger batching based on size
         final int numMessages = 750;
@@ -764,11 +753,11 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     public void testSizeBasedBatching() throws Exception
     {
         // don't let discard threshold get in the way of the test
-        config.discardThreshold = Integer.MAX_VALUE;
-        config.discardAction = DiscardAction.none;
+        config.setDiscardAction(DiscardAction.none);
+        config.setDiscardThreshold(Integer.MAX_VALUE);
 
         // increasing delay because it will take time to create the messages
-        config.batchDelay = 300;
+        config.setBatchDelay(300);
 
         final String testMessage = StringUtil.randomAlphaString(32768, 32768);
         final int numMessages = 200;
@@ -817,7 +806,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     @Test
     public void testStaticClientFactory() throws Exception
     {
-        config.clientFactoryMethod = this.getClass().getName() + ".createMockClient";
+        config.setClientFactoryMethod(this.getClass().getName() + ".createMockClient");
 
         // we don't want the default mock client
 
@@ -834,7 +823,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("stats: actual stream name",               DEFAULT_STREAM_NAME,        stats.getActualStreamName());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
-                                              "creating client via factory.*" + config.clientFactoryMethod,
+                                              "creating client via factory.*" + config.getClientFactoryMethod(),
                                               "log writer initialization complete.*");
         internalLogger.assertInternalErrorLog();
     }
@@ -860,7 +849,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         long now = System.currentTimeMillis();
         long shutdownTime = getShutdownTime();
-        assertInRange("after stop(), shutdown time should be based on batch delay", now, now + config.batchDelay + 100, shutdownTime);
+        assertInRange("after stop(), shutdown time should be based on batch delay", now, now + config.getBatchDelay() + 100, shutdownTime);
 
         // the batch should still be processed
         mock.allowWriterThread();
@@ -889,7 +878,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     public void testSynchronousOperation() throws Exception
     {
         // appender is expected to set batch delay in synchronous mode
-        config.batchDelay = 1;
+        config.setBatchDelay(1);
 
         // we just have one thread, so don't want any locks getting in the way
         mock.disableThreadSynchronization();

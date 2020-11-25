@@ -41,9 +41,9 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
     public SNSLogWriter(SNSWriterConfig config, SNSWriterStatistics stats, InternalLogger logger, ClientFactory<AmazonSNS> clientFactory)
     {
         super(config, stats, logger, clientFactory);
-        stats.setActualTopicName(config.topicName);
-        stats.setActualTopicArn(config.topicArn);
-        stats.setActualSubject(config.subject);
+        stats.setActualTopicName(config.getTopicName());
+        stats.setActualTopicArn(config.getTopicArn());
+        stats.setActualSubject(config.getSubject());
     }
 
 //----------------------------------------------------------------------------
@@ -56,7 +56,7 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
      */
     public void setSubject(String subject)
     {
-        config.subject = subject;
+        config.setSubject(subject);
         stats.setActualSubject(subject);
     }
 
@@ -84,28 +84,28 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
     @Override
     protected boolean ensureDestinationAvailable()
     {
-        if ((config.subject != null) && ! config.subject.isEmpty())
+        if ((config.getSubject() != null) && ! config.getSubject().isEmpty())
         {
-            if (config.subject.length() >= 100)
+            if (config.getSubject().length() >= 100)
             {
-                reportError("invalid subject (too long): " + config.subject, null);
+                reportError("invalid subject (too long): " + config.getSubject(), null);
                 return false;
             }
-            if (config.subject.matches(".*[^\u0020-\u007d].*"))
+            if (config.getSubject().matches(".*[^\u0020-\u007d].*"))
             {
-                reportError("invalid subject (disallowed characters): " + config.subject, null);
+                reportError("invalid subject (disallowed characters): " + config.getSubject(), null);
                 return false;
             }
-            if (config.subject.startsWith(" "))
+            if (config.getSubject().startsWith(" "))
             {
-                reportError("invalid subject (starts with space): " + config.subject, null);
+                reportError("invalid subject (starts with space): " + config.getSubject(), null);
                 return false;
             }
         }
 
         try
         {
-            boolean topicAvailable = (config.topicArn != null)
+            boolean topicAvailable = (config.getTopicArn() != null)
                                    ? configureByArn()
                                    : configureByName();
 
@@ -137,9 +137,9 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
                 PublishRequest request = new PublishRequest()
                                          .withTopicArn(topicArn)
                                          .withMessage(message.getMessage());
-                if (config.subject != null)
+                if (config.getSubject() != null)
                 {
-                    request.setSubject(config.subject);
+                    request.setSubject(config.getSubject());
                 }
                 client.publish(request);
             }
@@ -187,14 +187,14 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
         // note: we don't validate topic ARN because an invalid ARN won't be
         //       found in the list and therefore will fail initialization
 
-        if (retrieveAllTopics().contains(config.topicArn))
+        if (retrieveAllTopics().contains(config.getTopicArn()))
         {
-            topicArn = config.topicArn;
+            topicArn = config.getTopicArn();
             return true;
         }
         else
         {
-            reportError("topic does not exist: " + config.topicArn, null);
+            reportError("topic does not exist: " + config.getTopicArn(), null);
             return false;
         }
     }
@@ -208,20 +208,20 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
      */
     private boolean configureByName()
     {
-        String topicName = config.topicName;
+        String topicName = config.getTopicName();
 
-        if (! Pattern.matches(SNSConstants.TOPIC_NAME_REGEX, config.topicName))
+        if (! Pattern.matches(SNSConstants.TOPIC_NAME_REGEX, config.getTopicName()))
         {
             reportError("invalid topic name: " + topicName, null);
             return false;
         }
 
-        topicArn = retrieveAllTopicsByName().get(config.topicName);
+        topicArn = retrieveAllTopicsByName().get(topicName);
         if (topicArn != null)
         {
             return true;
         }
-        else if (config.autoCreate)
+        else if (config.getAutoCreate())
         {
             logger.debug("creating SNS topic: " + topicName);
             CreateTopicResult response = client.createTopic(topicName);

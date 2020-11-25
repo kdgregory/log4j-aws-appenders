@@ -85,19 +85,12 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     public void setUp()
     {
         // this is the default configuration; may be updated or replaced by test
-        config = new CloudWatchWriterConfig(
-            "argle",                // actualLogGroup
-            "bargle",               // actualLogStream
-            null,                   // retentionPeriod
-            false,                  // dedicatedWriter
-            false,                  // truncateOversizeMessages
-            100,                    // batchDelay -- short enough to keep tests fast, long enough that we can write a lot of messages
-            10000,                  // discardThreshold
-            DiscardAction.oldest,   // discardAction
-            null,                   // clientFactoryMethod
-            null,                   // assumedRole
-            null,                   // clientRegion
-            null);                  // clientEndpoint
+        config = new CloudWatchWriterConfig()
+                 .setLogGroupName("argle")
+                 .setLogStreamName("bargle")
+                 .setBatchDelay(100)
+                 .setDiscardThreshold(10000)
+                 .setDiscardAction(DiscardAction.oldest);
 
         stats = new CloudWatchWriterStatistics();
 
@@ -121,29 +114,29 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     public void testConfiguration() throws Exception
     {
         // note: the client endpoint configuration is ignored when creating a writer
-        config = new CloudWatchWriterConfig(
-                "foo",                              // actualLogGroup
-                "bar",                              // actualLogStream
-                1,                                  // retentionPeriod
-                true,                               // dedicatedWriter
-                true,                               // truncateOversizeMessages
-                123,                                // batchDelay
-                456,                                // discardThreshold
-                DiscardAction.newest,               // discardAction
-                "com.example.factory.Method",       // clientFactoryMethod
-                "SomeRole",                         // assumedRole
-                "us-west-1",                        // clientRegion
-                "logs.us-west-1.amazonaws.com");    // clientEndpoint
+        config = new CloudWatchWriterConfig()
+                 .setLogGroupName("foo")
+                 .setLogStreamName("bar")
+                 .setRetentionPeriod(1)
+                 .setDedicatedWriter(true)
+                 .setTruncateOversizeMessages(true)
+                 .setBatchDelay(123)
+                 .setDiscardThreshold(456)
+                 .setDiscardAction(DiscardAction.newest)
+                 .setClientFactoryMethod("com.example.factory.Method")
+                 .setAssumedRole("SomeRole")
+                 .setClientRegion("us-west-1")
+                 .setClientEndpoint("logs.us-west-1.amazonaws.com");
 
-        assertEquals("log group name",                          "foo",                          config.logGroupName);
-        assertEquals("log stream name",                         "bar",                          config.logStreamName);
-        assertEquals("retention period",                        Integer.valueOf(1),             config.retentionPeriod);
-        assertTrue("dedicated stream",                                                          config.dedicatedWriter);
-        assertTrue("truncate large messages",                                                   config.truncateOversizeMessages);
-        assertEquals("factory method",                          "com.example.factory.Method",   config.clientFactoryMethod);
-        assertEquals("assumed role",                            "SomeRole",                     config.assumedRole);
-        assertEquals("client region",                           "us-west-1",                    config.clientRegion);
-        assertEquals("client endpoint",                         "logs.us-west-1.amazonaws.com", config.clientEndpoint);
+        assertEquals("log group name",                          "foo",                          config.getLogGroupName());
+        assertEquals("log stream name",                         "bar",                          config.getLogStreamName());
+        assertEquals("retention period",                        Integer.valueOf(1),             config.getRetentionPeriod());
+        assertTrue("dedicated stream",                                                          config.getDedicatedWriter());
+        assertTrue("truncate large messages",                                                   config.getTruncateOversizeMessages());
+        assertEquals("factory method",                          "com.example.factory.Method",   config.getClientFactoryMethod());
+        assertEquals("assumed role",                            "SomeRole",                     config.getAssumedRole());
+        assertEquals("client region",                           "us-west-1",                    config.getClientRegion());
+        assertEquals("client endpoint",                         "logs.us-west-1.amazonaws.com", config.getClientEndpoint());
 
         writer = new CloudWatchLogWriter(config, stats, internalLogger, dummyClientFactory);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
@@ -211,7 +204,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testOperationWithExistingGroupAndNewStream() throws Exception
     {
-        config.logStreamName = "zippy";
+        config.setLogStreamName("zippy");
 
         createWriter();
 
@@ -266,8 +259,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testOperationWithNewGroupAndStream() throws Exception
     {
-        config.logGroupName = "griffy";
-        config.logStreamName = "zippy";
+        config.setLogGroupName("griffy");
+        config.setLogStreamName("zippy");
 
         createWriter();
 
@@ -323,9 +316,9 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testRetentionPolicy() throws Exception
     {
-        config.logGroupName = "griffy";
-        config.logStreamName = "zippy";
-        config.retentionPeriod = 3;
+        config.setLogGroupName("griffy");
+        config.setLogStreamName("zippy");
+        config.setRetentionPeriod(3);
 
         createWriter();
 
@@ -353,9 +346,9 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testRetentionPolicyFailure() throws Exception
     {
-        config.logGroupName = "griffy";
-        config.logStreamName = "zippy";
-        config.retentionPeriod = 3;
+        config.setLogGroupName("griffy");
+        config.setLogStreamName("zippy");
+        config.setRetentionPeriod(3);
 
         mock = new MockCloudWatchClient()
         {
@@ -391,7 +384,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testDedicatedWriter() throws Exception
     {
-        config.dedicatedWriter = true;
+        config.setDedicatedWriter(true);
         createWriter();
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
@@ -426,8 +419,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     public void testPaginatedDescribes() throws Exception
     {
         // these two names are at the end of the default list
-        config.logGroupName = "argle";
-        config.logStreamName = "fribble";
+        config.setLogGroupName("argle");
+        config.setLogStreamName("fribble");
 
         mock = new MockCloudWatchClient(MockCloudWatchClient.NAMES, 5, MockCloudWatchClient.NAMES, 5);
         createWriter();
@@ -455,14 +448,14 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testInvalidGroupName() throws Exception
     {
-        config.logGroupName = "I'm No Good!";
-        config.logStreamName = "Although, I Am";
+        config.setLogGroupName("I'm No Good!");
+        config.setLogStreamName("Although, I Am");
 
         createWriter();
 
         // we don't need to write any messages; writer should fail to initialize
 
-        assertStatisticsErrorMessage("invalid log group name: " + config.logGroupName + "$");
+        assertStatisticsErrorMessage("invalid log group name: " + config.getLogGroupName() + "$");
 
         assertEquals("describeLogGroups: invocation count",     0,                      mock.describeLogGroupsInvocationCount);
         assertEquals("describeLogStreams: invocation count",    0,                      mock.describeLogStreamsInvocationCount);
@@ -475,14 +468,14 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testInvalidStreamName() throws Exception
     {
-        config.logGroupName = "IAmOK";
-        config.logStreamName = "But: I'm Not";
+        config.setLogGroupName("IAmOK");
+        config.setLogStreamName("But: I'm Not");
 
         createWriter();
 
         // we don't need to write any messages; writer should fail to initialize
 
-        assertStatisticsErrorMessage("invalid log stream name: " + config.logStreamName + "$");
+        assertStatisticsErrorMessage("invalid log stream name: " + config.getLogStreamName() + "$");
 
         assertEquals("describeLogGroups: invocation count",     0,                      mock.describeLogGroupsInvocationCount);
         assertEquals("describeLogStreams: invocation count",    0,                      mock.describeLogStreamsInvocationCount);
@@ -615,7 +608,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testInvalidSequenceTokenExceptionWithDedicatedWriter() throws Exception
     {
-        config.dedicatedWriter = true;
+        config.setDedicatedWriter(true);
         createWriter();
 
         // this call will set the sequence token in the writer
@@ -817,7 +810,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("statistics: last batch messages sent",        1,              stats.getMessagesSentLastBatch());
         assertEquals("statistics: last batch messages requeued",    0,              stats.getMessagesRequeuedLastBatch());
 
-        assertStatisticsErrorMessage("log stream missing: " + config.logStreamName);
+        assertStatisticsErrorMessage("log stream missing: " + config.getLogStreamName());
 
         // will get an error message when stream goes missing, debug when it's recreated
 
@@ -907,7 +900,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         final String bigMessage                 = StringUtil.repeat('X', cloudwatchMaximumMessageSize - 1) + "Y";
         final String biggerMessage              = bigMessage + "X";
 
-        config.truncateOversizeMessages = true;
+        config.setTruncateOversizeMessages(true);
         createWriter();
 
         // first message should go through with no problems
@@ -939,8 +932,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testDiscardOldest() throws Exception
     {
-        config.discardAction = DiscardAction.oldest;
-        config.discardThreshold = 10;
+        config.setDiscardAction(DiscardAction.oldest);
+        config.setDiscardThreshold(10);
 
         // this test doesn't need a background thread running
 
@@ -963,8 +956,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testDiscardNewest() throws Exception
     {
-        config.discardAction = DiscardAction.newest;
-        config.discardThreshold = 10;
+        config.setDiscardAction(DiscardAction.newest);
+        config.setDiscardThreshold(10);
 
         // this test doesn't need a background thread running
 
@@ -987,8 +980,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testDiscardNone() throws Exception
     {
-        config.discardAction = DiscardAction.none;
-        config.discardThreshold = 10;
+        config.setDiscardAction(DiscardAction.none);
+        config.setDiscardThreshold(10);
 
         // this test doesn't need a background thread running
 
@@ -1011,8 +1004,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testReconfigureDiscardProperties() throws Exception
     {
-        config.discardAction = DiscardAction.none;
-        config.discardThreshold = 123;
+        config.setDiscardAction(DiscardAction.none);
+        config.setDiscardThreshold(123);
 
         // this test doesn't need a background thread running
 
@@ -1034,11 +1027,11 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     public void testCountBasedBatching() throws Exception
     {
         // don't let discard threshold get in the way of the test
-        config.discardThreshold = Integer.MAX_VALUE;
-        config.discardAction = DiscardAction.none;
+        config.setDiscardAction(DiscardAction.none);
+        config.setDiscardThreshold(Integer.MAX_VALUE);
 
         // increasing delay because it will take time to create the messages
-        config.batchDelay = 300;
+        config.setBatchDelay(300);
 
         final String testMessage = "test";    // this won't trigger batching based on size
         final int numMessages = 15000;
@@ -1092,11 +1085,11 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     public void testSizeBasedBatching() throws Exception
     {
         // don't let discard threshold get in the way of the test
-        config.discardThreshold = Integer.MAX_VALUE;
-        config.discardAction = DiscardAction.none;
+        config.setDiscardAction(DiscardAction.none);
+        config.setDiscardThreshold(Integer.MAX_VALUE);
 
         // increasing delay because it will take time to create the messages
-        config.batchDelay = 300;
+        config.setBatchDelay(300);
 
         final String testMessage = StringUtil.randomAlphaString(1024, 1024);
         final int numMessages = 1500;
@@ -1149,9 +1142,9 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testStaticClientFactory() throws Exception
     {
-        config.clientFactoryMethod = this.getClass().getName() + ".createMockClient";
-        config.logGroupName = "argle";
-        config.logStreamName = "bargle";
+        config.setClientFactoryMethod(this.getClass().getName() + ".createMockClient");
+        config.setLogGroupName("argle");
+        config.setLogStreamName("bargle");
 
         createWriter(new CloudWatchWriterFactory());
 
@@ -1168,7 +1161,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("stats: actual log stream name",           "bargle",                       stats.getActualLogStreamName());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
-                                              "creating client via factory.*" + config.clientFactoryMethod,
+                                              "creating client via factory.*" + config.getClientFactoryMethod(),
                                               "using existing .* group: argle",
                                               "using existing .* stream: bargle",
                                               "log writer initialization complete.*");
@@ -1196,7 +1189,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         long now = System.currentTimeMillis();
         long shutdownTime = getShutdownTime();
-        assertInRange("after stop(), shutdown time should be based on batch delay", now, now + config.batchDelay + 100, shutdownTime);
+        assertInRange("after stop(), shutdown time should be based on batch delay", now, now + config.getBatchDelay() + 100, shutdownTime);
 
         // the batch should still be processed
         mock.allowWriterThread();
@@ -1227,7 +1220,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     public void testSynchronousOperation() throws Exception
     {
         // appender is expected to set batch delay in synchronous mode
-        config.batchDelay = 1;
+        config.setBatchDelay(1);
 
         // we just have one thread, so don't want any locks getting in the way
         mock.disableThreadSynchronization();

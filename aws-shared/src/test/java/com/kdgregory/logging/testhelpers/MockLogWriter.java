@@ -26,7 +26,7 @@ import com.kdgregory.logging.common.util.DiscardAction;
 /**
  *  Common functionality for destination-specific writer mocks.
  */
-public class MockLogWriter<T extends AbstractWriterConfig>
+public class MockLogWriter<T extends AbstractWriterConfig<?>>
 implements LogWriter
 {
     public T config;
@@ -58,21 +58,21 @@ implements LogWriter
     @Override
     public void setBatchDelay(long value)
     {
-        this.config.batchDelay = value;
+        this.config.setBatchDelay(value);
     }
 
 
     @Override
     public void setDiscardThreshold(int value)
     {
-        this.config.discardThreshold = value;
+        this.config.setDiscardThreshold(value);
     }
 
 
     @Override
     public void setDiscardAction(DiscardAction value)
     {
-        this.config.discardAction = value;
+        this.config.setDiscardAction(value);
     }
 
 

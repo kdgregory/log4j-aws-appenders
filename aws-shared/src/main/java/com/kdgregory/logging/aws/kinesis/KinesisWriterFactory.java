@@ -33,7 +33,7 @@ public class KinesisWriterFactory implements WriterFactory<KinesisWriterConfig, 
         return new KinesisLogWriter(
                 config, stats, logger,
                 new DefaultClientFactory<AmazonKinesis>(
-                    AmazonKinesis.class, config.clientFactoryMethod, config.assumedRole,
-                    config.clientRegion, config.clientEndpoint, logger));
+                    AmazonKinesis.class, config.getClientFactoryMethod(), config.getAssumedRole(),
+                    config.getClientRegion(), config.getClientEndpoint(), logger));
     }
 }

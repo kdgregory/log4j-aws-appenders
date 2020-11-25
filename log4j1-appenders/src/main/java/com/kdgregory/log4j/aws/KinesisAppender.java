@@ -310,11 +310,20 @@ extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWrit
         actualStreamName   = subs.perform(streamName);
         actualPartitionKey = subs.perform(partitionKey);
 
-        return new KinesisWriterConfig(
-            actualStreamName, actualPartitionKey,
-            autoCreate, shardCount, retentionPeriod,
-            truncateOversizeMessages, batchDelay, discardThreshold, discardAction,
-            clientFactory, assumedRole, clientRegion, clientEndpoint);
+        return new KinesisWriterConfig()
+               .setStreamName(actualStreamName)
+               .setPartitionKey(actualPartitionKey)
+               .setAutoCreate(autoCreate)
+               .setShardCount(shardCount)
+               .setRetentionPeriod(retentionPeriod)
+               .setTruncateOversizeMessages(truncateOversizeMessages)
+               .setBatchDelay(batchDelay)
+               .setDiscardThreshold(discardThreshold)
+               .setDiscardAction(discardAction)
+               .setClientFactoryMethod(clientFactory)
+               .setAssumedRole(assumedRole)
+               .setClientRegion(clientRegion)
+               .setClientEndpoint(clientEndpoint);
     }
 
 

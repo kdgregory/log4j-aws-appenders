@@ -15,6 +15,7 @@
 package com.kdgregory.logging.testhelpers;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
@@ -34,7 +35,8 @@ implements LogWriter
     public volatile Thread writerThread;
     public Thread shutdownHook;
 
-    public List<LogMessage> messages = new ArrayList<LogMessage>();
+    // the actual writers use a concurrent queue
+    public List<LogMessage> messages = Collections.synchronizedList(new ArrayList<LogMessage>());
     public LogMessage lastMessage;
 
     public boolean stopped;

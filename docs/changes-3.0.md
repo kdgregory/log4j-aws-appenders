@@ -16,8 +16,10 @@ to restrict the number of events in any given stream.
 
 Even though only the CloudWatch appender made use of rotation, support for it had to be
 built into the lowest level of the appender implementation. This increased maintenance
-and testing for the entire library. Given that it no longer has much value, I've decided
-to remove it entirely.
+and testing for the entire library. It also introduced an operational bottleneck, as the
+"should I rotate" test happened inside a critical section.
+
+Given these points, I've decided to remove it entirely.
 
 This means that the following configuration parameters are no longer supported. You must
 remove them from your configuration, or you'll get an appender configuration error (the

@@ -88,9 +88,6 @@ extends AppenderSkeleton
 
     private Object initializationLock = new Object();
 
-    // this object is used to synchronize the critical section in append()
-    private Object appendLock = new Object();
-
     // all member vars below this point are shared configuration
 
     protected boolean               synchronous;
@@ -591,10 +588,7 @@ extends AppenderSkeleton
             return;
         }
 
-        synchronized (appendLock)
-        {
-            writer.addMessage(message);
-        }
+        writer.addMessage(message);
 
         // for Log4J, append() happens within a big synchronized block managed by the framework
         // however, logically, I want to separate putting a message on the queue from sending it

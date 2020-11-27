@@ -85,10 +85,6 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
 
     private Object initializationLock = new Object();
 
-    // this object is used to synchronize the critical section in append()
-
-    private Object appendLock = new Object();
-
     // all member vars below this point are shared configuration
 
     protected boolean                   synchronous;
@@ -581,10 +577,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
             return;
         }
 
-        synchronized (appendLock)
-        {
-            writer.addMessage(message);
-        }
+        writer.addMessage(message);
 
         // by processing the batch outside of the appendLock (and relying on writer internal
         // synchronization), we may end up with a single batch with more than one record (but

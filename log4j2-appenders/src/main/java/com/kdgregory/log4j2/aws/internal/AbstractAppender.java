@@ -78,10 +78,6 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
 
     private Object initializationLock = new Object();
 
-    // this object is used to synchronize the critical section in append()
-
-    private Object appendLock = new Object();
-
     // this is provided to us by subclass
 
     protected AppenderConfigType config;
@@ -370,10 +366,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
             return;
         }
 
-        synchronized (appendLock)
-        {
-            writer.addMessage(message);
-        }
+        writer.addMessage(message);
 
         // by processing the batch outside of the appendLock (and relying on writer internal
         // synchronization), we may end up with a single batch with more than one record (but

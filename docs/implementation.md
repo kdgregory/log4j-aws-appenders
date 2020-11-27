@@ -18,9 +18,18 @@ at the start of your `main` method.
 
 ## Locking
 
-There are two locks used by the appenders: `initializationLock`, which is called around
-writer creation, and `appendLock`, which single-threads the rotation check and message
-enqueue to ensure that we don't initiate rotation from two threads. In normal operation
-these locks should have low contention: while the append lock is called for every append,
-it covers very few instructions (message formatting, for example, happens outside the
-lock).
+The logging framework may or may not synchronize calls to the appender. Log4J1, for
+example, uses one large synchronized block to call all appenders, while Log4J2 assumes
+they'll synchronize themselves.
+
+The appenders don't do any explicitly synchronization of the `append()` call. Instead,
+they perform as much work as they can in a thread-safe manner, and then put the message
+on a concurrent queue for consumption by the log writer.
+
+The one thing that is explicitly synchronized within this library is writer creation
+and shutdown, using the `initializationLock` variable. I think this may be a "belt and
+suspenders" protection for Logback and Log4J2, because the library is responsible for
+initializing the appender (and, one presumes, is smart enough to only do that once).
+And even Log4J1, with lazily initialization, shouldn't need this protection because
+of the framework's synchronization. However, leaving it in place is a low-pain way to
+ensure that we don't have hard-to-diagnose issues.

@@ -68,27 +68,6 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *           write. Defaults to false for legacy behavior.
  *
  *  <tr VALIGN="top">
- *      <th> rotationMode
- *      <td> Controls whether auto-rotation is enabled. Values are none, count,
- *           interval, hourly, and daily; default is none.
- *
- *  <tr VALIGN="top">
- *      <th> rotationInterval
- *      <td> Sets the rotation interval, for those appenders that support rotation.
- *           This parameter is valid only when the <code>rotationMode</code> parameter
- *           is "interval" or "count": for the former, it's the number of milliseconds
- *           between rotations, for the latter the number of messages.
- *           <p>
- *           If using interval rotation, you should include <code>{timestamp}</code>
- *           in the log stream name. If using counted rotation, you should include
- *           <code>{sequence}</code>.
- *
- *  <tr VALIGN="top">
- *      <th> sequence
- *      <td> A value that is incremented each time the stream is rotated. May be
- *           accessed as the <code>{sequence}</code> substitution. Defaults to 0.
- *
- *  <tr VALIGN="top">
  *      <th> synchronous
  *      <td> If true, the appender will operate in synchronous mode: calls to
  *           append() execute on the caller's thread, and will not return until
@@ -287,26 +266,10 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
 //  AbstractAppender overrides
 //----------------------------------------------------------------------------
 
-    /** {@inheritDoc} */
-    @Override
-    public void setRotationMode(String value)
-    {
-        super.setRotationMode(value);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void rotate()
-    {
-        super.rotate();
-    }
-
-
     @Override
     protected CloudWatchWriterConfig generateWriterConfig()
     {
-        Substitutions subs      = new Substitutions(new Date(), sequence.get());
+        Substitutions subs      = new Substitutions(new Date(), 0);
         String actualLogGroup   = subs.perform(logGroup);
         String actualLogStream  = subs.perform(logStream);
 

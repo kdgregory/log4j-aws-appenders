@@ -102,12 +102,6 @@ extends CloudWatchAppender
         this.writerFactory = writerFactory;
     }
 
-
-    public void updateLastRotationTimestamp(long offset)
-    {
-        lastRotationTimestamp += offset;
-    }
-
 //----------------------------------------------------------------------------
 //  Appender overrides
 //----------------------------------------------------------------------------
@@ -157,18 +151,6 @@ extends CloudWatchAppender
     public Integer getRetentionPeriod()
     {
         return retentionPeriod;
-    }
-
-
-    public String getRotationMode()
-    {
-        return rotationMode.name();
-    }
-
-
-    public long getLastRotationTimestamp()
-    {
-        return lastRotationTimestamp;
     }
 
 

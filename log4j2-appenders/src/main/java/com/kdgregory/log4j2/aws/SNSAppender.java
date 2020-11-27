@@ -316,11 +316,6 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterStatisti
     }
 
 //----------------------------------------------------------------------------
-//  Additional public API
-//----------------------------------------------------------------------------
-
-
-//----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
 
@@ -328,7 +323,7 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterStatisti
     protected SNSWriterConfig generateWriterConfig()
     {
         StrSubstitutor l4jsubs  = config.getConfiguration().getStrSubstitutor();
-        Substitutions subs      = new Substitutions(new Date(), sequence.get());
+        Substitutions subs      = new Substitutions(new Date(), 0);
 
         String actualTopicName  = subs.perform(l4jsubs.replace(config.getTopicName()));
         String actualTopicArn   = subs.perform(l4jsubs.replace(config.getTopicArn()));
@@ -346,12 +341,5 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterStatisti
                .setAssumedRole(config.getAssumedRole())
                .setClientRegion(config.getClientRegion())
                .setClientEndpoint(config.getClientEndpoint());
-    }
-
-
-    @Override
-    protected boolean shouldRotate(long now)
-    {
-        return false;
     }
 }

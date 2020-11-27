@@ -338,11 +338,6 @@ extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWr
     }
 
 //----------------------------------------------------------------------------
-//  Additional public API
-//----------------------------------------------------------------------------
-
-
-//----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
 
@@ -350,7 +345,7 @@ extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWr
     protected KinesisWriterConfig generateWriterConfig()
     {
         StrSubstitutor l4jsubs    = config.getConfiguration().getStrSubstitutor();
-        Substitutions subs        = new Substitutions(new Date(), sequence.get());
+        Substitutions subs        = new Substitutions(new Date(), 0);
 
         String actualStreamName   = subs.perform(l4jsubs.replace(config.getStreamName()));
         String actualPartitionKey = subs.perform(l4jsubs.replace(config.getPartitionKey()));
@@ -369,12 +364,5 @@ extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWr
                .setAssumedRole(config.getAssumedRole())
                .setClientRegion(config.getClientRegion())
                .setClientEndpoint(config.getClientEndpoint());
-    }
-
-
-    @Override
-    protected boolean shouldRotate(long now)
-    {
-        return false;
     }
 }

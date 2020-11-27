@@ -295,18 +295,13 @@ extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWrit
     }
 
 //----------------------------------------------------------------------------
-//  Appender-specific methods
-//----------------------------------------------------------------------------
-
-
-//----------------------------------------------------------------------------
 //  AbstractAppender overrides
 //----------------------------------------------------------------------------
 
     @Override
     protected KinesisWriterConfig generateWriterConfig()
     {
-        Substitutions subs = new Substitutions(new Date(), sequence.get());
+        Substitutions subs = new Substitutions(new Date(), 0);
         actualStreamName   = subs.perform(streamName);
         actualPartitionKey = subs.perform(partitionKey);
 
@@ -324,12 +319,5 @@ extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWrit
                .setAssumedRole(assumedRole)
                .setClientRegion(clientRegion)
                .setClientEndpoint(clientEndpoint);
-    }
-
-
-    @Override
-    protected boolean shouldRotate(long now)
-    {
-        return false;
     }
 }

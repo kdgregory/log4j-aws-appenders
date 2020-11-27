@@ -253,13 +253,13 @@ extends AbstractAppender<SNSWriterConfig,SNSWriterStatistics,SNSWriterStatistics
     }
 
 //----------------------------------------------------------------------------
-//  AbstractAppender
+//  AbstractAppender overrides
 //----------------------------------------------------------------------------
 
     @Override
     protected SNSWriterConfig generateWriterConfig()
     {
-        Substitutions subs = new Substitutions(new Date(), sequence.get());
+        Substitutions subs = new Substitutions(new Date(), 0);
 
         String actualTopicName  = subs.perform(topicName);
         String actualTopicArn   = subs.perform(topicArn);
@@ -277,12 +277,5 @@ extends AbstractAppender<SNSWriterConfig,SNSWriterStatistics,SNSWriterStatistics
                .setAssumedRole(assumedRole)
                .setClientRegion(clientRegion)
                .setClientEndpoint(clientEndpoint);
-    }
-
-
-    @Override
-    protected boolean shouldRotate(long now)
-    {
-        return false;
     }
 }

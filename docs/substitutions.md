@@ -11,7 +11,6 @@ Variable            | Description
 `timestamp`         | Current UTC timestamp: `YYYYMMDDHHMMSS`
 `hourlyTimestamp`   | Current UTC timestamp, with minutes and seconds truncated: `YYYYMMDDHH0000`
 `startupTimestamp`  | UTC timestamp of JVM startup as returned by `RuntimeMxBean`: `YYYYMMDDHHMMSS`
-`sequence`          | A sequence number that's incremented each time a log is rotated (only useful with appenders that rotate logs)
 `pid`               | Process ID (see below)
 `hostname`          | Hostname (see below)
 `env:XXX`           | Environment variable `XXX`; see [below](#default-values) for complete syntax.

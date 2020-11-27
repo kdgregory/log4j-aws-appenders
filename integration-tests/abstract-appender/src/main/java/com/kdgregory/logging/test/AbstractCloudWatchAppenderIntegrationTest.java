@@ -156,7 +156,6 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
     {
         // configured values; should be the same for all frameworks
         final int numMessages     = 1001;
-        final int rotationCount   = 333;
 
         MessageWriter messageWriter = accessor.newMessageWriter(numMessages);
         messageWriter.run();
@@ -164,23 +163,13 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         localLogger.info("waiting for logger");
         CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
 
-        testHelper.assertMessages(LOGSTREAM_BASE + "-1", rotationCount);
-        testHelper.assertMessages(LOGSTREAM_BASE + "-2", rotationCount);
-        testHelper.assertMessages(LOGSTREAM_BASE + "-3", rotationCount);
-        testHelper.assertMessages(LOGSTREAM_BASE + "-4", numMessages % rotationCount);
-
-        assertNull("factory should not have been used to create client", factoryClient);
-
         assertEquals("stats: actual log group name",    "AppenderIntegrationTest-smoketest",    accessor.getStats().getActualLogGroupName());
-        assertEquals("stats: actual log stream name",   LOGSTREAM_BASE + "-4",                  accessor.getStats().getActualLogStreamName());
+        assertEquals("stats: actual log stream name",   LOGSTREAM_BASE,                         accessor.getStats().getActualLogStreamName());
         assertEquals("stats: messages written",         numMessages,                            accessor.getStats().getMessagesSent());
-
-        // with four writers running concurrently, we can't say which wrote the last batch, so we'll test a range of values
-        assertInRange("stats: messages in last batch",  1, rotationCount,                       accessor.getStats().getMessagesSentLastBatch());
-        assertEquals("number of batches for last writer", 1, accessor.getWriter().getBatchCount());
 
         // while we're here, verify some more of the plumbing
 
+        assertNull("factory should not have been used to create client", factoryClient);
         assertEquals("retention period", 7, testHelper.describeLogGroup().getRetentionInDays().intValue());
 
         if (accessor.supportsConfigurationChanges())
@@ -198,7 +187,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
     {
         // configured values; should be the same for all frameworks
         final int messagesPerThread = 200;
-        final int rotationCount     = 300;
+        final int numMessages = messagesPerThread * 5;
 
         MessageWriter[] messageWriters = new MessageWriter[]
         {
@@ -211,12 +200,9 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         MessageWriter.runOnThreads(messageWriters);
 
         localLogger.info("waiting for logger");
-        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), messagesPerThread * 5, 30000);
+        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
 
-        testHelper.assertMessages(LOGSTREAM_BASE + "-1", rotationCount);
-        testHelper.assertMessages(LOGSTREAM_BASE + "-2", rotationCount);
-        testHelper.assertMessages(LOGSTREAM_BASE + "-3", rotationCount);
-        testHelper.assertMessages(LOGSTREAM_BASE + "-4", (messagesPerThread * messageWriters.length) % rotationCount);
+        testHelper.assertMessages(LOGSTREAM_BASE, numMessages);
 
         testHelper.deleteLogGroupIfExists();
     }
@@ -328,9 +314,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
     protected void testLogstreamDeletionAndRecreation(LoggerAccessor accessor)
     throws Exception
     {
-        // note: we configure the stream to use a sequence number, but it shouldn't change
-        //       during this test: we re-create the stream, not the writer
-        final String streamName  = LOGSTREAM_BASE + "-1";
+        final String streamName  = LOGSTREAM_BASE;
         final int numMessages    = 100;
 
         localLogger.info("writing first batch");

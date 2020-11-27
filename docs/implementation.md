@@ -24,23 +24,3 @@ enqueue to ensure that we don't initiate rotation from two threads. In normal op
 these locks should have low contention: while the append lock is called for every append,
 it covers very few instructions (message formatting, for example, happens outside the
 lock).
-
-
-## Writer Rotation
-
-In retrospect, writer rotation is one of the worst features of this library. When first
-designed, of course, it seemed perfectly reasonable: the library supported only CloudWatch
-Logs, with few thoughts of other destinations, and in those pre-Insight days long log
-streams were a pain to review.
-
-The main problem with rotation is that it has to tie into the appender at a very low level:
-the "do we rotate?" decision has to happen every time a message is written. And this happens
-in all appenders, even though it's only relevant for the CloudWatch appender. Worse, the
-same code is replicated across all framework implementations.
-
-In an attempt to minimize the cost of this action, the `shouldRotate()` method is overridden
-in the Kinesis and SNS appenders. My expectation is that Hotspot will eventually inline the
-`return false` (at least for Kinesis), reducing the impact of this decision. The default
-implementation of this method (which again, is only relevant to CloudWatch) remains in the
-abstract appender, because it needs access to the internal variables that track message
-count and rotation times.

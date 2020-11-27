@@ -35,7 +35,6 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatisticsMXBean;
 import com.kdgregory.logging.aws.common.Substitutions;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
-import com.kdgregory.logging.common.util.RotationMode;
 
 
 /**
@@ -78,27 +77,6 @@ import com.kdgregory.logging.common.util.RotationMode;
  *      <td> If true, the appender assumes that it will be the only writer to
  *           the log stream, and will not retrieve a sequence token before each
  *           write. Defaults to false for legacy behavior.
- *
- *  <tr VALIGN="top">
- *      <th> rotationMode
- *      <td> Controls whether auto-rotation is enabled. Values are none, count,
- *           interval, hourly, and daily; default is none.
- *
- *  <tr VALIGN="top">
- *      <th> rotationInterval
- *      <td> Sets the rotation interval, for those appenders that support rotation.
- *           This parameter is valid only when the <code>rotationMode</code> parameter
- *           is "interval" or "count": for the former, it's the number of milliseconds
- *           between rotations, for the latter the number of messages.
- *           <p>
- *           If using interval rotation, you should include <code>{timestamp}</code>
- *           in the log stream name. If using counted rotation, you should include
- *           <code>{sequence}</code>.
- *
- *  <tr VALIGN="top">
- *      <th> sequence
- *      <td> A value that is incremented each time the stream is rotated. May be
- *           accessed as the <code>{sequence}</code> substitution. Defaults to 0.
  *
  *  <tr VALIGN="top">
  *      <th> synchronous
@@ -323,74 +301,6 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
         }
 
 
-        @PluginBuilderAttribute("rotationMode")
-        private String rotationMode = RotationMode.none.name();
-
-        /**
-         *  Sets the <code>rotationMode</code> configuration property.
-         */
-        public CloudWatchAppenderBuilder setRotationMode(String value)
-        {
-            // note: validation happens in appender because Log4J bypasses
-            //       this setter during normal configuration
-            this.rotationMode = value;
-            return this;
-        }
-
-        /**
-         *  Returns the <code>rotationMode</code> configuration property.
-         */
-        @Override
-        public String getRotationMode()
-        {
-            return rotationMode;
-        }
-
-
-        @PluginBuilderAttribute("rotationInterval")
-        private long rotationInterval = -1;
-
-        /**
-         *  Sets the <code>rotationInterval</code> configuration property.
-         */
-        public CloudWatchAppenderBuilder setRotationInterval(long value)
-        {
-            this.rotationInterval = value;
-            return this;
-        }
-
-        /**
-         *  Returns the <code>rotationInterval</code> configuration property.
-         */
-        @Override
-        public long getRotationInterval()
-        {
-            return rotationInterval;
-        }
-
-
-        @PluginBuilderAttribute("sequence")
-        private int sequence;
-
-        /**
-         *  Sets the <code>rotationInterval</code> configuration property.
-         */
-        public CloudWatchAppenderBuilder setSequence(int value)
-        {
-            this.sequence = value;
-            return this;
-        }
-
-        /**
-         *  Returns the <code>rotationInterval</code> configuration property.
-         */
-        @Override
-        public int getSequence()
-        {
-            return sequence;
-        }
-
-
         @Override
         public CloudWatchAppender build()
         {
@@ -428,19 +338,6 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
     }
 
 //----------------------------------------------------------------------------
-//  Additional public API
-//----------------------------------------------------------------------------
-
-    /**
-     *  Explicitly switch to a new log stream.
-     */
-    @Override
-    protected void rotate()
-    {
-        super.rotate();
-    }
-
-//----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
 
@@ -448,7 +345,7 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
     protected CloudWatchWriterConfig generateWriterConfig()
     {
         StrSubstitutor l4jsubs = config.getConfiguration().getStrSubstitutor();
-        Substitutions subs     = new Substitutions(new Date(), sequence.get());
+        Substitutions subs     = new Substitutions(new Date(), 0);
         String actualLogGroup  = subs.perform(l4jsubs.replace(config.getLogGroup()));
         String actualLogStream = subs.perform(l4jsubs.replace(config.getLogStream()));
 

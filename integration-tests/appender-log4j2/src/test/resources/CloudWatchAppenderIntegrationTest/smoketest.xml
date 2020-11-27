@@ -8,12 +8,9 @@
         <CloudWatchAppender name="test">
             <PatternLayout pattern="[%t] %-5p %c - %m%n" />
             <logGroup>AppenderIntegrationTest-smoketest</logGroup>
-            <logStream>AppenderTest-{sequence}</logStream>
+            <logStream>AppenderTest</logStream>
             <retentionPeriod>7</retentionPeriod>
             <batchDelay>500</batchDelay>
-            <rotationMode>count</rotationMode>
-            <rotationInterval>333</rotationInterval>
-            <sequence>1</sequence>
         </CloudWatchAppender>
     </Appenders>
 

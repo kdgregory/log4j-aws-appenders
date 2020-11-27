@@ -15,7 +15,6 @@
 package com.kdgregory.log4j.aws.internal;
 
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.spi.LoggingEvent;
@@ -26,7 +25,6 @@ import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.ThreadFactory;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.DiscardAction;
-import com.kdgregory.logging.common.util.RotationMode;
 
 
 /**
@@ -86,14 +84,6 @@ extends AppenderSkeleton
 
     protected volatile LogWriter writer;
 
-    // the last time we rotated the writer
-
-    protected volatile long lastRotationTimestamp;
-
-    // number of messages since we last rotated the writer (used for count-based rotation)
-
-    protected volatile int messagesSinceLastRotation;
-
     // this object is used for synchronization of initialization and writer change
 
     private Object initializationLock = new Object();
@@ -108,9 +98,6 @@ extends AppenderSkeleton
     protected boolean               truncateOversizeMessages;
     protected int                   discardThreshold;
     protected DiscardAction         discardAction;
-    protected volatile RotationMode rotationMode;
-    protected volatile long         rotationInterval;
-    protected AtomicInteger         sequence;
     protected boolean               useShutdownHook;
     protected String                assumedRole;
     protected String                clientFactory;
@@ -138,9 +125,6 @@ extends AppenderSkeleton
         truncateOversizeMessages = true;
         discardThreshold = 10000;
         discardAction = DiscardAction.oldest;
-        rotationMode = RotationMode.none;
-        rotationInterval = -1;
-        sequence = new AtomicInteger();
         useShutdownHook = true;
     }
 
@@ -158,69 +142,6 @@ extends AppenderSkeleton
 //----------------------------------------------------------------------------
 //  Shared Configuration Properties
 //----------------------------------------------------------------------------
-
-    /**
-     *  Sets the <code>rotationMode</code> configuration property.
-     *  <p>
-     *  This method must be explicitly overridden and made public by appenders that support rotation.
-     */
-    protected void setRotationMode(String value)
-    {
-        RotationMode newMode = RotationMode.lookup(value);
-        if (newMode == null)
-        {
-            newMode = RotationMode.none;
-            internalLogger.error("invalid rotation mode: " + value + ", setting to " + newMode, null);
-        }
-        this.rotationMode = newMode;
-    }
-
-
-    /**
-     *  Returns the <code>rotationMode</code> configuration property.
-     */
-    public String getRotationMode()
-    {
-        return this.rotationMode.name();
-    }
-
-
-    /**
-     *  Sets the <code>rotationInterval</code> configuration property.
-     */
-    public void setRotationInterval(long value)
-    {
-        this.rotationInterval = value;
-    }
-
-
-    /**
-     *  Returns the <code>rotationInterval</code> configuration property.
-     */
-    public long getRotationInterval()
-    {
-        return rotationInterval;
-    }
-
-
-    /**
-     *  Sets the <code>sequence</code> configuration property.
-     */
-    public void setSequence(int value)
-    {
-        sequence.set(value);
-    }
-
-
-    /**
-     *  Returns the current <code>sequence</code> value (which will be updated each
-     *  time the appender rotates).
-     */
-    public int getSequence()
-    {
-        return sequence.get();
-    }
-
 
     /**
      *  Sets the <code>synchronous</code> configuration property. This can only
@@ -527,25 +448,6 @@ extends AppenderSkeleton
 
 
 //----------------------------------------------------------------------------
-//  Methods that may be exposed by subclasses
-//----------------------------------------------------------------------------
-
-    /**
-     *  Rotates the log writer. This will create in a new writer thread, with
-     *  the pre-rotation writer shutting down after processing all messages in
-     *  its queue.
-     */
-    protected void rotate()
-    {
-        synchronized (initializationLock)
-        {
-            stopWriter();
-            sequence.incrementAndGet();
-            startWriter();
-        }
-    }
-
-//----------------------------------------------------------------------------
 //  Subclass hooks
 //----------------------------------------------------------------------------
 
@@ -612,11 +514,6 @@ extends AppenderSkeleton
                 {
                     internalAppend(new LogMessage(System.currentTimeMillis(), layout.getHeader()));
                 }
-
-                // note the header doesn't contribute to the message count
-
-                lastRotationTimestamp = System.currentTimeMillis();
-                messagesSinceLastRotation = 0;
             }
             catch (Exception ex)
             {
@@ -696,21 +593,7 @@ extends AppenderSkeleton
 
         synchronized (appendLock)
         {
-            long now = System.currentTimeMillis();
-            if (shouldRotate(now))
-            {
-                long secondsSinceLastRotation = (now - lastRotationTimestamp) / 1000;
-                internalLogger.debug("rotating: messagesSinceLastRotation = " + messagesSinceLastRotation + ", secondsSinceLastRotation = " + secondsSinceLastRotation);
-                rotate();
-                if (writer == null)
-                {
-                    internalLogger.error("failed to rotate writer", null);
-                    return;
-                }
-            }
-
             writer.addMessage(message);
-            messagesSinceLastRotation++;
         }
 
         // for Log4J, append() happens within a big synchronized block managed by the framework
@@ -718,31 +601,6 @@ extends AppenderSkeleton
         if (synchronous)
         {
             writer.processBatch(System.currentTimeMillis());
-        }
-    }
-
-
-    /**
-     *  Determines whether the appender should rotate its writer. This is called on every
-     *  append, so should be as performant as possible. Subclasses that don't rotate should
-     *  override and return false (Hotspot will quickly inline them).
-     */
-    protected boolean shouldRotate(long now)
-    {
-        switch (rotationMode)
-        {
-            case none:
-                return false;
-            case count:
-                return (rotationInterval > 0) && (messagesSinceLastRotation >= rotationInterval);
-            case interval:
-                return (rotationInterval > 0) && ((now - lastRotationTimestamp) > rotationInterval);
-            case hourly:
-                return (lastRotationTimestamp / 3600000) < (now / 3600000);
-            case daily:
-                return (lastRotationTimestamp / 86400000) < (now / 86400000);
-            default:
-                return false;
         }
     }
 }

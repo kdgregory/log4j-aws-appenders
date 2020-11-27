@@ -87,18 +87,6 @@ extends CloudWatchAppender
     }
 
 
-    public void updateLastRotationTimestamp(long offset)
-    {
-        lastRotationTimestamp += offset;
-    }
-
-
-    public long getLastRotationTimestamp()
-    {
-        return lastRotationTimestamp;
-    }
-
-
     @Override
     protected void append(LoggingEvent event)
     {

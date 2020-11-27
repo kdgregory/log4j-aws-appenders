@@ -86,14 +86,6 @@ implements LogWriter
 
 
     @Override
-    public boolean isMessageTooLarge(LogMessage message)
-    {
-        // destination-specific subclasses should override this
-        return false;
-    }
-
-
-    @Override
     public int maxMessageSize()
     {
         // destination-specific subclasses should override this

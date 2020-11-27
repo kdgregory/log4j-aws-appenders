@@ -16,6 +16,7 @@ package com.kdgregory.logging.common;
 
 import com.kdgregory.logging.common.util.DiscardAction;
 
+
 /**
  *  Defines the contract between appenders and writers.
  *  <p>
@@ -55,17 +56,6 @@ extends Runnable
      *  for an example.
      */
     void setShutdownHook(Thread shutdownHook);
-
-
-    /**
-     *  @deprecated
-     *  This was formerly used by appenders to check message size before appending. It has
-     *  been replaced by checks within {@link #append} that rely on {@link #maxMessageSize}.
-     *  <p>
-     *  To be removed in 3.0.
-     */
-    @Deprecated
-    public boolean isMessageTooLarge(LogMessage message);
 
 
     /**

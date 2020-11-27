@@ -15,7 +15,6 @@
 package com.kdgregory.logging.testhelpers.kinesis;
 
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
-import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.testhelpers.MockLogWriter;
 
 
@@ -29,13 +28,4 @@ extends MockLogWriter<KinesisWriterConfig>
     {
         super(config);
     }
-
-
-    @Override
-    public boolean isMessageTooLarge(LogMessage message)
-    {
-        // there are no tests for this, so we'll pretend everything's great
-        return false;
-    }
-
 }

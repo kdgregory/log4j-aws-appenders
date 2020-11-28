@@ -42,19 +42,19 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
         assertEquals("log group name",          "argle",                        appender.getConfig().getLogGroup());
         assertEquals("log stream name",         "bargle",                       appender.getConfig().getLogStream());
-        assertTrue("dedicated writer",                                          appender.getConfig().isDedicatedWriter());
+        assertEquals("dedicated writer",        false,                          appender.getConfig().isDedicatedWriter());
         assertEquals("batch delay",             9876L,                          appender.getConfig().getBatchDelay());
-        assertFalse("truncate oversize messages",                               appender.getConfig().getTruncateOversizeMessages());
+        assertEquals("truncate oversize messages", false,                       appender.getConfig().getTruncateOversizeMessages());
         assertEquals("discard threshold",       12345,                          appender.getConfig().getDiscardThreshold());
         assertEquals("discard action",          "newest",                       appender.getConfig().getDiscardAction());
-        assertFalse("synchronous mode",                                         appender.getConfig().isSynchronous());
-        assertFalse("use shutdown hook",                                        appender.getConfig().isUseShutdownHook());
+        assertEquals("synchronous mode",        false,                          appender.getConfig().isSynchronous());
+        assertEquals("use shutdown hook",       false,                          appender.getConfig().isUseShutdownHook());
         assertEquals("assumed role",            "AssumableRole",                appender.getConfig().getAssumedRole());
         assertEquals("client factory",          "com.example.Foo.bar",          appender.getConfig().getClientFactory());
         assertEquals("client region",           "us-west-1",                    appender.getConfig().getClientRegion());
         assertEquals("client endpoint",         "logs.us-west-2.amazonaws.com", appender.getConfig().getClientEndpoint());
 
-        // the appender holds retention period separate from configuration, so check it separately
+        // this appender holds retention period separate from configuration, so check it separately
 
         assertEquals("retention period",    Integer.valueOf(7),                 appender.getRetentionPeriod());
     }
@@ -69,13 +69,13 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertNull("log group name",                                            appender.getConfig().getLogGroup());
 
         assertEquals("log stream name",         "{startupTimestamp}",           appender.getConfig().getLogStream());
-        assertFalse("dedicated writer",                                         appender.getConfig().isDedicatedWriter());
+        assertEquals("dedicated writer",        true,                           appender.getConfig().isDedicatedWriter());
         assertEquals("batch delay",             2000L,                          appender.getConfig().getBatchDelay());
-        assertTrue("truncate oversize messages",                                appender.getConfig().getTruncateOversizeMessages());
+        assertEquals("truncate oversize messages", true,                        appender.getConfig().getTruncateOversizeMessages());
         assertEquals("discard threshold",       10000,                          appender.getConfig().getDiscardThreshold());
         assertEquals("discard action",          "oldest",                       appender.getConfig().getDiscardAction());
-        assertFalse("synchronous mode",                                         appender.getConfig().isSynchronous());
-        assertTrue("use shutdown hook",                                         appender.getConfig().isUseShutdownHook());
+        assertEquals("synchronous mode",        false,                          appender.getConfig().isSynchronous());
+        assertEquals("use shutdown hook",       true,                           appender.getConfig().isUseShutdownHook());
         assertEquals("assumed role",            null,                           appender.getConfig().getAssumedRole());
         assertEquals("client factory",          null,                           appender.getConfig().getClientFactory());
         assertEquals("client region",           null,                           appender.getConfig().getClientRegion());
@@ -100,15 +100,15 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
         assertEquals("log group name",      "argle",                        appender.getConfig().getLogGroup());
         assertEquals("log stream name",     "bargle",                       appender.getConfig().getLogStream());
-        assertTrue("dedicated writer",                                      appender.getConfig().isDedicatedWriter());
+        assertEquals("dedicated writer",    true,                           appender.getConfig().isDedicatedWriter());
         assertEquals("batch delay",         9876L,                          appender.getConfig().getBatchDelay());
         assertEquals("discard threshold",   12345,                          appender.getConfig().getDiscardThreshold());
         assertEquals("discard action",      "newest",                       appender.getConfig().getDiscardAction());
         assertEquals("client factory",      "com.example.Foo.bar",          appender.getConfig().getClientFactory());
         assertEquals("client region",       "us-west-1",                    appender.getConfig().getClientRegion());
         assertEquals("client endpoint",     "logs.us-west-2.amazonaws.com", appender.getConfig().getClientEndpoint());
-        assertFalse("synchronous mode",                                     appender.getConfig().isSynchronous());
-        assertFalse("use shutdown hook",                                    appender.getConfig().isUseShutdownHook());
+        assertEquals("synchronous mode",    false,                          appender.getConfig().isSynchronous());
+        assertEquals("use shutdown hook",   false,                          appender.getConfig().isUseShutdownHook());
     }
 
 
@@ -119,7 +119,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
         // all we care about is the interaction between synchronous and batchDelay, so no need to check anything else
 
-        assertTrue("synchronous mode",                                      appender.getConfig().isSynchronous());
+        assertEquals("synchronous mode",    true,                           appender.getConfig().isSynchronous());
         assertEquals("batch delay",         0L,                             appender.getConfig().getBatchDelay());
     }
 

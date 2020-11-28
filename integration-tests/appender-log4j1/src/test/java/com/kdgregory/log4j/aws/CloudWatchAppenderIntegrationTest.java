@@ -261,7 +261,6 @@ extends AbstractCloudWatchAppenderIntegrationTest
         }
     }
 
-
 //----------------------------------------------------------------------------
 //  Tests for synchronous operation -- this is handled in AbstractAppender,
 //  so only needs to be tested for one appender type

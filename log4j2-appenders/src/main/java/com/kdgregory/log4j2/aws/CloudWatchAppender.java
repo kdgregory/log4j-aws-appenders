@@ -74,9 +74,12 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *
  *  <tr VALIGN="top">
  *      <th> dedicatedWriter
- *      <td> If true, the appender assumes that it will be the only writer to
- *           the log stream, and will not retrieve a sequence token before each
- *           write. Defaults to false for legacy behavior.
+ *      <td> If true (the default), the appender assumes that it is the only thing
+ *           writing to the log stream, and does not fetch a sequence token before
+ *           each write. This improves performance and reduces the likelihood of
+ *           throttling when there are a large number of processes (as long as they
+ *           write to different streams). If you need to have multiple appenders
+ *           writing to the same stream, set this to false.
  *
  *  <tr VALIGN="top">
  *      <th> synchronous
@@ -280,7 +283,7 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
 
 
         @PluginBuilderAttribute("dedicatedWriter")
-        private boolean dedicatedWriter;
+        private boolean dedicatedWriter = true;
 
         /**
          *  Sets the <code>dedicatedWriter</code> configuration property.

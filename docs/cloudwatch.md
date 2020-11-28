@@ -16,7 +16,7 @@ Name                        | Description
 `logGroup`                  | Name of the CloudWatch log group where messages are sent; may use [substitutions](substitutions.md). If this group doesn't exist it will be created. No default.
 `logStream`                 | Name of the CloudWatch log stream where messages are sent; may use [substitutions](substitutions.md). If this stream doesn't exist it will be created. Defaults to `{startupTimestamp}`.
 `retentionPeriod`           | (optional) Specifies a non-default retention period for created CloudWatch log groups.
-`dedicatedWriter`           | If `true`, the appender assumes that it will be the only writer to the log stream, and will not retrieve a sequence token before each write. Defaults to `false` for legacy behavior. See [below](#invalidsequencetokenexception-and-logstream-throttling) for more information.
+`dedicatedWriter`           | If `true` (the default), the appender assumes that it will be the only writer to the log stream, and will not retrieve a sequence token before each write. Defaults to `false` for legacy behavior. See [below](#invalidsequencetokenexception-and-logstream-throttling) for more information.
 `synchronous`               | If `true`, the appender will operate in [synchronous mode](design.md#synchronous-mode), sending messages from the invoking thread on every call to `append()`.
 `batchDelay`                | The time, in milliseconds, that the writer will wait to accumulate messages for a batch. See the [design doc](design.md#message-batches) for more information.
 `truncateOversizeMessages`  | If `true` (the default), truncate any messages that are too large for CloudWatch; if `false`, discard them. See [below](#oversize-messages) for more information.
@@ -120,18 +120,19 @@ you _did_ give each appender its own stream, this was unnecessary, and could res
 especially when deploying a large cluster.
 
 To resolve that problem, the `dedicatedWriter` configuration parameter was introduced in the
-2.2.2 release. If set to `true`, it tells the appender to retrieve the sequence token from the
-previous request, rather than describing the stream for each write.
+2.2.2 release. It defaults to `true`, which tells the appender to cache the sequence token from
+the previous request, rather than describing the stream prior to each write.
 
-> This parameter defaults to `false` for compatibility with previous releases. You should 
-  set it to `true` if you can.
+> The appender will continue to work properly with this default if there are multiple writers:
+  it will try to write using the cached sequence token (which fails), then retrieve the current
+  sequence token and retry.
 
 If you do have multiple writers, however, the two-step process is still necessary. And it has
 the possibility of a race condition: if two appenders write batches at the same time they might
 both get the same sequence token, but only one of the writes will succeed. As with any batch-level
 error, the appender will try again; there will be no message loss unless the error happens so
 frequently that the appender fills its message queue (which is extremely unlikely, as the chance
-of winning this race is equally likely for all appenders).
+of winning this race is the same for all appenders).
 
 In releases prior to 2.0.1, the appender would report this situation as an error, which was
 distracting. Retries are now transparent, unless they happen repeatedly, in which case they'll

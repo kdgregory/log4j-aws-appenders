@@ -9,7 +9,7 @@
     <logGroup>argle</logGroup>
     <logStream>bargle</logStream>
     <retentionPeriod>7</retentionPeriod>
-    <dedicatedWriter>true</dedicatedWriter>
+    <dedicatedWriter>false</dedicatedWriter>
     <synchronous>false</synchronous> <!-- explicitly set to default value -->
     <batchDelay>9876</batchDelay>
     <truncateOversizeMessages>false</truncateOversizeMessages>

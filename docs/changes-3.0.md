@@ -33,3 +33,21 @@ framework you're using).
 In addition, the `{sequence}` substitution variable is no longer relevant. I have decided
 to continue supporting it, to avoid breaking any external software that relies on the
 format of a group or stream name, but the value will always be zero.
+
+
+# CloudWatch Logs now sets `dedicatedWriter` true by default
+
+In the initial deployment, we had multiple instances of the same service sending logs to the
+same destination (again, due to limited search capabilities). This required each writer to
+retrieve the latest [sequence token](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html#CWL-PutLogEvents-request-sequenceToken)
+before calling `PutLogEvents`, which it did by calling `DescribeLogStream`. This latter call
+is limited to 5 transactions per second (with a burst allotment), with the result that a [large
+deployment would see throttling errors](https://github.com/kdgregory/log4j-aws-appenders/issues/89).
+
+I originally implemented the default value of this flag as `false`, for consistency with legacy
+behavior. However, the appender will properly retrieve the sequence token, even if the property
+is set to `true` (it's simply less efficient, as it must try its cached value and then retry).
+
+Given the improvements to search, I don't think there's any good reason for multiple appenders to
+write to the same stream. Therefore, rather than force all people to explicitly set the flag to
+`true`, I'm defaulting it to that.

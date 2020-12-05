@@ -29,7 +29,7 @@ public class TestFacadeFactory
     {
         try
         {
-            FacadeFactory.createFacade(CloudWatchFacade.class, null);
+            FacadeFactory.createFacade(CloudWatchFacade.class, null, null);
             fail("should have thrown");
         }
         catch (IllegalArgumentException ex)

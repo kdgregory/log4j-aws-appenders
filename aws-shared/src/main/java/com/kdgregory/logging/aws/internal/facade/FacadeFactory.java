@@ -20,7 +20,7 @@ import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 
 
 /**
- *  Creates new instances of AWS facade objects. Uses refelection to identify
+ *  Creates new instances of AWS facade objects. Uses refelection to determine
  *  which facade library is linked into the application.
  */
 public class FacadeFactory

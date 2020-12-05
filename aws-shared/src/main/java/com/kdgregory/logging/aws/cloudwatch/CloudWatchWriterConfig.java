@@ -14,6 +14,10 @@
 
 package com.kdgregory.logging.aws.cloudwatch;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
+
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 
 
@@ -74,5 +78,52 @@ extends AbstractWriterConfig<CloudWatchWriterConfig>
     {
         dedicatedWriter = value;
         return this;
+    }
+
+
+    /**
+     *  Validates the configuration, returning a list of any validation errors.
+     *  An empty list indicates a valid config.
+     */
+    public List<String> validate()
+    {
+        List<String> result = new ArrayList<>();
+
+        if (logGroupName == null)
+        {
+            result.add("missing log group name");
+        }
+        else if (logGroupName.isEmpty())
+        {
+            result.add("blank log group name");
+        }
+        else if (! Pattern.matches(CloudWatchConstants.ALLOWED_GROUP_NAME_REGEX, logGroupName))
+        {
+            result.add("invalid log group name: " + logGroupName);
+        }
+
+        if (logStreamName == null)
+        {
+            result.add("missing log stream name");
+        }
+        else if (logStreamName.isEmpty())
+        {
+            result.add("blank log stream name");
+        }
+        else if (! Pattern.matches(CloudWatchConstants.ALLOWED_STREAM_NAME_REGEX, logStreamName))
+        {
+            result.add("invalid log stream name: " + logStreamName);
+        }
+
+        try
+        {
+            CloudWatchConstants.validateRetentionPeriod(retentionPeriod);
+        }
+        catch (IllegalArgumentException ex)
+        {
+            result.add(ex.getMessage());
+        }
+
+        return result;
     }
 }

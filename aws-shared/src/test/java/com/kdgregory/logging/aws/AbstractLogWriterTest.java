@@ -145,6 +145,25 @@ public abstract class AbstractLogWriterTest
         writerThread.join();
     }
 
+
+//----------------------------------------------------------------------------
+//  Common assertions
+//----------------------------------------------------------------------------
+
+    /**
+     *  Follows the chain of exceptions to its end, and verifies that the
+     *  last exception in the chain is the expected exception. This is needed
+     *  because writers catch and rethrow at multiple levels.
+     */
+    protected void assertUltimateCause(String message, Throwable expectedCause, Throwable ex)
+    {
+        while (ex.getCause() != null)
+        {
+            ex = ex.getCause();
+        }
+        assertSame(message, expectedCause, ex);
+    }
+
 //----------------------------------------------------------------------------
 //  The following methods are work-arounds for a race condition in which the
 //  main thread is allowed to continue immediately after the mock client call,

@@ -14,42 +14,41 @@
 
 package com.kdgregory.logging.aws.cloudwatch;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.regex.Pattern;
-
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.logs.AWSLogs;
-import com.amazonaws.services.logs.model.*;
 
 import com.kdgregory.logging.aws.internal.AbstractLogWriter;
 import com.kdgregory.logging.aws.internal.Utils;
+import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
+import com.kdgregory.logging.aws.internal.facade.CloudWatchFacadeException;
 import com.kdgregory.logging.common.LogMessage;
-import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
 
 
 public class CloudWatchLogWriter
-extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSLogs>
+extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,Object>
 {
+    // for creation, this is the number of retries that we'll attempt before giving up
+    private final static int CREATION_RETRIES = 10;
+
+    // for sending a batch, this is the number of retries that we'll attempt at one time
+    private final static int SEND_RETRIES = 3;
+
     // for retries, this is the initial wait time (with exponential backoff)
     private final static int INITIAL_RETRY_DELAY = 100;
 
-    // this is how long we'll wait to overcome throttled DescribeLogStreams
-    private final static int DESCRIBE_RETRY_TIMEOUT = 30 * 1000;
-
-    // this is how long we'll wait to overcome colliding sequence numbers
-    // it's short to facilitate testing; in practice the batch would be
-    // immediately resubmitted
-    private final static int SEQNUM_RETRY_TIMEOUT = 3 * 1000;
+    // passed into constructor
+    private CloudWatchFacade facade;
 
     // this is used when we are a dedicated writer
     private String sequenceToken;
 
-    public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger logger, ClientFactory<AWSLogs> clientFactory)
+
+    public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger logger, CloudWatchFacade facade)
     {
-        super(config, stats, logger, clientFactory);
+        super(config, stats, logger, null);
+
+        this.facade = facade;
 
         this.stats.setActualLogGroupName(config.getLogGroupName());
         this.stats.setActualLogStreamName(config.getLogStreamName());
@@ -72,24 +71,19 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
     @Override
     protected boolean ensureDestinationAvailable()
     {
-        if (! Pattern.matches(CloudWatchConstants.ALLOWED_GROUP_NAME_REGEX, config.getLogGroupName()))
+        List<String> configErrors = config.validate();
+        if (! configErrors.isEmpty())
         {
-            reportError("invalid log group name: " + config.getLogGroupName(), null);
-            return false;
-        }
-
-        if (! Pattern.matches(CloudWatchConstants.ALLOWED_STREAM_NAME_REGEX, config.getLogStreamName()))
-        {
-            reportError("invalid log stream name: " + config.getLogStreamName(), null);
+            for (String error : configErrors)
+                reportError(error, null);
             return false;
         }
 
         try
         {
-            LogGroup logGroup = findLogGroup();
-            if (logGroup == null)
+            String logGroupArn = facade.findLogGroup();
+            if (logGroupArn == null)
             {
-                logger.debug("creating CloudWatch log group: " + config.getLogGroupName());
                 createLogGroup();
             }
             else
@@ -98,10 +92,9 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             }
 
 
-            LogStream logStream = findLogStream();
-            if (logStream == null)
+            sequenceToken = facade.retrieveSequenceToken();
+            if (sequenceToken == null)
             {
-                logger.debug("creating CloudWatch log stream: " + config.getLogStreamName());
                 createLogStream();
             }
             else
@@ -111,7 +104,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
 
             return true;
         }
-        catch (Exception ex)
+        catch (Throwable ex)
         {
             reportError("unable to configure log group/stream", ex);
             return false;
@@ -145,61 +138,138 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
     @Override
     protected void stopAWSClient()
     {
-        client.shutdown();
+        try
+        {
+            facade.shutdown();
+        }
+        catch (CloudWatchFacadeException ex)
+        {
+            reportError("exception shutting down CloudWatch client", ex);
+        }
     }
 
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
 
-    private List<LogMessage> attemptToSend(List<LogMessage> batch)
+    private void createLogGroup()
+    {
+        logger.debug("creating CloudWatch log group: " + config.getLogGroupName());
+
+        for (int retry = 0 ; retry < CREATION_RETRIES ; retry++)
+        {
+            try
+            {
+                facade.createLogGroup();
+                break;
+            }
+            catch (CloudWatchFacadeException ex)
+            {
+                switch (ex.getReason())
+                {
+                    case THROTTLING:
+                    case ABORTED:
+                        Utils.sleepQuietly(250);
+                        break;
+                    default:
+                        throw new RuntimeException(ex.getMessage(), ex.getCause());
+                }
+            }
+        }
+
+        try
+        {
+            for (int ii = 0 ; ii < 300 ; ii++)
+            {
+                if (facade.findLogGroup() != null)
+                    break;
+                Utils.sleepQuietly(100);
+            }
+        }
+        catch(CloudWatchFacadeException ex)
+        {
+            throw new RuntimeException(ex.getMessage(), ex.getCause());
+        }
+
+        try
+        {
+            if (config.getRetentionPeriod() != null)
+            {
+                logger.debug("setting retention period to: " + config.getRetentionPeriod());
+                facade.setLogGroupRetention();
+            }
+        }
+        catch(CloudWatchFacadeException ex)
+        {
+            logger.error("exception setting retention policy", ex);
+        }
+    }
+
+
+    private void createLogStream()
+    {
+        logger.debug("creating CloudWatch log stream: " + config.getLogStreamName());
+        for (int retry = 0 ; retry < CREATION_RETRIES ; retry++)
+        {
+            try
+            {
+                facade.createLogStream();
+                break;
+            }
+            catch(CloudWatchFacadeException ex)
+            {
+                if (! ex.isRetryable())
+                {
+                    throw new RuntimeException(ex.getMessage(), ex.getCause());
+                }
+                logger.warn("retryable exception when creating stream: " + ex.getMessage());
+                Utils.sleepQuietly(INITIAL_RETRY_DELAY);
+            }
+        }
+
+        // this will wait for the stream to become available
+        // TODO - is it really necessary? can defer until first send
+        sequenceToken();
+    }
+
+
+    // note: protected so that it can be overridden for testing
+    protected List<LogMessage> attemptToSend(List<LogMessage> batch)
     {
         if (batch.isEmpty())
             return batch;
 
-        PutLogEventsRequest request = new PutLogEventsRequest()
-                                      .withLogGroupName(config.getLogGroupName())
-                                      .withLogStreamName(config.getLogStreamName())
-                                      .withLogEvents(constructLogEvents(batch));
-
-        // sending is all-or-nothing with CloudWatch: if we receive any error
-        // we'll return the entire batch -- the one exception being a writer race,
-        // which we'll retry a few times before giving up because it should resolve
-        // itself
-
         long retryDelay = INITIAL_RETRY_DELAY;
-        long timeoutAt = System.currentTimeMillis() + SEQNUM_RETRY_TIMEOUT;
-        while (System.currentTimeMillis() < timeoutAt)
+        for (int retry = 0 ; retry < SEND_RETRIES ; retry++)
         {
             try
             {
-                request.setSequenceToken(getSequenceToken());
-                PutLogEventsResult response = client.putLogEvents(request);
-                sequenceToken = response.getNextSequenceToken();
+                sequenceToken = facade.sendMessages(sequenceToken(), batch);
                 return Collections.emptyList();
             }
-            catch (InvalidSequenceTokenException ex)
+            catch (CloudWatchFacadeException ex)
             {
-                // force the token to be fetched next time through
-                sequenceToken = null;
-                stats.updateWriterRaceRetries();
-                // fall through
-            }
-            catch (DataAlreadyAcceptedException ex)
-            {
-                reportError("received DataAlreadyAcceptedException, dropping batch", ex);
-                return Collections.emptyList();
-            }
-            catch (ResourceNotFoundException ex)
-            {
-                reportError("log stream missing: " + config.getLogStreamName(), null);
-                ensureDestinationAvailable();
-                return batch;
-            }
-            catch (Exception ex)
-            {
-                reportError("failed to send batch", ex);
-                return batch;
+                switch (ex.getReason())
+                {
+                    case THROTTLING:
+                        break;
+                    case INVALID_SEQUENCE_TOKEN:
+                        // force the token to be fetched next time through
+                        sequenceToken = null;
+                        stats.updateWriterRaceRetries();
+                        break;
+                    case ALREADY_PROCESSED:
+                        logger.warn("received DataAlreadyAcceptedException, dropping batch");
+                        return Collections.emptyList();
+                    case MISSING_LOG_GROUP:
+                    case MISSING_LOG_STREAM:
+                        reportError(ex.getMessage(), ex);
+                        ensureDestinationAvailable();
+                        return batch;
+                    default:
+                        reportError("failed to send: " + ex.getMessage(), ex.getCause());
+                        return batch;
+                }
             }
 
             // retryable errors come here
@@ -207,190 +277,41 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,AWSL
             retryDelay *= 2;
         }
 
-        reportError("failed to send due to repeated InvalidSequenceTokenExceptions", null);
-        stats.updateUnrecoveredWriterRaceRetries();
+        if (sequenceToken == null)
+        {
+            logger.warn("batch failed: unrecovered sequence token race");
+            stats.updateUnrecoveredWriterRaceRetries();
+        }
+        else
+        {
+            logger.warn("batch failed: repeated throttling");
+        }
         return batch;
     }
 
 
-    private List<InputLogEvent> constructLogEvents(List<LogMessage> batch)
+    private String sequenceToken()
     {
-        List<InputLogEvent> result = new ArrayList<InputLogEvent>(batch.size());
-        for (LogMessage msg : batch)
+        if ((! config.getDedicatedWriter()) || (sequenceToken == null))
         {
-            InputLogEvent event = new InputLogEvent()
-                                      .withTimestamp(msg.getTimestamp())
-                                      .withMessage(msg.getMessage());
-            result.add(event);
-        }
-        return result;
-    }
-
-
-    private String getSequenceToken()
-    {
-        if (config.getDedicatedWriter() && (sequenceToken != null))
-        {
-            return sequenceToken;
-        }
-
-        LogStream stream = findLogStream();
-        if (stream == null)
-            throw new ResourceNotFoundException("stream appears to have been deleted");
-
-        return stream.getUploadSequenceToken();
-    }
-
-
-    private LogGroup findLogGroup()
-    {
-        DescribeLogGroupsRequest request = new DescribeLogGroupsRequest().withLogGroupNamePrefix(config.getLogGroupName());
-        DescribeLogGroupsResult result;
-        do
-        {
-            result = client.describeLogGroups(request);
-            for (LogGroup group : result.getLogGroups())
+            // TODO - use a waiter object with exponential backoff
+            for (int ii = 0 ; ii < 100 ; ii++)
             {
-                if (group.getLogGroupName().equals(config.getLogGroupName()))
-                    return group;
-            }
-            request.setNextToken(result.getNextToken());
-        } while (result.getNextToken() != null);
-
-        return null;
-    }
-
-
-    private void createLogGroup()
-    {
-        while (true)
-        {
-            try
-            {
-                CreateLogGroupRequest request = new CreateLogGroupRequest().withLogGroupName(config.getLogGroupName());
-                client.createLogGroup(request);
-                for (int ii = 0 ; ii < 300 ; ii++)
+                try
                 {
-                    if (findLogGroup() != null)
-                    {
-                        optSetLogGroupRetentionPolicy();
-                        return;
-                    }
-                    else
-                        Utils.sleepQuietly(100);
-                }
-                throw new RuntimeException("unable to create log group after 30 seconds; aborting");
-            }
-            catch (ResourceAlreadyExistsException ex)
-            {
-                // somebody else created it
-                return;
-            }
-            catch (OperationAbortedException ex)
-            {
-                // someone else is trying to create it, wait and try again
-                Utils.sleepQuietly(250);
-            }
-        }
-    }
-
-
-    private void optSetLogGroupRetentionPolicy()
-    {
-        if (config.getRetentionPeriod() == null)
-            return;
-
-        logger.debug("setting retention policy on " + config.getLogGroupName()
-                     + " to " + config.getRetentionPeriod() + " days");
-
-        try
-        {
-            client.putRetentionPolicy(
-                new PutRetentionPolicyRequest(
-                    config.getLogGroupName(), config.getRetentionPeriod()));
-        }
-        catch (Exception ex)
-        {
-            reportError("failed to set retention policy on log group " + config.getLogGroupName(), ex);
-        }
-    }
-
-
-    private LogStream findLogStream()
-    {
-        DescribeLogStreamsRequest request = new DescribeLogStreamsRequest()
-                                            .withLogGroupName(config.getLogGroupName())
-                                            .withLogStreamNamePrefix(config.getLogStreamName());
-        DescribeLogStreamsResult result;
-        try
-        {
-            do
-            {
-                result = describeStreamsWithRetry(request);
-                for (LogStream stream : result.getLogStreams())
-                {
-                    if (stream.getLogStreamName().equals(config.getLogStreamName()))
-                        return stream;
-                }
-                request.setNextToken(result.getNextToken());
-            } while (result.getNextToken() != null);
-        }
-        catch (Exception ex)
-        {
-            reportError("unable to describe log stream", ex);
-        }
-
-        return null;
-    }
-
-
-    // DescribeLogStreams is limited to 5 operations per second, which causes problems
-    // for clusters that are starting up, so we'll retry with exponential backoff
-    private DescribeLogStreamsResult describeStreamsWithRetry(DescribeLogStreamsRequest request)
-    {
-        long retryDelay = INITIAL_RETRY_DELAY;
-        long timeoutAt = System.currentTimeMillis() + DESCRIBE_RETRY_TIMEOUT;
-        while (System.currentTimeMillis() < timeoutAt)
-        {
-            try
-            {
-                return client.describeLogStreams(request);
-            }
-            catch (AmazonServiceException ex)
-            {
-                if (! ex.getMessage().contains("ThrottlingException"))
-                    throw ex;
-                // otherwise fall through to retry
-            }
-            Utils.sleepQuietly(retryDelay);
-            retryDelay *= 2;
-        }
-        throw new RuntimeException("DescribeLogStreams has been throttled for " + DESCRIBE_RETRY_TIMEOUT + " ms");
-    }
-
-
-    private void createLogStream()
-    {
-        try
-        {
-            CreateLogStreamRequest request = new CreateLogStreamRequest()
-                                             .withLogGroupName(config.getLogGroupName())
-                                             .withLogStreamName(config.getLogStreamName());
-            client.createLogStream(request);
-
-            for (int ii = 0 ; ii < 300 ; ii++)
-            {
-                if (findLogStream() != null)
-                    return;
-                else
+                    sequenceToken = facade.retrieveSequenceToken();
+                    if (sequenceToken != null)
+                        return sequenceToken;
                     Utils.sleepQuietly(100);
+                }
+                catch (CloudWatchFacadeException ex)
+                {
+                    throw new RuntimeException("failed to retrieve sequence token", ex.getCause());
+                }
             }
-            throw new RuntimeException("unable to create log strean after 30 seconds; aborting");
         }
-        catch (ResourceAlreadyExistsException ex)
-        {
-            // somebody else created it
-            return;
-        }
+
+        return sequenceToken;
     }
+
 }

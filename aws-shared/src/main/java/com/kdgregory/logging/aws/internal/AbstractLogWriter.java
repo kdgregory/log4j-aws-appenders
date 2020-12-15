@@ -172,7 +172,7 @@ implements LogWriter
     {
         if (message.size() == 0)
         {
-            logger.debug("discarded empty message");
+            logger.warn("discarded empty message");
             return;
         }
 
@@ -181,12 +181,12 @@ implements LogWriter
             stats.incrementOversizeMessages();
             if (config.getTruncateOversizeMessages())
             {
-                logger.debug("truncated oversize message (" + message.size() + " bytes to " + maxMessageSize() + ")");
+                logger.warn("truncated oversize message (" + message.size() + " bytes to " + maxMessageSize() + ")");
                 message.truncate(maxMessageSize());
             }
             else
             {
-                logger.debug("discarded oversize message (" + message.size() + " bytes, limit is " + maxMessageSize() + ")");
+                logger.warn("discarded oversize message (" + message.size() + " bytes, limit is " + maxMessageSize() + ")");
                 return;
             }
         }
@@ -202,7 +202,12 @@ implements LogWriter
 
         try
         {
-            client = clientFactory.createClient();
+            // FIXME - this is a hack to avoid breaking tests for non-converted writers
+            //         remove once all writers use a facade rather than client factory
+            if (clientFactory != null)
+            {
+                client = clientFactory.createClient();
+            }
             success = ensureDestinationAvailable();
         }
         catch (Exception ex)
@@ -211,7 +216,7 @@ implements LogWriter
             success = false;
         }
 
-        if (!success)
+        if (! success)
         {
             messageQueue.setDiscardThreshold(0);
             messageQueue.setDiscardAction(DiscardAction.oldest);
@@ -445,9 +450,9 @@ implements LogWriter
 
     /**
      *  Reports an operational error to both the internal logger and the stats
-     *  bean..
+     *  bean.
      */
-    protected void reportError(String message, Exception exception)
+    protected void reportError(String message, Throwable exception)
     {
         logger.error(message, exception);
         stats.setLastError(message, exception);

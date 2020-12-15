@@ -14,9 +14,8 @@
 
 package com.kdgregory.logging.aws.cloudwatch;
 
-import com.amazonaws.services.logs.AWSLogs;
-
-import com.kdgregory.logging.aws.common.DefaultClientFactory;
+import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
+import com.kdgregory.logging.aws.internal.facade.FacadeFactory;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
@@ -33,8 +32,6 @@ implements WriterFactory<CloudWatchWriterConfig,CloudWatchWriterStatistics>
     {
         return new CloudWatchLogWriter(
                 config, stats, logger,
-                new DefaultClientFactory<AWSLogs>(
-                    AWSLogs.class, config.getClientFactoryMethod(), config.getAssumedRole(),
-                    config.getClientRegion(), config.getClientEndpoint(), logger));
+                FacadeFactory.createFacade(CloudWatchFacade.class, config));
     }
 }

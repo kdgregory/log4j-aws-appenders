@@ -96,4 +96,11 @@ public interface CloudWatchFacade
      */
     String sendMessages(String sequenceToken, List<LogMessage> messages)
     throws CloudWatchFacadeException;
+
+
+    /**
+     *  Shuts down the underlying client.
+     */
+    public void shutdown()
+    throws CloudWatchFacadeException;
 }

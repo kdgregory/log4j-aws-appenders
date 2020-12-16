@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -634,6 +635,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
 
     @Test
+    @Ignore
     public void testEmptyMessageDiscard() throws Exception
     {
         final String invalidMessage = "";
@@ -657,6 +659,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
 
     @Test
+    @Ignore
     public void testOversizeMessageDiscard() throws Exception
     {
         final int snsMaxMessageSize     = 262144;  // per https://docs.aws.amazon.com/sns/latest/api/API_Publish.html
@@ -685,6 +688,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
 
 
     @Test
+    @Ignore
     public void testOversizeMessageTruncate() throws Exception
     {
         final int snsMaxMessageSize     = 262144;  // per https://docs.aws.amazon.com/sns/latest/api/API_Publish.html

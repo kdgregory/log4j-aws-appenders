@@ -72,7 +72,7 @@ implements CloudWatchFacade
         catch (Exception ex)
         {
             CloudWatchFacadeException ex2 = transformException("findLogGroup", ex);
-            if (ex2.getReason() == ReasonCode.THROTTLING)
+            if (ex2.isRetryable())
                 return null;
             else
                 throw ex2;
@@ -121,7 +121,7 @@ implements CloudWatchFacade
             throw new CloudWatchFacadeException(
                 constructExceptionMessage("setLogGroupRetention", "invalid retention period: " + config.getRetentionPeriod()),
                 ReasonCode.INVALID_CONFIGURATION,
-                ex);
+                false);
         }
         catch (Exception ex)
         {
@@ -155,7 +155,7 @@ implements CloudWatchFacade
             throw new CloudWatchFacadeException(
                 constructExceptionMessage("createLogStream", "log group missing"),
                 ReasonCode.MISSING_LOG_GROUP,
-                ex);
+                false);
         }
         catch (Exception ex)
         {
@@ -193,7 +193,7 @@ implements CloudWatchFacade
         catch (Exception ex)
         {
             CloudWatchFacadeException ex2 = transformException("retrieveSequenceToken()", ex);
-            if (ex2.getReason() == ReasonCode.THROTTLING)
+            if (ex2.isRetryable())
                 return null;
             else
                 throw ex2;
@@ -234,14 +234,14 @@ implements CloudWatchFacade
             throw new CloudWatchFacadeException(
                     constructExceptionMessage("sendMessages", "invalid sequence token: " + sequenceToken),
                     ReasonCode.INVALID_SEQUENCE_TOKEN,
-                    null);
+                    true);
         }
         catch (ResourceNotFoundException ex)
         {
             throw new CloudWatchFacadeException(
                     constructExceptionMessage("sendMessages", "missing log group"),
                     ReasonCode.MISSING_LOG_GROUP,
-                    null);
+                    false);
         }
         catch (Exception ex)
         {
@@ -294,21 +294,25 @@ implements CloudWatchFacade
     {
         ReasonCode reason;
         String message;
+        boolean isRetryable;
 
         if (cause == null)
         {
             reason = ReasonCode.UNEXPECTED_EXCEPTION;
             message = "coding error; exception not provided";
+            isRetryable = false;
         }
         else if (cause instanceof OperationAbortedException)
         {
             reason = ReasonCode.ABORTED;
             message = "request aborted";
+            isRetryable = true;
         }
         else if (cause instanceof DataAlreadyAcceptedException)
         {
             reason = ReasonCode.ALREADY_PROCESSED;
             message = "already processed";
+            isRetryable = true;
         }
         else if (cause instanceof AWSLogsException)
         {
@@ -317,20 +321,23 @@ implements CloudWatchFacade
             {
                 reason = ReasonCode.THROTTLING;
                 message = "request throttled";
+                isRetryable = true;
             }
             else
             {
                 reason = ReasonCode.UNEXPECTED_EXCEPTION;
                 message = "service exception: " + cause.getMessage();
+                isRetryable = ((AWSLogsException)cause).isRetryable();
             }
         }
         else
         {
             reason = ReasonCode.UNEXPECTED_EXCEPTION;
             message = "unexpected exception: " + cause.getMessage();
+            isRetryable = false;
         }
 
         return new CloudWatchFacadeException(
-                constructExceptionMessage(functionName, message), reason, cause);
+                constructExceptionMessage(functionName, message), reason, isRetryable, cause);
     }
 }

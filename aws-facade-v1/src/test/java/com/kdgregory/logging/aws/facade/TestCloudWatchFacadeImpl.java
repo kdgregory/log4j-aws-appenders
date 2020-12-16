@@ -178,6 +178,29 @@ public class TestCloudWatchFacadeImpl
 
 
     @Test
+    public void testFindLogGroupAborted() throws Exception
+    {
+        mock = new MockCloudWatchClient(TEST_LOG_GROUPS, TEST_LOG_STREAMS)
+        {
+            @Override
+            protected DescribeLogGroupsResult describeLogGroups(DescribeLogGroupsRequest request)
+            {
+                throw new OperationAbortedException("message doesn't matter");
+            }
+        };
+
+        String result = facade.findLogGroup();
+
+        assertNull("aborted operation returns null",    result);
+
+        assertEquals("calls to describeLogGroups",      1,  mock.describeLogGroupsInvocationCount);
+        assertEquals("calls to describeLogStreams",     0,  mock.describeLogStreamsInvocationCount);
+        assertEquals("calls to createLogGroups",        0,  mock.createLogGroupInvocationCount);
+        assertEquals("calls to createLogStreams",       0,  mock.createLogStreamInvocationCount);
+    }
+
+
+    @Test
     public void testFindLogGroupError() throws Exception
     {
         final RuntimeException cause = new RuntimeException();
@@ -639,7 +662,28 @@ public class TestCloudWatchFacadeImpl
             }
         };
 
-        assertNull("returned sequence token", facade.retrieveSequenceToken());
+        assertNull("returned null sequence token",      facade.retrieveSequenceToken());
+
+        assertEquals("calls to describeLogGroups",      0,  mock.describeLogGroupsInvocationCount);
+        assertEquals("calls to describeLogStreams",     1,  mock.describeLogStreamsInvocationCount);
+        assertEquals("calls to createLogGroups",        0,  mock.createLogGroupInvocationCount);
+        assertEquals("calls to createLogStreams",       0,  mock.createLogStreamInvocationCount);
+    }
+
+
+    @Test
+    public void testRetrieveSequenceTokenAborted() throws Exception
+    {
+        mock = new MockCloudWatchClient(TEST_LOG_GROUPS, TEST_LOG_STREAMS)
+        {
+            @Override
+            protected DescribeLogStreamsResult describeLogStreams(DescribeLogStreamsRequest request)
+            {
+                throw new OperationAbortedException("message doesn't matter");
+            }
+        };
+
+        assertNull("returned null sequence token",      facade.retrieveSequenceToken());
 
         assertEquals("calls to describeLogGroups",      0,  mock.describeLogGroupsInvocationCount);
         assertEquals("calls to describeLogStreams",     1,  mock.describeLogStreamsInvocationCount);

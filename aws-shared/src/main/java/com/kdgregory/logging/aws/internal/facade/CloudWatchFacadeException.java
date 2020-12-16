@@ -87,15 +87,27 @@ extends Exception
 //----------------------------------------------------------------------------
 
     private ReasonCode reasonCode;
+    private boolean isRetryable;
 
 
     /**
-     *  Constructs an instance; cause may be null.
+     *  Base constructor.
      */
-    public CloudWatchFacadeException(String message, ReasonCode reasonCode, Throwable cause)
+    public CloudWatchFacadeException(String message, ReasonCode reasonCode, boolean isRetryable, Throwable cause)
     {
         super(message, cause);
         this.reasonCode = reasonCode;
+        this.isRetryable = isRetryable;
+    }
+
+
+    /**
+     *  Convenience constructor, for conditions where there is no underlying exception,
+     *  or where it's irrelevant. Will look at reason to determine retriability.
+     */
+    public CloudWatchFacadeException(String message, ReasonCode reasonCode, boolean isRetryable)
+    {
+        this(message, reasonCode, isRetryable, null);
     }
 
 
@@ -114,14 +126,6 @@ extends Exception
      */
     public boolean isRetryable()
     {
-        switch (reasonCode)
-        {
-            case ABORTED:
-            case THROTTLING:
-            case INVALID_SEQUENCE_TOKEN:
-                return true;
-            default:
-                return false;
-        }
+        return isRetryable;
     }
 }

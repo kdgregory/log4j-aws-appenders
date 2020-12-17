@@ -742,7 +742,7 @@ public class TestCloudWatchFacadeImpl
 
 
     @Test
-    public void testSendMessagesHappyPath() throws Exception
+    public void testPutEventsHappyPath() throws Exception
     {
         long now = System.currentTimeMillis();
 
@@ -753,7 +753,7 @@ public class TestCloudWatchFacadeImpl
         String sequenceToken = mock.getCurrentSequenceToken();
         List<LogMessage> messages = Arrays.asList(msg1, msg2, msg3);
 
-        String newSequenceToken = facade.sendMessages(sequenceToken, messages);
+        String newSequenceToken = facade.putEvents(sequenceToken, messages);
 
         assertEquals("calls to putLogEvents",               1,                          mock.putLogEventsInvocationCount);
         assertEquals("group name passed to putLogEvents",   config.getLogGroupName(),   mock.putLogEventsGroupName);
@@ -772,12 +772,12 @@ public class TestCloudWatchFacadeImpl
 
 
     @Test
-    public void testSendMessagesEmptyBatch() throws Exception
+    public void testPutEventsEmptyBatch() throws Exception
     {
         String sequenceToken = mock.getCurrentSequenceToken();
         List<LogMessage> messages = Arrays.asList();
 
-        String newSequenceToken = facade.sendMessages(sequenceToken, messages);
+        String newSequenceToken = facade.putEvents(sequenceToken, messages);
 
         assertEquals("calls to putLogEvents",               0,                          mock.putLogEventsInvocationCount);
         assertEquals("returned sequence token",             sequenceToken,              newSequenceToken);
@@ -785,7 +785,7 @@ public class TestCloudWatchFacadeImpl
 
 
     @Test
-    public void testSendMessagesThrottled() throws Exception
+    public void testPutEventsThrottled() throws Exception
     {
         mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS)
         {
@@ -803,12 +803,12 @@ public class TestCloudWatchFacadeImpl
 
         try
         {
-            facade.sendMessages(sequenceToken, messages);
+            facade.putEvents(sequenceToken, messages);
             fail("should have thrown");
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "sendMessages", "throttled", ReasonCode.THROTTLING, null);
+            assertException(ex, "putEvents", "throttled", ReasonCode.THROTTLING, null);
         }
 
         assertEquals("calls to putLogEvents",                   1,                          mock.putLogEventsInvocationCount);
@@ -819,19 +819,19 @@ public class TestCloudWatchFacadeImpl
 
 
     @Test
-    public void testSendMessagesInvalidSequenceToken() throws Exception
+    public void testPutEventsInvalidSequenceToken() throws Exception
     {
         String sequenceToken = "9999";
         List<LogMessage> messages = Arrays.asList(new LogMessage(0, "doesn't matter"));
 
         try
         {
-            facade.sendMessages(sequenceToken, messages);
+            facade.putEvents(sequenceToken, messages);
             fail("should have thrown");
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "sendMessages", "invalid sequence token: 9999", ReasonCode.INVALID_SEQUENCE_TOKEN, null);
+            assertException(ex, "putEvents", "invalid sequence token: 9999", ReasonCode.INVALID_SEQUENCE_TOKEN, null);
         }
 
         assertEquals("calls to putLogEvents",                   1,                          mock.putLogEventsInvocationCount);
@@ -842,7 +842,7 @@ public class TestCloudWatchFacadeImpl
 
 
     @Test
-    public void testSendMessagesMissingLogGroup() throws Exception
+    public void testPutEventsMissingLogGroup() throws Exception
     {
         mock = new MockCloudWatchClient(Collections.emptyList(), Collections.emptyList());
 
@@ -851,12 +851,12 @@ public class TestCloudWatchFacadeImpl
 
         try
         {
-            facade.sendMessages(sequenceToken, messages);
+            facade.putEvents(sequenceToken, messages);
             fail("should have thrown");
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "sendMessages", "missing log group", ReasonCode.MISSING_LOG_GROUP, null);
+            assertException(ex, "putEvents", "missing log group", ReasonCode.MISSING_LOG_GROUP, null);
         }
 
         assertEquals("calls to putLogEvents",                   1,                          mock.putLogEventsInvocationCount);
@@ -867,7 +867,7 @@ public class TestCloudWatchFacadeImpl
 
 
     @Test
-    public void testSendMessagesDataAlreadyAccepted() throws Exception
+    public void testPutEventsDataAlreadyAccepted() throws Exception
     {
         mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS)
         {
@@ -883,12 +883,12 @@ public class TestCloudWatchFacadeImpl
 
         try
         {
-            facade.sendMessages(sequenceToken, messages);
+            facade.putEvents(sequenceToken, messages);
             fail("should have thrown");
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "sendMessages", "already processed", ReasonCode.ALREADY_PROCESSED, null);
+            assertException(ex, "putEvents", "already processed", ReasonCode.ALREADY_PROCESSED, null);
         }
 
         assertEquals("calls to putLogEvents",                   1,                          mock.putLogEventsInvocationCount);
@@ -899,7 +899,7 @@ public class TestCloudWatchFacadeImpl
 
 
     @Test
-    public void testSendMessagesUnexpectedException() throws Exception
+    public void testPutEventsUnexpectedException() throws Exception
     {
         RuntimeException cause = new RuntimeException("message irrelevant");
         mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS)
@@ -916,12 +916,12 @@ public class TestCloudWatchFacadeImpl
 
         try
         {
-            facade.sendMessages(sequenceToken, messages);
+            facade.putEvents(sequenceToken, messages);
             fail("should have thrown");
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "sendMessages", "unexpected exception", ReasonCode.UNEXPECTED_EXCEPTION, cause);
+            assertException(ex, "putEvents", "unexpected exception", ReasonCode.UNEXPECTED_EXCEPTION, cause);
         }
 
         assertEquals("calls to putLogEvents",                   1,                          mock.putLogEventsInvocationCount);

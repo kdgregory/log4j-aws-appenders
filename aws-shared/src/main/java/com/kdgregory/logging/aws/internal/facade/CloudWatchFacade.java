@@ -94,7 +94,7 @@ public interface CloudWatchFacade
      *                          requirements for <code>PutLogEvents</code> (sorted by
      *                          timestamp, and within acceptable timestamp ranges).
      */
-    String sendMessages(String sequenceToken, List<LogMessage> messages)
+    String putEvents(String sequenceToken, List<LogMessage> messages)
     throws CloudWatchFacadeException;
 
 

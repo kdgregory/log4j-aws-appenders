@@ -690,10 +690,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("retrieveSequenceToken: invocation count",     1,                      mock.retrieveSequenceTokenInvocationCount);
         assertEquals("createLogGroup: invocation count",            0,                      mock.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",           0,                      mock.createLogStreamInvocationCount);
-        assertEquals("sendMessages: invocation count",              1,                      mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: sequence token",                expectedToken,          mock.sendMessagesSequenceToken);
-        assertEquals("sendMessages: last call #/messages",          1,                      mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call message",             "message one",          mock.sendMessagesMessages.get(0).getMessage());
+        assertEquals("putEvents: invocation count",                 1,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: sequence token",                   expectedToken,          mock.putEventsSequenceToken);
+        assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
+        assertEquals("putEvents: last call message",                "message one",          mock.putEventsMessages.get(0).getMessage());
 
         assertEquals("message has been removed from queue",         0,                      messageQueue.size());
 
@@ -712,11 +712,11 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("retrieveSequenceToken: invocation count",     1,                      mock.retrieveSequenceTokenInvocationCount);
         assertEquals("createLogGroup: invocation count",            0,                      mock.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",           0,                      mock.createLogStreamInvocationCount);
-        assertEquals("sendMessages: invocation count",              2,                      mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: sequence token",                expectedToken,          mock.sendMessagesSequenceToken);
-        assertEquals("sendMessages: last call #/messages",          2,                      mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call first message",       "message two",          mock.sendMessagesMessages.get(0).getMessage());
-        assertEquals("sendMessages: last call second message",      "message three",        mock.sendMessagesMessages.get(1).getMessage());
+        assertEquals("putEvents: invocation count",                 2,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: sequence token",                   expectedToken,          mock.putEventsSequenceToken);
+        assertEquals("putEvents: last call #/messages",             2,                      mock.putEventsMessages.size());
+        assertEquals("putEvents: last call first message",          "message two",          mock.putEventsMessages.get(0).getMessage());
+        assertEquals("putEvents: last call second message",         "message three",        mock.putEventsMessages.get(1).getMessage());
 
         assertStatisticsTotalMessagesSent(3);
         assertEquals("statistics: last batch messages sent",        2,                      stats.getMessagesSentLastBatch());
@@ -750,10 +750,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("retrieveSequenceToken: invocation count",     2,                      mock.retrieveSequenceTokenInvocationCount);
         assertEquals("createLogGroup: invocation count",            0,                      mock.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",           0,                      mock.createLogStreamInvocationCount);
-        assertEquals("sendMessages: invocation count",              1,                      mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: sequence token",                expectedToken,          mock.sendMessagesSequenceToken);
-        assertEquals("sendMessages: last call #/messages",          1,                      mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call message",             "message one",          mock.sendMessagesMessages.get(0).getMessage());
+        assertEquals("putEvents: invocation count",                 1,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: sequence token",                   expectedToken,          mock.putEventsSequenceToken);
+        assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
+        assertEquals("putEvents: last call message",                "message one",          mock.putEventsMessages.get(0).getMessage());
 
         assertEquals("message has been removed from queue",         0,                      messageQueue.size());
 
@@ -771,11 +771,11 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("retrieveSequenceToken: invocation count",     3,                      mock.retrieveSequenceTokenInvocationCount);
         assertEquals("createLogGroup: invocation count",            0,                      mock.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",           0,                      mock.createLogStreamInvocationCount);
-        assertEquals("sendMessages: invocation count",              2,                      mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: sequence token",                expectedToken,          mock.sendMessagesSequenceToken);
-        assertEquals("sendMessages: last call #/messages",          2,                      mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call first message",       "message two",          mock.sendMessagesMessages.get(0).getMessage());
-        assertEquals("sendMessages: last call second message",      "message three",        mock.sendMessagesMessages.get(1).getMessage());
+        assertEquals("putEvents: invocation count",                 2,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: sequence token",                   expectedToken,          mock.putEventsSequenceToken);
+        assertEquals("putEvents: last call #/messages",             2,                      mock.putEventsMessages.size());
+        assertEquals("putEvents: last call first message",          "message two",          mock.putEventsMessages.get(0).getMessage());
+        assertEquals("putEvents: last call second message",         "message three",        mock.putEventsMessages.get(1).getMessage());
 
         assertStatisticsTotalMessagesSent(3);
         assertEquals("statistics: last batch messages sent",        2,                      stats.getMessagesSentLastBatch());
@@ -800,7 +800,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             throws CloudWatchFacadeException
             {
                 // we'll do every other batch
-                if (sendMessagesInvocationCount % 2 == 1)
+                if (putEventsInvocationCount % 2 == 1)
                     throw new CloudWatchFacadeException("throttling", ReasonCode.THROTTLING, true, null);
 
                 return super.sendMessages(sequenceToken, messages);
@@ -813,10 +813,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
         waitForWriterThread();
 
-        assertEquals("sendMessages: invocation count",              2,                      mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: sequence token",                expectedToken,          mock.sendMessagesSequenceToken);
-        assertEquals("sendMessages: last call #/messages",          1,                      mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call message",             "message one",          mock.sendMessagesMessages.get(0).getMessage());
+        assertEquals("putEvents: invocation count",                 2,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: sequence token",                   expectedToken,          mock.putEventsSequenceToken);
+        assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
+        assertEquals("putEvents: last call message",                "message one",          mock.putEventsMessages.get(0).getMessage());
 
         assertEquals("message has been removed from queue",         0,                      messageQueue.size());
 
@@ -824,10 +824,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
         waitForWriterThread();
 
-        assertEquals("sendMessages: invocation count",              4,                      mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: sequence token",                expectedToken,          mock.sendMessagesSequenceToken);
-        assertEquals("sendMessages: last call #/messages",          1,                      mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call message",             "message two",          mock.sendMessagesMessages.get(0).getMessage());
+        assertEquals("putEvents: invocation count",                 4,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: sequence token",                   expectedToken,          mock.putEventsSequenceToken);
+        assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
+        assertEquals("putEvents: last call message",                "message two",          mock.putEventsMessages.get(0).getMessage());
 
         assertEquals("message has been removed from queue",         0,                      messageQueue.size());
 
@@ -863,10 +863,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         // retries are managed by count, not time; if the parameter ever change this test will fail
 
-        assertEquals("sendMessages: invocation count",              3,                      mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: sequence token",                expectedToken,          mock.sendMessagesSequenceToken);
-        assertEquals("sendMessages: last call #/messages",          1,                      mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call message",             "message one",          mock.sendMessagesMessages.get(0).getMessage());
+        assertEquals("putEvents: invocation count",                 3,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: sequence token",                   expectedToken,          mock.putEventsSequenceToken);
+        assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
+        assertEquals("putEvents: last call message",                "message one",          mock.putEventsMessages.get(0).getMessage());
 
         assertEquals("message has been returned to queue",          1,                      messageQueue.size());
 
@@ -888,7 +888,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             public String sendMessages(String sequenceToken, List<LogMessage> messages)
             throws CloudWatchFacadeException
             {
-                if (sendMessagesInvocationCount < 2)
+                if (putEventsInvocationCount < 2)
                 {
                     throw new CloudWatchFacadeException("irrelevant", ReasonCode.INVALID_SEQUENCE_TOKEN, true, null);
                 }
@@ -907,7 +907,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("retrieveSequenceToken: invocation count",     2,                      mock.retrieveSequenceTokenInvocationCount);
         assertEquals("createLogGroup: invocation count",            0,                      mock.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",           0,                      mock.createLogStreamInvocationCount);
-        assertEquals("sendMessages: invocation count",              2,                      mock.sendMessagesInvocationCount);
+        assertEquals("putEvents: invocation count",                 2,                      mock.putEventsInvocationCount);
 
         assertEquals("message has been removed from queue",         0,                      messageQueue.size());
 
@@ -944,10 +944,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         // retries are managed by count, not time; if the parameter ever change this test will fail
 
-        assertEquals("sendMessages: invocation count",              3,                      mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: sequence token",                expectedToken,          mock.sendMessagesSequenceToken);
-        assertEquals("sendMessages: last call #/messages",          1,                      mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call message",             "message one",          mock.sendMessagesMessages.get(0).getMessage());
+        assertEquals("putEvents: invocation count",                 3,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: sequence token",                   expectedToken,          mock.putEventsSequenceToken);
+        assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
+        assertEquals("putEvents: last call message",                "message one",          mock.putEventsMessages.get(0).getMessage());
 
         assertEquals("message has been returned to queue",          1,                      messageQueue.size());
 
@@ -972,7 +972,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             public String sendMessages(String sequenceToken, List<LogMessage> messages)
             throws CloudWatchFacadeException
             {
-                if (sendMessagesInvocationCount == 1)
+                if (putEventsInvocationCount == 1)
                     throw new CloudWatchFacadeException("already excepted", ReasonCode.ALREADY_PROCESSED, false, null);
 
                 return super.sendMessages(sequenceToken, messages);
@@ -985,10 +985,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
         waitForWriterThread();
 
-        assertEquals("sendMessages: invocation count",              1,                      mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: sequence token",                expectedToken,          mock.sendMessagesSequenceToken);
-        assertEquals("sendMessages: last call #/messages",          1,                      mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call message",             "message one",          mock.sendMessagesMessages.get(0).getMessage());
+        assertEquals("putEvents: invocation count",                 1,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: sequence token",                   expectedToken,          mock.putEventsSequenceToken);
+        assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
+        assertEquals("putEvents: last call message",                "message one",          mock.putEventsMessages.get(0).getMessage());
 
         assertEquals("message has been removed from queue",         0,                      messageQueue.size());
 
@@ -998,10 +998,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
         waitForWriterThread();
 
-        assertEquals("sendMessages: invocation count",              2,                      mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: sequence token",                expectedToken,          mock.sendMessagesSequenceToken);
-        assertEquals("sendMessages: last call #/messages",          1,                      mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call message",             "message two",          mock.sendMessagesMessages.get(0).getMessage());
+        assertEquals("putEvents: invocation count",                 2,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: sequence token",                   expectedToken,          mock.putEventsSequenceToken);
+        assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
+        assertEquals("putEvents: last call message",                "message two",          mock.putEventsMessages.get(0).getMessage());
 
         assertEquals("message has been removed from queue",         0,                      messageQueue.size());
 
@@ -1036,10 +1036,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
         waitForWriterThread();
 
-        assertEquals("sendMessages: invocation count",              1,                      mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: sequence token",                expectedToken,          mock.sendMessagesSequenceToken);
-        assertEquals("sendMessages: last call #/messages",          1,                      mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call message",             "message one",          mock.sendMessagesMessages.get(0).getMessage());
+        assertEquals("putEvents: invocation count",                 1,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: sequence token",                   expectedToken,          mock.putEventsSequenceToken);
+        assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
+        assertEquals("putEvents: last call message",                "message one",          mock.putEventsMessages.get(0).getMessage());
 
         assertEquals("message has been returned to queue",          1,                      messageQueue.size());
 
@@ -1047,10 +1047,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         waitForWriterThread();
 
-        assertEquals("sendMessages: invocation count",              2,                      mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: sequence token",                expectedToken,          mock.sendMessagesSequenceToken);
-        assertEquals("sendMessages: last call #/messages",          1,                      mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call message",             "message one",          mock.sendMessagesMessages.get(0).getMessage());
+        assertEquals("putEvents: invocation count",                 2,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: sequence token",                   expectedToken,          mock.putEventsSequenceToken);
+        assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
+        assertEquals("putEvents: last call message",                "message one",          mock.putEventsMessages.get(0).getMessage());
 
         assertEquals("message has been returned to queue",          1,                      messageQueue.size());
 
@@ -1090,7 +1090,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             throws CloudWatchFacadeException
             {
                 // we assert this message; actual message has more detail
-                if (sendMessagesInvocationCount == 1)
+                if (putEventsInvocationCount == 1)
                     throw new CloudWatchFacadeException("stream deleted", ReasonCode.MISSING_LOG_STREAM, false, cause);
 
                 return super.sendMessages(sequenceToken, messages);
@@ -1112,10 +1112,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("createLogGroup: invocation count",            0,                      mock.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",           1,                      mock.createLogStreamInvocationCount);
 
-        assertEquals("sendMessages: invocation count",              1,                      mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: sequence token",                expectedToken,          mock.sendMessagesSequenceToken);
-        assertEquals("sendMessages: last call #/messages",          1,                      mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call message",             "message one",          mock.sendMessagesMessages.get(0).getMessage());
+        assertEquals("putEvents: invocation count",                 1,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: sequence token",                   expectedToken,          mock.putEventsSequenceToken);
+        assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
+        assertEquals("putEvents: last call message",                "message one",          mock.putEventsMessages.get(0).getMessage());
 
         assertEquals("message has been returned to queue",          1,                      messageQueue.size());
 
@@ -1149,9 +1149,9 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         // we'll let the writer run, to ensure that only one message is passed to send
         waitForWriterThread();
 
-        assertEquals("sendMessages: invocation count",              1,                      mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: last call #/messages",          1,                      mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call message",             "this one's good",      mock.sendMessagesMessages.get(0).getMessage());
+        assertEquals("putEvents: invocation count",                 1,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
+        assertEquals("putEvents: last call message",                "this one's good",      mock.putEventsMessages.get(0).getMessage());
 
         internalLogger.assertInternalErrorLog();
     }
@@ -1181,9 +1181,9 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         // we'll let the writer run, to ensure that only one message is passed to send
         waitForWriterThread();
 
-        assertEquals("sendMessages: invocation count",              1,              mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: last call #/messages",          1,              mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call message",             bigMessage,     mock.sendMessagesMessages.get(0).getMessage());
+        assertEquals("putEvents: invocation count",                 1,              mock.putEventsInvocationCount);
+        assertEquals("putEvents: last call #/messages",             1,              mock.putEventsMessages.size());
+        assertEquals("putEvents: last call message",                bigMessage,     mock.putEventsMessages.get(0).getMessage());
 
         internalLogger.assertInternalErrorLog();
     }
@@ -1214,10 +1214,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         // we'll let the writer run, to ensure that only one message is passed to send
         waitForWriterThread();
 
-        assertEquals("sendMessages: invocation count",              1,              mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: last call #/messages",          2,              mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call first message",       bigMessage,     mock.sendMessagesMessages.get(0).getMessage());
-        assertEquals("sendMessages: last call second message",      bigMessage,     mock.sendMessagesMessages.get(1).getMessage());
+        assertEquals("putEvents: invocation count",                 1,              mock.putEventsInvocationCount);
+        assertEquals("putEvents: last call #/messages",             2,              mock.putEventsMessages.size());
+        assertEquals("putEvents: last call first message",          bigMessage,     mock.putEventsMessages.get(0).getMessage());
+        assertEquals("putEvents: last call second message",         bigMessage,     mock.putEventsMessages.get(1).getMessage());
 
         internalLogger.assertInternalErrorLog();
     }
@@ -1248,18 +1248,18 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         waitForWriterThread();
 
-        assertEquals("sendMessages: invocation count",              1,                      mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: last call #/messages",          10000,                  mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call first message",       "0",                    mock.sendMessagesMessages.get(0).getMessage());
-        assertEquals("sendMessages: last call last message",        "9999",                 mock.sendMessagesMessages.get(9999).getMessage());
+        assertEquals("putEvents: invocation count",                 1,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: last call #/messages",             10000,                  mock.putEventsMessages.size());
+        assertEquals("putEvents: last call first message",          "0",                    mock.putEventsMessages.get(0).getMessage());
+        assertEquals("putEvents: last call last message",           "9999",                 mock.putEventsMessages.get(9999).getMessage());
         assertEquals("unsent messages remain on queue",             5000,                   messageQueue.size());
 
         waitForWriterThread();
 
-        assertEquals("sendMessages: invocation count",              2,                      mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: last call #/messages",          5000,                   mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call first message",       "10000",                mock.sendMessagesMessages.get(0).getMessage());
-        assertEquals("sendMessages: last call last message",        "14999",                mock.sendMessagesMessages.get(4999).getMessage());
+        assertEquals("putEvents: invocation count",                 2,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: last call #/messages",             5000,                   mock.putEventsMessages.size());
+        assertEquals("putEvents: last call first message",          "10000",                mock.putEventsMessages.get(0).getMessage());
+        assertEquals("putEvents: last call last message",           "14999",                mock.putEventsMessages.get(4999).getMessage());
         assertEquals("no unsent messages remain on queue",          0,                      messageQueue.size());
 
         assertEquals("all messages sent, in order",                 expectedMessages,       mock.allMessagesSent);
@@ -1291,18 +1291,18 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         waitForWriterThread();
 
-        assertEquals("sendMessages: invocation count",              1,                          mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: last call #/messages",          998,                        mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call first message",       expectedMessages.get(0),    mock.sendMessagesMessages.get(0).getMessage());
-        assertEquals("sendMessages: last call last message",        expectedMessages.get(997),  mock.sendMessagesMessages.get(997).getMessage());
+        assertEquals("putEvents: invocation count",                 1,                          mock.putEventsInvocationCount);
+        assertEquals("putEvents: last call #/messages",             998,                        mock.putEventsMessages.size());
+        assertEquals("putEvents: last call first message",          expectedMessages.get(0),    mock.putEventsMessages.get(0).getMessage());
+        assertEquals("putEvents: last call last message",           expectedMessages.get(997),  mock.putEventsMessages.get(997).getMessage());
         assertEquals("unsent messages remain on queue",             502,                        messageQueue.size());
 
         waitForWriterThread();
 
-        assertEquals("sendMessages: invocation count",              2,                          mock.sendMessagesInvocationCount);
-        assertEquals("sendMessages: last call #/messages",          502,                        mock.sendMessagesMessages.size());
-        assertEquals("sendMessages: last call first message",       expectedMessages.get(998),  mock.sendMessagesMessages.get(0).getMessage());
-        assertEquals("sendMessages: last call last message",        expectedMessages.get(1499), mock.sendMessagesMessages.get(501).getMessage());
+        assertEquals("putEvents: invocation count",                 2,                          mock.putEventsInvocationCount);
+        assertEquals("putEvents: last call #/messages",             502,                        mock.putEventsMessages.size());
+        assertEquals("putEvents: last call first message",          expectedMessages.get(998),  mock.putEventsMessages.get(0).getMessage());
+        assertEquals("putEvents: last call last message",           expectedMessages.get(1499), mock.putEventsMessages.get(501).getMessage());
         assertEquals("no unsent messages remain on queue",          0,                          messageQueue.size());
 
         assertEquals("all messages sent, in order",                 expectedMessages,           mock.allMessagesSent);
@@ -1387,8 +1387,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 //        // there's a race condition between the test thread and the writer thread, which this assertion method should resolve
 //        assertStatisticsTotalMessagesSent(1);
 //
-//        assertEquals("sendMessages: invocation count",              1,                          mock.sendMessagesInvocationCount);
-//        assertEquals("sendMessages: last call #/messages",          1,                          mock.sendMessagesMessages.size());
+//        assertEquals("putEvents: invocation count",               1,                          mock.sendMessagesInvocationCount);
+//        assertEquals("putEvents: last call #/messages",           1,                          mock.sendMessagesMessages.size());
 //
 //        // another call to stop should be ignored -- sleep to ensure times would be different
 //        Thread.sleep(100);

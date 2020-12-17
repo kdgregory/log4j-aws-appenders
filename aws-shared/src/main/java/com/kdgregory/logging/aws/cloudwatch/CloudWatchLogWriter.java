@@ -244,7 +244,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,Obje
         {
             try
             {
-                sequenceToken = facade.sendMessages(sequenceToken(), batch);
+                sequenceToken = facade.putEvents(sequenceToken(), batch);
                 return Collections.emptyList();
             }
             catch (CloudWatchFacadeException ex)

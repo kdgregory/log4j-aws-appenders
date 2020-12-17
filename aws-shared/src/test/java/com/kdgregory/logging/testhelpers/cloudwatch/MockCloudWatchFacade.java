@@ -48,12 +48,12 @@ implements InvocationHandler
     public int setLogGroupRetentionInvocationCount = 0;
     public int createLogStreamInvocationCount = 0;
     public int retrieveSequenceTokenInvocationCount = 0;
-    public int sendMessagesInvocationCount = 0;
+    public int putEventsInvocationCount = 0;
     public int shutdownInvocationCount = 0;
 
     // recorded arguments for methods that have them
-    public String sendMessagesSequenceToken;
-    public List<LogMessage> sendMessagesMessages;
+    public String putEventsSequenceToken;
+    public List<LogMessage> putEventsMessages;
 
     // this is only updated by the default implementation of sendMessages()
     // it just contains the messages themselves, so can be asserted easily
@@ -105,11 +105,11 @@ implements InvocationHandler
             case "retrieveSequenceToken":
                 retrieveSequenceTokenInvocationCount++;
                 return retrieveSequenceToken();
-            case "sendMessages":
-                sendMessagesInvocationCount++;
-                sendMessagesSequenceToken = (String)args[0];
-                sendMessagesMessages = (List<LogMessage>)args[1];
-                return sendMessages(sendMessagesSequenceToken, sendMessagesMessages);
+            case "putEvents":
+                putEventsInvocationCount++;
+                putEventsSequenceToken = (String)args[0];
+                putEventsMessages = (List<LogMessage>)args[1];
+                return sendMessages(putEventsSequenceToken, putEventsMessages);
             case "shutdown":
                 shutdownInvocationCount++;
                 shutdown();

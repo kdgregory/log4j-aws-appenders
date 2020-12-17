@@ -205,7 +205,7 @@ implements CloudWatchFacade
 
 
     @Override
-    public String sendMessages(String sequenceToken, List<LogMessage> messages)
+    public String putEvents(String sequenceToken, List<LogMessage> messages)
     throws CloudWatchFacadeException
     {
         if (messages.isEmpty())
@@ -232,20 +232,20 @@ implements CloudWatchFacade
         catch (InvalidSequenceTokenException ex)
         {
             throw new CloudWatchFacadeException(
-                    constructExceptionMessage("sendMessages", "invalid sequence token: " + sequenceToken),
+                    constructExceptionMessage("putEvents", "invalid sequence token: " + sequenceToken),
                     ReasonCode.INVALID_SEQUENCE_TOKEN,
                     true);
         }
         catch (ResourceNotFoundException ex)
         {
             throw new CloudWatchFacadeException(
-                    constructExceptionMessage("sendMessages", "missing log group"),
+                    constructExceptionMessage("putEvents", "missing log group"),
                     ReasonCode.MISSING_LOG_GROUP,
                     false);
         }
         catch (Exception ex)
         {
-            throw transformException("sendMessages", ex);
+            throw transformException("putEvents", ex);
         }
     }
 

@@ -71,8 +71,15 @@ implements InvocationHandler
     public int putRetentionPolicyInvocationCount;
     public int shutdownInvocationCount;
 
+    // the name passed to the last describeLogGroups request
+    public String describeLogGroupsGroupNamePrefix;
+
     // the name passed to the last createLogGroup request
     public String createLogGroupGroupName;
+
+    // the names passed to the last describeLogStreams request
+    public String describeLogStreamsGroupName;
+    public String describeLogStreamsStreamPrefix;
 
     // the names passed to the last createLogStream request
     public String createLogStreamGroupName;
@@ -113,10 +120,6 @@ implements InvocationHandler
 //  Public API
 //----------------------------------------------------------------------------
 
-    /**
-     *  Creates the client proxy. This is used internally, and also by the test
-     *  for calling a static factory method.
-     */
     public AWSLogs createClient()
     {
         return (AWSLogs)Proxy.newProxyInstance(
@@ -148,12 +151,17 @@ implements InvocationHandler
         if (methodName.equals("describeLogGroups"))
         {
             describeLogGroupsInvocationCount++;
-            return describeLogGroups((DescribeLogGroupsRequest)args[0]);
+            DescribeLogGroupsRequest request = (DescribeLogGroupsRequest)args[0];
+            describeLogGroupsGroupNamePrefix = request.getLogGroupNamePrefix();
+            return describeLogGroups(request);
         }
         else if (methodName.equals("describeLogStreams"))
         {
             describeLogStreamsInvocationCount++;
-            return describeLogStreams((DescribeLogStreamsRequest)args[0]);
+            DescribeLogStreamsRequest request = (DescribeLogStreamsRequest)args[0];
+            describeLogStreamsGroupName = request.getLogGroupName();
+            describeLogStreamsStreamPrefix = request.getLogStreamNamePrefix();
+            return describeLogStreams(request);
         }
         else if (methodName.equals("createLogGroup"))
         {
@@ -206,7 +214,7 @@ implements InvocationHandler
     }
 
 //----------------------------------------------------------------------------
-//  Subclasses can override these
+//  Default mock implementations -- override for specific tests
 //----------------------------------------------------------------------------
 
     protected DescribeLogGroupsResult describeLogGroups(DescribeLogGroupsRequest request)
@@ -317,5 +325,4 @@ implements InvocationHandler
         return new PutLogEventsResult()
                .withNextSequenceToken(String.valueOf(++nextSequenceToken));
     }
-
 }

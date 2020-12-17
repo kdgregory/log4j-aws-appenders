@@ -37,15 +37,22 @@ import com.kdgregory.logging.common.LogMessage;
 
 public class TestCloudWatchFacadeImpl
 {
-    private final static List<String> TEST_LOG_GROUPS = Arrays.asList("argle", "bargle", "wargle");
-    private final static List<String> TEST_LOG_STREAMS = Arrays.asList("foo", "bar", "baz");
+    private final static List<String> KNOWN_LOG_GROUPS = Arrays.asList("argle", "bargle", "wargle", "zargle");
+    private final static List<String> KNOWN_LOG_STREAMS = Arrays.asList("foo", "bar", "baz", "biff");
 
-    private MockCloudWatchClient mock = new MockCloudWatchClient(TEST_LOG_GROUPS, TEST_LOG_STREAMS);
+    // note: these are at the end of the lists above, to trigger pagination and iteration
+    private final static String TEST_LOG_GROUP = "zargle";
+    private final static String TEST_LOG_STREAM = "biff";
+
+    // this is "testing the mock", but makes the code look cleaner
+    private final static String TEST_LOG_GROUP_ARN = "arn:aws:logs:us-east-1:123456789012:log-group:" + TEST_LOG_GROUP;
+
+    private MockCloudWatchClient mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS);
 
     // note: group/stream names are from the end of the above list to verify pagination
     private CloudWatchWriterConfig config = new CloudWatchWriterConfig()
-                                            .setLogGroupName("wargle")
-                                            .setLogStreamName("baz");
+                                            .setLogGroupName(TEST_LOG_GROUP)
+                                            .setLogStreamName(TEST_LOG_STREAM);
 
     // note: can update config or mock any time before making first call
     private CloudWatchFacade facade = new CloudWatchFacadeImpl(config)
@@ -106,33 +113,31 @@ public class TestCloudWatchFacadeImpl
     {
         String result = facade.findLogGroup();
 
-        StringAsserts.assertRegex("returned log group ARN (was: " + result + ")",
-                                  "arn.*log-group:wargle",
-                                  result);
+        assertEquals("name passed to describeLogGroups",    TEST_LOG_GROUP,     mock.describeLogGroupsGroupNamePrefix);
+        assertEquals("returned log group ARN",              TEST_LOG_GROUP_ARN, result);
 
         // common set of asserts; here it asserts we make no unnecessary calls
-        assertEquals("calls to describeLogGroups",      1,  mock.describeLogGroupsInvocationCount);
-        assertEquals("calls to describeLogStreams",     0,  mock.describeLogStreamsInvocationCount);
-        assertEquals("calls to createLogGroups",        0,  mock.createLogGroupInvocationCount);
-        assertEquals("calls to createLogStreams",       0,  mock.createLogStreamInvocationCount);
+        assertEquals("calls to describeLogGroups",          1,          mock.describeLogGroupsInvocationCount);
+        assertEquals("calls to describeLogStreams",         0,          mock.describeLogStreamsInvocationCount);
+        assertEquals("calls to createLogGroups",            0,          mock.createLogGroupInvocationCount);
+        assertEquals("calls to createLogStreams",           0,          mock.createLogStreamInvocationCount);
     }
 
 
     @Test
     public void testFindLogGroupPaginated() throws Exception
     {
-        mock = new MockCloudWatchClient(TEST_LOG_GROUPS, 2, TEST_LOG_STREAMS, 2);
+        mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, 2, KNOWN_LOG_STREAMS, 2);
 
         String result = facade.findLogGroup();
 
-        StringAsserts.assertRegex("returned log group ARN (was: " + result + ")",
-                                  "arn.*log-group:wargle",
-                                  result);
+        assertEquals("name passed to describeLogGroups",    TEST_LOG_GROUP,     mock.describeLogGroupsGroupNamePrefix);
+        assertEquals("returned log group ARN",              TEST_LOG_GROUP_ARN, result);
 
-        assertEquals("calls to describeLogGroups",      2,  mock.describeLogGroupsInvocationCount);
-        assertEquals("calls to describeLogStreams",     0,  mock.describeLogStreamsInvocationCount);
-        assertEquals("calls to createLogGroups",        0,  mock.createLogGroupInvocationCount);
-        assertEquals("calls to createLogStreams",       0,  mock.createLogStreamInvocationCount);
+        assertEquals("calls to describeLogGroups",          2,                  mock.describeLogGroupsInvocationCount);
+        assertEquals("calls to describeLogStreams",         0,                  mock.describeLogStreamsInvocationCount);
+        assertEquals("calls to createLogGroups",            0,                  mock.createLogGroupInvocationCount);
+        assertEquals("calls to createLogStreams",           0,                  mock.createLogStreamInvocationCount);
     }
 
 
@@ -155,7 +160,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testFindLogGroupThrottled() throws Exception
     {
-        mock = new MockCloudWatchClient(TEST_LOG_GROUPS, TEST_LOG_STREAMS)
+        mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS)
         {
             @Override
             protected DescribeLogGroupsResult describeLogGroups(DescribeLogGroupsRequest request)
@@ -168,7 +173,7 @@ public class TestCloudWatchFacadeImpl
 
         String result = facade.findLogGroup();
 
-        assertNull("throttling returns null",               result);
+        assertNull("throttled call returns null",           result);
 
         assertEquals("calls to describeLogGroups",      1,  mock.describeLogGroupsInvocationCount);
         assertEquals("calls to describeLogStreams",     0,  mock.describeLogStreamsInvocationCount);
@@ -180,7 +185,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testFindLogGroupAborted() throws Exception
     {
-        mock = new MockCloudWatchClient(TEST_LOG_GROUPS, TEST_LOG_STREAMS)
+        mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS)
         {
             @Override
             protected DescribeLogGroupsResult describeLogGroups(DescribeLogGroupsRequest request)
@@ -204,7 +209,7 @@ public class TestCloudWatchFacadeImpl
     public void testFindLogGroupError() throws Exception
     {
         final RuntimeException cause = new RuntimeException();
-        mock = new MockCloudWatchClient(TEST_LOG_GROUPS, TEST_LOG_STREAMS)
+        mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS)
         {
             @Override
             protected DescribeLogGroupsResult describeLogGroups(DescribeLogGroupsRequest request)
@@ -235,12 +240,12 @@ public class TestCloudWatchFacadeImpl
     {
         facade.createLogGroup();
 
+        assertEquals("group name passed to create",     config.getLogGroupName(),   mock.createLogGroupGroupName);
+
         assertEquals("calls to describeLogGroups",      0,  mock.describeLogGroupsInvocationCount);
         assertEquals("calls to describeLogStreams",     0,  mock.describeLogStreamsInvocationCount);
         assertEquals("calls to createLogGroups",        1,  mock.createLogGroupInvocationCount);
         assertEquals("calls to createLogStreams",       0,  mock.createLogStreamInvocationCount);
-
-        assertEquals("group name passed to create",     config.getLogGroupName(),   mock.createLogGroupGroupName);
     }
 
 
@@ -371,9 +376,10 @@ public class TestCloudWatchFacadeImpl
 
         facade.setLogGroupRetention();
 
-        assertEquals("calls to putRetentionPolicy",                 1,                          mock.putRetentionPolicyInvocationCount);
         assertEquals("log group name passed to putRetentionPolicy", config.getLogGroupName(),   mock.putRetentionPolicyGroupName);
         assertEquals("value passed to putRetentionPolicy",          Integer.valueOf(7),         mock.putRetentionPolicyValue);
+
+        assertEquals("calls to putRetentionPolicy",                 1,                          mock.putRetentionPolicyInvocationCount);
     }
 
 
@@ -405,8 +411,6 @@ public class TestCloudWatchFacadeImpl
         }
 
         assertEquals("calls to putRetentionPolicy",                 1,                          mock.putRetentionPolicyInvocationCount);
-        assertEquals("log group name passed to putRetentionPolicy", config.getLogGroupName(),   mock.putRetentionPolicyGroupName);
-        assertEquals("value passed to putRetentionPolicy",          Integer.valueOf(19),         mock.putRetentionPolicyValue);
     }
 
 
@@ -439,8 +443,6 @@ public class TestCloudWatchFacadeImpl
         }
 
         assertEquals("calls to putRetentionPolicy",                 1,                          mock.putRetentionPolicyInvocationCount);
-        assertEquals("log group name passed to putRetentionPolicy", config.getLogGroupName(),   mock.putRetentionPolicyGroupName);
-        assertEquals("value passed to putRetentionPolicy",          Integer.valueOf(7),         mock.putRetentionPolicyValue);
     }
 
 
@@ -449,13 +451,13 @@ public class TestCloudWatchFacadeImpl
     {
         facade.createLogStream();
 
-        assertEquals("calls to describeLogGroups",      0,  mock.describeLogGroupsInvocationCount);
-        assertEquals("calls to describeLogStreams",     0,  mock.describeLogStreamsInvocationCount);
-        assertEquals("calls to createLogGroups",        0,  mock.createLogGroupInvocationCount);
-        assertEquals("calls to createLogStreams",       1,  mock.createLogStreamInvocationCount);
+        assertEquals("group name passed to create",     TEST_LOG_GROUP,     mock.createLogStreamGroupName);
+        assertEquals("stream name passed to create",    TEST_LOG_STREAM,    mock.createLogStreamStreamName);
 
-        assertEquals("group name passed to create",     config.getLogGroupName(),   mock.createLogStreamGroupName);
-        assertEquals("stream name passed to create",    config.getLogStreamName(),  mock.createLogStreamStreamName);
+        assertEquals("calls to describeLogGroups",      0,                  mock.describeLogGroupsInvocationCount);
+        assertEquals("calls to describeLogStreams",     0,                  mock.describeLogStreamsInvocationCount);
+        assertEquals("calls to createLogGroups",        0,                  mock.createLogGroupInvocationCount);
+        assertEquals("calls to createLogStreams",       1,                  mock.createLogStreamInvocationCount);
     }
 
 
@@ -550,7 +552,7 @@ public class TestCloudWatchFacadeImpl
 
 
     @Test
-    public void testCreateLogStreamNoLogGroup() throws Exception
+    public void testCreateLogStreamMissingLogGroup() throws Exception
     {
         mock = new MockCloudWatchClient(Collections.emptyList(), Collections.emptyList())
         {
@@ -613,6 +615,9 @@ public class TestCloudWatchFacadeImpl
     {
         StringAsserts.assertNotEmpty("returned sequence token", facade.retrieveSequenceToken());
 
+        assertEquals("group name passed to create",     TEST_LOG_GROUP,     mock.describeLogStreamsGroupName);
+        assertEquals("stream name passed to create",    TEST_LOG_STREAM,    mock.describeLogStreamsStreamPrefix);
+
         assertEquals("calls to describeLogGroups",      0,  mock.describeLogGroupsInvocationCount);
         assertEquals("calls to describeLogStreams",     1,  mock.describeLogStreamsInvocationCount);
         assertEquals("calls to createLogGroups",        0,  mock.createLogGroupInvocationCount);
@@ -623,7 +628,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testRetrieveSequenceTokenPaginated() throws Exception
     {
-        mock = new MockCloudWatchClient(TEST_LOG_GROUPS, 2, TEST_LOG_STREAMS, 2);
+        mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, 2, KNOWN_LOG_STREAMS, 2);
 
         StringAsserts.assertNotEmpty("returned sequence token", facade.retrieveSequenceToken());
 
@@ -637,7 +642,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testRetrieveSequenceTokenMissingStream() throws Exception
     {
-        mock = new MockCloudWatchClient(TEST_LOG_GROUPS, Collections.emptyList());
+        mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, Collections.emptyList());
 
         assertNull("returned sequence token", facade.retrieveSequenceToken());
 
@@ -651,7 +656,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testRetrieveSequenceTokenThrottled() throws Exception
     {
-        mock = new MockCloudWatchClient(TEST_LOG_GROUPS, TEST_LOG_STREAMS)
+        mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS)
         {
             @Override
             protected DescribeLogStreamsResult describeLogStreams(DescribeLogStreamsRequest request)
@@ -674,7 +679,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testRetrieveSequenceTokenAborted() throws Exception
     {
-        mock = new MockCloudWatchClient(TEST_LOG_GROUPS, TEST_LOG_STREAMS)
+        mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS)
         {
             @Override
             protected DescribeLogStreamsResult describeLogStreams(DescribeLogStreamsRequest request)
@@ -710,7 +715,7 @@ public class TestCloudWatchFacadeImpl
     public void testRetrieveSequenceTokenUnexpectedError() throws Exception
     {
         RuntimeException cause = new RuntimeException();
-        mock = new MockCloudWatchClient(TEST_LOG_GROUPS, TEST_LOG_STREAMS)
+        mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS)
         {
             @Override
             protected DescribeLogStreamsResult describeLogStreams(DescribeLogStreamsRequest request)
@@ -780,9 +785,9 @@ public class TestCloudWatchFacadeImpl
 
 
     @Test
-    public void testSendMessagesThrottling() throws Exception
+    public void testSendMessagesThrottled() throws Exception
     {
-        mock = new MockCloudWatchClient(TEST_LOG_GROUPS, TEST_LOG_STREAMS)
+        mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS)
         {
             @Override
             protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
@@ -864,7 +869,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testSendMessagesDataAlreadyAccepted() throws Exception
     {
-        mock = new MockCloudWatchClient(TEST_LOG_GROUPS, TEST_LOG_STREAMS)
+        mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS)
         {
             @Override
             protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
@@ -897,7 +902,7 @@ public class TestCloudWatchFacadeImpl
     public void testSendMessagesUnexpectedException() throws Exception
     {
         RuntimeException cause = new RuntimeException("message irrelevant");
-        mock = new MockCloudWatchClient(TEST_LOG_GROUPS, TEST_LOG_STREAMS)
+        mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS)
         {
             @Override
             protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)

@@ -372,7 +372,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
 
     @Test
-    public void testCreateGroupExceptionWhileWaiting() throws Exception
+    public void testCreateGroupWaitException() throws Exception
     {
         final Exception cause = new RuntimeException("message irrelevant");
         mock = new MockCloudWatchFacade(config)
@@ -406,6 +406,41 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         internalLogger.assertInternalErrorLog("unable to configure log group/stream");
 
         assertUltimateCause("original exception reported", cause, internalLogger.errorExceptions.get(0));
+    }
+
+
+    @Test
+    public void testCreateGroupWaitTimeout() throws Exception
+    {
+        // as above, the mock will claim that the stream already exists
+        mock = new MockCloudWatchFacade(config)
+        {
+            @Override
+            public String findLogGroup() throws CloudWatchFacadeException
+            {
+                // this will never complete successfully
+                return null;
+            }
+        };
+
+        // everything tested here happens during initialization
+        createWriter();
+
+        // an initial findLogGroup(), followed by 4 attempts while waiting
+
+        assertEquals("findLogGroup: invocation count",              5,                      mock.findLogGroupInvocationCount);
+        assertEquals("retrieveSequenceToken: invocation count",     0,                      mock.retrieveSequenceTokenInvocationCount);
+        assertEquals("createLogGroup: invocation count",            1,                      mock.createLogGroupInvocationCount);
+        assertEquals("createLogStream: invocation count",           0,                      mock.createLogStreamInvocationCount);
+
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "creating CloudWatch log group: argle");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog("unable to configure log group/stream");
+
+        assertEquals("timeout exception recorded",
+                     "timed out while waiting for CloudWatch log group",
+                     internalLogger.errorExceptions.get(0).getMessage());
     }
 
 
@@ -581,7 +616,6 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
                                               "using existing CloudWatch log group: argle",
                                               "creating CloudWatch log stream: bargle",
                                               "log writer initialization complete.*");
-        internalLogger.assertInternalWarningLog("retryable exception.*: throttled");
         internalLogger.assertInternalErrorLog();
     }
 
@@ -684,10 +718,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         waitForWriterThread();
 
         // will call findLogGroup when checking group existence
-        // will call retrieveSequenceToken when checking stream existence, and caches returned value
+        // will call retrieveSequenceToken when checking stream existence, then again when sending first batch
 
         assertEquals("findLogGroup: invocation count",              1,                      mock.findLogGroupInvocationCount);
-        assertEquals("retrieveSequenceToken: invocation count",     1,                      mock.retrieveSequenceTokenInvocationCount);
+        assertEquals("retrieveSequenceToken: invocation count",     2,                      mock.retrieveSequenceTokenInvocationCount);
         assertEquals("createLogGroup: invocation count",            0,                      mock.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",           0,                      mock.createLogStreamInvocationCount);
         assertEquals("putEvents: invocation count",                 1,                      mock.putEventsInvocationCount);
@@ -709,7 +743,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         // both messages should end up on the same batch; sequence token is cached, so no further calls to retrieve
 
         assertEquals("findLogGroup: invocation count",              1,                      mock.findLogGroupInvocationCount);
-        assertEquals("retrieveSequenceToken: invocation count",     1,                      mock.retrieveSequenceTokenInvocationCount);
+        assertEquals("retrieveSequenceToken: invocation count",     2,                      mock.retrieveSequenceTokenInvocationCount);
         assertEquals("createLogGroup: invocation count",            0,                      mock.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",           0,                      mock.createLogStreamInvocationCount);
         assertEquals("putEvents: invocation count",                 2,                      mock.putEventsInvocationCount);
@@ -861,9 +895,9 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
         waitForWriterThread();
 
-        // retries are managed by count, not time; if the parameter ever change this test will fail
+        // the retry managers used by the testable logwriter will timeout after 4 retries
 
-        assertEquals("putEvents: invocation count",                 3,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: invocation count",                 4,                      mock.putEventsInvocationCount);
         assertEquals("putEvents: sequence token",                   expectedToken,          mock.putEventsSequenceToken);
         assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
         assertEquals("putEvents: last call message",                "message one",          mock.putEventsMessages.get(0).getMessage());
@@ -901,10 +935,10 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
         waitForWriterThread();
 
-        // will call retrieveSequenceToken once when checking stream existence, a second time after the send fails
+        // will call retrieveSequenceToken once when checking stream existence, before sending batch, and to reset after exception
 
         assertEquals("findLogGroup: invocation count",              1,                      mock.findLogGroupInvocationCount);
-        assertEquals("retrieveSequenceToken: invocation count",     2,                      mock.retrieveSequenceTokenInvocationCount);
+        assertEquals("retrieveSequenceToken: invocation count",     3,                      mock.retrieveSequenceTokenInvocationCount);
         assertEquals("createLogGroup: invocation count",            0,                      mock.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",           0,                      mock.createLogStreamInvocationCount);
         assertEquals("putEvents: invocation count",                 2,                      mock.putEventsInvocationCount);
@@ -942,16 +976,16 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
         waitForWriterThread();
 
-        // retries are managed by count, not time; if the parameter ever change this test will fail
+        // the retry managers used by the testable logwriter will timeout after 4 retries
 
-        assertEquals("putEvents: invocation count",                 3,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: invocation count",                 4,                      mock.putEventsInvocationCount);
         assertEquals("putEvents: sequence token",                   expectedToken,          mock.putEventsSequenceToken);
         assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
         assertEquals("putEvents: last call message",                "message one",          mock.putEventsMessages.get(0).getMessage());
 
         assertEquals("message has been returned to queue",          1,                      messageQueue.size());
 
-        assertEquals("stats: reported sequence token race",         3,                      stats.getWriterRaceRetries());
+        assertEquals("stats: reported sequence token race",         4,                      stats.getWriterRaceRetries());
         assertEquals("stats: reported sequence token race failure", 1,                      stats.getUnrecoveredWriterRaceRetries());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
@@ -1078,8 +1112,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             @Override
             public String retrieveSequenceToken() throws CloudWatchFacadeException
             {
-                // first call is initial check, second is check after exception thrown
-                if (retrieveSequenceTokenInvocationCount == 2)
+                // third call is check after exception
+                if (retrieveSequenceTokenInvocationCount == 3)
                     return null;
 
                 return super.retrieveSequenceToken();
@@ -1104,11 +1138,11 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         waitForWriterThread();
 
         // the writer should recover while sending its batch, but put the message back on the queue for next time
-        // 2 calls to find log group: initial check, check after failure
-        // 3 calls to retrieve sequence token: initial check, check after failure, wait for stream creation
+        // 2 calls to find log group: initial check, existence check after failure
+        // 4 calls to retrieve sequence token: initial check, retrieve before send, existence check after failure, wait for stream creation
 
         assertEquals("findLogGroup: invocation count",              2,                      mock.findLogGroupInvocationCount);
-        assertEquals("retrieveSequenceToken: invocation count",     3,                      mock.retrieveSequenceTokenInvocationCount);
+        assertEquals("retrieveSequenceToken: invocation count",     4,                      mock.retrieveSequenceTokenInvocationCount);
         assertEquals("createLogGroup: invocation count",            0,                      mock.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",           1,                      mock.createLogStreamInvocationCount);
 

@@ -17,11 +17,12 @@ package com.kdgregory.logging.aws.internal.facade;
 
 /**
  *  This exception is thown by {@link CloudWatchFacade} for any situation that
- *  requires intervention by the caller (yes, it's a checked exception). Each
- *  instance has a reason code; where relevant, it may wrap an underlying cause.
+ *  requires intervention by the caller. Each instance has a reason code, and
+ *  an indication of whether the condition is retryable. Where relevant, it may
+ *  wrap an underlying SDK-specific cause.
  */
 public class CloudWatchFacadeException
-extends Exception
+extends RuntimeException
 {
     private static final long serialVersionUID = 1L;
 
@@ -32,6 +33,7 @@ extends Exception
          *  throw it on up).
          */
         UNEXPECTED_EXCEPTION,
+
 
         /**
          *  An invalid configuration value (these shouldn't happen if you validate
@@ -103,7 +105,7 @@ extends Exception
 
     /**
      *  Convenience constructor, for conditions where there is no underlying exception,
-     *  or where it's irrelevant. Will look at reason to determine retriability.
+     *  or where it's irrelevant.
      */
     public CloudWatchFacadeException(String message, ReasonCode reasonCode, boolean isRetryable)
     {

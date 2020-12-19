@@ -19,6 +19,7 @@ import java.util.concurrent.Semaphore;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
+import com.kdgregory.logging.aws.internal.RetryManager;
 import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
 import com.kdgregory.logging.common.util.InternalLogger;
 
@@ -37,6 +38,11 @@ extends CloudWatchLogWriter
     public TestableCloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger logger, CloudWatchFacade facade)
     {
         super(config, stats, logger, facade);
+
+        // replace the stndard retry logic with something that operates much more quickly
+        createRetry = new RetryManager(50, 200, false);
+        describeRetry = new RetryManager(50, 200, false);
+        sendRetry = new RetryManager(50, 200, false);
     }
 
 

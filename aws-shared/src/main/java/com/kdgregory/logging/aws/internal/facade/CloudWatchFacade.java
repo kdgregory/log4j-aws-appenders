@@ -36,8 +36,7 @@ public interface CloudWatchFacade
      *  if it does. Returns <code>null</code> if the log group doesn't exist or
      *  the call is throttled.
      */
-    String findLogGroup()
-    throws CloudWatchFacadeException;
+    String findLogGroup();
 
 
     /**
@@ -47,16 +46,14 @@ public interface CloudWatchFacade
      *  for use for several seconds afterward. You should call {@link #findLogGroup} in
      *  a loop (with delays) until it returns the group's ARN.
      */
-    void createLogGroup()
-    throws CloudWatchFacadeException;
+    void createLogGroup();
 
 
     /**
      *  Sets the retention period on the configured log group. The configured retention
      *  period must be one of the acceptable values.
      */
-    void setLogGroupRetention()
-    throws CloudWatchFacadeException;
+    void setLogGroupRetention();
 
 
     /**
@@ -66,8 +63,7 @@ public interface CloudWatchFacade
      *  several seconds after creation. You should call {@link #retrieveSequenceToken} in
      *  a loop (with delays) until it returns a value.
      */
-    void createLogStream()
-    throws CloudWatchFacadeException;
+    void createLogStream();
 
 
     /**
@@ -79,8 +75,7 @@ public interface CloudWatchFacade
      *        exist. The log-writer must use other mechanism (eg, failed write) to determine
      *        that it needs to recreate the log group.
      */
-    String retrieveSequenceToken()
-    throws CloudWatchFacadeException;
+    String retrieveSequenceToken();
 
 
     /**
@@ -94,13 +89,11 @@ public interface CloudWatchFacade
      *                          requirements for <code>PutLogEvents</code> (sorted by
      *                          timestamp, and within acceptable timestamp ranges).
      */
-    String putEvents(String sequenceToken, List<LogMessage> messages)
-    throws CloudWatchFacadeException;
+    String putEvents(String sequenceToken, List<LogMessage> messages);
 
 
     /**
      *  Shuts down the underlying client.
      */
-    public void shutdown()
-    throws CloudWatchFacadeException;
+    public void shutdown();
 }

@@ -16,9 +16,10 @@ package com.kdgregory.logging.aws.cloudwatch;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
 import com.kdgregory.logging.aws.internal.AbstractLogWriter;
-import com.kdgregory.logging.aws.internal.Utils;
+import com.kdgregory.logging.aws.internal.RetryManager;
 import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
 import com.kdgregory.logging.aws.internal.facade.CloudWatchFacadeException;
 import com.kdgregory.logging.common.LogMessage;
@@ -28,21 +29,20 @@ import com.kdgregory.logging.common.util.InternalLogger;
 public class CloudWatchLogWriter
 extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,Object>
 {
-    // for creation, this is the number of retries that we'll attempt before giving up
-    private final static int CREATION_RETRIES = 10;
+    // controls retries for group and stream creation
+    protected RetryManager createRetry = new RetryManager(200, 5000, true);
 
-    // for sending a batch, this is the number of retries that we'll attempt at one time
-    private final static int SEND_RETRIES = 3;
+    // controls retries for describing stream and group
+    protected RetryManager describeRetry = new RetryManager(50, 5000, true);
 
-    // for retries, this is the initial wait time (with exponential backoff)
-    private final static int INITIAL_RETRY_DELAY = 100;
+    // controls retries for sending messages to CloudWatch
+    protected RetryManager sendRetry = new RetryManager(200, 2000, true);
 
     // passed into constructor
     private CloudWatchFacade facade;
 
-    // this is used when we are a dedicated writer
+    // cache for sequence tokens when using a dedicated writer
     private String sequenceToken;
-
 
     public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger logger, CloudWatchFacade facade)
     {
@@ -81,26 +81,15 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,Obje
 
         try
         {
-            String logGroupArn = facade.findLogGroup();
-            if (logGroupArn == null)
-            {
+            if (facade.findLogGroup() == null)
                 createLogGroup();
-            }
             else
-            {
                 logger.debug("using existing CloudWatch log group: " + config.getLogGroupName());
-            }
 
-
-            sequenceToken = facade.retrieveSequenceToken();
-            if (sequenceToken == null)
-            {
+            if (facade.retrieveSequenceToken() == null)
                 createLogStream();
-            }
             else
-            {
                 logger.debug("using existing CloudWatch log stream: " + config.getLogStreamName());
-            }
 
             return true;
         }
@@ -156,39 +145,14 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,Obje
     {
         logger.debug("creating CloudWatch log group: " + config.getLogGroupName());
 
-        for (int retry = 0 ; retry < CREATION_RETRIES ; retry++)
-        {
-            try
-            {
-                facade.createLogGroup();
-                break;
-            }
-            catch (CloudWatchFacadeException ex)
-            {
-                switch (ex.getReason())
-                {
-                    case THROTTLING:
-                    case ABORTED:
-                        Utils.sleepQuietly(250);
-                        break;
-                    default:
-                        throw new RuntimeException(ex.getMessage(), ex.getCause());
-                }
-            }
-        }
+        createRetry.invoke(() -> { facade.createLogGroup(); return Boolean.TRUE; },
+                           new DefaultExceptionHandler());
 
-        try
+        // the group isn't immediately ready for use after creation, so wait until it is
+        String logGroupArn = describeRetry.invoke(() -> facade.findLogGroup());
+        if (logGroupArn == null)
         {
-            for (int ii = 0 ; ii < 300 ; ii++)
-            {
-                if (facade.findLogGroup() != null)
-                    break;
-                Utils.sleepQuietly(100);
-            }
-        }
-        catch(CloudWatchFacadeException ex)
-        {
-            throw new RuntimeException(ex.getMessage(), ex.getCause());
+            throw new RuntimeException("timed out while waiting for CloudWatch log group");
         }
 
         try
@@ -201,6 +165,8 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,Obje
         }
         catch(CloudWatchFacadeException ex)
         {
+            // while there may be a condition that prevents the logger from operating,
+            // settng retention period isn't critical so we'll just log and continue
             logger.error("exception setting retention policy", ex);
         }
     }
@@ -209,27 +175,13 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,Obje
     private void createLogStream()
     {
         logger.debug("creating CloudWatch log stream: " + config.getLogStreamName());
-        for (int retry = 0 ; retry < CREATION_RETRIES ; retry++)
-        {
-            try
-            {
-                facade.createLogStream();
-                break;
-            }
-            catch(CloudWatchFacadeException ex)
-            {
-                if (! ex.isRetryable())
-                {
-                    throw new RuntimeException(ex.getMessage(), ex.getCause());
-                }
-                logger.warn("retryable exception when creating stream: " + ex.getMessage());
-                Utils.sleepQuietly(INITIAL_RETRY_DELAY);
-            }
-        }
 
-        // this will wait for the stream to become available
-        // TODO - is it really necessary? can defer until first send
-        sequenceToken();
+        createRetry.invoke(() -> { facade.createLogStream(); return Boolean.TRUE; },
+                           new DefaultExceptionHandler());
+
+        // force a retrieve, and wait until it returns something
+        sequenceToken = null;
+        nextSequenceToken();
     }
 
 
@@ -239,12 +191,11 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,Obje
         if (batch.isEmpty())
             return batch;
 
-        long retryDelay = INITIAL_RETRY_DELAY;
-        for (int retry = 0 ; retry < SEND_RETRIES ; retry++)
+        List<LogMessage> result = sendRetry.invoke(() ->
         {
             try
             {
-                sequenceToken = facade.putEvents(sequenceToken(), batch);
+                sequenceToken = facade.putEvents(nextSequenceToken(), batch);
                 return Collections.emptyList();
             }
             catch (CloudWatchFacadeException ex)
@@ -252,12 +203,12 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,Obje
                 switch (ex.getReason())
                 {
                     case THROTTLING:
-                        break;
+                        return null;
                     case INVALID_SEQUENCE_TOKEN:
                         // force the token to be fetched next time through
                         sequenceToken = null;
                         stats.updateWriterRaceRetries();
-                        break;
+                        return null;
                     case ALREADY_PROCESSED:
                         logger.warn("received DataAlreadyAcceptedException, dropping batch");
                         return Collections.emptyList();
@@ -271,12 +222,13 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,Obje
                         return batch;
                 }
             }
+        });
 
-            // retryable errors come here
-            Utils.sleepQuietly(retryDelay);
-            retryDelay *= 2;
-        }
+        // either success or an exception
+        if (result != null)
+            return result;
 
+        // if we get here we timed-out, need to figure out cause
         if (sequenceToken == null)
         {
             logger.warn("batch failed: unrecovered sequence token race");
@@ -286,32 +238,36 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,Obje
         {
             logger.warn("batch failed: repeated throttling");
         }
+
+        // in either case, return the original batch for reprocessing
         return batch;
     }
 
 
-    private String sequenceToken()
+    private String nextSequenceToken()
     {
         if ((! config.getDedicatedWriter()) || (sequenceToken == null))
         {
-            // TODO - use a waiter object with exponential backoff
-            for (int ii = 0 ; ii < 100 ; ii++)
-            {
-                try
-                {
-                    sequenceToken = facade.retrieveSequenceToken();
-                    if (sequenceToken != null)
-                        return sequenceToken;
-                    Utils.sleepQuietly(100);
-                }
-                catch (CloudWatchFacadeException ex)
-                {
-                    throw new RuntimeException("failed to retrieve sequence token", ex.getCause());
-                }
-            }
+            sequenceToken = describeRetry.invoke(() -> facade.retrieveSequenceToken());
         }
 
         return sequenceToken;
     }
 
+
+    /**
+     *  A common exception handler that will decide whether or not to retry.
+     */
+    private static class DefaultExceptionHandler
+    implements Consumer<RuntimeException>
+    {
+        @Override
+        public void accept(RuntimeException ex)
+        {
+            if ((ex instanceof CloudWatchFacadeException) && ((CloudWatchFacadeException)ex).isRetryable())
+                return;
+            else
+                throw ex;
+        }
+    }
 }

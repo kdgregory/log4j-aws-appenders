@@ -49,7 +49,6 @@ implements CloudWatchFacade
 
     @Override
     public String findLogGroup()
-    throws CloudWatchFacadeException
     {
         String logGroupName = config.getLogGroupName();
         try
@@ -82,7 +81,6 @@ implements CloudWatchFacade
 
     @Override
     public void createLogGroup()
-    throws CloudWatchFacadeException
     {
         String logGroupName = config.getLogGroupName();
         try
@@ -105,7 +103,6 @@ implements CloudWatchFacade
 
     @Override
     public void setLogGroupRetention()
-    throws CloudWatchFacadeException
     {
         if (config.getRetentionPeriod() == null)
             return;
@@ -132,7 +129,6 @@ implements CloudWatchFacade
 
     @Override
     public void createLogStream()
-    throws CloudWatchFacadeException
     {
         String logGroupName = config.getLogGroupName();
         String logStreamName = config.getLogStreamName();
@@ -166,7 +162,6 @@ implements CloudWatchFacade
 
     @Override
     public String retrieveSequenceToken()
-    throws CloudWatchFacadeException
     {
         String logGroupName = config.getLogGroupName();
         String logStreamName = config.getLogStreamName();
@@ -206,7 +201,6 @@ implements CloudWatchFacade
 
     @Override
     public String putEvents(String sequenceToken, List<LogMessage> messages)
-    throws CloudWatchFacadeException
     {
         if (messages.isEmpty())
             return sequenceToken;
@@ -251,7 +245,7 @@ implements CloudWatchFacade
 
 
     @Override
-    public void shutdown() throws CloudWatchFacadeException
+    public void shutdown()
     {
         client().shutdown();
     }

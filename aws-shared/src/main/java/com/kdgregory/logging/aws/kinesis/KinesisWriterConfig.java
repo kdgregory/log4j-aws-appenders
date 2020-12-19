@@ -14,6 +14,10 @@
 
 package com.kdgregory.logging.aws.kinesis;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
+
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 
 
@@ -87,5 +91,51 @@ extends AbstractWriterConfig<KinesisWriterConfig>
     {
         retentionPeriod = value;
         return this;
+    }
+
+
+    /**
+     *  Validates the configuration, returning a list of any validation errors.
+     *  An empty list indicates a valid config.
+     */
+    public List<String> validate()
+    {
+        List<String> result = new ArrayList<>();
+
+        if (streamName == null)
+        {
+            result.add("missing stream name");
+        }
+        else if (streamName.isEmpty())
+        {
+            result.add("blank stream name");
+        }
+        else if (streamName.length() > 128)
+        {
+            result.add("stream name too long");
+        }
+        else if (! Pattern.matches(KinesisConstants.ALLOWED_STREAM_NAME_REGEX, streamName))
+        {
+            result.add("invalid stream name: " + streamName);
+        }
+
+        if (partitionKey == null)
+        {
+            result.add("missing partition key");
+        }
+        else if (partitionKey.length() > 256)
+        {
+            result.add("partition key too long");
+        }
+
+        if (autoCreate && (retentionPeriod != null))
+        {
+            if (retentionPeriod < 24)
+                result.add("minimum retention period is 24 hours");
+            else if (retentionPeriod > 8760)
+                result.add("maximum retention period is 8760 hours");
+        }
+
+        return result;
     }
 }

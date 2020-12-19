@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.regex.Pattern;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
@@ -101,15 +100,11 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
     @Override
     protected boolean ensureDestinationAvailable()
     {
-        if (! Pattern.matches(KinesisConstants.ALLOWED_STREAM_NAME_REGEX, config.getStreamName()))
+        List<String> configErrors = config.validate();
+        if (! configErrors.isEmpty())
         {
-            reportError("invalid stream name: " + config.getStreamName(), null);
-            return false;
-        }
-
-        if ((config.getPartitionKey() == null) || (config.getPartitionKey().length() > 256))
-        {
-            reportError("invalid partition key: length must be 1-256", null);
+            for (String error : configErrors)
+                reportError(error, null);
             return false;
         }
 

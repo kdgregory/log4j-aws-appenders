@@ -14,11 +14,57 @@
 
 package com.kdgregory.logging.aws.internal.facade;
 
+import java.util.List;
+
+import com.kdgregory.logging.aws.kinesis.KinesisConstants.StreamStatus;
+import com.kdgregory.logging.common.LogMessage;
+
 
 /**
- *  A facade for Kinesis Streams operations.
+ *  A facade for Kinesis Streams operations. All operations may throw
+ *  {@link KinesisFacadeException}.
  */
 public interface KinesisFacade
 {
-    // TODO
+    /**
+     *  Returns a partition key. This either comes from the configuration or
+     *  is randomly generated for each call.
+     */
+    String partitionKey();
+
+
+    /**
+     *  Returns the current status of the stream, null if the status cannot be
+     *  determined due to a retryable condition.
+     */
+    StreamStatus retrieveStreamStatus();
+
+
+    /**
+     *  Creates the stream. Note that the stream will not be active for up to 60
+     *  seconds after this call returns. Caller must be prepared to retry if the
+     *  call is throttled.
+     */
+    void createStream();
+
+
+    /**
+     *  Sets the stream's retention period, iff configuration specifies a non-null
+     *  period. Caller must be prepared to retry if the call is throttled.
+     */
+    void setRetentionPeriod();
+
+
+    /**
+     *  Attempts to send records to the stream. The entire call may fail, or individual
+     *  records may be rejected. The returned list contains any records that were not
+     *  successfully written.
+     */
+    List<LogMessage> putRecords(List<LogMessage> batch);
+
+
+    /**
+     *  Shuts down the underlying client.
+     */
+    void shutdown();
 }

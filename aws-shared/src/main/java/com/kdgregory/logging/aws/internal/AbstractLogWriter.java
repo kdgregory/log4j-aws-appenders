@@ -55,9 +55,6 @@ implements LogWriter
     private MessageQueue messageQueue;
     private Thread dispatchThread;
 
-    // this will be set to true on either success or failure
-    private volatile boolean initializationComplete;
-
     // updated by stop()
     private volatile long shutdownTime = NEVER_SHUTDOWN;
 
@@ -65,7 +62,13 @@ implements LogWriter
     // can remove it as part of cleanup
     private volatile Thread shutdownHook;
 
-    // this is intended for testing
+    // intended for testing; will be set to true on either success or failure
+    private volatile boolean initializationComplete;
+
+    // exposed for testing
+    private volatile boolean isRunning;
+
+    // exposed for testing
     private volatile int batchCount;
 
 
@@ -83,6 +86,16 @@ implements LogWriter
 //----------------------------------------------------------------------------
 //  Accessors
 //----------------------------------------------------------------------------
+
+    /**
+     *  Returns whether or not the writer is currently running. This is intended
+     *  for testing.
+     */
+    public boolean isRunning()
+    {
+        return isRunning;
+    }
+
 
     /**
      *  Returns the current batch delay. This is intended for testing.
@@ -111,8 +124,12 @@ implements LogWriter
         logger.debug("log writer starting (thread: " + Thread.currentThread().getName() + ")");
 
         if (! initialize())
+        {
+            logger.error("log writer failed to initialize (thread: " + Thread.currentThread().getName() + ")", null);
             return;
+        }
 
+        isRunning = true;
         logger.debug("log writer initialization complete (thread: " + Thread.currentThread().getName() + ")");
 
         // to avoid any mid-initialization interrupts, we don't set the thread until done
@@ -131,6 +148,7 @@ implements LogWriter
         } while (keepRunning());
 
         cleanup();
+        isRunning = false;
         logger.debug("log-writer shut down (thread: " + Thread.currentThread().getName()
                      + " (#" + Thread.currentThread().getId() + ")");
     }

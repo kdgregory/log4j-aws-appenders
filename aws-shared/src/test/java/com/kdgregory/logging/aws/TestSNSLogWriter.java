@@ -248,7 +248,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertNull("stats: topic ARN",                      stats.getActualTopicArn());     // would come from init
 
         internalLogger.assertInternalDebugLog("log writer starting.*");
-        internalLogger.assertInternalErrorLog(".*not exist.*" + TEST_TOPIC_NAME + ".*");
+        internalLogger.assertInternalErrorLog(".*not exist.*" + TEST_TOPIC_NAME + ".*", "log writer failed to initialize.*");
     }
 
 
@@ -385,7 +385,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertNotNull("stats: topic ARN",                   stats.getActualTopicArn());     // comes from config
 
         internalLogger.assertInternalDebugLog("log writer starting.*");
-        internalLogger.assertInternalErrorLog(".*not exist.*" + TEST_TOPIC_ARN + ".*");
+        internalLogger.assertInternalErrorLog(".*not exist.*" + TEST_TOPIC_ARN + ".*", "log writer failed to initialize.*");
     }
 
 
@@ -479,7 +479,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("message queue set to discard all",        DiscardAction.oldest,   messageQueue.getDiscardAction());
 
         internalLogger.assertInternalDebugLog("log writer starting.*");
-        internalLogger.assertInternalErrorLog(".*invalid.*topic.*");
+        internalLogger.assertInternalErrorLog(".*invalid.*topic.*", "log writer failed to initialize.*");
     }
 
 
@@ -500,7 +500,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("message queue set to discard all",        DiscardAction.oldest,   messageQueue.getDiscardAction());
 
         internalLogger.assertInternalDebugLog("log writer starting.*");
-        internalLogger.assertInternalErrorLog("invalid.*subject.*too long.*");
+        internalLogger.assertInternalErrorLog("invalid.*subject.*too long.*", "log writer failed to initialize.*");
     }
 
 
@@ -521,7 +521,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("message queue set to discard all",        DiscardAction.oldest,   messageQueue.getDiscardAction());
 
         internalLogger.assertInternalDebugLog("log writer starting.*");
-        internalLogger.assertInternalErrorLog("invalid subject.*disallowed characters.*");
+        internalLogger.assertInternalErrorLog("invalid subject.*disallowed characters.*", "log writer failed to initialize.*");
     }
 
 
@@ -542,7 +542,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("message queue set to discard all",        DiscardAction.oldest,   messageQueue.getDiscardAction());
 
         internalLogger.assertInternalDebugLog("log writer starting.*");
-        internalLogger.assertInternalErrorLog("invalid.*subject.*starts with space.*");
+        internalLogger.assertInternalErrorLog("invalid.*subject.*starts with space.*", "log writer failed to initialize.*");
     }
 
 
@@ -567,7 +567,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertStatisticsException(TestingException.class, "arbitrary failure");
 
         internalLogger.assertInternalDebugLog("log writer starting.*");
-        internalLogger.assertInternalErrorLog("unable to configure.*");
+        internalLogger.assertInternalErrorLog("unable to configure.*", "log writer failed to initialize.*");
     }
 
 

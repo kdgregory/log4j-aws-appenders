@@ -14,9 +14,8 @@
 
 package com.kdgregory.logging.aws.kinesis;
 
-import com.amazonaws.services.kinesis.AmazonKinesis;
-
-import com.kdgregory.logging.aws.common.DefaultClientFactory;
+import com.kdgregory.logging.aws.internal.facade.FacadeFactory;
+import com.kdgregory.logging.aws.internal.facade.KinesisFacade;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
@@ -32,8 +31,6 @@ public class KinesisWriterFactory implements WriterFactory<KinesisWriterConfig, 
     {
         return new KinesisLogWriter(
                 config, stats, logger,
-                new DefaultClientFactory<AmazonKinesis>(
-                    AmazonKinesis.class, config.getClientFactoryMethod(), config.getAssumedRole(),
-                    config.getClientRegion(), config.getClientEndpoint(), logger));
+                FacadeFactory.createFacade(KinesisFacade.class, config));
     }
 }

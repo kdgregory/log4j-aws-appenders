@@ -19,7 +19,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.List;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
@@ -84,9 +83,6 @@ implements InvocationHandler
     {
         switch (method.getName())
         {
-            case "validateConfig":
-                validateConfigInvocationCount++;
-                return validateConfig();
             case "findLogGroup":
                 findLogGroupInvocationCount++;
                 return findLogGroup();
@@ -122,13 +118,6 @@ implements InvocationHandler
 //----------------------------------------------------------------------------
 //  CloudWatchFacade -- override these to return testable values
 //----------------------------------------------------------------------------
-
-    public List<String> validateConfig()
-    {
-        // default: all's well
-        return Collections.emptyList();
-    }
-
 
     public String findLogGroup() throws CloudWatchFacadeException
     {

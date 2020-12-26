@@ -20,6 +20,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.StringUtil;
+import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 
@@ -109,5 +110,27 @@ public class TestKinesisWriterConfig
 
         assertEquals("number of messages",  1,                                          result2.size());
         assertEquals("message 0",           "maximum retention period is 8760 hours",   result2.get(0));
+    }
+
+
+    @Test
+    public void testPartitionKeyHelper() throws Exception
+    {
+        KinesisWriterConfig config = new KinesisWriterConfig().setPartitionKey("test");
+
+        assertFalse("literal value, isGenerated()",                 config.getPartitionKeyHelper().isGenerated());
+        assertEquals("literal value, getValue()",       "test",     config.getPartitionKeyHelper().getValue());
+
+        config.setPartitionKey("");
+        assertTrue("reset to empty, isGenerated()",                 config.getPartitionKeyHelper().isGenerated());
+        assertRegex("reset to empty, getValue()",       "\\d{6}",   config.getPartitionKeyHelper().getValue());
+
+        config.setPartitionKey("blah");
+        assertFalse("reset to literal, isGenerated()",              config.getPartitionKeyHelper().isGenerated());
+        assertEquals("reset to literal, getValue()",    "blah",     config.getPartitionKeyHelper().getValue());
+
+        config.setPartitionKey("{random}");
+        assertTrue("reset to keyword, isGenerated()",               config.getPartitionKeyHelper().isGenerated());
+        assertRegex("reset to keyword, getValue()",     "\\d{6}",   config.getPartitionKeyHelper().getValue());
     }
 }

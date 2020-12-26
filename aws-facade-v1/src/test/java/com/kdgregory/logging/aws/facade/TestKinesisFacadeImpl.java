@@ -117,27 +117,6 @@ public class TestKinesisFacadeImpl
 //----------------------------------------------------------------------------
 
     @Test
-    public void testPartitionKey() throws Exception
-    {
-        KinesisWriterConfig c1 = new KinesisWriterConfig().setPartitionKey("foo");
-        KinesisFacade f1 = new KinesisFacadeImpl(c1);
-
-        assertEquals("literal partition key", "foo", f1.partitionKey());
-
-        KinesisWriterConfig c2 = new KinesisWriterConfig().setPartitionKey("{random}");
-        KinesisFacade f2 = new KinesisFacadeImpl(c2);
-
-        assertRegex("random partition key", "\\d{6}", f2.partitionKey());
-
-        // supported for backwards compatibility; only works with Log4J1
-        KinesisWriterConfig c3 = new KinesisWriterConfig().setPartitionKey("");
-        KinesisFacade f3 = new KinesisFacadeImpl(c3);
-
-        assertRegex("blank partition key", "\\d{6}", f3.partitionKey());
-    }
-
-
-    @Test
     public void testRetrieveStatusHappyPath() throws Exception
     {
         mock = new MockKinesisClient(DEFAULT_STREAM_NAME);

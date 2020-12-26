@@ -12,35 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logging.testhelpers.cloudwatch;
+package com.kdgregory.logging.testhelpers.kinesis;
 
 import java.util.concurrent.Semaphore;
 
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.internal.RetryManager;
-import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
+import com.kdgregory.logging.aws.internal.facade.KinesisFacade;
+import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.common.util.InternalLogger;
 
 
 /**
  *  Provides semaphores to synchronize test and writer threads.
  */
-public class TestableCloudWatchLogWriter
-extends CloudWatchLogWriter
+public class TestableKinesisLogWriter
+extends KinesisLogWriter
 {
     private Semaphore allowMainThread   = new Semaphore(0);
     private Semaphore allowWriterThread = new Semaphore(0);
 
 
-    public TestableCloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger logger, CloudWatchFacade facade)
+    public TestableKinesisLogWriter(KinesisWriterConfig config, KinesisWriterStatistics stats, InternalLogger logger, KinesisFacade facade)
     {
         super(config, stats, logger, facade);
 
-        // replace the stndard retry logic with something that operates much more quickly
+        // replace the standard retry logic with something that operates much more quickly
         describeRetry = new RetryManager(50, 200, false);
         createRetry = new RetryManager(50, 200, false);
+        postCreateRetry = new RetryManager(50, 200, false);
         sendRetry = new RetryManager(50, 200, false);
     }
 
@@ -89,4 +90,5 @@ extends CloudWatchLogWriter
         allowMainThread = new Semaphore(1000);
         allowWriterThread = new Semaphore(1000);
     }
+
 }

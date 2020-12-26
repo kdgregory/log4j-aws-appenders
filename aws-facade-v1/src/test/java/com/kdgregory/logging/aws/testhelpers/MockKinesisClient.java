@@ -17,7 +17,6 @@ package com.kdgregory.logging.aws.testhelpers;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +24,6 @@ import net.sf.kdgcommons.lang.StringUtil;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
-import com.amazonaws.util.BinaryUtils;
 
 
 /**

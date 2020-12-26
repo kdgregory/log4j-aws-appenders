@@ -27,13 +27,6 @@ import com.kdgregory.logging.common.LogMessage;
 public interface KinesisFacade
 {
     /**
-     *  Returns a partition key. This either comes from the configuration or
-     *  is randomly generated for each call.
-     */
-    String partitionKey();
-
-
-    /**
      *  Returns the current status of the stream, null if the status cannot be
      *  determined due to a retryable condition.
      */

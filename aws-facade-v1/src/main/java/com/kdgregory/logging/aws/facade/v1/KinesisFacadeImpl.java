@@ -59,19 +59,6 @@ implements KinesisFacade
 //----------------------------------------------------------------------------
 
     @Override
-    public String partitionKey()
-    {
-        if (config.getPartitionKey().isEmpty() || config.getPartitionKey().equals("{random}"))
-        {
-            // this is technically arbitrary, not random
-            int v = (int)(System.nanoTime() & 0x7FFFF);
-            return String.format("%06d", v);
-        }
-        return config.getPartitionKey();
-    }
-
-
-    @Override
     public StreamStatus retrieveStreamStatus()
     {
         // TODO - if DescribeStreamSummary is available, use it
@@ -228,7 +215,7 @@ implements KinesisFacade
         for (LogMessage message : batch)
         {
             requestRecords.add(new PutRecordsRequestEntry()
-                       .withPartitionKey(partitionKey())
+                       .withPartitionKey(config.getPartitionKeyHelper().getValue())
                        .withData(ByteBuffer.wrap(message.getBytes())));
         }
 

@@ -29,17 +29,17 @@ import com.kdgregory.logging.common.util.InternalLogger;
 public class CloudWatchLogWriter
 extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,Object>
 {
-    // controls retries for group and stream creation
-    protected RetryManager createRetry = new RetryManager(200, 5000, true);
+    // passed into constructor
+    private CloudWatchFacade facade;
 
     // controls retries for describing stream and group
     protected RetryManager describeRetry = new RetryManager(50, 5000, true);
 
+    // controls retries for group and stream creation
+    protected RetryManager createRetry = new RetryManager(200, 5000, true);
+
     // controls retries for sending messages to CloudWatch
     protected RetryManager sendRetry = new RetryManager(200, 2000, true);
-
-    // passed into constructor
-    private CloudWatchFacade facade;
 
     // cache for sequence tokens when using a dedicated writer
     private String sequenceToken;

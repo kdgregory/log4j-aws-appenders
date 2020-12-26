@@ -15,75 +15,82 @@
 package com.kdgregory.logging.aws;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
-import static net.sf.kdgcommons.test.NumericAsserts.*;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
-import com.amazonaws.services.kinesis.AmazonKinesis;
-import com.amazonaws.services.kinesis.model.*;
-import com.amazonaws.util.BinaryUtils;
-
-import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
+import com.kdgregory.logging.aws.internal.facade.KinesisFacade;
+import com.kdgregory.logging.aws.internal.facade.KinesisFacadeException;
+import com.kdgregory.logging.aws.internal.facade.KinesisFacadeException.ReasonCode;
+import com.kdgregory.logging.aws.kinesis.KinesisConstants.StreamStatus;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
-import com.kdgregory.logging.aws.kinesis.KinesisWriterFactory;
+import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.common.LogMessage;
+import com.kdgregory.logging.common.LogWriter;
+import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.DiscardAction;
-import com.kdgregory.logging.common.util.MessageQueue;
-import com.kdgregory.logging.testhelpers.TestingException;
-import com.kdgregory.logging.testhelpers.kinesis.MockKinesisClient;
+import com.kdgregory.logging.common.util.InternalLogger;
+import com.kdgregory.logging.testhelpers.kinesis.MockKinesisFacade;
+import com.kdgregory.logging.testhelpers.kinesis.TestableKinesisLogWriter;
 
 
 /**
  *  Performs mock-client testing of the Kinesis writer.
  */
 public class TestKinesisLogWriter
-extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriterStatistics,AmazonKinesis>
+extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriterStatistics,Object>
 {
     private final static String DEFAULT_STREAM_NAME     = "argle";
     private final static String DEFAULT_PARTITION_KEY   = "bargle";
+
+    private MockKinesisFacade mock;
 
 //----------------------------------------------------------------------------
 //  Support Code
 //----------------------------------------------------------------------------
 
     /**
-     *  Rather than re-create each time, we initialize in setUp(), replace in
-     *  tests that need to do so.
-     */
-    private MockKinesisClient mock;
-
-
-    /**
-     *  Creates a writer using the current mock client, waiting for it to be initialized.
+     *  Creates a new writer and starts it on a background thread. This uses
+     *  the current configuration and mock instance.
      */
     private void createWriter()
     throws Exception
     {
-        createWriter(mock.newWriterFactory());
+        final KinesisFacade facade = mock.newInstance();
+        WriterFactory<KinesisWriterConfig,KinesisWriterStatistics> writerFactory
+            = new WriterFactory<KinesisWriterConfig,KinesisWriterStatistics>()
+            {
+                @Override
+                public LogWriter newLogWriter(
+                        KinesisWriterConfig passedConfig,
+                        KinesisWriterStatistics passedStats,
+                        InternalLogger passedLogger)
+                {
+                    return new TestableKinesisLogWriter(passedConfig, passedStats, passedLogger, facade);
+                }
+            };
+
+        super.createWriter(writerFactory);
     }
 
 
-    // the following variable and function are used by testStaticClientFactory
-
-    private static MockKinesisClient staticFactoryMock;
-
-    public static AmazonKinesis createMockClient()
+    /**
+     *  A convenience function that knows the writer supports a semaphore (so
+     *  that we don't need to cast within testcases).
+     */
+    private void waitForWriterThread()
+    throws Exception
     {
-        staticFactoryMock = new MockKinesisClient(DEFAULT_STREAM_NAME);
-        return staticFactoryMock.createClient();
+        ((TestableKinesisLogWriter)writer).waitForWriterThread();
     }
 
 //----------------------------------------------------------------------------
@@ -99,9 +106,8 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
                  .setBatchDelay(100)
                  .setDiscardThreshold(10000)
                  .setDiscardAction(DiscardAction.oldest);
+
         stats = new KinesisWriterStatistics();
-        mock = new MockKinesisClient(DEFAULT_STREAM_NAME);
-        staticFactoryMock = null;
     }
 
 
@@ -120,564 +126,52 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     @Test
     public void testConfiguration() throws Exception
     {
-        // note: the client endpoint configuration is ignored when creating the writer
-        config = new KinesisWriterConfig()
-                 .setStreamName("argle")
-                 .setPartitionKey("bargle")
-                 .setAutoCreate(true)
-                 .setShardCount(3)
-                 .setRetentionPeriod(48)
-                 .setTruncateOversizeMessages(true)
-                 .setBatchDelay(123)
-                 .setDiscardThreshold(456)
-                 .setDiscardAction(DiscardAction.newest)
-                 .setClientFactoryMethod("com.example.factory.Method")
-                 .setAssumedRole("SomeRole")
-                 .setClientRegion("us-west-1")
-                 .setClientEndpoint("kinesis.us-west-1.amazonaws.com");
+        // the goal here is to verify propagation from the writer to its objects,
+        // so we'll explicitly set the fields that we expect to be propagated
 
-        assertEquals("stream name",                         "argle",                            config.getStreamName());
-        assertEquals("partition key",                       "bargle",                           config.getPartitionKey());
-        assertTrue("auto-create",                                                               config.getAutoCreate());
-        assertEquals("shard count",                         3,                                  config.getShardCount());
-        assertEquals("retention period",                    Integer.valueOf(48),                config.getRetentionPeriod());
-        assertTrue("truncate large messages",                                                   config.getTruncateOversizeMessages());
-        assertEquals("factory method",                      "com.example.factory.Method",       config.getClientFactoryMethod());
-        assertEquals("assumed role",                        "SomeRole",                         config.getAssumedRole());
-        assertEquals("client region",                       "us-west-1",                        config.getClientRegion());
-        assertEquals("client endpoint",                     "kinesis.us-west-1.amazonaws.com",  config.getClientEndpoint());
+        config.setBatchDelay(123)
+              .setDiscardThreshold(456)
+              .setDiscardAction(DiscardAction.newest);
 
-        writer = new KinesisLogWriter(config, stats, internalLogger, dummyClientFactory);
-        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        mock = new MockKinesisFacade(config);
+        createWriter();
 
-        // the writer uses the config object for most of its configuration,
-        // so we just look for the pieces that it exposes or passes on
+        assertTrue("writer is running", writer.isRunning());
 
         assertEquals("writer batch delay",                          123L,                       writer.getBatchDelay());
         assertEquals("message queue discard policy",                DiscardAction.newest,       messageQueue.getDiscardAction());
         assertEquals("message queue discard threshold",             456,                        messageQueue.getDiscardThreshold());
-        assertEquals("stats: actual stream name",                   DEFAULT_STREAM_NAME,        stats.getActualStreamName());
-    }
-
-
-    @Test
-    public void testWriterWithExistingStream() throws Exception
-    {
-        createWriter();
 
         assertEquals("stats: actual stream name",                   DEFAULT_STREAM_NAME,        stats.getActualStreamName());
 
-        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
-        mock.allowWriterThread();
-
-        assertEquals("describeStream: invocation count",            1,                          mock.describeStreamInvocationCount);
-        assertEquals("describeStream: stream name",                 DEFAULT_STREAM_NAME,        mock.describeStreamStreamName);
-        assertEquals("createStream: invocation count",              0,                          mock.createStreamInvocationCount);
-        assertEquals("increaseRetentionPeriod invocation count",    0,                          mock.increaseRetentionPeriodInvocationCount);
-        assertEquals("putRecords: invocation count",                1,                          mock.putRecordsInvocationCount);
-        assertEquals("putRecords: source record count",             1,                          mock.putRecordsSourceRecords.size());
-        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,      mock.putRecordsSourceRecords.get(0).getPartitionKey());
-        assertEquals("putRecords: source record content",           "message one",              mock.getPuRecordsSourceText(0));
-
-        assertStatisticsTotalMessagesSent(1);
-        assertEquals("statistics: last batch messages sent",        1,                          stats.getMessagesSentLastBatch());
-
-        internalLogger.assertInternalDebugLog("log writer starting.*",
-                                              "log writer initialization complete.*");
-        internalLogger.assertInternalErrorLog();
-    }
-
-
-    @Test
-    public void testWriterCreatesStream() throws Exception
-    {
-        config.setAutoCreate(true)
-              .setShardCount(3)
-              .setRetentionPeriod(48);
-
-        mock = new MockKinesisClient(1);
-
-        createWriter();
-
-        assertEquals("actual stream name, from statistics",         DEFAULT_STREAM_NAME,        stats.getActualStreamName());
-
-        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
-        mock.allowWriterThread();
-
-        // writer calls describeStream once to see if stream exists, twice while waiting
-        // for it to become active, then once more before calling putRecords
-
-        assertEquals("describeStream: invocation count",            4,                          mock.describeStreamInvocationCount);
-        assertEquals("describeStream: stream name",                 DEFAULT_STREAM_NAME,        mock.describeStreamStreamName);
-        assertEquals("createStream: invocation count",              1,                          mock.createStreamInvocationCount);
-        assertEquals("createStream: stream name",                   DEFAULT_STREAM_NAME,        mock.createStreamStreamName);
-        assertEquals("createStream: shard count",                   Integer.valueOf(3),         mock.createStreamShardCount);
-        assertEquals("increaseRetentionPeriod invocation count",    1,                          mock.increaseRetentionPeriodInvocationCount);
-        assertEquals("increaseRetentionPeriod stream name",         DEFAULT_STREAM_NAME,        mock.increaseRetentionPeriodStreamName);
-        assertEquals("increaseRetentionPeriod hours",               Integer.valueOf(48),        mock.increaseRetentionPeriodHours);
-        assertEquals("putRecords: invocation count",                1,                          mock.putRecordsInvocationCount);
-        assertEquals("putRecords: source record count",             1,                          mock.putRecordsSourceRecords.size());
-        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,      mock.putRecordsSourceRecords.get(0).getPartitionKey());
-        assertEquals("putRecords: source record content",           "message one",              mock.getPuRecordsSourceText(0));
-
-        assertStatisticsTotalMessagesSent(1);
-        assertEquals("statistics: last batch messages sent",        1,                          stats.getMessagesSentLastBatch());
-
-        internalLogger.assertInternalDebugLog("log writer starting.*",
-                                              ".*creat.*stream.*",
-                                              "log writer initialization complete.*");
-        internalLogger.assertInternalErrorLog();
-    }
-
-
-    @Test
-    public void testMissingStreamNoAutoCreate() throws Exception
-    {
-        mock = new MockKinesisClient();
-
-        createWriter();
-
-        assertEquals("describeStream: invocation count",            1,                          mock.describeStreamInvocationCount);
-        assertEquals("describeStream: stream name",                 DEFAULT_STREAM_NAME,        mock.describeStreamStreamName);
-        assertEquals("createStream: invocation count",              0,                          mock.createStreamInvocationCount);
-        assertEquals("putRecords: invocation count",                0,                          mock.putRecordsInvocationCount);
-
-        assertStatisticsErrorMessage(".*" + DEFAULT_STREAM_NAME + ".*does not exist.*");
-
-        internalLogger.assertInternalDebugLog("log writer starting.*");
-        internalLogger.assertInternalErrorLog(".*auto-create not enabled");
-    }
-
-
-    @Test
-    public void testInvalidStreamName() throws Exception
-    {
-        config.setStreamName("I'm No Good!");
-
-        createWriter();
-
-        assertEquals("describeStream: invocation count",            0,                      mock.describeStreamInvocationCount);
-        assertEquals("createStream: invocation count",              0,                      mock.createStreamInvocationCount);
-        assertEquals("putRecords: invocation count",                0,                      mock.putRecordsInvocationCount);
-
-        assertStatisticsErrorMessage("invalid stream name.*" + config.getStreamName());
-
-        internalLogger.assertInternalDebugLog("log writer starting.*");
-        internalLogger.assertInternalErrorLog(".*invalid.*stream.*");
-    }
-
-
-    @Test
-    public void testInvalidPartitionKey() throws Exception
-    {
-        config.setPartitionKey(StringUtil.repeat('X', 300));
-
-        createWriter();
-
-        assertEquals("describeStream: invocation count",            0,                      mock.describeStreamInvocationCount);
-        assertEquals("createStream: invocation count",              0,                      mock.createStreamInvocationCount);
-        assertEquals("putRecords: invocation count",                0,                      mock.putRecordsInvocationCount);
-
-        assertStatisticsErrorMessage("invalid partition key.*");
-
-        internalLogger.assertInternalDebugLog("log writer starting.*");
-        internalLogger.assertInternalErrorLog(".*invalid.*key.*");
-    }
-
-
-    @Test
-    public void testRateLimitedDescribe() throws Exception
-    {
-        mock = new MockKinesisClient(DEFAULT_STREAM_NAME)
-        {
-            @Override
-            protected DescribeStreamResult describeStream(DescribeStreamRequest request)
-            {
-                if (describeStreamInvocationCount < 3)
-                    throw new LimitExceededException("uh oh!");
-                else
-                    return super.describeStream(request);
-            }
-        };
-
-        createWriter();
-
-        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
-        mock.allowWriterThread();
-
-        assertEquals("describeStream: invocation count",            3,                      mock.describeStreamInvocationCount);
-        assertEquals("createStream: invocation count",              0,                      mock.createStreamInvocationCount);
-        assertEquals("putRecords: invocation count",                1,                      mock.putRecordsInvocationCount);
-    }
-
-
-    @Test
-    public void testRandomPartitionKey() throws Exception
-    {
-        config.setPartitionKey("");
-
-        final Set<String> partitionKeys = new HashSet<String>();
-        mock = new MockKinesisClient(DEFAULT_STREAM_NAME)
-        {
-            @Override
-            protected PutRecordsResult putRecords(PutRecordsRequest request)
-            {
-                for (PutRecordsRequestEntry entry : request.getRecords())
-                {
-                    partitionKeys.add(entry.getPartitionKey());
-                }
-                return super.putRecords(request);
-            }
-        };
-
-        createWriter();
-
-        for (int ii = 0 ; ii < 10 ; ii++)
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
-        }
-
-        mock.allowWriterThread();
-
-        // it's possibly but unlikely for this to fail -- we could randomly get same value
-        assertEquals("number of partition keys", 10, partitionKeys.size());
-
-        for (String key : partitionKeys)
-        {
-            assertRegex("partition key is some number of digits (was: " + key + ")", "\\d+", key);
-        }
-    }
-
-
-    @Test
-    public void testInitializationErrorHandling() throws Exception
-    {
-        mock = new MockKinesisClient(DEFAULT_STREAM_NAME)
-        {
-            @Override
-            protected DescribeStreamResult describeStream(DescribeStreamRequest request)
-            {
-                throw new TestingException("not now, not ever");
-            }
-        };
-
-        createWriter();
-
-        assertEquals("describeStream: invocation count",            1,                          mock.describeStreamInvocationCount);
-        assertEquals("createStream: invocation count",              0,                          mock.createStreamInvocationCount);
-
-        assertEquals("message queue set to discard all",            0,                          messageQueue.getDiscardThreshold());
-        assertEquals("message queue set to discard all",            DiscardAction.oldest,       messageQueue.getDiscardAction());
-
-        assertStatisticsErrorMessage("unable to configure.*");
-        assertStatisticsException(TestingException.class, "not now, not ever");
-
-        internalLogger.assertInternalDebugLog("log writer starting.*");
-        internalLogger.assertInternalErrorLog("unable to configure.*");
-    }
-
-
-    @Test
-    public void testBatchErrorHandling() throws Exception
-    {
-        mock = new MockKinesisClient(DEFAULT_STREAM_NAME)
-        {
-            @Override
-            public PutRecordsResult putRecords(PutRecordsRequest request)
-            {
-                throw new TestingException("I don't wanna do the work");
-            }
-        };
-
-        createWriter();
-
-        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
-
-        // we need to call four times to avoid race conditions between setting the
-        // error in statistics and reading those statistics from the main thread
-
-        mock.allowWriterThread();
-        mock.allowWriterThread();
-        mock.allowWriterThread();
-        mock.allowWriterThread();
-
-        assertEquals("putRecords: invocation count",                4,                          mock.putRecordsInvocationCount);
-        assertEquals("putRecords: number of messages",              1,                          mock.putRecordsSourceRecords.size());
-
-        assertStatisticsErrorMessage("failed to send batch");
-        assertStatisticsException(TestingException.class, "I don't wanna do the work");
-
-        assertEquals("statistics: last batch messages sent",        0,                          stats.getMessagesSentLastBatch());
-        assertEquals("statistics: last batch messages requeued",    1,                          stats.getMessagesRequeuedLastBatch());
-
-
-        assertTrue("message queue still accepts messages",                                      messageQueue.getDiscardThreshold() > 0);
-
-        internalLogger.assertInternalDebugLog("log writer starting.*",
-                                              "log writer initialization complete.*");
-        internalLogger.assertInternalErrorLog("failed to send.*",
-                                              "failed to send.*",
-                                              "failed to send.*",
-                                              "failed to send.*");
-        internalLogger.assertInternalErrorLogExceptionTypes(TestingException.class, TestingException.class, TestingException.class, TestingException.class);
-
-        // the background thread will try to assemble another batch right away, so we can't examine
-        // the message queue; instead we'll wait for the writer to call PutRecords again
-
-        mock.allowWriterThread();
-
-        assertEquals("putRecords called again",                 5,                              mock.putRecordsInvocationCount);
-        assertEquals("putRecords: number of messages",          1,                              mock.putRecordsSourceRecords.size());
-    }
-
-
-    @Test
-    public void testRecordErrorHandling() throws Exception
-    {
-        // the mock client will report an error on every third record
-        mock = new MockKinesisClient(DEFAULT_STREAM_NAME)
-        {
-            @Override
-            public PutRecordsResult putRecords(PutRecordsRequest request)
-            {
-                int failedRecordCount = 0;
-                List<PutRecordsResultEntry> resultRecords = new ArrayList<PutRecordsResultEntry>();
-                for (int ii = 0 ; ii < request.getRecords().size() ; ii++)
-                {
-                    PutRecordsResultEntry resultRecord = new PutRecordsResultEntry();
-                    resultRecords.add(resultRecord);
-                    if ((ii % 3) == 1)
-                    {
-                        failedRecordCount++;
-                        resultRecord.setErrorCode("anything, really");
-                    }
-                }
-                return new PutRecordsResult()
-                       .withFailedRecordCount(Integer.valueOf(failedRecordCount))
-                       .withRecords(resultRecords);
-            }
-        };
-
-        createWriter();
-
-        for (int ii = 0 ; ii < 10 ; ii++)
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
-        }
-
-        mock.allowWriterThread();
-
-        assertEquals("first batch, putRecords invocation count",                        1,      mock.putRecordsInvocationCount);
-        assertEquals("first batch, number of successful messages",                      7,      mock.putRecordsSuccesses.size());
-        assertEquals("first batch, number of failed messages",                          3,      mock.putRecordsFailures.size());
-
-        assertStatisticsTotalMessagesSent("stats: total messages after first batch",    7);
-        assertEquals("stats: messages sent in first batch",                             7,      stats.getMessagesSentLastBatch());
-        assertEquals("stats: messages requeued in first batch",                         3,      stats.getMessagesRequeuedLastBatch());
-
-        PutRecordsRequestEntry savedFailure1 = mock.putRecordsFailures.get(0);
-        PutRecordsRequestEntry savedFailure2 = mock.putRecordsFailures.get(1);
-        PutRecordsRequestEntry savedFailure3 = mock.putRecordsFailures.get(2);
-
-        mock.allowWriterThread();
-
-        assertEquals("second batch, putRecords invocation count",                       2,      mock.putRecordsInvocationCount);
-        assertEquals("second batch, number of successful messages",                     2,      mock.putRecordsSuccesses.size());
-        assertEquals("second batch, number of failed messages",                         1,      mock.putRecordsFailures.size());
-
-
-        assertStatisticsTotalMessagesSent("stats: total messages after second batch",   9);
-        assertEquals("stats: messages sent in second batch",                            2,      stats.getMessagesSentLastBatch());
-        assertEquals("stats: messages requeued in second batch",                        1,      stats.getMessagesRequeuedLastBatch());
-
-        assertArrayEquals("first failure is now first success",
-                       BinaryUtils.copyAllBytesFrom(savedFailure1.getData()),
-                       BinaryUtils.copyAllBytesFrom(mock.putRecordsSuccesses.get(0).getData()));
-        assertArrayEquals("third failure is now second success (second failure failed again)",
-                       BinaryUtils.copyAllBytesFrom(savedFailure3.getData()),
-                       BinaryUtils.copyAllBytesFrom(mock.putRecordsSuccesses.get(1).getData()));
-
-        mock.allowWriterThread();
-
-        assertEquals("third batch, putRecords invocation count",                        3,      mock.putRecordsInvocationCount);
-        assertEquals("third batch, number of successful messages",                      1,      mock.putRecordsSuccesses.size());
-        assertEquals("third batch, number of failed messages",                          0,      mock.putRecordsFailures.size());
-
-        assertStatisticsTotalMessagesSent("stats: total messages after third batch",    10);
-        assertEquals("stats: messages sent in after batch",                             1,      stats.getMessagesSentLastBatch());
-        assertEquals("stats: messages requeued in after batch",                         0,      stats.getMessagesRequeuedLastBatch());
-
-        assertTrue("second original failure is now a success",
-                   Arrays.equals(
-                       BinaryUtils.copyAllBytesFrom(savedFailure2.getData()),
-                       BinaryUtils.copyAllBytesFrom(mock.putRecordsSuccesses.get(0).getData())));
-    }
-
-
-    @Test
-    @Ignore
-    public void testEmptyMessageDiscard() throws Exception
-    {
-        final String invalidMessage = "";
-        final String validMessage = "this one works";
-
-        createWriter();
-
-        // have to write both messages at once, in this order, to allow writer thread
-        writer.addMessage(new LogMessage(System.currentTimeMillis(), invalidMessage));
-        writer.addMessage(new LogMessage(System.currentTimeMillis(), validMessage));
-        mock.allowWriterThread();
-
-        assertEquals("putRecords: invocation count",        1,                  mock.putRecordsInvocationCount);
-        assertEquals("putRecords: last call #/messages",    1,                  mock.putRecordsSourceRecords.size());
-        assertEquals("putRecords: last call content",       validMessage,       mock.getPuRecordsSourceText(0));
-
-        internalLogger.assertInternalDebugLogContains(
-            "discarded empty message"
-            );
-    }
-
-
-    @Test
-    @Ignore
-    public void testOversizeMessageDiscard() throws Exception
-    {
-        final int kinesisMaxMessageSize = 1024 * 1024;  // per https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html
-
-        final int maxMessageSize        = kinesisMaxMessageSize - DEFAULT_PARTITION_KEY.length();   // DEFAULT_PARTITION_KEY is ASCII
-
-        // using different characters at the end of the message makes JUnit output easer to read
-        final String bigMessage                 = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
-        final String biggerMessage              = bigMessage + "X";
-
-        createWriter();
-
-        // have to write both messages at once, in this order, otherwise we don't know that the first was discarded
-        writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
-        writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
-        mock.allowWriterThread();
-
-        assertEquals("putRecords: invocation count",        1,                  mock.putRecordsInvocationCount);
-        assertEquals("putRecords: last call #/messages",    1,                  mock.putRecordsSourceRecords.size());
-        assertEquals("putRecords: last call content",       bigMessage,         mock.getPuRecordsSourceText(0));
-        assertEquals("stats: recorded oversize message",    1,                  stats.getOversizeMessages());
-
-        internalLogger.assertInternalDebugLogContains(
-            "discarded oversize.*" + (maxMessageSize + 1) + ".*"
-            );
-    }
-
-
-    @Test
-    @Ignore
-    public void testOversizeMessageTruncate() throws Exception
-    {
-        final int kinesisMaxMessageSize = 1024 * 1024;  // per https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html
-
-        final int maxMessageSize        = kinesisMaxMessageSize - DEFAULT_PARTITION_KEY.length();   // DEFAULT_PARTITION_KEY is ASCII
-
-        // using different characters at the end of the message makes JUnit output easer to read
-        final String bigMessage                 = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
-        final String biggerMessage              = bigMessage + "X";
-
-        config.setTruncateOversizeMessages(true);
-        createWriter();
-
-        // first message should succeed
-        writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
-        mock.allowWriterThread();
-
-        assertEquals("putRecords: invocation count",            1,                  mock.putRecordsInvocationCount);
-        assertEquals("putRecords: last call #/messages",        1,                  mock.putRecordsSourceRecords.size());
-        assertEquals("putRecords: last call content",           bigMessage,         mock.getPuRecordsSourceText(0));
-        assertEquals("stats: no oversize messages",             0,                  stats.getOversizeMessages());
-
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
-
-        // second message should be truncated, resulting in bigMessage
-        writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
-        mock.allowWriterThread();
-
-        assertEquals("putRecords: invocation count",            2,                  mock.putRecordsInvocationCount);
-        assertEquals("putRecords: last call #/messages",        1,                  mock.putRecordsSourceRecords.size());
-        assertEquals("putRecords: last call content",           bigMessage,         mock.getPuRecordsSourceText(0));
-        assertEquals("stats: recorded oversize message",        1,                  stats.getOversizeMessages());
-
-        internalLogger.assertInternalDebugLogContains(
-            "truncated oversize.*" + (maxMessageSize + 1) + ".*"
-            );
+        internalLogger.assertInternalErrorLog();
     }
 
 
     @Test
-    public void testDiscardOldest() throws Exception
+    public void testInvalidConfiguration() throws Exception
     {
-        config.setDiscardAction(DiscardAction.oldest);
-        config.setDiscardThreshold(10);
+        // with this test I'm just verifying that we report messages; the tests on
+        // config should have exhaustively explored possible error conditions
 
-        // this test doesn't need a background thread running
+        config = new KinesisWriterConfig();
 
-        writer = new KinesisLogWriter(config, stats, internalLogger, dummyClientFactory);
-        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        mock = new MockKinesisFacade(config);
+        createWriter();
 
-        for (int ii = 0 ; ii < 20 ; ii++)
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), "message " + ii));
-        }
+        assertFalse("writer is running", writer.isRunning());
 
-        List<LogMessage> messages = messageQueue.toList();
-
-        assertEquals("number of messages in queue",     10,             messages.size());
-        assertEquals("oldest message in queue",         "message 10",   messages.get(0).getMessage());
-        assertEquals("newest message in queue",         "message 19",   messages.get(9).getMessage());
-    }
-
-
-    @Test
-    public void testDiscardNewest() throws Exception
-    {
-        config.setDiscardAction(DiscardAction.newest);
-        config.setDiscardThreshold(10);
-
-        // this test doesn't need a background thread running
-
-        writer = new KinesisLogWriter(config, stats, internalLogger, dummyClientFactory);
-        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
-
-        for (int ii = 0 ; ii < 20 ; ii++)
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), "message " + ii));
-        }
-
-        List<LogMessage> messages = messageQueue.toList();
-
-        assertEquals("number of messages in queue",     10,             messages.size());
-        assertEquals("oldest message in queue",         "message 0",    messages.get(0).getMessage());
-        assertEquals("newest message in queue",         "message 9",    messages.get(9).getMessage());
-    }
-
-
-    @Test
-    public void testDiscardNone() throws Exception
-    {
-        config.setDiscardAction(DiscardAction.none);
-        config.setDiscardThreshold(10);
-
-        // this test doesn't need a background thread running
-
-        writer = new KinesisLogWriter(config, stats, internalLogger, dummyClientFactory);
-        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
-
-        for (int ii = 0 ; ii < 20 ; ii++)
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), "message " + ii));
-        }
-
-        List<LogMessage> messages = messageQueue.toList();
-
-        assertEquals("number of messages in queue",     20,             messages.size());
-        assertEquals("oldest message in queue",         "message 0",    messages.get(0).getMessage());
-        assertEquals("newest message in queue",         "message 19",   messages.get(19).getMessage());
+        internalLogger.assertInternalDebugLog(
+                            "log writer starting.*");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog(
+                            "configuration error: missing stream name",
+                            "configuration error: missing partition key",
+                            "log writer failed to initialize.*");
     }
 
 
@@ -687,10 +181,8 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         config.setDiscardAction(DiscardAction.none);
         config.setDiscardThreshold(123);
 
-        // this test doesn't need a background thread running
-
-        writer = new KinesisLogWriter(config, stats, internalLogger, dummyClientFactory);
-        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        mock = new MockKinesisFacade(config);
+        createWriter();
 
         assertEquals("initial discard threshold",   123,                    messageQueue.getDiscardThreshold());
         assertEquals("initial discard action",      DiscardAction.none,     messageQueue.getDiscardAction());
@@ -704,231 +196,766 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
 
     @Test
-    public void testCountBasedBatching() throws Exception
+    public void testWaitForStreamReady() throws Exception
     {
-        // don't let discard threshold get in the way of the test
-        config.setDiscardAction(DiscardAction.none);
-        config.setDiscardThreshold(Integer.MAX_VALUE);
-
-        // increasing delay because it will take time to create the messages
-        config.setBatchDelay(300);
-
-        final String testMessage = "test";    // this won't trigger batching based on size
-        final int numMessages = 750;
-
-        createWriter();
-        for (int ii = 0 ; ii < numMessages ; ii++)
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), testMessage));
-        }
-
-        // first batch should stop at 500
-
-        mock.allowWriterThread();
-
-        assertEquals("describeStream: invocation count",            1,                      mock.describeStreamInvocationCount);
-        assertEquals("createStream: invocation count",              0,                      mock.createStreamInvocationCount);
-        assertEquals("increaseRetentionPeriod invocation count",    0,                      mock.increaseRetentionPeriodInvocationCount);
-        assertEquals("putRecords: invocation count",                1,                      mock.putRecordsInvocationCount);
-        assertEquals("putRecords: source record count",             500,                    mock.putRecordsSourceRecords.size());
-        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,  mock.putRecordsSourceRecords.get(0).getPartitionKey());
-        assertEquals("putRecords: source record content",           testMessage,            mock.getPuRecordsSourceText(499));
-
-        // second batch batch should pick up remaining records
-
-        mock.allowWriterThread();
-
-        assertEquals("describeStream: invocation count",            1,                      mock.describeStreamInvocationCount);
-        assertEquals("createStream: invocation count",              0,                      mock.createStreamInvocationCount);
-        assertEquals("increaseRetentionPeriod invocation count",    0,                      mock.increaseRetentionPeriodInvocationCount);
-        assertEquals("putRecords: invocation count",                2,                      mock.putRecordsInvocationCount);
-        assertEquals("putRecords: source record count",             250,                    mock.putRecordsSourceRecords.size());
-        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,  mock.putRecordsSourceRecords.get(0).getPartitionKey());
-        assertEquals("putRecords: source record content",           testMessage,            mock.getPuRecordsSourceText(249));
-
-        assertStatisticsTotalMessagesSent(numMessages);
-
-        internalLogger.assertInternalDebugLog("log writer starting.*",
-                                              "log writer initialization complete.*");
-        internalLogger.assertInternalErrorLog();
-    }
-
-    @Test
-    public void testSizeBasedBatching() throws Exception
-    {
-        // don't let discard threshold get in the way of the test
-        config.setDiscardAction(DiscardAction.none);
-        config.setDiscardThreshold(Integer.MAX_VALUE);
-
-        // increasing delay because it will take time to create the messages
-        config.setBatchDelay(300);
-
-        final String testMessage = StringUtil.randomAlphaString(32768, 32768);
-        final int numMessages = 200;
-
-        final int expected1stBatchCount = (5 * 1024 * 1024) / (testMessage.length() + DEFAULT_PARTITION_KEY.length());
-        final int expected2ndBatchCount = numMessages - expected1stBatchCount;
-
-        createWriter();
-        for (int ii = 0 ; ii < numMessages ; ii++)
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), testMessage));
-        }
-
-        // first batch should stop just under 5 megabytes -- including record overhead
-
-        mock.allowWriterThread();
-
-        assertEquals("describeStream: invocation count",            1,                      mock.describeStreamInvocationCount);
-        assertEquals("createStream: invocation count",              0,                      mock.createStreamInvocationCount);
-        assertEquals("increaseRetentionPeriod invocation count",    0,                      mock.increaseRetentionPeriodInvocationCount);
-        assertEquals("putRecords: invocation count",                1,                      mock.putRecordsInvocationCount);
-        assertEquals("putRecords: source record count",             expected1stBatchCount,  mock.putRecordsSourceRecords.size());
-        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,  mock.putRecordsSourceRecords.get(0).getPartitionKey());
-        assertEquals("putRecords: source record content",           testMessage,            mock.getPuRecordsSourceText(expected1stBatchCount - 1));
-
-        // second batch batch should pick up remaining records
-
-        mock.allowWriterThread();
-
-        assertEquals("describeStream: invocation count",            1,                      mock.describeStreamInvocationCount);
-        assertEquals("createStream: invocation count",              0,                      mock.createStreamInvocationCount);
-        assertEquals("increaseRetentionPeriod invocation count",    0,                      mock.increaseRetentionPeriodInvocationCount);
-        assertEquals("putRecords: invocation count",                2,                      mock.putRecordsInvocationCount);
-        assertEquals("putRecords: source record count",             expected2ndBatchCount,  mock.putRecordsSourceRecords.size());
-        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,  mock.putRecordsSourceRecords.get(0).getPartitionKey());
-        assertEquals("putRecords: source record content",           testMessage,            mock.getPuRecordsSourceText(expected2ndBatchCount - 1));
-
-        assertStatisticsTotalMessagesSent(numMessages);
-
-        internalLogger.assertInternalDebugLog("log writer starting.*",
-                                              "log writer initialization complete.*");
-        internalLogger.assertInternalErrorLog();
-    }
-
-
-    @Test
-    public void testStaticClientFactory() throws Exception
-    {
-        config.setClientFactoryMethod(this.getClass().getName() + ".createMockClient");
-
-        // we don't want the default mock client
-
-        createWriter(new KinesisWriterFactory());
-
-        assertNotNull("factory called (local flag)",                                        staticFactoryMock);
-
-        assertEquals("describeStream: invocation count",        1,                          staticFactoryMock.describeStreamInvocationCount);
-        assertEquals("createStream: invocation count",          0,                          staticFactoryMock.createStreamInvocationCount);
-        assertEquals("putRecords: invocation count",            0,                          staticFactoryMock.putRecordsInvocationCount);
-
-        assertNull("stats: no initialization message",                                      stats.getLastErrorMessage());
-        assertNull("stats: no initialization error",                                        stats.getLastError());
-        assertEquals("stats: actual stream name",               DEFAULT_STREAM_NAME,        stats.getActualStreamName());
-
-        internalLogger.assertInternalDebugLog("log writer starting.*",
-                                              "creating client via factory.*" + config.getClientFactoryMethod(),
-                                              "log writer initialization complete.*");
-        internalLogger.assertInternalErrorLog();
-    }
-
-
-    @Test
-    public void testShutdown() throws Exception
-    {
-        // this test is the only place that we expicitly test shutdown logic, to avoid cluttering
-        // the "operation" tests; it's otherwise identical to the "existing stream" test
-
-        // it actually tests functionality in AbstractAppender, but I've replicated for all concrete
-        // subclasses simply because it's a key piece of functionality
-
+        mock = new MockKinesisFacade(config, StreamStatus.UPDATING, StreamStatus.UPDATING, StreamStatus.ACTIVE);
         createWriter();
 
-        assertEquals("after creation, shutdown time should be infinite", Long.MAX_VALUE, getShutdownTime());
+        assertTrue("writer is running", writer.isRunning());
 
-        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
-
-        // the immediate stop should interrupt waitForMessage, but there's no guarantee
-        writer.stop();
-
-        long now = System.currentTimeMillis();
-        long shutdownTime = getShutdownTime();
-        assertInRange("after stop(), shutdown time should be based on batch delay", now, now + config.getBatchDelay() + 100, shutdownTime);
-
-        // the batch should still be processed
-        mock.allowWriterThread();
-
-        assertEquals("putRecords: invocation count",        1,                          mock.putRecordsInvocationCount);
-        assertEquals("putRecords: source record count",     1,                          mock.putRecordsSourceRecords.size());
-
-        // another call to stop should be ignored -- sleep to ensure times would be different
-        Thread.sleep(100);
-        writer.stop();
-        assertEquals("second call to stop() should be no-op", shutdownTime, getShutdownTime());
-
-        joinWriterThread();
-
-        assertEquals("shutdown: invocation count",          1,                          mock.shutdownInvocationCount);
+        assertEquals("retrieveStreamStatus() invocationCount",      3,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
         internalLogger.assertInternalDebugLog(
-            "log writer starting.*",
-            "log writer initialization complete.*",
-            "log.writer shut down.*");
+                        "log writer starting.*",
+                        "log writer initialization complete.*");
+        internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
     }
 
 
     @Test
-    public void testSynchronousOperation() throws Exception
+    public void testWaitForStreamReadyTimeout() throws Exception
     {
-        // appender is expected to set batch delay in synchronous mode
-        config.setBatchDelay(1);
+        mock = new MockKinesisFacade(config, StreamStatus.CREATING);
+        createWriter();
 
-        // we just have one thread, so don't want any locks getting in the way
-        mock.disableThreadSynchronization();
+        assertFalse("writer is running", writer.isRunning());
 
-        // the createWriter() method spins up a background thread, which we don't want
-        writer = (KinesisLogWriter)mock.newWriterFactory().newLogWriter(config, stats, internalLogger);
-        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+        // initial status check, plus 4 until timeout
 
-        assertEquals("stats: actual stream name",                   DEFAULT_STREAM_NAME,        stats.getActualStreamName());
-        assertFalse("writer should not be initialized",             ClassUtil.getFieldValue(writer, "initializationComplete", Boolean.class).booleanValue());
+        assertEquals("retrieveStreamStatus() invocationCount",      5,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
-        writer.initialize();
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog(
+                        "timeout waiting for stream " + DEFAULT_STREAM_NAME + " to become active",
+                        "log writer failed to initialize.*");
+    }
 
-        assertTrue("writer has been initialized",                   ClassUtil.getFieldValue(writer, "initializationComplete", Boolean.class).booleanValue());
-        assertNull("no dispatch thread",                            ClassUtil.getFieldValue(writer, "dispatchThread", Thread.class));
 
-        assertEquals("describeStream: invocation count",            1,                          mock.describeStreamInvocationCount);
-        assertEquals("describeStream: stream name",                 DEFAULT_STREAM_NAME,        mock.describeStreamStreamName);
+    @Test
+    public void testCreateStream() throws Exception
+    {
+        config.setAutoCreate(true);
 
-        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        // this should be the default value, but let's be explicit
+        config.setRetentionPeriod(null);
 
-        assertEquals("message is waiting in queue",                 1,                          messageQueue.queueSize());
-        assertEquals("putRecords: invocation count",                0,                          mock.putRecordsInvocationCount);
+        mock = new MockKinesisFacade(config, StreamStatus.DOES_NOT_EXIST, StreamStatus.CREATING, StreamStatus.ACTIVE);
+        createWriter();
 
-        writer.processBatch(System.currentTimeMillis());
+        assertTrue("writer is running", writer.isRunning());
 
-        assertEquals("putRecords: invocation count",                1,                          mock.putRecordsInvocationCount);
-        assertEquals("putRecords: source record count",             1,                          mock.putRecordsSourceRecords.size());
-        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,      mock.putRecordsSourceRecords.get(0).getPartitionKey());
-        assertEquals("putRecords: source record content",           "message one",              mock.getPuRecordsSourceText(0));
-        assertStatisticsTotalMessagesSent(1);
-        assertEquals("stats: messages sent batch",                  1,                          stats.getMessagesSentLastBatch());
-        assertEquals("stats: messages requeued batch",              0,                          stats.getMessagesRequeuedLastBatch());
+        // retrieveStreamStatus(): one to discover it doesn't exist, two after creation
 
-        // general assertions to verify that nothing unexpected happened
-        assertEquals("describeStream: invocation count",            1,                          mock.describeStreamInvocationCount);
-        assertEquals("describeStream: stream name",                 DEFAULT_STREAM_NAME,        mock.describeStreamStreamName);
-        assertEquals("createStream: invocation count",              0,                          mock.createStreamInvocationCount);
-        assertEquals("increaseRetentionPeriod invocation count",    0,                          mock.increaseRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamStatus() invocationCount",      3,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              1,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
-        assertEquals("shutdown not called before cleanup",          0,                          mock.shutdownInvocationCount);
-        writer.cleanup();
-        assertEquals("shutdown called after cleanup",               1,                          mock.shutdownInvocationCount);
-
-        // the "starting" and "initialization complete" messages are emitted in run(), so not present here
-        internalLogger.assertInternalDebugLog();
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "creating kinesis stream: " + DEFAULT_STREAM_NAME,
+                        "log writer initialization complete.*");
+        internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
     }
+
+
+    @Test
+    public void testCreateStreamTimeout() throws Exception
+    {
+        config.setAutoCreate(true);
+
+        mock = new MockKinesisFacade(config, StreamStatus.DOES_NOT_EXIST, StreamStatus.CREATING);
+        createWriter();
+
+        assertFalse("writer is running", writer.isRunning());
+
+        // initial status check, plus 4 until timeout
+
+        assertEquals("retrieveStreamStatus() invocationCount",      5,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              1,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "creating kinesis stream: " + DEFAULT_STREAM_NAME);
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog(
+                        "timeout waiting for stream " + DEFAULT_STREAM_NAME + " to become active",
+                        "log writer failed to initialize.*");
+    }
+
+
+    @Test
+    public void testCreateStreamException() throws Exception
+    {
+        config.setAutoCreate(true);
+
+        final RuntimeException cause = new RuntimeException();
+        mock = new MockKinesisFacade(config, StreamStatus.DOES_NOT_EXIST, StreamStatus.CREATING)
+        {
+            @Override
+            public void createStream()
+            {
+                throw new KinesisFacadeException("unexpected", ReasonCode.THROTTLING, false, cause);
+            }
+        };
+        createWriter();
+
+        assertFalse("writer is running", writer.isRunning());
+
+        // initial status check only
+
+        assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              1,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "creating kinesis stream: " + DEFAULT_STREAM_NAME);
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog(
+                        "unable to configure stream: " + DEFAULT_STREAM_NAME,
+                        "log writer failed to initialize.*");
+
+        assertUltimateCause("reported underlying exception", cause, internalLogger.errorExceptions.get(0));
+    }
+
+
+    @Test
+    public void testCreateStreamWithRetentionPeriod() throws Exception
+    {
+        config.setAutoCreate(true);
+        config.setRetentionPeriod(48);
+
+        mock = new MockKinesisFacade(config, StreamStatus.DOES_NOT_EXIST, StreamStatus.CREATING, StreamStatus.ACTIVE, StreamStatus.UPDATING, StreamStatus.ACTIVE);
+        createWriter();
+
+        assertTrue("writer is running", writer.isRunning());
+
+        // retrieveStreamStatus(): one to discover it doesn't exist, two after creation, two after update
+
+        assertEquals("retrieveStreamStatus() invocationCount",      5,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              1,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        1,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "creating kinesis stream: " + DEFAULT_STREAM_NAME,
+                        "setting retention period on stream \"" + DEFAULT_STREAM_NAME + "\" to 48 hours",
+                        "log writer initialization complete.*");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testCreateStreamWithRetentionPeriodTimeout() throws Exception
+    {
+        config.setAutoCreate(true);
+        config.setRetentionPeriod(48);
+
+        mock = new MockKinesisFacade(config, StreamStatus.DOES_NOT_EXIST, StreamStatus.CREATING, StreamStatus.ACTIVE, StreamStatus.UPDATING);
+        createWriter();
+
+        assertFalse("writer is running", writer.isRunning());
+
+        // retrieveStreamStatus(): one to discover it doesn't exist, two after creation, four after update
+
+        assertEquals("retrieveStreamStatus() invocationCount",      7,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              1,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        1,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "creating kinesis stream: " + DEFAULT_STREAM_NAME,
+                        "setting retention period on stream \"" + DEFAULT_STREAM_NAME + "\" to 48 hours");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog(
+                        "timeout waiting for stream " + DEFAULT_STREAM_NAME + " to become active",
+                        "log writer failed to initialize.*");
+    }
+
+
+    @Test
+    public void testCreateStreamWithRetentionPeriodException() throws Exception
+    {
+        config.setAutoCreate(true);
+        config.setRetentionPeriod(48);
+
+        final RuntimeException cause = new RuntimeException();
+        mock = new MockKinesisFacade(config, StreamStatus.DOES_NOT_EXIST, StreamStatus.CREATING, StreamStatus.ACTIVE)
+        {
+            @Override
+            public void setRetentionPeriod()
+            {
+                throw new KinesisFacadeException("unexpected", ReasonCode.THROTTLING, false, cause);
+            }
+        };
+        createWriter();
+
+        assertFalse("writer is running", writer.isRunning());
+
+        // retrieveStreamStatus(): one to discover it doesn't exist, two after creation, then the throw
+
+        assertEquals("retrieveStreamStatus() invocationCount",      3,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              1,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        1,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "creating kinesis stream: " + DEFAULT_STREAM_NAME,
+                        "setting retention period on stream \"" + DEFAULT_STREAM_NAME + "\" to 48 hours");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog(
+                        "unable to configure stream: " + DEFAULT_STREAM_NAME,
+                        "log writer failed to initialize.*");
+
+        assertUltimateCause("reported underlying exception", cause, internalLogger.errorExceptions.get(0));
+    }
+
+
+    @Test
+    public void testCreateStreamWithRetentionPeriodCreateTimeout() throws Exception
+    {
+        // a condition turned up by coverage checks
+
+        config.setAutoCreate(true);
+        config.setRetentionPeriod(48);
+
+        mock = new MockKinesisFacade(config, StreamStatus.DOES_NOT_EXIST, StreamStatus.CREATING);
+        createWriter();
+
+        assertFalse("writer is running", writer.isRunning());
+
+        // retrieveStreamStatus(): one to discover it doesn't exist, four after creation, then timeout
+
+        assertEquals("retrieveStreamStatus() invocationCount",      5,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              1,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "creating kinesis stream: " + DEFAULT_STREAM_NAME);
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog(
+                        "timeout waiting for stream " + DEFAULT_STREAM_NAME + " to become active",
+                        "log writer failed to initialize.*");
+    }
+
+
+    @Test
+    public void testNoStreamNoCreate() throws Exception
+    {
+        // this is the default value, but let's be explicit
+        config.setAutoCreate(false);
+
+        mock = new MockKinesisFacade(config, StreamStatus.DOES_NOT_EXIST);
+        createWriter();
+
+        assertFalse("writer is running", writer.isRunning());
+
+        assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog(
+                        "stream \"" + DEFAULT_STREAM_NAME + "\" does not exist and auto-create not enabled",
+                        "log writer failed to initialize.*");
+    }
+
+
+    @Test
+    public void testWriteHappyPath() throws Exception
+    {
+        mock = new MockKinesisFacade(config);
+        createWriter();
+
+        assertEquals("stats: actual stream name",                   DEFAULT_STREAM_NAME,        stats.getActualStreamName());
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+        waitForWriterThread();
+
+        assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("putRecords() invocationCount",                1,                          mock.putRecordsInvocationCount);
+
+        assertEquals("putRecords() batch size",                     2,                          mock.putRecordsBatch.size());
+        assertEquals("putRecords() first message",                  "message one",              mock.putRecordsBatch.get(0).getMessage());
+        assertEquals("putRecords() second message",                 "message two",              mock.putRecordsBatch.get(1).getMessage());
+
+        assertStatisticsTotalMessagesSent(2);
+        assertEquals("statistics: last batch messages sent",        2,                          stats.getMessagesSentLastBatch());
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "log writer initialization complete.*");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testWritePartial() throws Exception
+    {
+        mock = new MockKinesisFacade(config)
+        {
+            @Override
+            public List<LogMessage> putRecords(List<LogMessage> batch)
+            {
+                return (batch.size() < 2)
+                     ? Collections.emptyList()
+                     : batch.subList(2, batch.size());
+            }
+        };
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message three"));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message four"));
+
+        waitForWriterThread();
+
+        assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("putRecords() invocationCount",                1,                          mock.putRecordsInvocationCount);
+
+        assertEquals("putRecords() batch size",                     4,                          mock.putRecordsBatch.size());
+        assertEquals("putRecords() first message",                  "message one",              mock.putRecordsBatch.get(0).getMessage());
+        assertEquals("putRecords() second message",                 "message two",              mock.putRecordsBatch.get(1).getMessage());
+
+        assertStatisticsTotalMessagesSent(2);
+        assertEquals("statistics: last batch messages sent",        2,                          stats.getMessagesSentLastBatch());
+
+        waitForWriterThread();
+
+        assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("putRecords() invocationCount",                2,                          mock.putRecordsInvocationCount);
+
+        assertEquals("putRecords() batch size",                     2,                          mock.putRecordsBatch.size());
+        assertEquals("putRecords() first message",                  "message three",            mock.putRecordsBatch.get(0).getMessage());
+        assertEquals("putRecords() second message",                 "message four",             mock.putRecordsBatch.get(1).getMessage());
+
+        assertStatisticsTotalMessagesSent(4);
+        assertEquals("statistics: last batch messages sent",        2,                          stats.getMessagesSentLastBatch());
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "log writer initialization complete.*");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testWriteThrottleRetry() throws Exception
+    {
+        mock = new MockKinesisFacade(config)
+        {
+            @Override
+            public List<LogMessage> putRecords(List<LogMessage> batch)
+            {
+                if (putRecordsInvocationCount == 1)
+                    throw new KinesisFacadeException("throttling", ReasonCode.THROTTLING, true);
+                else
+                    return super.putRecords(batch);
+            }
+        };
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+        waitForWriterThread();
+
+        assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("putRecords() invocationCount",                2,                          mock.putRecordsInvocationCount);
+
+        assertEquals("putRecords() batch size",                     2,                          mock.putRecordsBatch.size());
+        assertEquals("putRecords() first message",                  "message one",              mock.putRecordsBatch.get(0).getMessage());
+        assertEquals("putRecords() second message",                 "message two",              mock.putRecordsBatch.get(1).getMessage());
+
+        assertStatisticsTotalMessagesSent(2);
+        assertEquals("statistics: last batch messages sent",        2,                          stats.getMessagesSentLastBatch());
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "log writer initialization complete.*");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testWriteUnrecoveredThrottling() throws Exception
+    {
+        mock = new MockKinesisFacade(config)
+        {
+            @Override
+            public List<LogMessage> putRecords(List<LogMessage> batch)
+            {
+                throw new KinesisFacadeException("throttling", ReasonCode.THROTTLING, true);
+            }
+        };
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+        waitForWriterThread();
+
+        // number of invocations is based on the RetryManager config in TestableKinesisLogWriter
+
+        assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("putRecords() invocationCount",                4,                          mock.putRecordsInvocationCount);
+
+        assertStatisticsTotalMessagesSent(0);
+        assertEquals("statistics: last batch messages sent",        0,                          stats.getMessagesSentLastBatch());
+
+        assertEquals("messages remain on message queuue",           2,                          messageQueue.size());
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "log writer initialization complete.*");
+        internalLogger.assertInternalWarningLog(
+                        "timeout while sending batch");
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testWriteException() throws Exception
+    {
+        final RuntimeException cause = new RuntimeException("something");
+        mock = new MockKinesisFacade(config)
+        {
+            @Override
+            public List<LogMessage> putRecords(List<LogMessage> batch)
+            {
+                throw new KinesisFacadeException("unexpected", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
+            }
+        };
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+        waitForWriterThread();
+
+        assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("putRecords() invocationCount",                1,                          mock.putRecordsInvocationCount);
+
+        assertStatisticsTotalMessagesSent(0);
+        assertEquals("statistics: last batch messages sent",        0,                          stats.getMessagesSentLastBatch());
+
+        assertEquals("messages remain on message queuue",           2,                          messageQueue.size());
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "log writer initialization complete.*");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog(
+                        "exception while sending batch");
+
+        assertUltimateCause("reported underlying exception", cause, internalLogger.errorExceptions.get(0));
+    }
+
+
+    @Test
+    public void testDiscardEmptyMessage() throws Exception
+    {
+        mock = new MockKinesisFacade(config);
+        createWriter();
+
+        // need to add a non-empty message to verify batch-building
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), ""));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "OK"));
+        waitForWriterThread();
+
+        assertEquals("putRecords() invocationCount",                1,                          mock.putRecordsInvocationCount);
+        assertEquals("putRecords() batch size",                     1,                          mock.putRecordsBatch.size());
+        assertEquals("putRecords() message",                        "OK",                       mock.putRecordsBatch.get(0).getMessage());
+
+        internalLogger.assertInternalWarningLog("discarded empty message");
+    }
+
+
+    @Test
+    public void testDiscardOversizeMessage() throws Exception
+    {
+        final int kinesisMaxMessageSize = 1024 * 1024;  // per https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html
+        final int maxMessageSize        = kinesisMaxMessageSize - DEFAULT_PARTITION_KEY.length();   // DEFAULT_PARTITION_KEY is ASCII
+
+        // using different characters at the end of the message makes JUnit output easer to read
+        final String bigMessage                 = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
+        final String biggerMessage              = bigMessage + "X";
+
+        mock = new MockKinesisFacade(config);
+        createWriter();
+
+        // send discarded message first, OK-size message to trigger batch-builidng
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
+        waitForWriterThread();
+
+        assertEquals("putRecords() invocationCount",                1,                          mock.putRecordsInvocationCount);
+        assertEquals("putRecords() batch size",                     1,                          mock.putRecordsBatch.size());
+        assertEquals("putRecords() message",                        bigMessage,                 mock.putRecordsBatch.get(0).getMessage());
+
+        internalLogger.assertInternalWarningLog("discarded oversize message.*");
+    }
+
+
+    @Test
+    public void testTruncateOversizeMessage() throws Exception
+    {
+        final int kinesisMaxMessageSize = 1024 * 1024;  // per https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html
+        final int maxMessageSize        = kinesisMaxMessageSize - DEFAULT_PARTITION_KEY.length();   // DEFAULT_PARTITION_KEY is ASCII
+
+        // using different characters at the end of the message makes JUnit output easer to read
+        final String bigMessage                 = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
+        final String biggerMessage              = bigMessage + "X";
+
+        config.setTruncateOversizeMessages(true);
+
+        mock = new MockKinesisFacade(config);
+        createWriter();
+
+        // send discarded message first, OK-size message to trigger batch-builidng
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
+        waitForWriterThread();
+
+        assertEquals("putRecords() invocationCount",                1,                          mock.putRecordsInvocationCount);
+        assertEquals("putRecords() batch size",                     2,                          mock.putRecordsBatch.size());
+        assertEquals("putRecords() first message",                  bigMessage,                 mock.putRecordsBatch.get(0).getMessage());
+        assertEquals("putRecords() second message",                 bigMessage,                 mock.putRecordsBatch.get(1).getMessage());
+
+        internalLogger.assertInternalWarningLog("truncated oversize message.*");
+    }
+
+
+    @Test
+    public void testBatchConstructionByRecordCount() throws Exception
+    {
+        // don't let discard threshold get in the way of the test
+        config.setDiscardAction(DiscardAction.none);
+        config.setDiscardThreshold(Integer.MAX_VALUE);
+
+        // increasing delay because it will may take time to add the messages -- 500 ms is way higher than we need
+        config.setBatchDelay(500);
+
+        mock = new MockKinesisFacade(config);
+        createWriter();
+
+        List<String> expectedMessages = new ArrayList<>();
+        for (int ii = 0 ; ii < 750 ; ii++)
+        {
+            String message = String.valueOf(ii);
+            expectedMessages.add(message);
+            writer.addMessage(new LogMessage(System.currentTimeMillis(), message));
+        }
+
+        // based on count, this should be broken into batches of 500 and 250
+
+        waitForWriterThread();
+
+        assertEquals("putRecords() invocationCount",                1,                  mock.putRecordsInvocationCount);
+        assertEquals("putRecords() batch size",                     500,                mock.putRecordsBatch.size());
+        assertEquals("putRecords() batch 1 first message",          "0",                mock.putRecordsBatch.get(0).getMessage());
+        assertEquals("putRecords() batch 1 last message",           "499",              mock.putRecordsBatch.get(499).getMessage());
+        assertEquals("unsent messages remain on queue",             250,                messageQueue.size());
+
+        waitForWriterThread();
+
+        assertEquals("putRecords() invocationCount",                2,                  mock.putRecordsInvocationCount);
+        assertEquals("putRecords() batch size",                     250,                mock.putRecordsBatch.size());
+        assertEquals("putRecords() batch 2 first message",          "500",              mock.putRecordsBatch.get(0).getMessage());
+        assertEquals("putRecords() batch 2 last message",           "749",              mock.putRecordsBatch.get(249).getMessage());
+        assertEquals("no unsent messages remain on queue",          0,                  messageQueue.size());
+
+        List<String> putRecordsHistory = mock.putRecordsHistory.stream().map(LogMessage::getMessage).collect(Collectors.toList());
+
+        assertEquals("all messages sent, in order",                 expectedMessages,   putRecordsHistory);
+    }
+
+
+    @Test
+    public void testBatchConstructionByTotalSize() throws Exception
+    {
+        // don't let discard threshold get in the way of the test
+        config.setDiscardAction(DiscardAction.none);
+        config.setDiscardThreshold(Integer.MAX_VALUE);
+
+        // increasing delay because it will may take time to add the messages -- 500 ms is way higher than we need
+        config.setBatchDelay(500);
+
+        mock = new MockKinesisFacade(config);
+        createWriter();
+
+        String baseMessage = StringUtil.repeat('X', 32765); // leave room for ID
+        int numMessages = 200;  // ~6.5 MB
+
+        List<String> expectedMessages = new ArrayList<>();
+        for (int ii = 0 ; ii < numMessages ; ii++)
+        {
+            String message = String.format("%03d", ii) + baseMessage;
+            expectedMessages.add(message);
+            writer.addMessage(new LogMessage(System.currentTimeMillis(), message));
+        }
+
+        // based on size, this will be broken into a 5 MB batch (that would in turn require 5 sends) and a 1.5 MB batch
+        // taking partition key into account, that's translates into 159 and 41 records respectively
+
+        waitForWriterThread();
+
+        assertEquals("putRecords() invocationCount",                1,                  mock.putRecordsInvocationCount);
+        assertEquals("putRecords() batch size",                     159,                mock.putRecordsBatch.size());
+        assertRegex("putRecords() batch 1 first message",          "000X.*",            mock.putRecordsBatch.get(0).getMessage());
+        assertRegex("putRecords() batch 1 last message",           "158X.*",            mock.putRecordsBatch.get(158).getMessage());
+        assertEquals("unsent messages remain on queue",             41,                 messageQueue.size());
+
+        waitForWriterThread();
+
+        assertEquals("putRecords() invocationCount",                2,                  mock.putRecordsInvocationCount);
+        assertEquals("putRecords() batch size",                     41,                 mock.putRecordsBatch.size());
+        assertRegex("putRecords() batch 2 first message",           "159X.*",           mock.putRecordsBatch.get(0).getMessage());
+        assertRegex("putRecords() batch 2 last message",            "199X.*",           mock.putRecordsBatch.get(40).getMessage());
+        assertEquals("no unsent messages remain on queue",          0,                  messageQueue.size());
+
+        List<String> putRecordsHistory = mock.putRecordsHistory.stream().map(LogMessage::getMessage).collect(Collectors.toList());
+
+        assertEquals("all messages sent, in order",                 expectedMessages,   putRecordsHistory);
+    }
+
+
+//    @Test
+//    public void testShutdown() throws Exception
+//    {
+//        // this test is the only place that we expicitly test shutdown logic, to avoid cluttering
+//        // the "operation" tests; it's otherwise identical to the "existing stream" test
+//
+//        // it actually tests functionality in AbstractAppender, but I've replicated for all concrete
+//        // subclasses simply because it's a key piece of functionality
+//
+//        createWriter();
+//
+//        assertEquals("after creation, shutdown time should be infinite", Long.MAX_VALUE, getShutdownTime());
+//
+//        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+//
+//        // the immediate stop should interrupt waitForMessage, but there's no guarantee
+//        writer.stop();
+//
+//        long now = System.currentTimeMillis();
+//        long shutdownTime = getShutdownTime();
+//        assertInRange("after stop(), shutdown time should be based on batch delay", now, now + config.getBatchDelay() + 100, shutdownTime);
+//
+//        // the batch should still be processed
+//        mock.allowWriterThread();
+//
+//        assertEquals("putRecords: invocation count",        1,                          mock.putRecordsInvocationCount);
+//        assertEquals("putRecords: source record count",     1,                          mock.putRecordsSourceRecords.size());
+//
+//        // another call to stop should be ignored -- sleep to ensure times would be different
+//        Thread.sleep(100);
+//        writer.stop();
+//        assertEquals("second call to stop() should be no-op", shutdownTime, getShutdownTime());
+//
+//        joinWriterThread();
+//
+//        assertEquals("shutdown: invocation count",          1,                          mock.shutdownInvocationCount);
+//
+//        internalLogger.assertInternalDebugLog(
+//            "log writer starting.*",
+//            "log writer initialization complete.*",
+//            "log.writer shut down.*");
+//        internalLogger.assertInternalErrorLog();
+//    }
+//
+//
+//    @Test
+//    public void testSynchronousOperation() throws Exception
+//    {
+//        // appender is expected to set batch delay in synchronous mode
+//        config.setBatchDelay(1);
+//
+//        // we just have one thread, so don't want any locks getting in the way
+//        mock.disableThreadSynchronization();
+//
+//        // the createWriter() method spins up a background thread, which we don't want
+//        writer = (KinesisLogWriter)mock.newWriterFactory().newLogWriter(config, stats, internalLogger);
+//        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
+//
+//        assertEquals("stats: actual stream name",                   DEFAULT_STREAM_NAME,        stats.getActualStreamName());
+//        assertFalse("writer should not be initialized",             ClassUtil.getFieldValue(writer, "initializationComplete", Boolean.class).booleanValue());
+//
+//        writer.initialize();
+//
+//        assertTrue("writer has been initialized",                   ClassUtil.getFieldValue(writer, "initializationComplete", Boolean.class).booleanValue());
+//        assertNull("no dispatch thread",                            ClassUtil.getFieldValue(writer, "dispatchThread", Thread.class));
+//
+//        assertEquals("describeStream: invocation count",            1,                          mock.describeStreamInvocationCount);
+//        assertEquals("describeStream: stream name",                 DEFAULT_STREAM_NAME,        mock.describeStreamStreamName);
+//
+//        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+//
+//        assertEquals("message is waiting in queue",                 1,                          messageQueue.queueSize());
+//        assertEquals("putRecords: invocation count",                0,                          mock.putRecordsInvocationCount);
+//
+//        writer.processBatch(System.currentTimeMillis());
+//
+//        assertEquals("putRecords: invocation count",                1,                          mock.putRecordsInvocationCount);
+//        assertEquals("putRecords: source record count",             1,                          mock.putRecordsSourceRecords.size());
+//        assertEquals("putRecords: source record partition key",     DEFAULT_PARTITION_KEY,      mock.putRecordsSourceRecords.get(0).getPartitionKey());
+//        assertEquals("putRecords: source record content",           "message one",              mock.getPuRecordsSourceText(0));
+//        assertStatisticsTotalMessagesSent(1);
+//        assertEquals("stats: messages sent batch",                  1,                          stats.getMessagesSentLastBatch());
+//        assertEquals("stats: messages requeued batch",              0,                          stats.getMessagesRequeuedLastBatch());
+//
+//        // general assertions to verify that nothing unexpected happened
+//        assertEquals("describeStream: invocation count",            1,                          mock.describeStreamInvocationCount);
+//        assertEquals("describeStream: stream name",                 DEFAULT_STREAM_NAME,        mock.describeStreamStreamName);
+//        assertEquals("createStream: invocation count",              0,                          mock.createStreamInvocationCount);
+//        assertEquals("increaseRetentionPeriod invocation count",    0,                          mock.increaseRetentionPeriodInvocationCount);
+//
+//        assertEquals("shutdown not called before cleanup",          0,                          mock.shutdownInvocationCount);
+//        writer.cleanup();
+//        assertEquals("shutdown called after cleanup",               1,                          mock.shutdownInvocationCount);
+//
+//        // the "starting" and "initialization complete" messages are emitted in run(), so not present here
+//        internalLogger.assertInternalDebugLog();
+//        internalLogger.assertInternalErrorLog();
+//    }
 }

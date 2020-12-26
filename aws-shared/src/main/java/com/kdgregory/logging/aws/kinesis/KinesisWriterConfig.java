@@ -28,11 +28,17 @@ public class KinesisWriterConfig
 extends AbstractWriterConfig<KinesisWriterConfig>
 {
     private String  streamName;
-    private String  partitionKey;
+    private String  partitionKey;   // isn't used in practice
     private boolean autoCreate;
     private int     shardCount;
     private Integer retentionPeriod;
 
+    // this is set by setPartitionKey()
+    private PartitionKeyHelper partitionKeyHelper;
+
+//----------------------------------------------------------------------------
+//  Accessors
+//----------------------------------------------------------------------------
 
     public String getStreamName()
     {
@@ -54,6 +60,7 @@ extends AbstractWriterConfig<KinesisWriterConfig>
     public KinesisWriterConfig setPartitionKey(String value)
     {
         partitionKey = value;
+        partitionKeyHelper = new PartitionKeyHelper(value);
         return this;
     }
 
@@ -93,6 +100,9 @@ extends AbstractWriterConfig<KinesisWriterConfig>
         return this;
     }
 
+//----------------------------------------------------------------------------
+//  Other public methods
+//----------------------------------------------------------------------------
 
     /**
      *  Validates the configuration, returning a list of any validation errors.
@@ -137,5 +147,15 @@ extends AbstractWriterConfig<KinesisWriterConfig>
         }
 
         return result;
+    }
+
+
+    /**
+     *  Returns the object that manages partition keys; use this rather than directly accessing
+     *  the key.
+     */
+    public PartitionKeyHelper getPartitionKeyHelper()
+    {
+        return partitionKeyHelper;
     }
 }

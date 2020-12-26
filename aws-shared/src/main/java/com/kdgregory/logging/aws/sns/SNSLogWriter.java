@@ -77,23 +77,12 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
     @Override
     protected boolean ensureDestinationAvailable()
     {
-        if ((config.getSubject() != null) && ! config.getSubject().isEmpty())
+        List<String> configErrors = config.validate();
+        if (! configErrors.isEmpty())
         {
-            if (config.getSubject().length() >= 100)
-            {
-                reportError("invalid subject (too long): " + config.getSubject(), null);
-                return false;
-            }
-            if (config.getSubject().matches(".*[^\u0020-\u007d].*"))
-            {
-                reportError("invalid subject (disallowed characters): " + config.getSubject(), null);
-                return false;
-            }
-            if (config.getSubject().startsWith(" "))
-            {
-                reportError("invalid subject (starts with space): " + config.getSubject(), null);
-                return false;
-            }
+            for (String error : configErrors)
+                reportError("configuration error: " + error, null);
+            return false;
         }
 
         try

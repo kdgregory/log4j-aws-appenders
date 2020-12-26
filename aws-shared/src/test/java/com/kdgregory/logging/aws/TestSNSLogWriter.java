@@ -469,7 +469,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         config.setTopicName("x%$!");
         createWriter();
 
-        assertStatisticsErrorMessage("invalid topic name: .*"); // invalid name has special regex characters
+        assertStatisticsErrorMessage("configuration error: invalid SNS topic name: .*");
 
         assertEquals("invocations of listTopics",               0,                      mock.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",              0,                      mock.createTopicInvocationCount);
@@ -487,10 +487,10 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
     public void testInvalidSubjectTooLong() throws Exception
     {
         config.setTopicName(TEST_TOPIC_NAME);
-        config.setSubject(StringUtil.repeat('A', 100));
+        config.setSubject(StringUtil.repeat('A', 101));
         createWriter();
 
-        assertStatisticsErrorMessage("invalid subject.*too long.*");
+        assertStatisticsErrorMessage("configuration error: invalid SNS subject.*"); // detailed testing is in TestSNSWriterConfig
 
         assertEquals("invocations of listTopics",               0,                      mock.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",              0,                      mock.createTopicInvocationCount);
@@ -500,7 +500,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("message queue set to discard all",        DiscardAction.oldest,   messageQueue.getDiscardAction());
 
         internalLogger.assertInternalDebugLog("log writer starting.*");
-        internalLogger.assertInternalErrorLog("invalid.*subject.*too long.*", "log writer failed to initialize.*");
+        internalLogger.assertInternalErrorLog("configuration error: invalid SNS subject.*", "log writer failed to initialize.*");
     }
 
 
@@ -511,7 +511,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         config.setSubject("This is \t not OK");
         createWriter();
 
-        assertStatisticsErrorMessage("invalid subject.*disallowed characters.*");
+        assertStatisticsErrorMessage("configuration error: invalid SNS subject.*"); // detailed testing is in TestSNSWriterConfig
 
         assertEquals("invocations of listTopics",               0,                      mock.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",              0,                      mock.createTopicInvocationCount);
@@ -521,7 +521,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("message queue set to discard all",        DiscardAction.oldest,   messageQueue.getDiscardAction());
 
         internalLogger.assertInternalDebugLog("log writer starting.*");
-        internalLogger.assertInternalErrorLog("invalid subject.*disallowed characters.*", "log writer failed to initialize.*");
+        internalLogger.assertInternalErrorLog("configuration error: invalid SNS subject.*", "log writer failed to initialize.*");
     }
 
 
@@ -532,7 +532,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         config.setSubject(" not OK");
         createWriter();
 
-        assertStatisticsErrorMessage("invalid subject.*starts with space.*");
+        assertStatisticsErrorMessage("configuration error: invalid SNS subject.*"); // detailed testing is in TestSNSWriterConfig
 
         assertEquals("invocations of listTopics",               0,                      mock.listTopicsInvocationCount);
         assertEquals("invocations of createTopic",              0,                      mock.createTopicInvocationCount);
@@ -542,7 +542,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,A
         assertEquals("message queue set to discard all",        DiscardAction.oldest,   messageQueue.getDiscardAction());
 
         internalLogger.assertInternalDebugLog("log writer starting.*");
-        internalLogger.assertInternalErrorLog("invalid.*subject.*starts with space.*", "log writer failed to initialize.*");
+        internalLogger.assertInternalErrorLog("configuration error: invalid SNS subject.*", "log writer failed to initialize.*");
     }
 
 

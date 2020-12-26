@@ -14,19 +14,26 @@
 
 package com.kdgregory.logging.aws.sns;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 
 
 /**
  *  Configuration for SNSLogWriter.
+ *  <p>
+ *  Note: the setters for name, ARN, and subject transparently replace empty
+ *  or blank values with null. This is a flag that indicates that the value
+ *  should not be used.
  */
 public class SNSWriterConfig
 extends AbstractWriterConfig<SNSWriterConfig>
 {
     private String  topicName;
     private String  topicArn;
-    private boolean autoCreate;
     private String  subject;
+    private boolean autoCreate;
 
 
     public SNSWriterConfig()
@@ -35,14 +42,9 @@ extends AbstractWriterConfig<SNSWriterConfig>
         super.setBatchDelay(1);
     }
 
-
-    @Override
-    public SNSWriterConfig setBatchDelay(long value)
-    {
-        // this call is a no-op
-        return this;
-    }
-
+//----------------------------------------------------------------------------
+//  Accessors
+//----------------------------------------------------------------------------
 
     public String getTopicName()
     {
@@ -51,7 +53,7 @@ extends AbstractWriterConfig<SNSWriterConfig>
 
     public SNSWriterConfig setTopicName(String value)
     {
-        topicName = value;
+        topicName = (value != null) && value.trim().isEmpty() ? null : value;
         return this;
     }
 
@@ -63,7 +65,19 @@ extends AbstractWriterConfig<SNSWriterConfig>
 
     public SNSWriterConfig setTopicArn(String value)
     {
-        topicArn = value;
+        topicArn = (value != null) && value.trim().isEmpty() ? null : value;
+        return this;
+    }
+
+
+    public String getSubject()
+    {
+        return subject;
+    }
+
+    public SNSWriterConfig setSubject(String value)
+    {
+        subject = value;
         return this;
     }
 
@@ -80,14 +94,72 @@ extends AbstractWriterConfig<SNSWriterConfig>
     }
 
 
-    public String getSubject()
+    @Override
+    public SNSWriterConfig setBatchDelay(long value)
     {
-        return subject;
+        // SNS writer uses a fixed batch delay; this call is a no-op
+        return this;
     }
 
-    public SNSWriterConfig setSubject(String value)
+//----------------------------------------------------------------------------
+//  Other public methods
+//----------------------------------------------------------------------------
+
+    /**
+     *  Validates the configuration, returning a list of any validation errors.
+     *  An empty list indicates a valid config.
+     */
+    public List<String> validate()
     {
-        subject = value;
-        return this;
+        List<String> result = new ArrayList<>();
+
+        if ((topicName == null) && (topicArn == null))
+        {
+            result.add("must specify either ARN or topic name");
+        }
+
+        if ((topicName != null) && !topicName.matches(SNSConstants.TOPIC_NAME_REGEX))
+        {
+            result.add("invalid SNS topic name: " + topicName);
+        }
+
+        if ((topicArn != null) && !topicArn.matches(SNSConstants.TOPIC_ARN_REGEX))
+        {
+            result.add("invalid SNS topic ARN: " + topicArn);
+        }
+
+        if ((subject != null) && (subject.length() > 100))
+        {
+            result.add("invalid SNS subject: over 100 characters");
+        }
+
+        if ((subject != null) && (subject.charAt(0) == ' '))
+        {
+            result.add("invalid SNS subject: begins with space");
+        }
+
+        if (subject != null)
+        {
+            for (int ii = 0 ; ii < subject.length() ; ii++)
+            {
+                if (subject.charAt(ii) > 127)
+                {
+                    result.add("invalid SNS subject: must contain ASCII characters only");
+                    break;
+                }
+                if ((subject.charAt(ii) < 32) || (subject.charAt(ii) == 127))
+                {
+                    result.add("invalid SNS subject: may not contain control characters or newlines");
+                    break;
+                }
+            }
+        }
+
+        if (autoCreate && (topicArn != null))
+        {
+            result.add("must not specify ARN if auto-create enabled");
+        }
+
+        return result;
     }
 }

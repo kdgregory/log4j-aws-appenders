@@ -14,11 +14,42 @@
 
 package com.kdgregory.logging.aws.internal.facade;
 
+import com.kdgregory.logging.common.LogMessage;
 
 /**
- *  A facade for Simple Notification Service (SNS) operations.
+ *  A facade for Simple Notification Service (SNS) operations. All operations
+ *  may throw {@link SNSFacadeException}.
  */
 public interface SNSFacade
 {
-    // TODO
+    /**
+     *  Attempts to match the configured topic ARN or name to an existing SNS
+     *  topic in the configured account and region. Returns the topic ARN if
+     *  found, null if not found. Throws if unable to retrieve topic information
+     *  for any reason, including throttling.
+     */
+    String lookupTopic();
+
+
+    /**
+     *  Attempts to create a topic with the configured name. Returns the topic's
+     *  ARN if successful, throws on any failure.
+     *  <p>
+     *  Note: SNS silently succeeds if the topic already exists.
+     */
+    String createTopic();
+
+
+    /**
+     *  Attempts to publish the provided message, using configured topic and subject.
+     *  <p>
+     *  Throws if unable, including throttling.
+     */
+    void publish(LogMessage message);
+
+
+    /**
+     *  Shuts down the underlying client.
+     */
+    void shutdown();
 }

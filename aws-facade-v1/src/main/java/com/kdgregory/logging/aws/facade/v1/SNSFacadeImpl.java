@@ -14,14 +14,23 @@
 
 package com.kdgregory.logging.aws.facade.v1;
 
+import com.amazonaws.services.sns.AmazonSNS;
+import com.amazonaws.services.sns.AmazonSNSClientBuilder;
+import com.amazonaws.services.sns.model.*;
+
 import com.kdgregory.logging.aws.internal.facade.SNSFacade;
+import com.kdgregory.logging.aws.internal.facade.SNSFacadeException;
+import com.kdgregory.logging.aws.internal.facade.SNSFacadeException.ReasonCode;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
+import com.kdgregory.logging.common.LogMessage;
 
 
 public class SNSFacadeImpl
 implements SNSFacade
 {
     private SNSWriterConfig config;
+
+    private AmazonSNS client;
 
 
     public SNSFacadeImpl(SNSWriterConfig config)
@@ -33,8 +42,146 @@ implements SNSFacade
 //  Public methods
 //----------------------------------------------------------------------------
 
+    @Override
+    public String lookupTopic()
+    {
+        String match = (config.getTopicArn() != null)
+                     ? config.getTopicArn()
+                     : ":" + config.getTopicName();
+
+        try
+        {
+            ListTopicsRequest request = new ListTopicsRequest();
+            do
+            {
+                ListTopicsResult response = client().listTopics(request);
+                for (Topic topic : response.getTopics())
+                {
+                    String arn = topic.getTopicArn();
+                    if (arn.endsWith(match))
+                        return arn;
+                }
+                request.setNextToken(response.getNextToken());
+            } while ((request.getNextToken() != null) && ! request.getNextToken().isEmpty());
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            throw transformException("lookupTopic", ex);
+        }
+    }
+
+
+    @Override
+    public String createTopic()
+    {
+        try
+        {
+            CreateTopicRequest request = new CreateTopicRequest(config.getTopicName());
+            CreateTopicResult response = client().createTopic(request);
+            return response.getTopicArn();
+        }
+        catch (Exception ex)
+        {
+            throw transformException("createTopic", ex);
+        }
+    }
+
+
+    @Override
+    public void publish(LogMessage message)
+    {
+        if ((config.getTopicArn() == null) || config.getTopicArn().isEmpty())
+            throw new SNSFacadeException(generateExceptionMessage("publish", "ARN not configured"), ReasonCode.INVALID_CONFIGURATION, false);
+
+        try
+        {
+            PublishRequest request = new PublishRequest()
+                                     .withTopicArn(config.getTopicArn())
+                                     .withSubject(config.getSubject())
+                                     .withMessage(message.getMessage());
+            client().publish(request);
+        }
+        catch (Exception ex)
+        {
+            throw transformException("publish", ex);
+        }
+    }
+
+
+    @Override
+    public void shutdown()
+    {
+        client().shutdown();
+    }
+
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
+
+    protected AmazonSNS client()
+    {
+        // FIXME -- apply client configuration logic
+        if (client == null)
+        {
+            client = AmazonSNSClientBuilder.defaultClient();
+        }
+        return client;
+    }
+
+
+    /**
+     *  Generates the full exception message.
+     */
+    private String generateExceptionMessage(String functionName, String message)
+    {
+        return functionName + "("
+                       + ((config.getTopicArn() != null) ? config.getTopicArn() : config.getTopicName())
+                       + "): "
+                       + message;
+    }
+
+
+    /**
+     *  Creates a facade exception based on some other exception.
+     */
+    private SNSFacadeException transformException(String functionName, Exception cause)
+    {
+        String message;
+        ReasonCode reason;
+        boolean isRetryable;
+
+        if (cause instanceof NotFoundException)
+        {
+            reason = ReasonCode.MISSING_TOPIC;
+            message = "topic does not exist";
+            isRetryable = false;
+        }
+        else if (cause instanceof AmazonSNSException)
+        {
+            AmazonSNSException ex = (AmazonSNSException)cause;
+            if ("Throttling".equals(ex.getErrorCode()))
+            {
+                reason = ReasonCode.THROTTLING;
+                message = "request throttled";
+                isRetryable = true;
+            }
+            else
+            {
+                reason = ReasonCode.UNEXPECTED_EXCEPTION;
+                message = "service exception: " + cause.getMessage();
+                isRetryable = ((AmazonSNSException)cause).isRetryable();
+            }
+        }
+        else
+        {
+            message = "unexpected exception: " + cause.getMessage();
+            reason = ReasonCode.UNEXPECTED_EXCEPTION;
+            isRetryable = false;
+        }
+
+        return new SNSFacadeException(generateExceptionMessage(functionName, message), reason, isRetryable, cause);
+    }
 
 }

@@ -47,7 +47,7 @@ import com.kdgregory.logging.testhelpers.kinesis.TestableKinesisLogWriter;
  *  Performs mock-client testing of the Kinesis writer.
  */
 public class TestKinesisLogWriter
-extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriterStatistics,Object>
+extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriterStatistics>
 {
     private final static String DEFAULT_STREAM_NAME     = "argle";
     private final static String DEFAULT_PARTITION_KEY   = "bargle";

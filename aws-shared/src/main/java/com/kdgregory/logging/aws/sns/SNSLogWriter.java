@@ -24,7 +24,7 @@ import com.kdgregory.logging.common.util.InternalLogger;
 
 
 public class SNSLogWriter
-extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,Object>
+extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics>
 {
     // provided by constructor
     private SNSFacade facade;
@@ -32,7 +32,7 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,Object>
 
     public SNSLogWriter(SNSWriterConfig config, SNSWriterStatistics stats, InternalLogger logger, SNSFacade facade)
     {
-        super(config, stats, logger, null);
+        super(config, stats, logger);
         this.facade = facade;
         stats.setActualTopicName(config.getTopicName());
         stats.setActualTopicArn(config.getTopicArn());

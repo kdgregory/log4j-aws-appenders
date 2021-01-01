@@ -27,7 +27,6 @@ import static net.sf.kdgcommons.test.StringAsserts.*;
 import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 import com.kdgregory.logging.aws.internal.AbstractLogWriter;
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
-import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.MessageQueue;
@@ -40,10 +39,9 @@ import com.kdgregory.logging.testhelpers.TestableInternalLogger;
  */
 public abstract class AbstractLogWriterTest
 <
-    WriterType extends AbstractLogWriter<?,?,?>,
+    WriterType extends AbstractLogWriter<?,?>,
     ConfigType extends AbstractWriterConfig<ConfigType>,
-    StatsType extends AbstractWriterStatistics,
-    AWSClientType
+    StatsType extends AbstractWriterStatistics
 >
 {
     protected TestableInternalLogger internalLogger = new TestableInternalLogger();
@@ -87,21 +85,6 @@ public abstract class AbstractLogWriterTest
                 uncaughtException = e;
             }
         };
-
-
-    /**
-     *  This is used whenever we explicitly create a writer (rather than use the
-     *  mock factory. It creates a null client, so any attempt to use that client
-     *  will throw.
-     */
-    protected ClientFactory<AWSClientType> dummyClientFactory = new ClientFactory<AWSClientType>()
-    {
-        @Override
-        public AWSClientType createClient()
-        {
-            return null;
-        }
-    };
 
 
     /**

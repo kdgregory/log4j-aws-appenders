@@ -27,7 +27,7 @@ import com.kdgregory.logging.common.util.InternalLogger;
 
 
 public class KinesisLogWriter
-extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,Object>
+extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics>
 {
     /**
      *  This string is used in configuration to specify random partition keys.
@@ -52,7 +52,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,Object>
 
     public KinesisLogWriter(KinesisWriterConfig config, KinesisWriterStatistics stats, InternalLogger logger, KinesisFacade facade)
     {
-        super(config, stats, logger, null);
+        super(config, stats, logger);
 
         this.facade = facade;
 

@@ -121,11 +121,13 @@ implements InvocationHandler
 
     public void publish(LogMessage message)
     {
+        // this always succeeds
     }
 
 
     public void shutdown()
     {
+        // this always succeeds
     }
 
 }

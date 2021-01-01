@@ -49,7 +49,7 @@ import com.kdgregory.logging.testhelpers.cloudwatch.TestableCloudWatchLogWriter;
  *  initialization, which happens before {@link #createWriter} returns.
  */
 public class TestCloudWatchLogWriter
-extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWatchWriterStatistics,Object>
+extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWatchWriterStatistics>
 {
     private MockCloudWatchFacade mock;
 

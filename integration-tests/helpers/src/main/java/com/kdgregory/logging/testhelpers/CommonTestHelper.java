@@ -79,7 +79,7 @@ public class CommonTestHelper
      *  used to perform an operation (both CloudTrail and the role's "last accessed"
      *  timestamp are updated long after the test completes).
      */
-    public static Class<?> getCredentialsProviderClass(AbstractLogWriter<?,?,?> writer)
+    public static Class<?> getCredentialsProviderClass(AbstractLogWriter<?,?> writer)
     throws Exception
     {
         Object client = ClassUtil.getFieldValue(writer, "client", Object.class);

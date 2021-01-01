@@ -20,7 +20,6 @@ import java.util.List;
 
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
-import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.common.util.InternalLogger;
 import com.kdgregory.logging.common.util.MessageQueue;
@@ -32,8 +31,7 @@ import com.kdgregory.logging.common.util.MessageQueue;
 public abstract class AbstractLogWriter
 <
     ConfigType extends AbstractWriterConfig<ConfigType>,
-    StatsType extends AbstractWriterStatistics,
-    AWSClientType
+    StatsType extends AbstractWriterStatistics
 >
 implements LogWriter
 {
@@ -44,12 +42,6 @@ implements LogWriter
     protected ConfigType config;
     protected StatsType stats;
     protected InternalLogger logger;
-
-    // this is provided to constructor, used only here
-    private ClientFactory<AWSClientType> clientFactory;
-
-    // this is assigned during initialization, used only by subclass
-    protected AWSClientType client;
 
     // created during constructor or by initializat()
     private MessageQueue messageQueue;
@@ -72,12 +64,11 @@ implements LogWriter
     private volatile int batchCount;
 
 
-    public AbstractLogWriter(ConfigType config, StatsType appenderStats, InternalLogger logger, ClientFactory<AWSClientType> clientFactory)
+    public AbstractLogWriter(ConfigType config, StatsType appenderStats, InternalLogger logger)
     {
         this.config = config;
         this.stats = appenderStats;
         this.logger = logger;
-        this.clientFactory = clientFactory;
 
         messageQueue = new MessageQueue(config.getDiscardThreshold(), config.getDiscardAction());
         this.stats.setMessageQueue(messageQueue);
@@ -220,12 +211,6 @@ implements LogWriter
 
         try
         {
-            // FIXME - this is a hack to avoid breaking tests for non-converted writers
-            //         remove once all writers use a facade rather than client factory
-            if (clientFactory != null)
-            {
-                client = clientFactory.createClient();
-            }
             success = ensureDestinationAvailable();
         }
         catch (Exception ex)

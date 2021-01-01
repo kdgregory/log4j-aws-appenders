@@ -27,7 +27,7 @@ import com.kdgregory.logging.common.util.InternalLogger;
 
 
 public class CloudWatchLogWriter
-extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,Object>
+extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
 {
     // passed into constructor
     private CloudWatchFacade facade;
@@ -46,7 +46,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics,Obje
 
     public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger logger, CloudWatchFacade facade)
     {
-        super(config, stats, logger, null);
+        super(config, stats, logger);
 
         this.facade = facade;
 

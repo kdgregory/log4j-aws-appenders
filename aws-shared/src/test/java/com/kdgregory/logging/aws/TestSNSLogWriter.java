@@ -43,7 +43,7 @@ import com.kdgregory.logging.testhelpers.sns.TestableSNSLogWriter;
  *  Performs mock-facade testing of the SNS writer.
  */
 public class TestSNSLogWriter
-extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics,Object>
+extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 {
     // used for oversize message tests; per https://docs.aws.amazon.com/sns/latest/api/API_Publish.html
     private final static int SNS_MAX_MESSAGE_SIZE = 262144;

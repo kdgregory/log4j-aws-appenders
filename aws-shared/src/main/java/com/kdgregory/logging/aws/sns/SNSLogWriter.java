@@ -15,49 +15,28 @@
 package com.kdgregory.logging.aws.sns;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
-
-import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.model.*;
 
 import com.kdgregory.logging.aws.internal.AbstractLogWriter;
+import com.kdgregory.logging.aws.internal.facade.SNSFacade;
 import com.kdgregory.logging.common.LogMessage;
-import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
 
 
 public class SNSLogWriter
-extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
+extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,Object>
 {
-    // this is set when configuring by name, exposed for testing
-    protected String topicArn;
+    // provided by constructor
+    private SNSFacade facade;
 
 
-    public SNSLogWriter(SNSWriterConfig config, SNSWriterStatistics stats, InternalLogger logger, ClientFactory<AmazonSNS> clientFactory)
+    public SNSLogWriter(SNSWriterConfig config, SNSWriterStatistics stats, InternalLogger logger, SNSFacade facade)
     {
-        super(config, stats, logger, clientFactory);
+        super(config, stats, logger, null);
+        this.facade = facade;
         stats.setActualTopicName(config.getTopicName());
         stats.setActualTopicArn(config.getTopicArn());
         stats.setActualSubject(config.getSubject());
-    }
-
-//----------------------------------------------------------------------------
-//  LogWriter overrides
-//----------------------------------------------------------------------------
-
-    /**
-     *  Sets the subject for subsequent messages. Any substitutions must be
-     *  applied before calling this method.
-     */
-    public void setSubject(String subject)
-    {
-        config.setSubject(subject);
-        stats.setActualSubject(subject);
     }
 
 //----------------------------------------------------------------------------
@@ -81,23 +60,28 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
         if (! configErrors.isEmpty())
         {
             for (String error : configErrors)
+            {
                 reportError("configuration error: " + error, null);
+            }
             return false;
         }
 
         try
         {
-            boolean topicAvailable = (config.getTopicArn() != null)
-                                   ? configureByArn()
-                                   : configureByName();
-
-            if (topicAvailable)
+            String topicArn = facade.lookupTopic();
+            if (topicArn == null)
             {
-                stats.setActualTopicArn(topicArn);
-                stats.setActualTopicName(topicArn.replaceAll(".*:", ""));
+                topicArn = optCreateTopic();
+                if (topicArn == null)
+                    return false;
             }
 
-            return topicAvailable;
+            // ARN is used by publish(), so ensure that it's set
+            config.setTopicArn(topicArn);
+
+            stats.setActualTopicArn(topicArn);
+            stats.setActualTopicName(topicArn.replaceAll(".*:", ""));
+            return true;
         }
         catch (Exception ex)
         {
@@ -116,18 +100,11 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
         {
             try
             {
-                PublishRequest request = new PublishRequest()
-                                         .withTopicArn(topicArn)
-                                         .withMessage(message.getMessage());
-                if (config.getSubject() != null)
-                {
-                    request.setSubject(config.getSubject());
-                }
-                client.publish(request);
+                facade.publish(message);
             }
             catch (Exception ex)
             {
-                stats.setLastError(null, ex);
+                stats.setLastError("failed to publish: " + ex.getMessage(), ex);
                 failures.add(message);
             }
         }
@@ -152,106 +129,46 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics,AmazonSNS>
     @Override
     protected void stopAWSClient()
     {
-        client.shutdown();
+        facade.shutdown();
     }
 
 //----------------------------------------------------------------------------
-//  Internal
+//  Other public methods
 //----------------------------------------------------------------------------
 
     /**
-     *  Attempts to find the configured topicArn in the list of topics for
-     *  the current account. Returns true (and configures the writer) if
-     *  successful false (with a LogLog message) if not.
+     *  Sets the subject for subsequent messages. Any substitutions must be
+     *  applied before calling this method.
      */
-    private boolean configureByArn()
+    public void setSubject(String subject)
     {
-        // note: we don't validate topic ARN because an invalid ARN won't be
-        //       found in the list and therefore will fail initialization
+        config.setSubject(subject);
+        stats.setActualSubject(subject);
+    }
 
-        if (retrieveAllTopics().contains(config.getTopicArn()))
-        {
-            topicArn = config.getTopicArn();
-            return true;
-        }
-        else
+//----------------------------------------------------------------------------
+//  Internals
+//----------------------------------------------------------------------------
+
+    /**
+     *  Called during initialization if the topic doesn't exist. Decides whether
+     *  we should try to create it.
+     */
+    private String optCreateTopic()
+    {
+        if (config.getTopicArn() != null)
         {
             reportError("topic does not exist: " + config.getTopicArn(), null);
-            return false;
-        }
-    }
-
-
-    /**
-     *  Attempts to find the configured topicName in the list of topics for
-     *  the current account. If successful, configures the writer and returns
-     *  true. If unsucessful, attempts to create the topic and configure as
-     *  above.
-     */
-    private boolean configureByName()
-    {
-        String topicName = config.getTopicName();
-
-        if (! Pattern.matches(SNSConstants.TOPIC_NAME_REGEX, config.getTopicName()))
-        {
-            reportError("invalid topic name: " + topicName, null);
-            return false;
+            return null;
         }
 
-        topicArn = retrieveAllTopicsByName().get(topicName);
-        if (topicArn != null)
+        if (! config.getAutoCreate())
         {
-            return true;
+            reportError("topic does not exist and auto-create not enabled: " + config.getTopicName(), null);
+            return null;
         }
-        else if (config.getAutoCreate())
-        {
-            logger.debug("creating SNS topic: " + topicName);
-            CreateTopicResult response = client.createTopic(topicName);
-            topicArn = response.getTopicArn();
-            return true;
-        }
-        else
-        {
-            reportError("topic does not exist and auto-create not enabled: " + topicName, null);
-            return false;
-        }
-    }
 
-
-    /**
-     *  Returns all of the account's topics.
-     */
-    private Set<String> retrieveAllTopics()
-    {
-        Set<String> result = new HashSet<String>();
-        ListTopicsRequest request = new ListTopicsRequest();
-        ListTopicsResult response = null;
-
-        do
-        {
-            response = client.listTopics(request);
-            for (Topic topic : response.getTopics())
-            {
-                result.add(topic.getTopicArn());
-            }
-            request.setNextToken(response.getNextToken());
-        } while (response.getNextToken() != null);
-
-        return result;
-    }
-
-
-    /**
-     *  Returns all of the account's topics, as a mapping from name to ARN.
-     */
-    private Map<String,String> retrieveAllTopicsByName()
-    {
-        Map<String,String> result = new HashMap<String,String>();
-        for (String arn : retrieveAllTopics())
-        {
-            String topicName = arn.replaceFirst(".*:", "");
-            result.put(topicName, arn);
-        }
-        return result;
+        logger.debug("creating SNS topic: " + config.getTopicName());
+        return facade.createTopic();
     }
 }

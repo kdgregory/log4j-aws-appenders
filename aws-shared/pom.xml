@@ -15,19 +15,13 @@
     <name>AWS Writers</name>
 
     <description>
-        AWS log writers. These are independent of the logging framework.
+        AWS log writers. These are independent of both the logging framework and the underlying AWS SDK.
     </description>
 
     <dependencies>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-iam</artifactId>
-            <version>${aws-sdk-v1.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-sns</artifactId>
             <version>${aws-sdk-v1.version}</version>
             <scope>provided</scope>
         </dependency>

@@ -15,9 +15,9 @@
 package com.kdgregory.logging.aws.facade.v1;
 
 import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sns.model.*;
 
+import com.kdgregory.logging.aws.facade.v1.internal.ClientFactory;
 import com.kdgregory.logging.aws.internal.facade.SNSFacade;
 import com.kdgregory.logging.aws.internal.facade.SNSFacadeException;
 import com.kdgregory.logging.aws.internal.facade.SNSFacadeException.ReasonCode;
@@ -122,11 +122,11 @@ implements SNSFacade
 
     protected AmazonSNS client()
     {
-        // FIXME -- apply client configuration logic
         if (client == null)
         {
-            client = AmazonSNSClientBuilder.defaultClient();
+            client = new ClientFactory<>(AmazonSNS.class, config).create();
         }
+
         return client;
     }
 

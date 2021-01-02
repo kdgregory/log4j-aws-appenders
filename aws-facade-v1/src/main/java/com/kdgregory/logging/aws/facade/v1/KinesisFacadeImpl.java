@@ -22,9 +22,9 @@ import java.util.List;
 import java.util.Map;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
-import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.kinesis.model.*;
 
+import com.kdgregory.logging.aws.facade.v1.internal.ClientFactory;
 import com.kdgregory.logging.aws.internal.facade.KinesisFacade;
 import com.kdgregory.logging.aws.internal.facade.KinesisFacadeException;
 import com.kdgregory.logging.aws.internal.facade.KinesisFacadeException.ReasonCode;
@@ -164,9 +164,9 @@ implements KinesisFacade
     {
         if (client == null)
         {
-            // TODO - support client configuration
-            client = AmazonKinesisClientBuilder.defaultClient();
+            client = new ClientFactory<>(AmazonKinesis.class, config).create();
         }
+
         return client;
     }
 

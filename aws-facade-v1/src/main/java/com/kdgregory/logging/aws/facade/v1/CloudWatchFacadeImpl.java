@@ -18,10 +18,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.amazonaws.services.logs.AWSLogs;
-import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.*;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
+import com.kdgregory.logging.aws.facade.v1.internal.ClientFactory;
 import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
 import com.kdgregory.logging.aws.internal.facade.CloudWatchFacadeException;
 import com.kdgregory.logging.aws.internal.facade.CloudWatchFacadeException.ReasonCode;
@@ -261,11 +261,12 @@ implements CloudWatchFacade
      */
     protected AWSLogs client()
     {
-        if (client != null)
-            return client;
+        if (client == null)
+        {
+            client = new ClientFactory<>(AWSLogs.class, config).create();
+        }
 
-        // TODO - this will be properly implemented in superclass
-        return AWSLogsClientBuilder.defaultClient();
+        return client;
     }
 
 

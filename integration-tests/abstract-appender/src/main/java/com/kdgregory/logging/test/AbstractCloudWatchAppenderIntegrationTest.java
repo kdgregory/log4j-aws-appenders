@@ -15,7 +15,6 @@
 package com.kdgregory.logging.test;
 
 import net.sf.kdgcommons.lang.ClassUtil;
-import static net.sf.kdgcommons.test.NumericAsserts.*;
 
 import static org.junit.Assert.*;
 
@@ -28,6 +27,7 @@ import com.amazonaws.services.logs.AWSLogsClientBuilder;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
+import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
 import com.kdgregory.logging.testhelpers.CloudWatchTestHelper;
 import com.kdgregory.logging.testhelpers.CommonTestHelper;
 import com.kdgregory.logging.testhelpers.MessageWriter;
@@ -336,7 +336,6 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         testHelper.assertMessages(streamName, numMessages);
 
         assertEquals("all messages reported in stats",  numMessages * 2, accessor.getStats().getMessagesSent());
-        assertTrue("statistics has error message",      accessor.getStats().getLastErrorMessage().contains("log stream missing"));
 
         testHelper.deleteLogGroupIfExists();
     }
@@ -355,8 +354,9 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
 
         testHelper.assertMessages(LOGSTREAM_BASE, numMessages);
 
-        AWSLogs writerClient = ClassUtil.getFieldValue(accessor.getWriter(), "client", AWSLogs.class);
-        assertSame("factory should have been used to create client", factoryClient, writerClient);
+        CloudWatchFacade facade = ClassUtil.getFieldValue(accessor.getWriter(), "facade", CloudWatchFacade.class);
+        AWSLogs client = ClassUtil.getFieldValue(facade, "client", AWSLogs.class);
+        assertSame("factory should have been used to create client", factoryClient, client);
 
         testHelper.deleteLogGroupIfExists();
     }

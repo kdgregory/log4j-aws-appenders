@@ -22,11 +22,6 @@
 
 
     <properties>
-        <!-- we have to use a newish version of the SDK to support all tests
-           - BEWARE accidentally introducing dependencies that won't work
-           - on earlier versions!
-          -->
-        <aws-sdk.version>1.11.600</aws-sdk.version>
     </properties>
 
 
@@ -48,43 +43,43 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-logs</artifactId>
-            <version>${aws-sdk.version}</version>
+            <version>${aws-sdk-v1.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-iam</artifactId>
-            <version>${aws-sdk.version}</version>
+            <version>${aws-sdk-v1.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-kinesis</artifactId>
-            <version>${aws-sdk.version}</version>
+            <version>${aws-sdk-v1.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sns</artifactId>
-            <version>${aws-sdk.version}</version>
+            <version>${aws-sdk-v1.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sqs</artifactId>
-            <version>${aws-sdk.version}</version>
+            <version>${aws-sdk-v1.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-ssm</artifactId>
-            <version>${aws-sdk.version}</version>
+            <version>${aws-sdk-v1.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sts</artifactId>
-            <version>${aws-sdk.version}</version>
+            <version>${aws-sdk-v1.version}</version>
             <scope>provided</scope>
         </dependency>
 

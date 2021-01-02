@@ -19,7 +19,6 @@
     </description>
 
     <properties>
-        <aws-sdk.version>1.11.0</aws-sdk.version>
     </properties>
 
     <dependencies>
@@ -55,19 +54,7 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-logs</artifactId>
-            <version>${aws-sdk.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-iam</artifactId>
-            <version>${aws-sdk.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-sts</artifactId>
-            <version>${aws-sdk.version}</version>
+            <version>${aws-sdk-v1.version}</version>
             <scope>test</scope>
         </dependency>
 

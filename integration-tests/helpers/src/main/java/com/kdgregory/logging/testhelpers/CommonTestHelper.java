@@ -82,7 +82,8 @@ public class CommonTestHelper
     public static Class<?> getCredentialsProviderClass(AbstractLogWriter<?,?> writer)
     throws Exception
     {
-        Object client = ClassUtil.getFieldValue(writer, "client", Object.class);
+        Object facade = ClassUtil.getFieldValue(writer, "facade", Object.class);
+        Object client = ClassUtil.getFieldValue(facade, "client", Object.class);
         Field cpField = client.getClass().getDeclaredField("awsCredentialsProvider");
         cpField.setAccessible(true);
         Object provider = cpField.get(client);

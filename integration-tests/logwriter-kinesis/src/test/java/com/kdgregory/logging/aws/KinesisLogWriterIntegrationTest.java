@@ -14,7 +14,6 @@
 
 package com.kdgregory.logging.aws;
 
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -33,10 +32,12 @@ import net.sf.kdgcommons.lang.StringUtil;
 
 import org.slf4j.Logger;
 
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesis;
-import com.amazonaws.services.kinesis.AmazonKinesisClient;
+import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 
+import com.kdgregory.logging.aws.internal.facade.KinesisFacade;
 import com.kdgregory.logging.aws.kinesis.KinesisConstants;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
@@ -53,13 +54,13 @@ import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 public class KinesisLogWriterIntegrationTest
 {
     // single "helper" client that's shared by all tests
-    private static AmazonKinesisClient helperClient;
+    private static AmazonKinesis helperClient;
 
     // this one is created by the "alternate region" tests
-    private AmazonKinesisClient altClient;
+    private AmazonKinesis altClient;
 
     // this client is used in testFactoryMethod(), should be null everywhere else
-    private static AmazonKinesisClient factoryClient;
+    private static AmazonKinesis factoryClient;
 
     // this is for logging within the test
     private Logger localLogger = LoggerFactory.getLogger(getClass());
@@ -121,9 +122,9 @@ public class KinesisLogWriterIntegrationTest
     }
 
 
-    public static AmazonKinesisClient staticClientFactory()
+    public static AmazonKinesis staticClientFactory()
     {
-        factoryClient = new AmazonKinesisClient();
+        factoryClient = AmazonKinesisClientBuilder.defaultClient();
         return factoryClient;
     }
 
@@ -134,8 +135,7 @@ public class KinesisLogWriterIntegrationTest
     @BeforeClass
     public static void beforeClass()
     {
-        // constructor because we're running against 1.11.0
-        helperClient = new AmazonKinesisClient();
+        helperClient = AmazonKinesisClientBuilder.defaultClient();
     }
 
 
@@ -204,7 +204,11 @@ public class KinesisLogWriterIntegrationTest
         testHelper.assertMessages(records, 1, numMessages);
 
         assertNotNull("factory method was called", factoryClient);
-        assertSame("factory-created client used by writer", factoryClient, ClassUtil.getFieldValue(writer, "client", AmazonKinesis.class));
+
+        // this is getting a little obsessive...
+        Object facade = ClassUtil.getFieldValue(writer, "facade", KinesisFacade.class);
+        Object client = ClassUtil.getFieldValue(facade, "client", AmazonKinesis.class);
+        assertSame("factory-created client used by writer", factoryClient, client);
 
         testHelper.deleteStreamIfExists();
     }
@@ -215,8 +219,7 @@ public class KinesisLogWriterIntegrationTest
     {
         final int numMessages = 1001;
 
-        // default region for constructor is always us-east-1
-        altClient = new AmazonKinesisClient().withRegion(Regions.US_WEST_1);
+        altClient = AmazonKinesisClientBuilder.standard().withRegion(Regions.US_WEST_1).build();
 
         config.setClientRegion("us-west-1");
         init("logwriter-testAlternateRegion", altClient);
@@ -239,10 +242,10 @@ public class KinesisLogWriterIntegrationTest
     {
         final int numMessages = 1001;
 
-        // the goal here is to verify that we can use a region that didn't exist when 1.11.0 came out
-        // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
-        //         if that is your default, then the test will fail
-        altClient = new AmazonKinesisClient().withEndpoint("kinesis.us-east-2.amazonaws.com");
+        altClient = AmazonKinesisClientBuilder.standard()
+                    .withEndpointConfiguration(
+                        new EndpointConfiguration("kinesis.us-east-2.amazonaws.com", null))
+                    .build();
 
         config.setClientEndpoint("kinesis.us-east-2.amazonaws.com");
         init("logwriter-testAlternateEndpoint", altClient);

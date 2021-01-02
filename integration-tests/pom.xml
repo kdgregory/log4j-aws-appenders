@@ -14,7 +14,6 @@
     </description>
 
     <modules>
-        <module>aws-shared-minver</module>
         <module>aws-shared-current</module>
         <module>logwriter-cloudwatch</module>
         <module>logwriter-kinesis</module>

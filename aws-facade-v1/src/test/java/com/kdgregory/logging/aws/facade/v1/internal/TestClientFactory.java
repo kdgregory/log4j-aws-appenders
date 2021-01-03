@@ -16,16 +16,15 @@ package com.kdgregory.logging.aws.facade.v1.internal;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import net.sf.kdgcommons.lang.ClassUtil;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.amazonaws.ClientConfigurationFactory;
-import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
@@ -131,6 +130,12 @@ public class TestClientFactory
         {
             createClientBuilderCalled = true;
             return clientBuilder;
+        }
+
+        @Override
+        protected void setAssumedRoleCredentialsProvider(AwsClientBuilder<?,?> builder, String roleToAssume)
+        {
+            fail("this method should not be called unless role configured");
         }
     }
 
@@ -346,25 +351,27 @@ public class TestClientFactory
     @Test
     public void testCreateViaBuilderConfigureAssumedRole() throws Exception
     {
-        String testRole = "arn:aws:iam::123456789012:role/AssumableRole";
+        // it doesn't matter whether we use a name or ARN, because we're mocking out the code that uses it
+        String testRoleArn = "arn:aws:iam::123456789012:role/AssumableRole";
 
-        TestWriterConfig config = new TestWriterConfig().setAssumedRole(testRole);
-        TestableClientFactory factory = new TestableClientFactory(config);
+        final AtomicBoolean setterWasCalled = new AtomicBoolean(false);
+
+        TestWriterConfig config = new TestWriterConfig().setAssumedRole(testRoleArn);
+        TestableClientFactory factory = new TestableClientFactory(config)
+        {
+            @Override
+            protected void setAssumedRoleCredentialsProvider(AwsClientBuilder<?,?> builder, String roleToAssume)
+            {
+                setterWasCalled.set(true);
+                assertEquals("roleToAssume passed to provider provider", testRoleArn, roleToAssume);
+            }
+        };
         Object value = factory.create();
 
         assertTrue("tryInstantiateFactory called",                                      factory.tryInstantiateFactoryCalled);
         assertFalse("factory method check variable",                                    factoryMethodCalled);
         assertTrue("client builder created",                                            factory.createClientBuilderCalled);
-
+        assertTrue("assumed role setter was called",                                    setterWasCalled.get());
         assertEquals("create() returned expected value",            Boolean.TRUE,       value);
-
-        // note: STSAssumeRoleSessionCredentialsProvider doesn't expose any methods, so no need to be typesafe
-        Object credentialsProvider = factory.clientBuilder.getCredentials();
-        assertTrue("credentials provider class (was: " + credentialsProvider.getClass().getName() + ")",
-                   credentialsProvider instanceof STSAssumeRoleSessionCredentialsProvider);
-
-        // these fields are internal and subject to change (but probably won't)
-        assertEquals("provider configured with role",       testRole,               ClassUtil.getFieldValue(credentialsProvider, "roleArn", String.class));
-        assertEquals("provider configured with session",    "log4j-aws-appenders",  ClassUtil.getFieldValue(credentialsProvider, "roleSessionName", String.class));
     }
 }

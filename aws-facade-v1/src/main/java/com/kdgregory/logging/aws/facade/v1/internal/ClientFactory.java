@@ -18,7 +18,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
@@ -48,6 +47,10 @@ public class ClientFactory<T>
         this.config = config;
     }
 
+//----------------------------------------------------------------------------
+//  Public methods
+//----------------------------------------------------------------------------
+
     public T create()
     {
         T client = tryInstantiateFromFactory();
@@ -56,7 +59,12 @@ public class ClientFactory<T>
 
         AwsClientBuilder<?,?> builder = createClientBuilder();
         optSetRegionOrEndpoint(builder);
-        optSetAssumedRoleCredentialsProvider(builder);
+
+        String roleToAssume = config.getAssumedRole();
+        if ((roleToAssume != null) && !roleToAssume.isEmpty())
+        {
+            setAssumedRoleCredentialsProvider(builder, roleToAssume);
+        }
 
         return clientType.cast(builder.build());
     }
@@ -132,7 +140,7 @@ public class ClientFactory<T>
     /**
      *  If the configuration specifies region, attempts to set it.
      */
-    private void optSetRegionOrEndpoint(AwsClientBuilder<?,?> builder)
+    protected void optSetRegionOrEndpoint(AwsClientBuilder<?,?> builder)
     {
         String region = config.getClientRegion();
         String endpoint = config.getClientEndpoint();
@@ -150,19 +158,14 @@ public class ClientFactory<T>
 
 
     /**
-     *  If the configuration specifies assumed role, create a credentials
-     *  provider and update the builder with it.
+     *  Configures the builder with an assumed-role credentials provider. The
+     *  test for this is in the caller, so that we can override this method for
+     *  testing.
      */
-    private void optSetAssumedRoleCredentialsProvider(AwsClientBuilder<?,?> builder)
+    protected void setAssumedRoleCredentialsProvider(AwsClientBuilder<?,?> builder, String roleToAssume)
     {
-        String roleArn = config.getAssumedRole();
-        if ((roleArn == null) || roleArn.isEmpty())
-            return;
-
-        AWSCredentialsProvider credentialsProvider =
-                new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, "com.kdgregory.logging.aws")
-                .build();
-
+        AWSCredentialsProvider credentialsProvider = new AssumedRoleCredentialsProviderProvider()
+                                                     .provideProvider(roleToAssume);
         builder.setCredentials(credentialsProvider);
     }
 

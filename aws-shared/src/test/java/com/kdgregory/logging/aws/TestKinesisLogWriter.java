@@ -307,7 +307,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
             @Override
             public void createStream()
             {
-                throw new KinesisFacadeException("unexpected", ReasonCode.THROTTLING, false, cause);
+                throw new KinesisFacadeException(ReasonCode.THROTTLING, false, cause);
             }
         };
         createWriter();
@@ -402,7 +402,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
             @Override
             public void setRetentionPeriod()
             {
-                throw new KinesisFacadeException("unexpected", ReasonCode.THROTTLING, false, cause);
+                throw new KinesisFacadeException(ReasonCode.THROTTLING, false, cause);
             }
         };
         createWriter();
@@ -581,7 +581,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
             public List<LogMessage> putRecords(List<LogMessage> batch)
             {
                 if (putRecordsInvocationCount == 1)
-                    throw new KinesisFacadeException("throttling", ReasonCode.THROTTLING, true);
+                    throw new KinesisFacadeException(ReasonCode.THROTTLING, true, null);
                 else
                     return super.putRecords(batch);
             }
@@ -620,7 +620,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
             @Override
             public List<LogMessage> putRecords(List<LogMessage> batch)
             {
-                throw new KinesisFacadeException("throttling", ReasonCode.THROTTLING, true);
+                throw new KinesisFacadeException(ReasonCode.THROTTLING, true, null);
             }
         };
         createWriter();
@@ -659,7 +659,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
             @Override
             public List<LogMessage> putRecords(List<LogMessage> batch)
             {
-                throw new KinesisFacadeException("unexpected", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
+                throw new KinesisFacadeException(ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
             }
         };
         createWriter();

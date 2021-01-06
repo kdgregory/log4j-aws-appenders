@@ -22,7 +22,7 @@ package com.kdgregory.logging.aws.internal.facade;
  *  wrap an underlying SDK-specific cause.
  */
 public class KinesisFacadeException
-extends RuntimeException
+extends FacadeException
 {
     private static final long serialVersionUID = 1L;
 
@@ -73,17 +73,15 @@ extends RuntimeException
 //----------------------------------------------------------------------------
 
     private ReasonCode reasonCode;
-    private boolean isRetryable;
 
 
     /**
      *  Base constructor.
      */
-    public KinesisFacadeException(String message, ReasonCode reasonCode, boolean isRetryable, Throwable cause)
+    public KinesisFacadeException(String message, Throwable cause, ReasonCode reasonCode, boolean isRetryable, String functionName, Object... args)
     {
-        super(message, cause);
+        super(message, cause, isRetryable, functionName, args);
         this.reasonCode = reasonCode;
-        this.isRetryable = isRetryable;
     }
 
 
@@ -91,11 +89,24 @@ extends RuntimeException
      *  Convenience constructor, for conditions where there is no underlying exception,
      *  or where it's irrelevant.
      */
-    public KinesisFacadeException(String message, ReasonCode reasonCode, boolean isRetryable)
+    public KinesisFacadeException(String message, ReasonCode reasonCode, boolean isRetryable, String functionName, Object... args)
     {
-        this(message, reasonCode, isRetryable, null);
+        this(message, null, reasonCode, isRetryable, functionName, args);
     }
 
+
+    /**
+     *  Convenience constructor, for conditions where there is no underlying exception,
+     *  or where it's irrelevant.
+     */
+    public KinesisFacadeException(ReasonCode reasonCode, boolean isRetryable, Throwable cause)
+    {
+        this("use for testing only", cause, reasonCode, isRetryable, null);
+    }
+
+//----------------------------------------------------------------------------
+//  Accessors
+//----------------------------------------------------------------------------
 
     /**
      *  Returns a code that can be used by the application to dispatch exception handling.
@@ -103,15 +114,5 @@ extends RuntimeException
     public ReasonCode getReason()
     {
         return reasonCode;
-    }
-
-
-    /**
-     *  Returns <code>true</code> if the caller should retry the operation, <code>false</code>
-     *  if it should look more closely at the reason (or throw).
-     */
-    public boolean isRetryable()
-    {
-        return isRetryable;
     }
 }

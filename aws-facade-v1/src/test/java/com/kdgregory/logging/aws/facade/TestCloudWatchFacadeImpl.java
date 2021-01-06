@@ -21,7 +21,7 @@ import java.util.List;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import net.sf.kdgcommons.test.StringAsserts;
+import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.*;
@@ -79,24 +79,17 @@ public class TestCloudWatchFacadeImpl
     private void assertException(
         CloudWatchFacadeException ex,
         String expectedFunctionName, String expectedContainedMessage,
-        ReasonCode expectedReason, Throwable expectedCause)
+        ReasonCode expectedReason, boolean expectedRetryable, Throwable expectedCause)
     {
         assertEquals("exception reason",  expectedReason, ex.getReason());
 
-        assertTrue("exception identifies function (was: " + ex.getMessage() + ")",
-                   ex.getMessage().contains(expectedFunctionName));
+        assertRegex("exception message (was: " + ex.getMessage() + ")",
+                    expectedFunctionName + ".*" + config.getLogGroupName()
+                                         + "(" + config.getLogStreamName() + ")*"
+                                         + ".*" + expectedContainedMessage,
+                    ex.getMessage());
 
-        assertTrue("exception contains expected message (was: " + ex.getMessage() + ")",
-                   ex.getMessage().contains(expectedContainedMessage));
-
-        assertTrue("exception identifies log group (was: " + ex.getMessage() + ")",
-                   ex.getMessage().contains(config.getLogGroupName()));
-
-        if (config.getLogStreamName() != null)
-        {
-            assertTrue("exception identifies log stream (was: " + ex.getMessage() + ")",
-                       ex.getMessage().contains(config.getLogStreamName()));
-        }
+        assertEquals("retryable", expectedRetryable, ex.isRetryable());
 
         if (expectedCause != null)
         {
@@ -208,7 +201,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testFindLogGroupError() throws Exception
     {
-        final RuntimeException cause = new RuntimeException();
+        final RuntimeException cause = new RuntimeException("test");
         mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS)
         {
             @Override
@@ -225,7 +218,7 @@ public class TestCloudWatchFacadeImpl
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "findLogGroup", "unexpected", ReasonCode.UNEXPECTED_EXCEPTION, cause);
+            assertException(ex, "findLogGroup", "unexpected exception: test", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
         }
 
         assertEquals("calls to describeLogGroups",      1,  mock.describeLogGroupsInvocationCount);
@@ -295,7 +288,7 @@ public class TestCloudWatchFacadeImpl
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "createLogGroup", "throttled", ReasonCode.THROTTLING, null);
+            assertException(ex, "createLogGroup", "throttled", ReasonCode.THROTTLING, true, null);
         }
 
         assertEquals("calls to describeLogGroups",      0,  mock.describeLogGroupsInvocationCount);
@@ -329,7 +322,7 @@ public class TestCloudWatchFacadeImpl
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "createLogGroup", "aborted", ReasonCode.ABORTED, null);
+            assertException(ex, "createLogGroup", "aborted", ReasonCode.ABORTED, true, null);
         }
 
         assertEquals("calls to describeLogGroups",      0,  mock.describeLogGroupsInvocationCount);
@@ -342,7 +335,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testCreateLogGroupUnexpectedError() throws Exception
     {
-        final RuntimeException cause = new RuntimeException();
+        final RuntimeException cause = new RuntimeException("test");
         mock = new MockCloudWatchClient(Collections.emptyList(), Collections.emptyList())
         {
             @Override
@@ -359,7 +352,7 @@ public class TestCloudWatchFacadeImpl
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "createLogGroup", "unexpected", ReasonCode.UNEXPECTED_EXCEPTION, null);
+            assertException(ex, "createLogGroup", "unexpected exception: test", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
         }
 
         assertEquals("calls to describeLogGroups",      0,  mock.describeLogGroupsInvocationCount);
@@ -407,7 +400,7 @@ public class TestCloudWatchFacadeImpl
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "setLogGroupRetention", "invalid retention period: 19", ReasonCode.INVALID_CONFIGURATION, null);
+            assertException(ex, "setLogGroupRetention", "invalid retention period: 19", ReasonCode.INVALID_CONFIGURATION, false, null);
         }
 
         assertEquals("calls to putRetentionPolicy",                 1,                          mock.putRetentionPolicyInvocationCount);
@@ -417,7 +410,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testSetLogGroupRetentionUnexpectedError() throws Exception
     {
-        final RuntimeException cause = new RuntimeException();
+        final RuntimeException cause = new RuntimeException("test");
         mock = new MockCloudWatchClient(Collections.emptyList(), Collections.emptyList())
         {
             @Override
@@ -439,10 +432,10 @@ public class TestCloudWatchFacadeImpl
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "setLogGroupRetention", "unexpected", ReasonCode.UNEXPECTED_EXCEPTION, cause);
+            assertException(ex, "setLogGroupRetention", "unexpected exception: test", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
         }
 
-        assertEquals("calls to putRetentionPolicy",                 1,                          mock.putRetentionPolicyInvocationCount);
+        assertEquals("calls to putRetentionPolicy",     1,                  mock.putRetentionPolicyInvocationCount);
     }
 
 
@@ -507,7 +500,7 @@ public class TestCloudWatchFacadeImpl
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "createLogStream", "throttled", ReasonCode.THROTTLING, null);
+            assertException(ex, "createLogStream", "throttled", ReasonCode.THROTTLING, true, null);
         }
 
         assertEquals("calls to describeLogGroups",      0,  mock.describeLogGroupsInvocationCount);
@@ -541,7 +534,7 @@ public class TestCloudWatchFacadeImpl
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "createLogStream", "aborted", ReasonCode.ABORTED, null);
+            assertException(ex, "createLogStream", "aborted", ReasonCode.ABORTED, true, null);
         }
 
         assertEquals("calls to describeLogGroups",      0,  mock.describeLogGroupsInvocationCount);
@@ -570,7 +563,7 @@ public class TestCloudWatchFacadeImpl
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "createLogStream", "missing", ReasonCode.MISSING_LOG_GROUP, null);
+            assertException(ex, "createLogStream", "missing", ReasonCode.MISSING_LOG_GROUP, false, null);
         }
 
         assertEquals("calls to describeLogGroups",      0,  mock.describeLogGroupsInvocationCount);
@@ -583,7 +576,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testCreateLogStreamUnexpectedError() throws Exception
     {
-        RuntimeException cause = new RuntimeException("message irrelevant");
+        final RuntimeException cause = new RuntimeException("test");
         mock = new MockCloudWatchClient(Collections.emptyList(), Collections.emptyList())
         {
             @Override
@@ -600,7 +593,7 @@ public class TestCloudWatchFacadeImpl
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "createLogStream", "unexpected", ReasonCode.UNEXPECTED_EXCEPTION, cause);
+            assertException(ex, "createLogStream", "unexpected exception: test", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
         }
 
         assertEquals("calls to describeLogGroups",      0,  mock.describeLogGroupsInvocationCount);
@@ -613,7 +606,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testRetrieveSequenceTokenHappyPath() throws Exception
     {
-        StringAsserts.assertNotEmpty("returned sequence token", facade.retrieveSequenceToken());
+        assertNotEmpty("returned sequence token", facade.retrieveSequenceToken());
 
         assertEquals("group name passed to create",     TEST_LOG_GROUP,     mock.describeLogStreamsGroupName);
         assertEquals("stream name passed to create",    TEST_LOG_STREAM,    mock.describeLogStreamsStreamPrefix);
@@ -630,7 +623,7 @@ public class TestCloudWatchFacadeImpl
     {
         mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, 2, KNOWN_LOG_STREAMS, 2);
 
-        StringAsserts.assertNotEmpty("returned sequence token", facade.retrieveSequenceToken());
+        assertNotEmpty("returned sequence token", facade.retrieveSequenceToken());
 
         assertEquals("calls to describeLogGroups",      0,  mock.describeLogGroupsInvocationCount);
         assertEquals("calls to describeLogStreams",     2,  mock.describeLogStreamsInvocationCount);
@@ -714,7 +707,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testRetrieveSequenceTokenUnexpectedError() throws Exception
     {
-        RuntimeException cause = new RuntimeException();
+        final RuntimeException cause = new RuntimeException("test");
         mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS)
         {
             @Override
@@ -731,7 +724,7 @@ public class TestCloudWatchFacadeImpl
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "retrieveSequenceToken", "unexpected", ReasonCode.UNEXPECTED_EXCEPTION, null);
+            assertException(ex, "retrieveSequenceToken", "unexpected exception: test", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
         }
 
         assertEquals("calls to describeLogGroups",      0,  mock.describeLogGroupsInvocationCount);
@@ -808,7 +801,7 @@ public class TestCloudWatchFacadeImpl
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "putEvents", "throttled", ReasonCode.THROTTLING, null);
+            assertException(ex, "putEvents", "throttled", ReasonCode.THROTTLING, true, null);
         }
 
         assertEquals("calls to putLogEvents",                   1,                          mock.putLogEventsInvocationCount);
@@ -831,7 +824,7 @@ public class TestCloudWatchFacadeImpl
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "putEvents", "invalid sequence token: 9999", ReasonCode.INVALID_SEQUENCE_TOKEN, null);
+            assertException(ex, "putEvents", "invalid sequence token: 9999", ReasonCode.INVALID_SEQUENCE_TOKEN, false, null);
         }
 
         assertEquals("calls to putLogEvents",                   1,                          mock.putLogEventsInvocationCount);
@@ -856,7 +849,7 @@ public class TestCloudWatchFacadeImpl
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "putEvents", "missing log group", ReasonCode.MISSING_LOG_GROUP, null);
+            assertException(ex, "putEvents", "missing log group", ReasonCode.MISSING_LOG_GROUP, false, null);
         }
 
         assertEquals("calls to putLogEvents",                   1,                          mock.putLogEventsInvocationCount);
@@ -888,7 +881,7 @@ public class TestCloudWatchFacadeImpl
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "putEvents", "already processed", ReasonCode.ALREADY_PROCESSED, null);
+            assertException(ex, "putEvents", "already processed", ReasonCode.ALREADY_PROCESSED, false, null);
         }
 
         assertEquals("calls to putLogEvents",                   1,                          mock.putLogEventsInvocationCount);
@@ -901,7 +894,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testPutEventsUnexpectedException() throws Exception
     {
-        RuntimeException cause = new RuntimeException("message irrelevant");
+        final RuntimeException cause = new RuntimeException("test");
         mock = new MockCloudWatchClient(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS)
         {
             @Override
@@ -921,7 +914,7 @@ public class TestCloudWatchFacadeImpl
         }
         catch (CloudWatchFacadeException ex)
         {
-            assertException(ex, "putEvents", "unexpected exception", ReasonCode.UNEXPECTED_EXCEPTION, cause);
+            assertException(ex, "putEvents", "unexpected exception: test", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
         }
 
         assertEquals("calls to putLogEvents",                   1,                          mock.putLogEventsInvocationCount);

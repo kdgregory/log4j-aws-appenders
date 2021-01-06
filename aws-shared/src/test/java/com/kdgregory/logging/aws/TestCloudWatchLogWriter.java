@@ -259,7 +259,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             public void createLogGroup() throws CloudWatchFacadeException
             {
                 if (createLogGroupInvocationCount == 1)
-                    throw new CloudWatchFacadeException("throttled", ReasonCode.THROTTLING, true, null);
+                    throw new CloudWatchFacadeException(ReasonCode.THROTTLING, true, null);
 
                 super.createLogGroup();
             }
@@ -306,7 +306,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             {
                 // note: exception message is asserted later
                 if (createLogGroupInvocationCount == 1)
-                    throw new CloudWatchFacadeException("aborted", ReasonCode.ABORTED, true, null);
+                    throw new CloudWatchFacadeException(ReasonCode.ABORTED, true, null);
 
                 // at the level of the client, aborted is normally followed by reasource-exists;
                 // the facade handles that, so we'll just return success
@@ -353,7 +353,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             @Override
             public void createLogGroup() throws CloudWatchFacadeException
             {
-                throw new CloudWatchFacadeException("unexpected", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
+                throw new CloudWatchFacadeException(ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
             }
         };
 
@@ -396,7 +396,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
                     return null;
 
                 // this will be called in wait loop
-                throw new CloudWatchFacadeException("unexpected", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
+                throw new CloudWatchFacadeException(ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
             }
         };
 
@@ -522,7 +522,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             @Override
             public void setLogGroupRetention() throws CloudWatchFacadeException
             {
-                throw new CloudWatchFacadeException("unexpected", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
+                throw new CloudWatchFacadeException(ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
             }
 
             @Override
@@ -606,7 +606,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             {
                 // note: exception message is asserted later
                 if (createLogStreamInvocationCount == 1)
-                    throw new CloudWatchFacadeException("throttled", ReasonCode.THROTTLING, true, null);
+                    throw new CloudWatchFacadeException(ReasonCode.THROTTLING, true, null);
 
                 super.createLogStream();
             }
@@ -651,7 +651,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             public void createLogStream() throws CloudWatchFacadeException
             {
                 if (createLogStreamInvocationCount == 1)
-                    throw new CloudWatchFacadeException("unexpected", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
+                    throw new CloudWatchFacadeException(ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
 
                 super.createLogStream();
             }
@@ -708,7 +708,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
                     return null;
 
                 // this will be called in wait loop
-                throw new CloudWatchFacadeException("unexpected", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
+                throw new CloudWatchFacadeException(ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
             }
         };
 
@@ -866,7 +866,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             {
                 // we'll do every other batch
                 if (putEventsInvocationCount % 2 == 1)
-                    throw new CloudWatchFacadeException("throttling", ReasonCode.THROTTLING, true, null);
+                    throw new CloudWatchFacadeException(ReasonCode.THROTTLING, true, null);
 
                 return super.sendMessages(sequenceToken, messages);
             }
@@ -916,7 +916,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             public String sendMessages(String sequenceToken, List<LogMessage> messages)
             throws CloudWatchFacadeException
             {
-                throw new CloudWatchFacadeException("irrelevant", ReasonCode.THROTTLING, true, null);
+                throw new CloudWatchFacadeException(ReasonCode.THROTTLING, true, null);
             }
         };
 
@@ -955,7 +955,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             {
                 if (putEventsInvocationCount < 2)
                 {
-                    throw new CloudWatchFacadeException("irrelevant", ReasonCode.INVALID_SEQUENCE_TOKEN, true, null);
+                    throw new CloudWatchFacadeException(ReasonCode.INVALID_SEQUENCE_TOKEN, true, null);
                 }
                 return super.sendMessages(sequenceToken, messages);
             }
@@ -997,7 +997,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             public String sendMessages(String sequenceToken, List<LogMessage> messages)
             throws CloudWatchFacadeException
             {
-                throw new CloudWatchFacadeException("irrelevant", ReasonCode.INVALID_SEQUENCE_TOKEN, true, null);
+                throw new CloudWatchFacadeException(ReasonCode.INVALID_SEQUENCE_TOKEN, true, null);
             }
         };
 
@@ -1038,7 +1038,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             throws CloudWatchFacadeException
             {
                 if (putEventsInvocationCount == 1)
-                    throw new CloudWatchFacadeException("already excepted", ReasonCode.ALREADY_PROCESSED, false, null);
+                    throw new CloudWatchFacadeException(ReasonCode.ALREADY_PROCESSED, false, null);
 
                 return super.sendMessages(sequenceToken, messages);
             }
@@ -1091,7 +1091,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             public String sendMessages(String sequenceToken, List<LogMessage> messages)
             throws CloudWatchFacadeException
             {
-                throw new CloudWatchFacadeException("check me", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
+                throw new CloudWatchFacadeException(ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
             }
         };
 
@@ -1126,8 +1126,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
                                               "using existing CloudWatch log stream: bargle",
                                               "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
-        internalLogger.assertInternalErrorLog("failed to send: check me",
-                                              "failed to send: check me");
+        internalLogger.assertInternalErrorLog("failed to send: use for testing only",
+                                              "failed to send: use for testing only");
 
         assertUltimateCause("original exception reported, first try",  cause, internalLogger.errorExceptions.get(0));
         assertUltimateCause("original exception reported, second try", cause, internalLogger.errorExceptions.get(1));
@@ -1156,7 +1156,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
             {
                 // we assert this message; actual message has more detail
                 if (putEventsInvocationCount == 1)
-                    throw new CloudWatchFacadeException("stream deleted", ReasonCode.MISSING_LOG_STREAM, false, cause);
+                    throw new CloudWatchFacadeException("stream deleted", cause, ReasonCode.MISSING_LOG_STREAM, false,null);
 
                 return super.sendMessages(sequenceToken, messages);
             }

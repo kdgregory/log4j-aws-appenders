@@ -14,6 +14,8 @@
 
 package com.kdgregory.logging.aws.facade;
 
+import static net.sf.kdgcommons.test.StringAsserts.*;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -74,23 +76,20 @@ public class TestSNSFacadeImpl
     private void assertException(
             SNSFacadeException ex,
             String expectedFunctionName, String expectedContainedMessage,
-            ReasonCode expectedReason, boolean expectedRetriable, Throwable expectedCause)
+            ReasonCode expectedReason, boolean expectedRetryable, Throwable expectedCause)
     {
-        assertEquals("exception reason",  expectedReason, ex.getReason());
-
-        assertTrue("exception identifies function (was: " + ex.getMessage() + ")",
-                   ex.getMessage().contains(expectedFunctionName));
-
         String nameOrArn = (config.getTopicArn() != null) ? config.getTopicArn()
                          : (config.getTopicName() != null) ? config.getTopicName()
                          : "";  // this case is only for invalid configuration
-        assertTrue("exception identifies topic (was: " + ex.getMessage() + ")",
-                   ex.getMessage().contains(nameOrArn));
 
-        assertTrue("exception contains expected message (was: " + ex.getMessage() + ")",
-                   ex.getMessage().contains(expectedContainedMessage));
+        assertEquals("exception reason",  expectedReason, ex.getReason());
 
-        assertEquals("retriyable", expectedRetriable, ex.isRetryable());
+        assertRegex("exception message (was: " + ex.getMessage() + ")",
+                    expectedFunctionName + ".*" + nameOrArn+ ".*"
+                                         + expectedContainedMessage,
+                    ex.getMessage());
+
+        assertEquals("retryable", expectedRetryable, ex.isRetryable());
 
         if (expectedCause != null)
         {
@@ -202,7 +201,7 @@ public class TestSNSFacadeImpl
     @Test
     public void testLookupException() throws Exception
     {
-        final RuntimeException cause = new RuntimeException();
+        final RuntimeException cause = new RuntimeException("test");
         mock = new MockSNSClient(TEST_TOPICS)
         {
             @Override
@@ -220,7 +219,7 @@ public class TestSNSFacadeImpl
         }
         catch (SNSFacadeException ex)
         {
-            assertException(ex, "lookupTopic", "unexpected exception", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
+            assertException(ex, "lookupTopic", "unexpected exception: test", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
         }
 
         assertEquals("listTopics() invocation count",   1,      mock.listTopicsInvocationCount);
@@ -248,7 +247,7 @@ public class TestSNSFacadeImpl
     @Test
     public void testCreateException() throws Exception
     {
-        final RuntimeException cause = new RuntimeException();
+        final RuntimeException cause = new RuntimeException("test");
         mock = new MockSNSClient(Collections.emptyList())
         {
             @Override
@@ -266,7 +265,7 @@ public class TestSNSFacadeImpl
         }
         catch (SNSFacadeException ex)
         {
-            assertException(ex, "createTopic", "unexpected exception", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
+            assertException(ex, "createTopic", "unexpected exception: test", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
         }
 
         assertEquals("listTopics() invocation count",   0,      mock.listTopicsInvocationCount);
@@ -330,7 +329,7 @@ public class TestSNSFacadeImpl
     @Test
     public void testPublishException() throws Exception
     {
-        final RuntimeException cause = new RuntimeException();
+        final RuntimeException cause = new RuntimeException("test");
         mock = new MockSNSClient(TEST_TOPICS)
         {
             @Override
@@ -348,7 +347,7 @@ public class TestSNSFacadeImpl
         }
         catch (SNSFacadeException ex)
         {
-            assertException(ex, "publish", "unexpected exception", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
+            assertException(ex, "publish", "unexpected exception: test", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
         }
 
         assertEquals("listTopics() invocation count",   0,      mock.listTopicsInvocationCount);

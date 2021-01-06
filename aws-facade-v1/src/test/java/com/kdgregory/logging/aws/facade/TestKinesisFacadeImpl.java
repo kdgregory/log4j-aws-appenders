@@ -19,6 +19,8 @@ import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.test.StringAsserts;
 
+import static net.sf.kdgcommons.test.StringAsserts.*;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -74,20 +76,16 @@ public class TestKinesisFacadeImpl
     private void assertException(
             KinesisFacadeException ex,
             String expectedFunctionName, String expectedContainedMessage,
-            ReasonCode expectedReason, boolean expectedRetriable, Throwable expectedCause)
+            ReasonCode expectedReason, boolean expectedRetryable, Throwable expectedCause)
     {
         assertEquals("exception reason",  expectedReason, ex.getReason());
 
-        assertTrue("exception identifies function (was: " + ex.getMessage() + ")",
-                   ex.getMessage().contains(expectedFunctionName));
+        assertRegex("exception message (was: " + ex.getMessage() + ")",
+                    expectedFunctionName + ".*" + config.getStreamName() + ".*"
+                                         + expectedContainedMessage,
+                    ex.getMessage());
 
-        assertTrue("exception identifies stream (was: " + ex.getMessage() + ")",
-                   ex.getMessage().contains(config.getStreamName()));
-
-        assertTrue("exception contains expected message (was: " + ex.getMessage() + ")",
-                   ex.getMessage().contains(expectedContainedMessage));
-
-        assertEquals("retriyable", expectedRetriable, ex.isRetryable());
+        assertEquals("retryable", expectedRetryable, ex.isRetryable());
 
         if (expectedCause != null)
         {
@@ -176,7 +174,7 @@ public class TestKinesisFacadeImpl
     @Test
     public void testRetrieveStatusUnexpectedException() throws Exception
     {
-        final RuntimeException cause = new RuntimeException("check me");
+        final RuntimeException cause = new RuntimeException("test");
         mock = new MockKinesisClient()
         {
             @Override
@@ -194,7 +192,7 @@ public class TestKinesisFacadeImpl
         }
         catch (KinesisFacadeException ex)
         {
-            assertException(ex, "retrieveStreamStatus", "unexpected exception", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
+            assertException(ex, "retrieveStreamStatus", "unexpected exception: test", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
         }
 
         assertEquals("describeStream invocation count",             1,      mock.describeStreamInvocationCount);
@@ -282,7 +280,7 @@ public class TestKinesisFacadeImpl
     @Test
     public void tesCreateUnexpectedException() throws Exception
     {
-        final RuntimeException cause = new RuntimeException("check me");
+        final RuntimeException cause = new RuntimeException("test");
         mock = new MockKinesisClient()
         {
 
@@ -301,7 +299,7 @@ public class TestKinesisFacadeImpl
         }
         catch (KinesisFacadeException ex)
         {
-            assertException(ex, "createStream", "unexpected", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
+            assertException(ex, "createStream", "unexpected exception: test", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
         }
 
         assertEquals("describeStream invocation count",             0,      mock.describeStreamInvocationCount);
@@ -382,7 +380,7 @@ public class TestKinesisFacadeImpl
     @Test
     public void testSetRetentionPeriodUnexpectedException() throws Exception
     {
-        final RuntimeException cause = new RuntimeException("check me");
+        final RuntimeException cause = new RuntimeException("test");
         mock = new MockKinesisClient(DEFAULT_STREAM_NAME)
         {
             @Override
@@ -401,7 +399,7 @@ public class TestKinesisFacadeImpl
         }
         catch (KinesisFacadeException ex)
         {
-            assertException(ex, "setRetentionPeriod", "unexpected", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
+            assertException(ex, "setRetentionPeriod", "unexpected exception: test", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
         }
 
         assertEquals("describeStream invocation count",             0,      mock.describeStreamInvocationCount);
@@ -557,7 +555,7 @@ public class TestKinesisFacadeImpl
     @Test
     public void testPutRecordsUnexpectedException() throws Exception
     {
-        final RuntimeException cause = new RuntimeException("check me");
+        final RuntimeException cause = new RuntimeException("test");
         mock = new MockKinesisClient(DEFAULT_STREAM_NAME)
         {
             @Override
@@ -580,7 +578,7 @@ public class TestKinesisFacadeImpl
         }
         catch (KinesisFacadeException ex)
         {
-            assertException(ex, "putRecords", "unexpected", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
+            assertException(ex, "putRecords", "unexpected exception: test", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
         }
 
         assertEquals("describeStream invocation count",             0,                      mock.describeStreamInvocationCount);

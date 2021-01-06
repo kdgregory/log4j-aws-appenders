@@ -93,7 +93,7 @@ implements SNSFacade
     public void publish(LogMessage message)
     {
         if ((config.getTopicArn() == null) || config.getTopicArn().isEmpty())
-            throw new SNSFacadeException(generateExceptionMessage("publish", "ARN not configured"), ReasonCode.INVALID_CONFIGURATION, false);
+            throw new SNSFacadeException("ARN not configured", ReasonCode.INVALID_CONFIGURATION, false, "publish");
 
         try
         {
@@ -132,18 +132,6 @@ implements SNSFacade
 
 
     /**
-     *  Generates the full exception message.
-     */
-    private String generateExceptionMessage(String functionName, String message)
-    {
-        return functionName + "("
-                       + ((config.getTopicArn() != null) ? config.getTopicArn() : config.getTopicName())
-                       + "): "
-                       + message;
-    }
-
-
-    /**
      *  Creates a facade exception based on some other exception.
      */
     private SNSFacadeException transformException(String functionName, Exception cause)
@@ -171,7 +159,7 @@ implements SNSFacade
             {
                 reason = ReasonCode.UNEXPECTED_EXCEPTION;
                 message = "service exception: " + cause.getMessage();
-                isRetryable = ((AmazonSNSException)cause).isRetryable();
+                isRetryable = false;  // AWSLogsException considers some things retryable that we don't
             }
         }
         else
@@ -181,7 +169,9 @@ implements SNSFacade
             isRetryable = false;
         }
 
-        return new SNSFacadeException(generateExceptionMessage(functionName, message), reason, isRetryable, cause);
+        return new SNSFacadeException(
+                message, cause, reason, isRetryable,
+                functionName, (config.getTopicArn() != null) ? config.getTopicArn() : config.getTopicName());
     }
 
 }

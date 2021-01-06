@@ -176,36 +176,38 @@ implements KinesisFacade
      */
     private KinesisFacadeException transformException(String functionName, Exception ex)
     {
-        String message = functionName + "(" + config.getStreamName() + "): ";
+        String message;
         ReasonCode reason;
         boolean isRetryable;
 
         if (ex instanceof ProvisionedThroughputExceededException)
         {
-            message += "throttled";
+            message = "throttled";
             reason = ReasonCode.THROTTLING;
             isRetryable = true;
         }
         else if (ex instanceof LimitExceededException)
         {
-            message += "limit exceeded";
+            message = "limit exceeded";
             reason = ReasonCode.LIMIT_EXCEEDED;
             isRetryable = true;
         }
         else if (ex instanceof ResourceInUseException)
         {
-            message += "stream not active";
+            message = "stream not active";
             reason = ReasonCode.INVALID_STATE;
             isRetryable = true;
         }
         else
         {
-            message += "unexpected exception";
+            message = "unexpected exception: " + ex.getMessage();
             reason = ReasonCode.UNEXPECTED_EXCEPTION;
             isRetryable = false;
         }
 
-        return new KinesisFacadeException(message, reason, isRetryable, ex);
+        return new KinesisFacadeException(
+                message, ex, reason, isRetryable,
+                functionName, config.getStreamName());
     }
 
 

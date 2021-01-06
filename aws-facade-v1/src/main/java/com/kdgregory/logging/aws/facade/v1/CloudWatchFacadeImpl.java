@@ -116,9 +116,10 @@ implements CloudWatchFacade
         catch (InvalidParameterException ex)
         {
             throw new CloudWatchFacadeException(
-                constructExceptionMessage("setLogGroupRetention", "invalid retention period: " + config.getRetentionPeriod()),
+                "invalid retention period: " + config.getRetentionPeriod(),
                 ReasonCode.INVALID_CONFIGURATION,
-                false);
+                false,
+                "setLogGroupRetention", config.getLogGroupName());
         }
         catch (Exception ex)
         {
@@ -149,9 +150,11 @@ implements CloudWatchFacade
         catch (ResourceNotFoundException ex)
         {
             throw new CloudWatchFacadeException(
-                constructExceptionMessage("createLogStream", "log group missing"),
+                "log group missing",
                 ReasonCode.MISSING_LOG_GROUP,
-                false);
+                false,
+                "createLogStream",
+                config.getLogGroupName());
         }
         catch (Exception ex)
         {
@@ -226,16 +229,18 @@ implements CloudWatchFacade
         catch (InvalidSequenceTokenException ex)
         {
             throw new CloudWatchFacadeException(
-                    constructExceptionMessage("putEvents", "invalid sequence token: " + sequenceToken),
+                    "invalid sequence token: " + sequenceToken,
                     ReasonCode.INVALID_SEQUENCE_TOKEN,
-                    true);
+                    false, // retryable after retrieving a new token
+                    "putEvents", config.getLogGroupName(), config.getLogStreamName());
         }
         catch (ResourceNotFoundException ex)
         {
             throw new CloudWatchFacadeException(
-                    constructExceptionMessage("putEvents", "missing log group"),
+                    "missing log group",
                     ReasonCode.MISSING_LOG_GROUP,
-                    false);
+                    false,
+                    "putEvents", config.getLogGroupName());
         }
         catch (Exception ex)
         {
@@ -271,18 +276,6 @@ implements CloudWatchFacade
 
 
     /**
-     *  Constructs an exception message that identifies function, log group,
-     *  and log stream.
-     */
-    private String constructExceptionMessage(String functionName, String message)
-    {
-        return functionName + "(" + config.getLogGroupName()
-             + (config.getLogStreamName() != null ? "," + config.getLogStreamName() : "")
-             + "): " + message;
-    }
-
-
-    /**
      *  Translates a source exception into an instance of CloudWatchFacadeException.
      */
     private CloudWatchFacadeException transformException(String functionName, Exception cause)
@@ -307,7 +300,7 @@ implements CloudWatchFacade
         {
             reason = ReasonCode.ALREADY_PROCESSED;
             message = "already processed";
-            isRetryable = true;
+            isRetryable = false;
         }
         else if (cause instanceof AWSLogsException)
         {
@@ -322,7 +315,7 @@ implements CloudWatchFacade
             {
                 reason = ReasonCode.UNEXPECTED_EXCEPTION;
                 message = "service exception: " + cause.getMessage();
-                isRetryable = ((AWSLogsException)cause).isRetryable();
+                isRetryable = false;  // AWSLogsException considers some things retryable that we don't
             }
         }
         else
@@ -333,6 +326,7 @@ implements CloudWatchFacade
         }
 
         return new CloudWatchFacadeException(
-                constructExceptionMessage(functionName, message), reason, isRetryable, cause);
+                message, cause, reason, isRetryable,
+                functionName, config.getLogGroupName(), config.getLogStreamName());
     }
 }

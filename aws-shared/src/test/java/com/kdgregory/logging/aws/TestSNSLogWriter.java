@@ -245,7 +245,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
     @Test
     public void testInitializationException() throws Exception
     {
-        final SNSFacadeException cause = new SNSFacadeException("unexpected", ReasonCode.UNEXPECTED_EXCEPTION, false);
+        final SNSFacadeException cause = new SNSFacadeException(ReasonCode.UNEXPECTED_EXCEPTION, false, null);
         mock = new MockSNSFacade(config)
         {
             @Override
@@ -343,7 +343,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
                  .setTopicName(TEST_TOPIC_NAME)
                  .setAutoCreate(true);
 
-        final SNSFacadeException cause = new SNSFacadeException("unexpected", ReasonCode.UNEXPECTED_EXCEPTION, false);
+        final SNSFacadeException cause = new SNSFacadeException(ReasonCode.UNEXPECTED_EXCEPTION, false, null);
         mock = new MockSNSFacade(config)
         {
             @Override
@@ -403,7 +403,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
     @Test
     public void testPublishException() throws Exception
     {
-        final SNSFacadeException cause = new SNSFacadeException("unexpected", ReasonCode.UNEXPECTED_EXCEPTION, false);
+        final SNSFacadeException cause = new SNSFacadeException(ReasonCode.UNEXPECTED_EXCEPTION, false, null);
         mock = new MockSNSFacade(config, TEST_TOPIC_NAME)
         {
             @Override

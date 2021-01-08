@@ -20,22 +20,26 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
-import com.kdgregory.logging.aws.internal.retrievers.AccountIdRetriever;
-import com.kdgregory.logging.aws.internal.retrievers.EC2InstanceIdRetriever;
-import com.kdgregory.logging.aws.internal.retrievers.EC2RegionRetriever;
-import com.kdgregory.logging.aws.internal.retrievers.ParameterStoreRetriever;
+import com.kdgregory.logging.aws.internal.facade.FacadeFactory;
+import com.kdgregory.logging.aws.internal.facade.InfoFacade;
 
 
 /**
- *  Handles the standard substitution variables. Standard usage is to create a
- *  new instance whenever you need one; the current timestamp would otherwise
- *  become stale.
+ *  Performs substitutions. Users create a new instance for every group of strings
+ *  that needs substitutions applied (otherwise the timestamp would become stale).
+ *  See docs for a complete explanation of how substitions work.
  *  <p>
- *  Values are lazily retrieved. Instances are thread-safe, but not thread-optimized
- *  (concurrent lazy retrieves of the same value are possible).
+ *  All values are lazily retrieved. This includes an <code>InfoFacade</code>, used
+ *  for any substitutions that require knowledge of the AWS environment.
+ *  <p>
+ *  Instances are thread-safe, but not thread-optimized (concurrent lazy retrieves of
+ *  the same value are possible).
  */
 public class Substitutions
 {
+    // provides access to bits of information about deployment environment
+    private InfoFacade infoFacade;
+
     // all substitutors are created by constructor, most lazily compute their value
     private SequenceSubstitutor sequenceSubstitutor;
     private DateSubstitutor dateSubstitutor;
@@ -52,8 +56,14 @@ public class Substitutions
     private SSMSubstitutor ssmSubstitutor;
 
 
-    public Substitutions(Date now, int sequence)
+    /**
+     *  Base constructor, which allows configuration of the <code>InfoFacade</code>
+     *  instance. This is intended for testing.
+     */
+    public Substitutions(Date now, int sequence, InfoFacade infoFacade)
     {
+        this.infoFacade = infoFacade;
+
         RuntimeMXBean runtimeMx = ManagementFactory.getRuntimeMXBean();
 
         sequenceSubstitutor = new SequenceSubstitutor(sequence);
@@ -71,6 +81,19 @@ public class Substitutions
         ssmSubstitutor = new SSMSubstitutor();
     }
 
+
+    /**
+     *  Standard constructor, which retrieves an <code>InfoFacade</code> if and
+     *  when it is needed.
+     */
+    public Substitutions(Date now, int sequence)
+    {
+        this(now, sequence, null);
+    }
+
+//----------------------------------------------------------------------------
+//  Public methods
+//----------------------------------------------------------------------------
 
     /**
      *  Applies all substitutions. This is not particularly performant, but it
@@ -381,7 +404,7 @@ public class Substitutions
         @Override
         protected String retrieveValue(String ignored)
         {
-            cachedValue = new AccountIdRetriever().invoke();
+            cachedValue = infoFacade().retrieveAccountId();
             return cachedValue;
         }
     }
@@ -398,7 +421,7 @@ public class Substitutions
         @Override
         protected String retrieveValue(String ignored)
         {
-            cachedValue = new EC2InstanceIdRetriever().invoke();
+            cachedValue = infoFacade().retrieveEC2InstanceId();
             return cachedValue;
         }
     }
@@ -415,7 +438,7 @@ public class Substitutions
         @Override
         protected String retrieveValue(String ignored)
         {
-            cachedValue = new EC2RegionRetriever().invoke();
+            cachedValue = infoFacade().retrieveEC2Region();
             return cachedValue;
         }
     }
@@ -430,9 +453,29 @@ public class Substitutions
         }
 
         @Override
-        protected String retrieveValue(String propName)
+        protected String retrieveValue(String name)
         {
-            return new ParameterStoreRetriever().invoke(propName);
+            if ((name == null) || name.isEmpty())
+                return null;
+
+            return infoFacade().retrieveParameter(name);
         }
+    }
+
+//----------------------------------------------------------------------------
+//  Other internals
+//----------------------------------------------------------------------------
+
+    /**
+     *  Returns/creates the <code>InfoFacade</code>. Used only by substitutors
+     *  that need access to the AWS environment.
+     */
+    private InfoFacade infoFacade()
+    {
+        if (infoFacade == null)
+        {
+            infoFacade = FacadeFactory.createFacade(InfoFacade.class);
+        }
+        return infoFacade;
     }
 }

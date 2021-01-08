@@ -14,7 +14,6 @@
 
 package com.kdgregory.logback.aws;
 
-import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URL;
@@ -26,7 +25,6 @@ import java.util.TimeZone;
 
 import org.w3c.dom.Document;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -243,39 +241,6 @@ public class TestJsonLayout
         assertCommonElements(TEST_MESSAGE);
 
         DomAsserts.assertCount("no hostname element", 0, dom, new XPathWrapper("/data/hostname"));
-    }
-
-
-    @Test
-    @Ignore("this test should only be run on an EC2 instance")
-    public void testInstanceId() throws Exception
-    {
-        initialize("testInstanceId");
-
-        logger.debug(TEST_MESSAGE);
-
-        captureLoggingOutputAndParse();
-        assertCommonElements(TEST_MESSAGE);
-
-        String instanceId = new XPathWrapper("/data/instanceId").evaluateAsString(dom);
-        assertTrue("instance ID starts with i- (was: " + instanceId + ")",
-                   instanceId.startsWith("i-"));
-    }
-
-
-    @Test
-//    @Ignore("this test should only be run if you have AWS credentials")
-    public void testAccountId() throws Exception
-    {
-        initialize("testAccountId");
-
-        logger.debug(TEST_MESSAGE);
-
-        captureLoggingOutputAndParse();
-        assertCommonElements(TEST_MESSAGE);
-
-        String accountId = new XPathWrapper("/data/accountId").evaluateAsString(dom);
-        assertRegex("\\d{12}", accountId);
     }
 
 

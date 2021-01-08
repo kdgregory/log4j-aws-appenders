@@ -14,7 +14,6 @@
 
 package com.kdgregory.logging.aws.internal;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 
@@ -117,115 +116,5 @@ public class Utils
             throw new NoSuchMethodException("invalid factory method: " + name);
 
         return method;
-    }
-
-
-    /**
-     *  Invokes an instance method, returning <code>null</code> if the passed method
-     *  is <code>null</code> or if any exception occurred.
-     */
-    public static Object invokeQuietly(Object obj, Method method, Object... params)
-    {
-        if ((obj == null) || (method == null))
-            return null;
-
-        try
-        {
-            return method.invoke(obj, params);
-        }
-        catch (Exception ex)
-        {
-            return null;
-        }
-    }
-
-
-    /**
-     *  Invokes a static method, returning <code>null</code> if the passed method
-     *  is <code>null</code> or if any exception occurred.
-     */
-    public static Object invokeQuietly(Method method, Object... params)
-    {
-        if (method == null)
-            return null;
-
-        try
-        {
-            return method.invoke(null, params);
-        }
-        catch (Exception ex)
-        {
-            return null;
-        }
-    }
-
-
-    /**
-     *  Invokes a named setter method; no-op if passed a null object. Throws
-     *  <code>NoSuchMethodException</code> if unable to find a method that takes
-     *  the specified parameters. Unwraps <code>InvocationTargetException</code>,
-     *  all other reflection exceptions thrown unchanged.
-     */
-    public static void invokeSetter(Object obj, String setterName, Class<?> valueKlass, Object value)
-    throws Throwable
-    {
-        if (obj == null)
-            return;
-
-        Method m = findMethodIfExists(obj.getClass(), setterName, valueKlass);
-        if (m == null)
-            throw new NoSuchMethodException(obj.getClass().getName() + "." + setterName);
-
-        try
-        {
-            m.invoke(obj, value);
-        }
-        catch (InvocationTargetException ex)
-        {
-            throw ex.getCause();
-        }
-    }
-
-
-    /**
-     *  Invokes the named setter method suppressing any exceptions. Returns <code>true</code>
-     *  if successful, false if not.
-     */
-    public static boolean invokeSetterQuietly(Object obj, String setterName, Class<?> valueKlass, Object value)
-    {
-        if (obj == null)
-            return false;
-
-        try
-        {
-            invokeSetter(obj, setterName, valueKlass, value);
-            return true;
-        }
-        catch (Throwable ex)
-        {
-            return false;
-        }
-    }
-
-
-    /**
-     *  Uses system properties and environment variables to identify the current region,
-     *  with an override (that's presumed to come from appender configuration). Returns
-     *  null if unable to identify the region.
-     */
-    public static String lookupRegion(String override)
-    {
-        if ((override != null) && (override.length() > 0))
-            return override;
-
-        String envar = System.getenv("AWS_REGION");
-        if ((envar != null) && (envar.length() > 0))
-            return envar;
-
-        String sysprop = System.getProperty("aws.region");
-        if ((sysprop != null) && (sysprop.length() > 0))
-            return sysprop;
-
-        return null;
     }
 }

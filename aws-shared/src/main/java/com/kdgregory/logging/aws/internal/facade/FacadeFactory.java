@@ -27,7 +27,8 @@ public class FacadeFactory
 {
     /**
      *  Instantiates the facade implementation corresponding to the provided
-     *  interface class.
+     *  interface class. This variant is for service facades, which must be
+     *  configured.
      *
      *  @throws IllegalArgumentException if unable to instantiate. Exception
      *          message will provide more information.
@@ -35,24 +36,23 @@ public class FacadeFactory
     public static <T> T createFacade(Class<T> facadeType, AbstractWriterConfig<?> config)
     {
         Class<?> implClass = findImplementationClass(facadeType);
-        if (implClass == null)
-        {
-            throw new IllegalArgumentException("no implementation class for " + facadeType.getName());
-        }
-
-        try
-        {
-            // implementation classes must provide a one-argument constructor, taking a compatible
-            // configuration object
-            Constructor<?> ctor = implClass.getConstructors()[0];
-            return (T)ctor.newInstance(config);
-        }
-        catch (Exception ex)
-        {
-            throw new IllegalArgumentException("unable to instantiate: " + implClass.getName(), ex);
-        }
+        return (T)instantiate(implClass, config);
     }
 
+
+    /**
+     *  Instantiates the facade implementation corresponding to the provided
+     *  interface class. This variant is for <code>InfoFacade</code>, which
+     *  uses default clients (so doesn't need configuration).
+     *
+     *  @throws IllegalArgumentException if unable to instantiate. Exception
+     *          message will provide more information.
+     */
+    public static <T> T createFacade(Class<T> facadeType)
+    {
+        Class<?> implClass = findImplementationClass(facadeType);
+        return (T)instantiate(implClass);
+    }
 
 //----------------------------------------------------------------------------
 //  Internals
@@ -60,7 +60,8 @@ public class FacadeFactory
 
     private final static String[] FACADE_PACKAGES = new String[]
     {
-        "com.kdgregory.logging.aws.facade.v1"
+        "com.kdgregory.logging.aws.facade.v1",
+        "com.kdgregory.logging.aws.facade.v2"
     };
 
 
@@ -74,9 +75,6 @@ public class FacadeFactory
      */
     private static Class<?> findImplementationClass(Class<?> facadeType)
     {
-        // TODO - implement a cache (only needed when we'd creating clients more
-        //        than once per application run)
-
         for (String packageName : FACADE_PACKAGES)
         {
             String className = packageName + "." + facadeType.getSimpleName() + "Impl";
@@ -90,6 +88,28 @@ public class FacadeFactory
             }
         }
 
-        return null;
+        throw new IllegalArgumentException("no implementation class for " + facadeType.getName());
+    }
+
+
+    /**
+     *  Instantiates the implementation class, with optional arguments.
+     */
+    private static Object instantiate(Class<?> implClass, Object... ctorArgs)
+    {
+        try
+        {
+            Constructor<?>[] ctors = implClass.getConstructors();
+            if (ctors.length != 1)
+            {
+                throw new IllegalArgumentException("implementation class does not expose a single constructor: " + implClass.getName());
+            }
+
+            return ctors[0].newInstance(ctorArgs);
+        }
+        catch (Exception ex)
+        {
+            throw new IllegalArgumentException("unable to instantiate: " + implClass.getName(), ex);
+        }
     }
 }

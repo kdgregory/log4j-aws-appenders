@@ -133,20 +133,6 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics>
     }
 
 //----------------------------------------------------------------------------
-//  Other public methods
-//----------------------------------------------------------------------------
-
-    /**
-     *  Sets the subject for subsequent messages. Any substitutions must be
-     *  applied before calling this method.
-     */
-    public void setSubject(String subject)
-    {
-        config.setSubject(subject);
-        stats.setActualSubject(subject);
-    }
-
-//----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
 

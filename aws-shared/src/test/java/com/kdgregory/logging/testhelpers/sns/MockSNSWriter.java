@@ -35,12 +35,4 @@ extends MockLogWriter<SNSWriterConfig>
     {
         throw new IllegalStateException("this function should never be called");
     }
-
-
-    // this doesn't actually test that the real writer would be updated, just
-    // that the appender tried to
-    public void setSubject(String subject)
-    {
-        config.setSubject(subject);
-    }
 }

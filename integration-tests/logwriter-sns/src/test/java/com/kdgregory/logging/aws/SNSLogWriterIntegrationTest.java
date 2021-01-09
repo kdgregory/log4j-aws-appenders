@@ -207,32 +207,6 @@ public class SNSLogWriterIntegrationTest
 
 
     @Test
-    public void testSubjectChange() throws Exception
-    {
-        final int numMessages = 5;
-        final String secondSubject = "this is not the default";
-
-        init("testSubjectChange", helperSNSclient, helperSQSclient);
-
-        new MessageWriter(numMessages).run();
-        List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
-
-        assertEquals("first batch of messages, size", numMessages, messages.size());
-        testHelper.assertMessageContent(messages, DEFAULT_SUBJECT);
-
-        writer.setSubject(secondSubject);
-
-        new MessageWriter(numMessages).run();
-        messages = testHelper.retrieveMessages(numMessages);
-
-        assertEquals("second batch of messages, size", numMessages, messages.size());
-        testHelper.assertMessageContent(messages, secondSubject);
-
-        testHelper.deleteTopicAndQueue();
-    }
-
-
-    @Test
     public void testFactoryMethod() throws Exception
     {
         final int numMessages = 11;

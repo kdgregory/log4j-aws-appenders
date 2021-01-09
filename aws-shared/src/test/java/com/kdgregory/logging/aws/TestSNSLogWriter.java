@@ -434,38 +434,6 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 
 
     @Test
-    public void testChangeSubject() throws Exception
-    {
-        mock = new MockSNSFacade(config, TEST_TOPIC_NAME);
-
-        createWriter();
-        assertTrue("writer is running", writer.isRunning());
-
-        writer.addMessage(new LogMessage(0, "test message 1"));
-        waitForWriterThread();
-
-        assertEquals("mock: publish ARN",                       TEST_TOPIC_ARN,         mock.publishArn);
-        assertEquals("mock: publish subject",                   TEST_SUBJECT,           mock.publishSubject);
-        assertEquals("mock: last message written",              "test message 1",       mock.publishMessage.getMessage());
-
-        assertEquals("stats: actual subject before change",     TEST_SUBJECT,           stats.getActualSubject());
-
-        writer.setSubject("something else");
-
-        assertEquals("stats: actual subject after change",      "something else",       stats.getActualSubject());
-
-        writer.addMessage(new LogMessage(0, "test message 2"));
-        waitForWriterThread();
-
-        assertEquals("mock: publish ARN",                       TEST_TOPIC_ARN,         mock.publishArn);
-        assertEquals("mock: publish subject",                   "something else",       mock.publishSubject);
-        assertEquals("mock: last message written",              "test message 2",       mock.publishMessage.getMessage());
-
-        assertStatisticsTotalMessagesSent(2);
-    }
-
-
-    @Test
     public void testDiscardEmptyMessage() throws Exception
     {
         mock = new MockSNSFacade(config, TEST_TOPIC_NAME);

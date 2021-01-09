@@ -113,7 +113,7 @@ public class LookupsIntegrationTest
         assertRegex("ec2:instanceId",                   "i-[0-9a-f]+",  strsub.replace("${awslogs:ec2:instanceId}"));
         assertRegex("ec2InstanceId (deprecated name)",  "i-[0-9a-f]+",  strsub.replace("${awslogs:ec2InstanceId}"));
 
-        assertRegex("ec2:region",                       "i-[0-9a-f]+",  strsub.replace("${awslogs:ec2:region}"));
-        assertRegex("ec2Region (deprecated name)",      "i-[0-9a-f]+",  strsub.replace("${awslogs:ec2Region}"));
+        assertRegex("ec2:region",                       "..-.*-\\d",    strsub.replace("${awslogs:ec2:region}"));
+        assertRegex("ec2Region (deprecated name)",      "..-.*-\\d",    strsub.replace("${awslogs:ec2Region}"));
     }
 }

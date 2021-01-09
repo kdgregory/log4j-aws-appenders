@@ -25,7 +25,8 @@ import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagement
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementClientBuilder;
 import com.amazonaws.services.simplesystemsmanagement.model.ParameterType;
 
-import com.kdgregory.logging.aws.internal.retrievers.ParameterStoreRetriever;
+import com.kdgregory.logging.aws.internal.facade.FacadeFactory;
+import com.kdgregory.logging.aws.internal.facade.InfoFacade;
 import com.kdgregory.logging.testhelpers.ParameterStoreTestHelper;
 
 
@@ -33,7 +34,7 @@ import com.kdgregory.logging.testhelpers.ParameterStoreTestHelper;
  *  Tests the retriever by creating Parameter Store entries. All needed entries are
  *  created in a @BeforeClass, and torn down in the @AfterClass
  */
-public class TestParameterStoreRetriever
+public class TestInfoFacadeParameterStore
 {
     private final static String BASIC_NAME      = "/TestParameterStoreRetriever/" + UUID.randomUUID().toString();
     private final static String BASIC_VALUE     = "this is a test";
@@ -78,23 +79,26 @@ public class TestParameterStoreRetriever
     @Test
     public void testBasicOperation() throws Exception
     {
-        ParameterStoreRetriever retriever = new ParameterStoreRetriever();
-        assertEquals(BASIC_VALUE, retriever.invoke(BASIC_NAME));
+        InfoFacade facade = FacadeFactory.createFacade(InfoFacade.class);
+        String value = facade.retrieveParameter(BASIC_NAME);
+        assertEquals(BASIC_VALUE, value);
     }
 
 
     @Test
     public void testStringList() throws Exception
     {
-        ParameterStoreRetriever retriever = new ParameterStoreRetriever();
-        assertEquals(LIST_VALUE, retriever.invoke(LIST_NAME));
+        InfoFacade facade = FacadeFactory.createFacade(InfoFacade.class);
+        String value = facade.retrieveParameter(LIST_NAME);
+        assertEquals(LIST_VALUE, value);
     }
 
 
     @Test
     public void testSecureString() throws Exception
     {
-        ParameterStoreRetriever retriever = new ParameterStoreRetriever();
-        assertNull(retriever.invoke(SECURE_NAME));
+        InfoFacade facade = FacadeFactory.createFacade(InfoFacade.class);
+        String value = facade.retrieveParameter(SECURE_NAME);
+        assertNull(value);
     }
 }

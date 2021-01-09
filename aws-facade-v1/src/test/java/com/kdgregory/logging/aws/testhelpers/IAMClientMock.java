@@ -27,7 +27,7 @@ import com.amazonaws.services.identitymanagement.model.*;
 /**
  *  Mocks the IAM operations that we care about (at this point, only listRoles).
  */
-public class MockIAMClient
+public class IAMClientMock
 implements InvocationHandler
 {
     /** All role ARNs will start with this */
@@ -43,7 +43,7 @@ implements InvocationHandler
     /**
      *  Default constructor: knows about a list of roles.
      */
-    public MockIAMClient(int pageSize, String... knownRoleNames)
+    public IAMClientMock(int pageSize, String... knownRoleNames)
     {
         this.pageSize = pageSize;
         for (String roleName : knownRoleNames)
@@ -58,7 +58,7 @@ implements InvocationHandler
     /**
      *  Constructor for paginated operations.
      */
-    public MockIAMClient(String... knownRoleNames)
+    public IAMClientMock(String... knownRoleNames)
     {
         this(knownRoleNames.length + 1, knownRoleNames);
     }
@@ -72,7 +72,7 @@ implements InvocationHandler
         return (AmazonIdentityManagement)Proxy.newProxyInstance(
                                     getClass().getClassLoader(),
                                     new Class<?>[] { AmazonIdentityManagement.class },
-                                    MockIAMClient.this);
+                                    IAMClientMock.this);
     }
 //----------------------------------------------------------------------------
 //  Invocation Handler

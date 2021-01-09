@@ -124,7 +124,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 //----------------------------------------------------------------------------
 
     @Test
-    public void testConfiguration() throws Exception
+    public void testInitialization() throws Exception
     {
         // the goal here is to verify propagation from the writer to its objects,
         // so we'll explicitly set the fields that we expect to be propagated
@@ -153,7 +153,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
 
     @Test
-    public void testInvalidConfiguration() throws Exception
+    public void testInitializationInvalidConfiguration() throws Exception
     {
         // with this test I'm just verifying that we report messages; the tests on
         // config should have exhaustively explored possible error conditions

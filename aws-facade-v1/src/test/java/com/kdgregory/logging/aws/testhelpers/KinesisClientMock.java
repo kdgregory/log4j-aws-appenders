@@ -31,7 +31,7 @@ import com.amazonaws.services.kinesis.model.*;
  *  behavior. I don't particularly like using mock objects with this level of
  *  complexity, but they're the only way to experiment with error conditions.
  */
-public class MockKinesisClient
+public class KinesisClientMock
 implements InvocationHandler
 {
     // the list of known streams, initialized by the constructor
@@ -67,7 +67,7 @@ implements InvocationHandler
     /**
      *  Base constructor.
      */
-    public MockKinesisClient()
+    public KinesisClientMock()
     {
         // nothing here
     }
@@ -76,7 +76,7 @@ implements InvocationHandler
     /**
      *  Constructs an instance with a known stream.
      */
-    public MockKinesisClient(String streamName)
+    public KinesisClientMock(String streamName)
     {
         knownStreams.add(streamName);
     }
@@ -90,7 +90,7 @@ implements InvocationHandler
         return (AmazonKinesis)Proxy.newProxyInstance(
                                     getClass().getClassLoader(),
                                     new Class<?>[] { AmazonKinesis.class },
-                                    MockKinesisClient.this);
+                                    KinesisClientMock.this);
     }
 
 //----------------------------------------------------------------------------

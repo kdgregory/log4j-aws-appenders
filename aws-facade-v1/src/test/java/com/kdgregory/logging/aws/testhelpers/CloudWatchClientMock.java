@@ -47,7 +47,7 @@ import com.amazonaws.services.logs.model.*;
  *  #allowWriterThread} after logging a message to wait for that message to be
  *  passed to putRecords.
  */
-public class MockCloudWatchClient
+public class CloudWatchClientMock
 implements InvocationHandler
 {
     // the actual list of names used by this instance
@@ -98,7 +98,7 @@ implements InvocationHandler
     /**
      *  Constructs an instance using the specified lists of names, with no batch limit.
      */
-    public MockCloudWatchClient(List<String> groupNames, List<String> streamNames)
+    public CloudWatchClientMock(List<String> groupNames, List<String> streamNames)
     {
         this(groupNames, Integer.MAX_VALUE, streamNames, Integer.MAX_VALUE);
     }
@@ -108,7 +108,7 @@ implements InvocationHandler
      *  Constructs an instance using the specified lists of names and limits to the number
      *  of names that will be returned in a batch.
      */
-    public MockCloudWatchClient(List<String> groupNames, int groupBatchSize, List<String> streamNames, int streamBatchSize)
+    public CloudWatchClientMock(List<String> groupNames, int groupBatchSize, List<String> streamNames, int streamBatchSize)
     {
         logGroupNames = new ArrayList<String>(groupNames);
         maxLogGroupNamesInBatch = groupBatchSize;
@@ -125,7 +125,7 @@ implements InvocationHandler
         return (AWSLogs)Proxy.newProxyInstance(
                             getClass().getClassLoader(),
                             new Class<?>[] { AWSLogs.class },
-                            MockCloudWatchClient.this);
+                            CloudWatchClientMock.this);
     }
 
 

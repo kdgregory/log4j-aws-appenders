@@ -22,16 +22,16 @@ import net.sf.kdgcommons.lang.ClassUtil;
 import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 
-import com.kdgregory.logging.aws.testhelpers.MockIAMClient;
+import com.kdgregory.logging.aws.testhelpers.IAMClientMock;
 
 
 public class TestAssumedRoleCredentialsProviderProvider
 {
     private final static String TEST_ROLE_NAME = "test";
-    private final static String TEST_ROLE_ARN = MockIAMClient.ROLE_ARN_BASE + "test";
+    private final static String TEST_ROLE_ARN = IAMClientMock.ROLE_ARN_BASE + "test";
 
     // each test must creat this prior to creating the testable provider
-    private MockIAMClient iamMock;
+    private IAMClientMock iamMock;
 
 
     private class TestableAssumedRoleCredentialsProviderProvider
@@ -58,7 +58,7 @@ public class TestAssumedRoleCredentialsProviderProvider
     @Test
     public void testLookupByName() throws Exception
     {
-        iamMock = new MockIAMClient(TEST_ROLE_NAME);
+        iamMock = new IAMClientMock(TEST_ROLE_NAME);
         TestableAssumedRoleCredentialsProviderProvider cpp = new TestableAssumedRoleCredentialsProviderProvider();
 
         assertEquals(TEST_ROLE_ARN, cpp.retrieveArn(TEST_ROLE_NAME));
@@ -68,7 +68,7 @@ public class TestAssumedRoleCredentialsProviderProvider
     @Test
     public void testLookupByArn() throws Exception
     {
-        iamMock = new MockIAMClient(TEST_ROLE_NAME);
+        iamMock = new IAMClientMock(TEST_ROLE_NAME);
         TestableAssumedRoleCredentialsProviderProvider cpp = new TestableAssumedRoleCredentialsProviderProvider();
 
         assertEquals(TEST_ROLE_ARN, cpp.retrieveArn(TEST_ROLE_ARN));
@@ -78,7 +78,7 @@ public class TestAssumedRoleCredentialsProviderProvider
     @Test
     public void testLookupNoSuchRole() throws Exception
     {
-        iamMock = new MockIAMClient("foo", "bar", "baz");
+        iamMock = new IAMClientMock("foo", "bar", "baz");
         TestableAssumedRoleCredentialsProviderProvider cpp = new TestableAssumedRoleCredentialsProviderProvider();
 
         assertNull(cpp.retrieveArn("biff"));
@@ -88,7 +88,7 @@ public class TestAssumedRoleCredentialsProviderProvider
     @Test
     public void testLookupPaginated() throws Exception
     {
-        iamMock = new MockIAMClient(1, "foo", "bar", TEST_ROLE_NAME, "baz");
+        iamMock = new IAMClientMock(1, "foo", "bar", TEST_ROLE_NAME, "baz");
         TestableAssumedRoleCredentialsProviderProvider cpp = new TestableAssumedRoleCredentialsProviderProvider();
 
         assertEquals("retrieved ARN",               TEST_ROLE_ARN,  cpp.retrieveArn(TEST_ROLE_ARN));

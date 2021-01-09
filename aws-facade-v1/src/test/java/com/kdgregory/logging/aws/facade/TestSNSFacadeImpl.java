@@ -31,14 +31,14 @@ import com.kdgregory.logging.aws.internal.facade.SNSFacade;
 import com.kdgregory.logging.aws.internal.facade.SNSFacadeException;
 import com.kdgregory.logging.aws.internal.facade.SNSFacadeException.ReasonCode;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
-import com.kdgregory.logging.aws.testhelpers.MockSNSClient;
+import com.kdgregory.logging.aws.testhelpers.SNSClientMock;
 import com.kdgregory.logging.common.LogMessage;
 
 
 public class TestSNSFacadeImpl
 {
     private final static String DEFAULT_TOPIC_NAME = "bargle";
-    private final static String DEFAULT_TOPIC_ARN = MockSNSClient.ARN_PREFIX + DEFAULT_TOPIC_NAME;
+    private final static String DEFAULT_TOPIC_ARN = SNSClientMock.ARN_PREFIX + DEFAULT_TOPIC_NAME;
     private final static String DEFAULT_SUBJECT = "argle";
 
     // note that the default name is at the end, to test pagination
@@ -48,7 +48,7 @@ public class TestSNSFacadeImpl
     private SNSWriterConfig config = new SNSWriterConfig();
 
     // each test will also create its own mock
-    private MockSNSClient mock;
+    private SNSClientMock mock;
 
     // lazily instantiated, just like the real thing; both config and mock can be changed before first call
     private SNSFacade facade = new SNSFacadeImpl(config)
@@ -104,7 +104,7 @@ public class TestSNSFacadeImpl
     @Test
     public void testLookupByNameHappyPath() throws Exception
     {
-        mock = new MockSNSClient(TEST_TOPICS);
+        mock = new SNSClientMock(TEST_TOPICS);
         config.setTopicName(DEFAULT_TOPIC_NAME);
 
         assertEquals("found topic", DEFAULT_TOPIC_ARN, facade.lookupTopic());
@@ -121,7 +121,7 @@ public class TestSNSFacadeImpl
     @Test
     public void testLookupByArnHappyPath() throws Exception
     {
-        mock = new MockSNSClient(TEST_TOPICS);
+        mock = new SNSClientMock(TEST_TOPICS);
         config.setTopicArn(DEFAULT_TOPIC_ARN);
 
         assertEquals("found topic", DEFAULT_TOPIC_ARN, facade.lookupTopic());
@@ -138,7 +138,7 @@ public class TestSNSFacadeImpl
     @Test
     public void testLookupPaginated() throws Exception
     {
-        mock = new MockSNSClient(TEST_TOPICS, 3);
+        mock = new SNSClientMock(TEST_TOPICS, 3);
         config.setTopicName(DEFAULT_TOPIC_NAME);
 
         assertEquals("found topic", DEFAULT_TOPIC_ARN, facade.lookupTopic());
@@ -153,7 +153,7 @@ public class TestSNSFacadeImpl
     @Test
     public void testLookupNoSuchTopic() throws Exception
     {
-        mock = new MockSNSClient(Collections.emptyList());
+        mock = new SNSClientMock(Collections.emptyList());
         config.setTopicName(DEFAULT_TOPIC_NAME);
 
         assertNull("did not find topic", facade.lookupTopic());
@@ -168,7 +168,7 @@ public class TestSNSFacadeImpl
     @Test
     public void testLookupThrottling() throws Exception
     {
-        mock = new MockSNSClient(TEST_TOPICS)
+        mock = new SNSClientMock(TEST_TOPICS)
         {
             @Override
             protected ListTopicsResult listTopics(ListTopicsRequest request)
@@ -202,7 +202,7 @@ public class TestSNSFacadeImpl
     public void testLookupException() throws Exception
     {
         final RuntimeException cause = new RuntimeException("test");
-        mock = new MockSNSClient(TEST_TOPICS)
+        mock = new SNSClientMock(TEST_TOPICS)
         {
             @Override
             protected ListTopicsResult listTopics(ListTopicsRequest request)
@@ -232,7 +232,7 @@ public class TestSNSFacadeImpl
     @Test
     public void testCreateHappyPath() throws Exception
     {
-        mock = new MockSNSClient(Collections.emptyList());
+        mock = new SNSClientMock(Collections.emptyList());
         config.setTopicName(DEFAULT_TOPIC_NAME);
 
         assertEquals("returned ARN", DEFAULT_TOPIC_ARN, facade.createTopic());
@@ -248,7 +248,7 @@ public class TestSNSFacadeImpl
     public void testCreateException() throws Exception
     {
         final RuntimeException cause = new RuntimeException("test");
-        mock = new MockSNSClient(Collections.emptyList())
+        mock = new SNSClientMock(Collections.emptyList())
         {
             @Override
             protected CreateTopicResult createTopic(String topicName)
@@ -278,7 +278,7 @@ public class TestSNSFacadeImpl
     @Test
     public void testPublishHappyPath() throws Exception
     {
-        mock = new MockSNSClient(TEST_TOPICS);
+        mock = new SNSClientMock(TEST_TOPICS);
         config.setTopicArn(DEFAULT_TOPIC_ARN).setSubject(DEFAULT_SUBJECT);
 
         facade.publish(new LogMessage(123456789L, "test message"));
@@ -297,7 +297,7 @@ public class TestSNSFacadeImpl
     @Test
     public void testPublishThrottling() throws Exception
     {
-        mock = new MockSNSClient(TEST_TOPICS)
+        mock = new SNSClientMock(TEST_TOPICS)
         {
             @Override
             protected PublishResult publish(PublishRequest request)
@@ -330,7 +330,7 @@ public class TestSNSFacadeImpl
     public void testPublishException() throws Exception
     {
         final RuntimeException cause = new RuntimeException("test");
-        mock = new MockSNSClient(TEST_TOPICS)
+        mock = new SNSClientMock(TEST_TOPICS)
         {
             @Override
             protected PublishResult publish(PublishRequest request)
@@ -360,7 +360,7 @@ public class TestSNSFacadeImpl
     @Test
     public void testPublishInvalidArn() throws Exception
     {
-        mock = new MockSNSClient(TEST_TOPICS);
+        mock = new SNSClientMock(TEST_TOPICS);
         // leave config empty
 
         try
@@ -383,7 +383,7 @@ public class TestSNSFacadeImpl
     @Test
     public void testPublishNoSuchTopic() throws Exception
     {
-        mock = new MockSNSClient(Collections.emptyList());
+        mock = new SNSClientMock(Collections.emptyList());
         config.setTopicArn(DEFAULT_TOPIC_ARN);
 
         try

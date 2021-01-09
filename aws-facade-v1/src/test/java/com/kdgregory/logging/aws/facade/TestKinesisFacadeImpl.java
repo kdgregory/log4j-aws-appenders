@@ -34,7 +34,7 @@ import com.kdgregory.logging.aws.internal.facade.KinesisFacadeException;
 import com.kdgregory.logging.aws.internal.facade.KinesisFacadeException.ReasonCode;
 import com.kdgregory.logging.aws.kinesis.KinesisConstants.StreamStatus;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
-import com.kdgregory.logging.aws.testhelpers.MockKinesisClient;
+import com.kdgregory.logging.aws.testhelpers.KinesisClientMock;
 
 import com.kdgregory.logging.common.LogMessage;
 
@@ -48,7 +48,7 @@ public class TestKinesisFacadeImpl
     KinesisWriterConfig config = new KinesisWriterConfig();
 
     // each test will also create its own mock
-    private MockKinesisClient mock;
+    private KinesisClientMock mock;
 
     // lazily instantiated, just like the real thing; both config and mock can be changed before first call
     private KinesisFacade facade = new KinesisFacadeImpl(config)
@@ -117,7 +117,7 @@ public class TestKinesisFacadeImpl
     @Test
     public void testRetrieveStatusHappyPath() throws Exception
     {
-        mock = new MockKinesisClient(DEFAULT_STREAM_NAME);
+        mock = new KinesisClientMock(DEFAULT_STREAM_NAME);
         config.setStreamName(DEFAULT_STREAM_NAME);
 
         assertEquals("retrieved status", StreamStatus.ACTIVE, facade.retrieveStreamStatus());
@@ -135,7 +135,7 @@ public class TestKinesisFacadeImpl
     @Test
     public void testRetrieveStatusNoStream() throws Exception
     {
-        mock = new MockKinesisClient();
+        mock = new KinesisClientMock();
         config.setStreamName(DEFAULT_STREAM_NAME);
 
         assertEquals("retrieved status", StreamStatus.DOES_NOT_EXIST, facade.retrieveStreamStatus());
@@ -151,7 +151,7 @@ public class TestKinesisFacadeImpl
     @Test
     public void testRetrieveStatusThrottling() throws Exception
     {
-        mock = new MockKinesisClient()
+        mock = new KinesisClientMock()
         {
             @Override
             protected DescribeStreamResult describeStream(DescribeStreamRequest request)
@@ -175,7 +175,7 @@ public class TestKinesisFacadeImpl
     public void testRetrieveStatusUnexpectedException() throws Exception
     {
         final RuntimeException cause = new RuntimeException("test");
-        mock = new MockKinesisClient()
+        mock = new KinesisClientMock()
         {
             @Override
             protected DescribeStreamResult describeStream(DescribeStreamRequest request)
@@ -206,7 +206,7 @@ public class TestKinesisFacadeImpl
     @Test
     public void tesCreateHappyPath() throws Exception
     {
-        mock = new MockKinesisClient();
+        mock = new KinesisClientMock();
         config.setStreamName(DEFAULT_STREAM_NAME).setShardCount(3);
 
         facade.createStream();
@@ -225,7 +225,7 @@ public class TestKinesisFacadeImpl
     @Test
     public void tesCreateStreamAlreadyExists() throws Exception
     {
-        mock = new MockKinesisClient()
+        mock = new KinesisClientMock()
         {
             @Override
             protected CreateStreamResult createStream(CreateStreamRequest request)
@@ -249,7 +249,7 @@ public class TestKinesisFacadeImpl
     @Test
     public void tesCreateThrottled() throws Exception
     {
-        mock = new MockKinesisClient()
+        mock = new KinesisClientMock()
         {
             @Override
             protected CreateStreamResult createStream(CreateStreamRequest request)
@@ -281,7 +281,7 @@ public class TestKinesisFacadeImpl
     public void tesCreateUnexpectedException() throws Exception
     {
         final RuntimeException cause = new RuntimeException("test");
-        mock = new MockKinesisClient()
+        mock = new KinesisClientMock()
         {
 
             @Override
@@ -313,7 +313,7 @@ public class TestKinesisFacadeImpl
     @Test
     public void tesSetRetentionPeriodHappyPath() throws Exception
     {
-        mock = new MockKinesisClient(DEFAULT_STREAM_NAME);
+        mock = new KinesisClientMock(DEFAULT_STREAM_NAME);
         config.setStreamName(DEFAULT_STREAM_NAME).setRetentionPeriod(48);
 
         facade.setRetentionPeriod();
@@ -332,7 +332,7 @@ public class TestKinesisFacadeImpl
     @Test
     public void tesSetRetentionPeriodNoConfiguration() throws Exception
     {
-        mock = new MockKinesisClient(DEFAULT_STREAM_NAME);
+        mock = new KinesisClientMock(DEFAULT_STREAM_NAME);
         config.setStreamName(DEFAULT_STREAM_NAME);
 
         facade.setRetentionPeriod();
@@ -348,7 +348,7 @@ public class TestKinesisFacadeImpl
     @Test
     public void testSetRetentionPeriodStreamNotReady() throws Exception
     {
-        mock = new MockKinesisClient(DEFAULT_STREAM_NAME)
+        mock = new KinesisClientMock(DEFAULT_STREAM_NAME)
         {
             @Override
             protected IncreaseStreamRetentionPeriodResult increaseStreamRetentionPeriod(
@@ -381,7 +381,7 @@ public class TestKinesisFacadeImpl
     public void testSetRetentionPeriodUnexpectedException() throws Exception
     {
         final RuntimeException cause = new RuntimeException("test");
-        mock = new MockKinesisClient(DEFAULT_STREAM_NAME)
+        mock = new KinesisClientMock(DEFAULT_STREAM_NAME)
         {
             @Override
             protected IncreaseStreamRetentionPeriodResult increaseStreamRetentionPeriod(
@@ -413,7 +413,7 @@ public class TestKinesisFacadeImpl
     @Test
     public void testPutRecordsHappyPath() throws Exception
     {
-        mock = new MockKinesisClient(DEFAULT_STREAM_NAME);
+        mock = new KinesisClientMock(DEFAULT_STREAM_NAME);
         config.setStreamName(DEFAULT_STREAM_NAME).setPartitionKey(DEFAULT_PARTITION_KEY);
 
         long now = System.currentTimeMillis();
@@ -442,7 +442,7 @@ public class TestKinesisFacadeImpl
     @Test
     public void testPutRecordsPartialFailure() throws Exception
     {
-        mock = new MockKinesisClient(DEFAULT_STREAM_NAME)
+        mock = new KinesisClientMock(DEFAULT_STREAM_NAME)
         {
             @Override
             protected PutRecordsResultEntry processRequestEntry(int index, PutRecordsRequestEntry entry)
@@ -485,7 +485,7 @@ public class TestKinesisFacadeImpl
     @Test
     public void testPutRecordsRandomPartitionKeys() throws Exception
     {
-        mock = new MockKinesisClient(DEFAULT_STREAM_NAME);
+        mock = new KinesisClientMock(DEFAULT_STREAM_NAME);
         config.setStreamName(DEFAULT_STREAM_NAME).setPartitionKey("");
 
         long now = System.currentTimeMillis();
@@ -519,7 +519,7 @@ public class TestKinesisFacadeImpl
     @Test
     public void testPutRecordsThrottling() throws Exception
     {
-        mock = new MockKinesisClient(DEFAULT_STREAM_NAME)
+        mock = new KinesisClientMock(DEFAULT_STREAM_NAME)
         {
             @Override
             protected PutRecordsResult putRecords(PutRecordsRequest request)
@@ -556,7 +556,7 @@ public class TestKinesisFacadeImpl
     public void testPutRecordsUnexpectedException() throws Exception
     {
         final RuntimeException cause = new RuntimeException("test");
-        mock = new MockKinesisClient(DEFAULT_STREAM_NAME)
+        mock = new KinesisClientMock(DEFAULT_STREAM_NAME)
         {
             @Override
             protected PutRecordsResult putRecords(PutRecordsRequest request)

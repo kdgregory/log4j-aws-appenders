@@ -25,7 +25,7 @@ import com.amazonaws.services.securitytoken.model.*;
 /**
  *  Mocks the STS operations that we care about (at this point, only getCallerIdentity).
  */
-public class MockSTSClient
+public class STSClientMock
 implements InvocationHandler
 {
     /** The default account ID, when you don't specify one */
@@ -41,7 +41,7 @@ implements InvocationHandler
     /**
      *  Creates an instance with the default account ID.
      */
-    public MockSTSClient()
+    public STSClientMock()
     {
         this(DEFAULT_ACCOUNT_ID);
     }
@@ -50,7 +50,7 @@ implements InvocationHandler
     /**
      *  Creates an instance with a specific account ID.
      */
-    public MockSTSClient(String accountId)
+    public STSClientMock(String accountId)
     {
         this.accountId = accountId;
     }
@@ -64,7 +64,7 @@ implements InvocationHandler
         return (AWSSecurityTokenService)Proxy.newProxyInstance(
                                     getClass().getClassLoader(),
                                     new Class<?>[] { AWSSecurityTokenService.class },
-                                    MockSTSClient.this);
+                                    STSClientMock.this);
     }
 
 //----------------------------------------------------------------------------

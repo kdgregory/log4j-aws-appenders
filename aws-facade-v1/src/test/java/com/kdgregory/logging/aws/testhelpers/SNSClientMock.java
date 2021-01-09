@@ -36,7 +36,7 @@ import com.amazonaws.services.sns.model.*;
  *  the result. If you need to track whether the invocation handler succeeded, you should
  *  decrement the count inside the failing handler.
  */
-public class MockSNSClient implements InvocationHandler
+public class SNSClientMock implements InvocationHandler
 {
     // this prefix transforms a topic name into an ARN
     public final static String ARN_PREFIX = "arn:aws:sns:us-east-1:123456789012:";
@@ -66,7 +66,7 @@ public class MockSNSClient implements InvocationHandler
     /**
      *  Base constructor.
      */
-    public MockSNSClient(List<String> knownTopicNames, int maxTopicsPerDescribe)
+    public SNSClientMock(List<String> knownTopicNames, int maxTopicsPerDescribe)
     {
         this.maxTopicsPerDescribe = maxTopicsPerDescribe;
 
@@ -82,7 +82,7 @@ public class MockSNSClient implements InvocationHandler
     /**
      *  Convenience constructor, which returns all topics in a single list operation.
      */
-    public MockSNSClient(List<String> allTopicNames)
+    public SNSClientMock(List<String> allTopicNames)
     {
         this(allTopicNames, Integer.MAX_VALUE);
     }
@@ -96,7 +96,7 @@ public class MockSNSClient implements InvocationHandler
         return (AmazonSNS)Proxy.newProxyInstance(
                                     getClass().getClassLoader(),
                                     new Class<?>[] { AmazonSNS.class },
-                                    MockSNSClient.this);
+                                    SNSClientMock.this);
     }
 
 //----------------------------------------------------------------------------

@@ -68,7 +68,7 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *           each write. This improves performance and reduces the likelihood of
  *           throttling when there are a large number of processes (as long as they
  *           write to different streams). If you need to have multiple appenders
- *           writing to the same stream, set this to false.   
+ *           writing to the same stream, set this to false.
  *
  *  <tr VALIGN="top">
  *      <th> synchronous

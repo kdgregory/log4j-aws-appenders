@@ -62,7 +62,7 @@ public interface InfoFacade
      *  Retrieves a named Systems Manager parameter, null if it doesnt' exist or is a
      *  secure string.
      *  <p>
-     *  If throttled, this method will retry up to 4 times before returning null. Other 
+     *  If throttled, this method will retry up to 4 times before returning null. Other
      *  exceptions are silently caught, and return null.
      *  <p>
      *  Requires the Systems Manager SDK.

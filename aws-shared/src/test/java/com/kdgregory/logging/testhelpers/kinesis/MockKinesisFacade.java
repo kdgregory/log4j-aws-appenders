@@ -39,7 +39,6 @@ public class MockKinesisFacade
 implements InvocationHandler
 {
     // these are set by constructor
-    private KinesisWriterConfig config;
     private Iterator<StreamStatus> statusItx;
 
     // invocation counters
@@ -57,10 +56,9 @@ implements InvocationHandler
     private StreamStatus defaultStatus = StreamStatus.ACTIVE;
 
 
-
+    // note: we pass config even though we don't (currently) use it
     public MockKinesisFacade(KinesisWriterConfig config, StreamStatus... statusReturns)
     {
-        this.config = config;
         statusItx = Arrays.asList(statusReturns).iterator();
     }
 

@@ -95,8 +95,6 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
         ((TestableSNSLogWriter)writer).waitForWriterThread();
     }
 
-
-
 //----------------------------------------------------------------------------
 //  JUnit scaffolding
 //----------------------------------------------------------------------------
@@ -115,7 +113,6 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
     }
 
 
-
     @After
     public void checkUncaughtExceptions()
     throws Throwable
@@ -129,7 +126,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 //----------------------------------------------------------------------------
 
     @Test
-    public void testInitializationConfigurationByName() throws Exception
+    public void testInitializationConfigureByName() throws Exception
     {
         // ... note that we try setting batch delay but it has no effect
         // ... note also that we set topic name, but get back topic ARN
@@ -172,7 +169,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 
 
     @Test
-    public void testInitializationConfigurationByARN() throws Exception
+    public void testInitializationConfigureByARN() throws Exception
     {
         // ... note that we try setting batch delay but it has no effect
 

@@ -28,18 +28,18 @@ import com.amazonaws.services.simplesystemsmanagement.model.*;
 import com.kdgregory.logging.aws.facade.v1.InfoFacadeImpl;
 import com.kdgregory.logging.aws.internal.RetryManager;
 import com.kdgregory.logging.aws.internal.facade.InfoFacade;
-import com.kdgregory.logging.aws.testhelpers.MockSSMClient;
-import com.kdgregory.logging.aws.testhelpers.MockSTSClient;
+import com.kdgregory.logging.aws.testhelpers.SSMClientMock;
+import com.kdgregory.logging.aws.testhelpers.STSClientMock;
 
 
 public class TestInfoFacadeImpl
 {
     // used for tests that involve retries
     private final static long RETRY_TIMEOUT_MS = 200;
-    
+
     // update any of these mocks inside the test, before invoking facade methods
-    private MockSTSClient stsMock;
-    private MockSSMClient ssmMock;
+    private STSClientMock stsMock;
+    private SSMClientMock ssmMock;
 
     // use this facade implementation for testing unless you want to call AWS
     private InfoFacade facade = new InfoFacadeImpl()
@@ -48,7 +48,7 @@ public class TestInfoFacadeImpl
             // don't waste time on retry timeouts!
             retryManager = new RetryManager(50, RETRY_TIMEOUT_MS, false);
         }
-        
+
         @Override
         protected AWSSecurityTokenService stsClient()
         {
@@ -69,16 +69,16 @@ public class TestInfoFacadeImpl
     @Test
     public void testRetrieveAccountIdHappyPath() throws Exception
     {
-        stsMock = new MockSTSClient();
+        stsMock = new STSClientMock();
 
-        assertEquals("returned expected value", MockSTSClient.DEFAULT_ACCOUNT_ID, facade.retrieveAccountId());
+        assertEquals("returned expected value", STSClientMock.DEFAULT_ACCOUNT_ID, facade.retrieveAccountId());
     }
 
 
     @Test
     public void testRetrieveAccountIdException() throws Exception
     {
-        stsMock = new MockSTSClient()
+        stsMock = new STSClientMock()
         {
             @Override
             public GetCallerIdentityResult getCallerIdentity(GetCallerIdentityRequest request)
@@ -126,8 +126,8 @@ public class TestInfoFacadeImpl
     @Test
     public void testRetrieveParameterHappyPath() throws Exception
     {
-        ssmMock = new MockSSMClient("test", "value");
-        
+        ssmMock = new SSMClientMock("test", "value");
+
         assertEquals("returned expected value",     "value",    facade.retrieveParameter("test"));
         assertEquals("invocation count",            1,          ssmMock.getParameterInvocationCount);
         assertEquals("provided name",               "test",     ssmMock.getParameterName);
@@ -137,8 +137,8 @@ public class TestInfoFacadeImpl
     @Test
     public void testRetrieveParameterThatDoesntExist() throws Exception
     {
-        ssmMock = new MockSSMClient("test", "value");
-        
+        ssmMock = new SSMClientMock("test", "value");
+
         assertEquals("returned null",               null,       facade.retrieveParameter("bogus"));
         assertEquals("invocation count",            1,          ssmMock.getParameterInvocationCount);
         assertEquals("provided name",               "bogus",    ssmMock.getParameterName);
@@ -148,7 +148,7 @@ public class TestInfoFacadeImpl
     @Test
     public void testRetrieveParameterSecureString() throws Exception
     {
-        ssmMock = new MockSSMClient("test", "value")
+        ssmMock = new SSMClientMock("test", "value")
         {
             @Override
             public GetParameterResult getParameter(GetParameterRequest request)
@@ -158,7 +158,7 @@ public class TestInfoFacadeImpl
                 return result;
             }
         };
-        
+
         assertEquals("returned null",               null,       facade.retrieveParameter("test"));
         assertEquals("invocation count",            1,          ssmMock.getParameterInvocationCount);
         assertEquals("provided name",               "test",     ssmMock.getParameterName);
@@ -168,7 +168,7 @@ public class TestInfoFacadeImpl
     @Test
     public void testRetrieveParameterThrottling() throws Exception
     {
-        ssmMock = new MockSSMClient("test", "value")
+        ssmMock = new SSMClientMock("test", "value")
         {
             @Override
             public GetParameterResult getParameter(GetParameterRequest request)
@@ -186,7 +186,7 @@ public class TestInfoFacadeImpl
                 }
             }
         };
-        
+
         assertEquals("returned value",              "value",    facade.retrieveParameter("test"));
         assertEquals("invocation count",            2,          ssmMock.getParameterInvocationCount);
     }
@@ -195,7 +195,7 @@ public class TestInfoFacadeImpl
     @Test
     public void testRetrieveParameterThrottlingTimeout() throws Exception
     {
-        ssmMock = new MockSSMClient("test", "value")
+        ssmMock = new SSMClientMock("test", "value")
         {
             @Override
             public GetParameterResult getParameter(GetParameterRequest request)
@@ -206,15 +206,15 @@ public class TestInfoFacadeImpl
                 throw ex;
             }
         };
-        
+
         // I'm measuring execution time, because at the scale of this test Java8 lambda
         // lambda time is signficant; I'm also measuring minimum execution time because
         // I've found that my laptop doesn't execute quickly enough for a range test
-        
+
         long start = System.currentTimeMillis();
         Object value = facade.retrieveParameter("test");
         long elapsed = System.currentTimeMillis() - start;
-        
+
         assertNull("returned null",                         value);
         assertTrue("SDK was invoked multiple times",        ssmMock.getParameterInvocationCount > 1);
         assertTrue("elapsed time (was: " + elapsed + ")",   elapsed >= RETRY_TIMEOUT_MS);
@@ -224,7 +224,7 @@ public class TestInfoFacadeImpl
     @Test
     public void testRetrieveParameterException() throws Exception
     {
-        ssmMock = new MockSSMClient("test", "value")
+        ssmMock = new SSMClientMock("test", "value")
         {
             @Override
             public GetParameterResult getParameter(GetParameterRequest request)
@@ -232,7 +232,7 @@ public class TestInfoFacadeImpl
                 throw new RuntimeException("irrelevant");
             }
         };
-        
+
         assertEquals("returned null",               null,       facade.retrieveParameter("test"));
         assertEquals("invocation count",            1,          ssmMock.getParameterInvocationCount);
     }

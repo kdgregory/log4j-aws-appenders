@@ -66,8 +66,8 @@ public class KinesisConstants
      *  Maximum number of hours for retention period.
      */
     public final static int MAXIMUM_RETENTION_PERIOD = 168;
-    
-    
+
+
     /**
      *  An SDK-independent enumeration of stream status codes as returned by
      *  <code>DescribeStream</code>, with the addition of a status indicating

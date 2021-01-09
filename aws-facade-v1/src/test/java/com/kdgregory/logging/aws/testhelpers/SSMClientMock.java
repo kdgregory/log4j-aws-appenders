@@ -27,7 +27,7 @@ import com.amazonaws.services.simplesystemsmanagement.model.*;
 /**
  *  A mock object to support Facade testing.
  */
-public class MockSSMClient
+public class SSMClientMock
 implements InvocationHandler
 {
     // the known parameter values
@@ -36,12 +36,12 @@ implements InvocationHandler
     // tracked information for getParameter()
     public int getParameterInvocationCount;
     public String getParameterName;
-    
-    
+
+
     /**
      *  Creates an instance with specified known key-value pairs.
      */
-    public MockSSMClient(String... keysAndValues)
+    public SSMClientMock(String... keysAndValues)
     {
         for (int ii = 0 ; ii < keysAndValues.length ; ii += 2)
         {
@@ -58,7 +58,7 @@ implements InvocationHandler
         return (AWSSimpleSystemsManagement)Proxy.newProxyInstance(
                             getClass().getClassLoader(),
                             new Class<?>[] { AWSSimpleSystemsManagement.class },
-                            MockSSMClient.this);
+                            SSMClientMock.this);
     }
 
 
@@ -90,7 +90,7 @@ implements InvocationHandler
     {
         String name = request.getName();
         String value = knownParams.get(name);
-        
+
         if (value == null)
             throw new ParameterNotFoundException(name);
 

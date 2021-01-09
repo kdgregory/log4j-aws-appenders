@@ -128,7 +128,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 //----------------------------------------------------------------------------
 
     @Test
-    public void testConfiguration() throws Exception
+    public void testInitialization() throws Exception
     {
         // really, we're just testing that the writer propagates its configuration where it needs to
 
@@ -147,7 +147,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
 
     @Test
-    public void testInvalidConfiguration() throws Exception
+    public void testInitializationInvalidConfiguration() throws Exception
     {
         config.setLogGroupName("I'm No Good!");
         config.setLogStreamName("");

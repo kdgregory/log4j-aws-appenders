@@ -17,7 +17,11 @@ package com.kdgregory.logging.aws.common;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
 import java.util.TimeZone;
 
 import com.kdgregory.logging.aws.internal.facade.FacadeFactory;
@@ -104,27 +108,34 @@ public class Substitutions
         if (input == null)
             return null;
 
-        String output = input;
-        do
+        StringBuilder sb = new StringBuilder(512);
+        for (String token : tokenize(input))
         {
-            input = output;
-            output = sequenceSubstitutor.perform(
-                     dateSubstitutor.perform(
-                     timestampSubstitutor.perform(
-                     hourlyTimestampSubstitutor.perform(
-                     startupTimestampSubstitutor.perform(
-                     pidSubstitutor.perform(
-                     hostnameSubstitutor.perform(
-                     syspropSubstitutor.perform(
-                     envarSubstitutor.perform(
-                     awsAccountIdSubstitutor.perform(
-                     ec2InstanceIdSubstitutor.perform(
-                     ec2RegionSubstitutor.perform(
-                     ssmSubstitutor.perform(
-                     input)))))))))))));
+            if (token.startsWith("{"))
+            {
+                sb.append(
+                        sequenceSubstitutor.perform(
+                        dateSubstitutor.perform(
+                        timestampSubstitutor.perform(
+                        hourlyTimestampSubstitutor.perform(
+                        startupTimestampSubstitutor.perform(
+                        pidSubstitutor.perform(
+                        hostnameSubstitutor.perform(
+                        syspropSubstitutor.perform(
+                        envarSubstitutor.perform(
+                        awsAccountIdSubstitutor.perform(
+                        ec2InstanceIdSubstitutor.perform(
+                        ec2RegionSubstitutor.perform(
+                        ssmSubstitutor.perform(
+                        token))))))))))))));
+            }
+            else
+            {
+                sb.append(token);
+            }
         }
-        while (! output.equals(input));
-        return output;
+
+        return sb.toString();
     }
 
 //----------------------------------------------------------------------------
@@ -134,27 +145,27 @@ public class Substitutions
     /**
      *  Contains all of the boilerplate for various substitutions.
      *  <p>
-     *  Construct with either the full tag ("{foo}") or (for tags with embedded
-     *  keys) the leading part of the tag ("{foo:").
+     *  Subclasses provide the tags that they recognize, either as a full tag
+     *  (opening and closing braces) or as a leading component ("{tag:") for
+     *  those tags that support embedded lookups. The {@link #perform} method
+     *  tries to match each of the tags in turn (most subclasses only provide
+     *  one, but some that support legacy tags provide multiple).
      *  <p>
-     *  The subclass must implement {@link #retrieveValue}, which is called with
-     *  any embedded tag or default (either or both of which may be null). It is
-     *  responsible for retrieving the value. If unable to retrieve the value,
-     *  it may return the default.
+     *  If a tag is matched, <code>perform()</code> next looks for a cached
+     *  value. If one is set, then that value is returned.
      *  <p>
-     *  The subclass can also choose to cache retrieved values, to handle the
-     *  (unlikely) case where the same substitution is performed multiple times.
-     *  The cache variable is stored in the superclass (to avoid boilerplate),
-     *  and the subclass is responsible for setting it.
+     *  If there's no cached value, <code>retrieveValue()</code> is called, and
+     *  its result is returned. It will be provided with any embedded tags, and
+     *  is permitted to cache the value.
      */
     private abstract class AbstractSubstitutor
     {
-        private String[] tags;
+        private List<String> tags;
         protected String cachedValue;
 
         public AbstractSubstitutor(String... tags)
         {
-            this.tags = tags;
+            this.tags = Arrays.asList(tags);
         }
 
         public String perform(String input)
@@ -162,50 +173,51 @@ public class Substitutions
             if (input == null)
                 return "";
 
-            for (String tag : tags)
+            String result = null;
+            for (Iterator<String> itx = tags.iterator() ; itx.hasNext() && (result == null) ; )
             {
-                input = trySubstitution(input, tag);
+                String tag = itx.next();
+                if (input.equals(tag))
+                {
+                    result = cachedValue != null
+                           ? cachedValue
+                           : retrieveValue(null);
+                }
+                else if (input.startsWith(tag))
+                {
+                    result = cachedValue != null
+                           ? cachedValue
+                           : trySubstitution(input, tag);
+                }
             }
 
-            return input;
+            return (result == null) ? input : result;
         }
 
         private String trySubstitution(String input, String tag)
         {
-            int start = input.indexOf(tag);
-            if (start < 0)
-                return input;
-
-            int end = input.indexOf("}", start) + 1;
-
-            String value = cachedValue;
-            if (value == null)
+            String embeddedKey = input.replace(tag, "").replace("}", "");
+            String defaultValue = "";
+            int splitPoint = embeddedKey.indexOf(':');
+            if (splitPoint >= 0)
             {
-                String actualTag = input.substring(start, end);
-                String embeddedKey = actualTag.replace(tag, "").replace("}", "");
-                String defaultValue = null;
-                int splitPoint = embeddedKey.indexOf(':');
-                if (splitPoint >= 0)
-                {
-                    defaultValue = embeddedKey.substring(splitPoint + 1);
-                    embeddedKey = embeddedKey.substring(0, splitPoint);
-                }
-
-                value = retrieveValue(embeddedKey);
-                if ((value == null) || value.isEmpty())
-                    value = defaultValue;
+                defaultValue = embeddedKey.substring(splitPoint + 1);
+                embeddedKey = embeddedKey.substring(0, splitPoint);
             }
 
-            if ((value == null) || value.isEmpty())
-                return input;
+            String result = retrieveValue(embeddedKey);
+            if (result != null)
+                return result;
 
-            return input.substring(0, start) + value + input.substring(end);
+            return defaultValue.isEmpty() ? null : defaultValue;
         }
 
+        // some subclasses set the cached value in their constructor; rather than
+        // force them to implement an abstract method, they'll use this (and the
+        // null return should cause any tests to go red if they don't cache)
         protected String retrieveValue(String embeddedKey)
         {
-            // this won't be called if cachedValue is null
-            return cachedValue;
+            return null;
         }
     }
 
@@ -477,5 +489,41 @@ public class Substitutions
             infoFacade = FacadeFactory.createFacade(InfoFacade.class);
         }
         return infoFacade;
+    }
+
+
+    /**
+     *  Breaks the input string into components that are either substitutions or
+     *  literal text.
+     */
+    private List<String> tokenize(String input)
+    {
+        List<String> result = new ArrayList<>();
+        int ii = 0;
+        while (ii < input.length())
+        {
+            int next = input.indexOf('{', ii);
+            if (next < 0)
+            {
+                result.add(input.substring(ii));
+                break;
+            }
+            else
+            {
+                result.add(input.substring(ii, next));
+                ii = input.indexOf('}', next);
+                if (ii < 0)
+                {
+                    result.add(input.substring(next));
+                    break;
+                }
+                else
+                {
+                    ii++;  // because it's pointing at the closing brace now
+                    result.add(input.substring(next, ii));
+                }
+            }
+        }
+        return result;
     }
 }

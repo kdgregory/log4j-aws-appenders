@@ -221,10 +221,7 @@ public class TestSubstitutions
         mockInfoFacade.parameterValues.put("argle", "bargle");
 
         Substitutions subs = new Substitutions(TEST_DATE, 123, mockInfoFacade);
-        assertEquals("bar bargle {ssm:biff}", subs.perform("{ssm:foo} {ssm:argle} {ssm:biff}"));
-
-        // FIXME - this is the real test; see issue #130
-        // assertEquals("bar bargle {ssm:biff} baz", subs.perform("{ssm:foo} {ssm:argle} {ssm:biff} {ssm:biff:baz}"));
+        assertEquals("bar bargle {ssm:biff} baz", subs.perform("{ssm:foo} {ssm:argle} {ssm:biff} {ssm:biff:baz}"));
     }
 
 
@@ -251,6 +248,16 @@ public class TestSubstitutions
     {
         Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
 
-        assertEquals("x20170529x20170529x", subs.perform("x{date}x{date}x"));
+        assertEquals(" 20170529 20170529 ", subs.perform(" {date} {date} "));
+    }
+
+
+    @Test
+    public void testSubstitutionAfterFailure() throws Exception
+    {
+        Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
+
+        // was succeeding if the bogus substitution was the first thing
+        assertEquals(" 20170529 {bogus} 20170529", subs.perform(" {date} {bogus} {date}"));
     }
 }

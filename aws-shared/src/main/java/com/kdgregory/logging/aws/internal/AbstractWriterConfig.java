@@ -24,6 +24,7 @@ import com.kdgregory.logging.common.util.DiscardAction;
 public class AbstractWriterConfig<T extends AbstractWriterConfig<T>>
 {
     private volatile boolean        truncateOversizeMessages;
+    private boolean                 isSynchronous;
     private volatile long           batchDelay;
     private volatile int            discardThreshold;
     private volatile DiscardAction  discardAction;
@@ -42,6 +43,17 @@ public class AbstractWriterConfig<T extends AbstractWriterConfig<T>>
     {
         truncateOversizeMessages = value;
         return (T)this;
+    }
+    
+    
+    public boolean getSynchronous()
+    {
+        return isSynchronous;
+    }
+    
+    public void setSynchronous(boolean value)
+    {
+        isSynchronous = value;
     }
 
 

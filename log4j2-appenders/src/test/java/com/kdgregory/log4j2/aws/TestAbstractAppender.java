@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import static net.sf.kdgcommons.test.NumericAsserts.*;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import org.apache.logging.log4j.core.LoggerContext;
@@ -116,34 +115,6 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("header is first",     "File Header\u00a9",    mockWriter.getMessage(0));
         assertEquals("message is middle",   "blah blah blah",       mockWriter.getMessage(1));
         assertEquals("footer is last",      "File Footer\u00a9",    mockWriter.getMessage(2));
-    }
-
-
-    @Test
-    public void testSynchronousMode() throws Exception
-    {
-        initialize("testSynchronousMode");
-
-        long start = System.currentTimeMillis();
-
-        MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
-        MockCloudWatchWriter writer = appender.getMockWriter();
-
-        assertEquals("calls to writer factory",                 1,                                      writerFactory.invocationCount);
-        assertNotNull("writer was created",                                                             writer);
-        assertNull("writer not started on thread",                                                      writer.writerThread);
-        assertEquals("initialize() called",                     1,                                      writer.initializeInvocationCount);
-
-        logger.debug("message one");
-
-        assertEquals("batch has been processed",                1,                                      writer.processBatchInvocationCount);
-        assertInRange("batch processing time",                  start, System.currentTimeMillis(),      writer.processBatchLastTimeout);
-
-        assertEquals("before stop, calls to cleanup()",         0,                                      writer.cleanupInvocationCount);
-
-        appender.stop(0, TimeUnit.MILLISECONDS);
-
-        assertEquals("after stop, calls to cleanup()",          1,                                      writer.cleanupInvocationCount);
     }
 
 

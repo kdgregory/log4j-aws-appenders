@@ -469,27 +469,21 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
             try
             {
                 writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats, internalLogger);
-                if (synchronous)
+                threadFactory.startLoggingThread(writer, useShutdownHook, new UncaughtExceptionHandler()
                 {
-                    writer.initialize();
-                }
-                else
-                {
-                    threadFactory.startLoggingThread(writer, useShutdownHook, new UncaughtExceptionHandler()
+                    @Override
+                    public void uncaughtException(Thread t, Throwable ex)
                     {
-                        @Override
-                        public void uncaughtException(Thread t, Throwable ex)
-                        {
-                            internalLogger.error("unhandled exception in writer", ex);
-                            appenderStats.setLastError(null, ex);
-                            writer = null;
-                        }
-                    });
-
-                    if (! writer.waitUntilInitialized(60000))
-                    {
-                        internalLogger.error("writer initialization timed out", null);
+                        internalLogger.error("unhandled exception in writer", ex);
+                        appenderStats.setLastError(null, ex);
+                        writer = null;
                     }
+                });
+
+                if (! writer.waitUntilInitialized(60000))
+                {
+                    internalLogger.error("writer initialization timed out", null);
+                    return;
                 }
 
                 if (layout.getFileHeader() != null)
@@ -523,15 +517,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
                 }
 
                 writer.stop();
-
-                if (synchronous)
-                {
-                    writer.cleanup();
-                }
-                else
-                {
-                    writer.waitUntilStopped(batchDelay * 2);
-                }
+                writer.waitUntilStopped(batchDelay * 2);
             }
             catch (Exception ex)
             {
@@ -578,13 +564,5 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
         }
 
         writer.addMessage(message);
-
-        // by processing the batch outside of the appendLock (and relying on writer internal
-        // synchronization), we may end up with a single batch with more than one record (but
-        // it's unlikely)
-        if (synchronous)
-        {
-            writer.processBatch(System.currentTimeMillis());
-        }
     }
 }

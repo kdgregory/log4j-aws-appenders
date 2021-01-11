@@ -94,6 +94,13 @@ implements LogWriter
 
 
     @Override
+    public boolean isSynchronous()
+    {
+        return config.getSynchronous();
+    }
+
+
+    @Override
     public void addMessage(LogMessage message)
     {
         messages.add(message);
@@ -101,7 +108,6 @@ implements LogWriter
     }
 
 
-    @Override
     public boolean initialize()
     {
         initializeInvocationCount++;
@@ -130,7 +136,6 @@ implements LogWriter
     }
 
 
-    @Override
     public synchronized void processBatch(long shutdownTime)
     {
         processBatchInvocationCount++;
@@ -162,7 +167,6 @@ implements LogWriter
         }
     }
 
-    @Override
     public void cleanup()
     {
         cleanupInvocationCount++;

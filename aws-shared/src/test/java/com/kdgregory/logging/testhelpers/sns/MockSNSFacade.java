@@ -47,6 +47,7 @@ implements InvocationHandler
     public String publishArn;
     public String publishSubject;
     public LogMessage publishMessage;
+    public Thread publishThread;
 
 
     public MockSNSFacade(SNSWriterConfig config, String... existingTopicNames)
@@ -84,6 +85,7 @@ implements InvocationHandler
                 return lookupTopic();
             case "publish" :
                 publishInvocationCount++;
+                publishThread = Thread.currentThread();
                 publishArn = config.getTopicArn();
                 publishSubject = config.getSubject();
                 publishMessage = (LogMessage)args[0];

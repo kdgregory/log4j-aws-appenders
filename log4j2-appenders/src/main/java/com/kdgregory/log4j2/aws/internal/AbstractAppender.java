@@ -253,27 +253,21 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
             try
             {
                 writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats, internalLogger);
-                if (config.isSynchronous())
+                threadFactory.startLoggingThread(writer, false, new UncaughtExceptionHandler()
                 {
-                    writer.initialize();
-                }
-                else
-                {
-                    threadFactory.startLoggingThread(writer, false, new UncaughtExceptionHandler()
+                    @Override
+                    public void uncaughtException(Thread t, Throwable ex)
                     {
-                        @Override
-                        public void uncaughtException(Thread t, Throwable ex)
-                        {
-                            internalLogger.error("unhandled exception in writer", ex);
-                            appenderStats.setLastError(null, ex);
-                            writer = null;
-                        }
-                    });
-
-                    if (! writer.waitUntilInitialized(60000))
-                    {
-                        internalLogger.error("writer initialization timed out", null);
+                        internalLogger.error("unhandled exception in writer", ex);
+                        appenderStats.setLastError(null, ex);
+                        writer = null;
                     }
+                });
+
+                if (! writer.waitUntilInitialized(60000))
+                {
+                    internalLogger.error("writer initialization timed out", null);
+                    return;
                 }
 
                 if (getLayout().getHeader() != null)
@@ -315,11 +309,6 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
                 }
 
                 writer.stop();
-
-                if (config.isSynchronous())
-                {
-                    writer.cleanup();
-                }
 
                 if (timeUnit != null)
                 {
@@ -367,13 +356,5 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
         }
 
         writer.addMessage(message);
-
-        // by processing the batch outside of the appendLock (and relying on writer internal
-        // synchronization), we may end up with a single batch with more than one record (but
-        // it's unlikely)
-        if (getConfig().isSynchronous())
-        {
-            writer.processBatch(System.currentTimeMillis());
-        }
     }
 }

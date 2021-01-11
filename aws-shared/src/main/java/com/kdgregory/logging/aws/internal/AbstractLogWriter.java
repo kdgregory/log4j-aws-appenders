@@ -130,12 +130,20 @@ implements LogWriter
 
         // the do-while loop ensures that we attempt to process at least one batch, even if
         // the writer is started and immediately stopped; that's not likely to happen in the
-        // real world, but was causing problems with the smoketest (which is configured to
-        // quickly transition writers)
+        // real world, but was causing problems with the integration tests (which quickly
+        // transition writers)
 
         do
         {
-            processBatch(shutdownTime);
+            if (config.getSynchronous())
+            {
+                long timeToShutdown = shutdownTime - System.currentTimeMillis();
+                Utils.sleepQuietly(timeToShutdown);
+            }
+            else
+            {
+                processBatch(shutdownTime);
+            }
         } while (keepRunning());
 
         cleanup();
@@ -177,6 +185,13 @@ implements LogWriter
 
 
     @Override
+    public boolean isSynchronous()
+    {
+        return config.getSynchronous();
+    }
+
+
+    @Override
     public void addMessage(LogMessage message)
     {
         if (message.size() == 0)
@@ -201,32 +216,11 @@ implements LogWriter
         }
 
         messageQueue.enqueue(message);
-    }
 
-
-    @Override
-    public boolean initialize()
-    {
-        boolean success = true;
-
-        try
+        if (config.getSynchronous())
         {
-            success = ensureDestinationAvailable();
+            processBatch(System.currentTimeMillis());
         }
-        catch (Exception ex)
-        {
-            reportError("exception in initializer", ex);
-            success = false;
-        }
-
-        if (! success)
-        {
-            messageQueue.setDiscardThreshold(0);
-            messageQueue.setDiscardAction(DiscardAction.oldest);
-        }
-
-        initializationComplete = true;
-        return success;
     }
 
 
@@ -246,24 +240,6 @@ implements LogWriter
             }
         }
         return initializationComplete;
-    }
-
-
-    @Override
-    public synchronized void processBatch(long waitUntil)
-    {
-        List<LogMessage> currentBatch = buildBatch(waitUntil);
-        if (currentBatch.size() > 0)
-        {
-            batchCount++;
-            List<LogMessage> failures = sendBatch(currentBatch);
-            requeueMessages(failures);
-
-            // note: order of updates is important to avoid race conditions in tests
-            stats.setMessagesRequeuedLastBatch(failures.size());
-            stats.setMessagesSentLastBatch(currentBatch.size() - failures.size());
-            stats.updateMessagesSent(currentBatch.size() - failures.size());
-        }
     }
 
 
@@ -299,29 +275,6 @@ implements LogWriter
         }
     }
 
-
-    @Override
-    public void cleanup()
-    {
-        stopAWSClient();
-
-        if (shutdownHook != null)
-        {
-            try
-            {
-                Runtime.getRuntime().removeShutdownHook(shutdownHook);
-            }
-            catch (Exception ignored)
-            {
-                // we expect an IllegalThreadStateException
-            }
-            finally
-            {
-                shutdownHook = null;
-            }
-        }
-    }
-
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
@@ -334,6 +287,48 @@ implements LogWriter
     {
         return shutdownTime > System.currentTimeMillis()
             || ! messageQueue.isEmpty();
+    }
+
+
+    protected boolean initialize()
+    {
+        boolean success = true;
+
+        try
+        {
+            success = ensureDestinationAvailable();
+        }
+        catch (Exception ex)
+        {
+            reportError("exception in initializer", ex);
+            success = false;
+        }
+
+        if (! success)
+        {
+            messageQueue.setDiscardThreshold(0);
+            messageQueue.setDiscardAction(DiscardAction.oldest);
+        }
+
+        initializationComplete = true;
+        return success;
+    }
+
+
+    public synchronized void processBatch(long waitUntil)
+    {
+        List<LogMessage> currentBatch = buildBatch(waitUntil);
+        if (currentBatch.size() > 0)
+        {
+            batchCount++;
+            List<LogMessage> failures = sendBatch(currentBatch);
+            requeueMessages(failures);
+
+            // note: order of updates is important to avoid race conditions in tests
+            stats.setMessagesRequeuedLastBatch(failures.size());
+            stats.setMessagesSentLastBatch(currentBatch.size() - failures.size());
+            stats.updateMessagesSent(currentBatch.size() - failures.size());
+        }
     }
 
 
@@ -387,7 +382,7 @@ implements LogWriter
      */
     private LogMessage waitForMessage(long waitUntil)
     {
-        long waitTime = waitUntil - System.currentTimeMillis();
+        long waitTime = Math.max(1, waitUntil - System.currentTimeMillis());
         return messageQueue.dequeue(waitTime);
     }
 
@@ -402,6 +397,28 @@ implements LogWriter
         for (LogMessage message : messages)
         {
             messageQueue.requeue(message);
+        }
+    }
+
+
+    public void cleanup()
+    {
+        stopAWSClient();
+
+        if (shutdownHook != null)
+        {
+            try
+            {
+                Runtime.getRuntime().removeShutdownHook(shutdownHook);
+            }
+            catch (Exception ignored)
+            {
+                // we expect an IllegalThreadStateException
+            }
+            finally
+            {
+                shutdownHook = null;
+            }
         }
     }
 

@@ -51,6 +51,7 @@ implements InvocationHandler
     // arguments passed to putRecords()
     public List<LogMessage> putRecordsBatch;
     public List<LogMessage> putRecordsHistory = new ArrayList<LogMessage>();
+    public Thread putRecordsThread;
 
     // this is the status returned after iterator expires; set from last iterator value
     private StreamStatus defaultStatus = StreamStatus.ACTIVE;
@@ -90,6 +91,7 @@ implements InvocationHandler
                 return null;
             case "putRecords":
                 putRecordsInvocationCount++;
+                putRecordsThread = Thread.currentThread();
                 putRecordsBatch = (List<LogMessage>)args[0];
                 putRecordsHistory.addAll(putRecordsBatch);
                 return putRecords(putRecordsBatch);
@@ -135,6 +137,4 @@ implements InvocationHandler
     {
         throw new UnsupportedOperationException("FIXME - implement");
     }
-
-
 }

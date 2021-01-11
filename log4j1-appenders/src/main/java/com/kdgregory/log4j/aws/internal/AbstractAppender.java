@@ -489,22 +489,21 @@ extends AppenderSkeleton
             try
             {
                 writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats, internalLogger);
-                if (synchronous)
+                threadFactory.startLoggingThread(writer, useShutdownHook, new UncaughtExceptionHandler()
                 {
-                    writer.initialize();
-                }
-                else
-                {
-                    threadFactory.startLoggingThread(writer, useShutdownHook, new UncaughtExceptionHandler()
+                    @Override
+                    public void uncaughtException(Thread t, Throwable ex)
                     {
-                        @Override
-                        public void uncaughtException(Thread t, Throwable ex)
-                        {
-                            internalLogger.error("unhandled exception in writer", ex);
-                            appenderStats.setLastError(null, ex);
-                            writer = null;
-                        }
-                    });
+                        internalLogger.error("unhandled exception in writer", ex);
+                        appenderStats.setLastError(null, ex);
+                        writer = null;
+                    }
+                });
+
+                if (! writer.waitUntilInitialized(60000))
+                {
+                    internalLogger.error("writer initialization timed out", null);
+                    return;
                 }
 
                 if (layout.getHeader() != null)
@@ -538,11 +537,7 @@ extends AppenderSkeleton
                 }
 
                 writer.stop();
-
-                if (synchronous)
-                {
-                    writer.cleanup();
-                }
+                writer.waitUntilStopped(batchDelay * 2);
             }
             catch (Exception ex)
             {
@@ -589,12 +584,5 @@ extends AppenderSkeleton
         }
 
         writer.addMessage(message);
-
-        // for Log4J, append() happens within a big synchronized block managed by the framework
-        // however, logically, I want to separate putting a message on the queue from sending it
-        if (synchronous)
-        {
-            writer.processBatch(System.currentTimeMillis());
-        }
     }
 }

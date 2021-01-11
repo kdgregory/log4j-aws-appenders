@@ -53,6 +53,7 @@ implements InvocationHandler
     // recorded arguments for methods that have them
     public String putEventsSequenceToken;
     public List<LogMessage> putEventsMessages;
+    public Thread putEventsThread;
 
     // this is only updated by the default implementation of sendMessages()
     // it just contains the messages themselves, so can be asserted easily
@@ -103,6 +104,7 @@ implements InvocationHandler
                 return retrieveSequenceToken();
             case "putEvents":
                 putEventsInvocationCount++;
+                putEventsThread = Thread.currentThread();
                 putEventsSequenceToken = (String)args[0];
                 putEventsMessages = (List<LogMessage>)args[1];
                 return sendMessages(putEventsSequenceToken, putEventsMessages);

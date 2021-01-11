@@ -759,6 +759,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putEvents: sequence token",                   expectedToken,          mock.putEventsSequenceToken);
         assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
         assertEquals("putEvents: last call message",                "message one",          mock.putEventsMessages.get(0).getMessage());
+        assertNotSame("putEvents: invocation thread",               Thread.currentThread(), mock.putEventsThread);
 
         assertEquals("message has been removed from queue",         0,                      messageQueue.size());
 
@@ -819,6 +820,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putEvents: sequence token",                   expectedToken,          mock.putEventsSequenceToken);
         assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
         assertEquals("putEvents: last call message",                "message one",          mock.putEventsMessages.get(0).getMessage());
+        assertNotSame("putEvents: invocation thread",               Thread.currentThread(), mock.putEventsThread);
 
         assertEquals("message has been removed from queue",         0,                      messageQueue.size());
 
@@ -1374,61 +1376,36 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     }
 
 
-// TODO - these tests have to wait until the contract around synchronous operation changes
-//
-//    @Test
-//    public void testSynchronousOperation() throws Exception
-//    {
-//        // appender is expected to set batch delay in synchronous mode
-//        config.setBatchDelay(1);
-//
-//        // we just have one thread, so don't want any locks getting in the way
-//        mock.disableThreadSynchronization();
-//
-//        // the createWriter() method spins up a background thread, which we don't want
-//        writer = (CloudWatchLogWriter)mock.newWriterFactory().newLogWriter(config, stats, internalLogger);
-//        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
-//
-//        assertEquals("stats: actual log group name",            "argle",            stats.getActualLogGroupName());
-//        assertEquals("stats: actual log stream name",           "bargle",           stats.getActualLogStreamName());
-//        assertFalse("writer should not be initialized",         ClassUtil.getFieldValue(writer, "initializationComplete", Boolean.class).booleanValue());
-//
-//        writer.initialize();
-//
-//        assertTrue("writer has been initialized",               ClassUtil.getFieldValue(writer, "initializationComplete", Boolean.class).booleanValue());
-//        assertNull("no dispatch thread",                        ClassUtil.getFieldValue(writer, "dispatchThread", Thread.class));
-//
-//        assertEquals("describeLogGroups: invocation count",     1,                  mock.describeLogGroupsInvocationCount);
-//        assertEquals("describeLogStreams: invocation count",    1,                  mock.describeLogStreamsInvocationCount);
-//        assertEquals("createLogGroup: invocation count",        0,                  mock.createLogGroupInvocationCount);
-//        assertEquals("createLogStream: invocation count",       0,                  mock.createLogStreamInvocationCount);
-//
-//        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
-//
-//        assertEquals("message is waiting in queue",             1,                  messageQueue.queueSize());
-//        assertEquals("putLogEvents: invocation count",          0,                  mock.putLogEventsInvocationCount);
-//
-//        writer.processBatch(System.currentTimeMillis());
-//
-//        assertEquals("no longer in queue",                      0,                  messageQueue.queueSize());
-//        assertEquals("describeLogGroups: invocation count",     1,                  mock.describeLogGroupsInvocationCount);
-//        assertEquals("describeLogStreams: invocation count",    2,                  mock.describeLogStreamsInvocationCount);
-//        assertEquals("putLogEvents: invocation count",          1,                  mock.putLogEventsInvocationCount);
-//        assertEquals("putLogEvents: last call #/messages",      1,                  mock.mostRecentEvents.size());
-//        assertEquals("putLogEvents: last message",              "message one",      mock.mostRecentEvents.get(0).getMessage());
-//
-//        assertStatisticsTotalMessagesSent(1);
-//
-//        assertEquals("shutdown not called before cleanup",      0,                  mock.shutdownInvocationCount);
-//        writer.cleanup();
-//        assertEquals("shutdown called after cleanup",           1,                  mock.shutdownInvocationCount);
-//
-//        // the "starting" and "initialization complete" messages are emitted in run(), so not present here
-//        internalLogger.assertInternalDebugLog("using existing .* group: argle",
-//                                              "using existing .* stream: bargle");
-//        internalLogger.assertInternalErrorLog();
-//    }
-//
+    @Test
+    public void testSynchronousOperation() throws Exception
+    {
+        config.setSynchronous(true);
+        mock = new MockCloudWatchFacade(config);
+
+        createWriter();
+        ((TestableCloudWatchLogWriter)writer).disableThreadSynchronization();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+
+        // no need to wait for thread, it should be sent by the call to addMessage();
+
+        assertEquals("putEvents: invocation count",                 2,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
+        assertEquals("putEvents: last call message",                "message two",          mock.putEventsMessages.get(0).getMessage());
+        assertSame("putEvents: invocation thread",                  Thread.currentThread(), mock.putEventsThread);
+
+        assertEquals("message has been removed from queue",         0,                      messageQueue.size());
+
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "using existing CloudWatch log group: argle",
+                                              "using existing CloudWatch log stream: bargle",
+                                              "log writer initialization complete.*");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
+    }
+
+
 //    @Test
 //    public void testShutdown() throws Exception
 //    {

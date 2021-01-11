@@ -384,6 +384,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 
         assertEquals("message has been removed from queue",     0,                      messageQueue.size());
 
+        assertNotSame("mock: thread",                           Thread.currentThread(), mock.publishThread);
         assertEquals("mock: publish ARN",                       TEST_TOPIC_ARN,         mock.publishArn);
         assertEquals("mock: publish subject",                   TEST_SUBJECT,           mock.publishSubject);
         assertEquals("mock: last message written",              "test message",         mock.publishMessage.getMessage());
@@ -504,6 +505,33 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
     }
 
 
+    @Test
+    public void testSynchronousOperation() throws Exception
+    {
+        config.setSynchronous(true);
+        mock = new MockSNSFacade(config, TEST_TOPIC_NAME);
+
+        createWriter();
+        assertTrue("writer is running", writer.isRunning());
+        ((TestableSNSLogWriter)writer).disableThreadSynchronization();
+
+        writer.addMessage(new LogMessage(0, "message one"));
+        writer.addMessage(new LogMessage(0, "message two"));
+
+        assertEquals("messages have been removed from queue",   0,                      messageQueue.size());
+
+        assertSame("mock: thread",                              Thread.currentThread(), mock.publishThread);
+        assertEquals("mock: publish ARN",                       TEST_TOPIC_ARN,         mock.publishArn);
+        assertEquals("mock: publish subject",                   TEST_SUBJECT,           mock.publishSubject);
+        assertEquals("mock: last message written",              "message two",          mock.publishMessage.getMessage());
+
+        assertEquals("mock: lookupTopicInvocationCount",        1,                      mock.lookupTopicInvocationCount);
+        assertEquals("mock: createTopicInvocationCount",        0,                      mock.createTopicInvocationCount);
+        assertEquals("mock: publishInvocationCount",            2,                      mock.publishInvocationCount);
+        assertEquals("mock: shutdownInvocationCount",           0,                      mock.shutdownInvocationCount);
+    }
+
+
 //    @Test
 //    public void testShutdown() throws Exception
 //    {
@@ -548,57 +576,6 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 //            "log writer starting.*",
 //            "log writer initialization complete.*",
 //            "log.writer shut down.*");
-//        internalLogger.assertInternalErrorLog();
-//    }
-//
-//
-//    @Test
-//    public void testSynchronousOperation() throws Exception
-//    {
-//        config.setTopicName(TEST_TOPIC_NAME);
-//
-//        // appender is expected to set batch delay in synchronous mode
-//        config.setBatchDelay(1);
-//
-//        // we just have one thread, so don't want any locks getting in the way
-//        mock.disableThreadSynchronization();
-//
-//        writer = (SNSLogWriter)mock.newWriterFactory().newLogWriter(config, stats, internalLogger);
-//        messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
-//
-//        assertEquals("before init, stats: topic name",          TEST_TOPIC_NAME,        stats.getActualTopicName());
-//        assertNull("before init, stats: topic ARN",                                     stats.getActualTopicArn());
-//
-//        writer.initialize();
-//
-//        assertEquals("after init, invocations of listTopics",   1,                      mock.listTopicsInvocationCount);
-//        assertEquals("after init, invocations of createTopic",  0,                      mock.createTopicInvocationCount);
-//        assertEquals("after init, invocations of publish",      0,                      mock.publishInvocationCount);
-//
-//        assertNull("after init, stats: no errors",                                      stats.getLastError());
-//        assertEquals("after init, stats: topic name",           TEST_TOPIC_NAME,        stats.getActualTopicName());
-//        assertEquals("after init, stats: topic ARN",            TEST_TOPIC_ARN,         stats.getActualTopicArn());
-//
-//        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
-//
-//        assertEquals("message is waiting in queue",             1,                      messageQueue.queueSize());
-//        assertEquals("publish: invocation count",               0,                      mock.publishInvocationCount);
-//
-//        writer.processBatch(System.currentTimeMillis());
-//
-//        assertEquals("after publish, invocation count",         1,                      mock.publishInvocationCount);
-//        assertEquals("after publish, arn",                      TEST_TOPIC_ARN,         mock.lastPublishArn);
-//        assertEquals("after publish, subject",                  null,                   mock.lastPublishSubject);
-//        assertEquals("after publish, body",                     "message one",          mock.lastPublishMessage);
-//
-//        assertStatisticsTotalMessagesSent(1);
-//        assertEquals("messages sent in batch",                  1,                      stats.getMessagesSentLastBatch());
-//
-//        assertEquals("shutdown not called before cleanup",      0,                      mock.shutdownInvocationCount);
-//        writer.cleanup();
-//        assertEquals("shutdown called after cleanup",           1,                      mock.shutdownInvocationCount);
-//
-//        internalLogger.assertInternalDebugLog();
 //        internalLogger.assertInternalErrorLog();
 //    }
 }

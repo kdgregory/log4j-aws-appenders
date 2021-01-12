@@ -276,20 +276,24 @@ implements LogWriter
     }
 
 //----------------------------------------------------------------------------
-//  Internals
+//  Internals -- these are protected so they can be overridden for testing
 //----------------------------------------------------------------------------
 
     /**
      *  A check for whether we should keep running: either we haven't been shut
      *  down or there's still messages to process
      */
-    private boolean keepRunning()
+    protected boolean keepRunning()
     {
         return shutdownTime > System.currentTimeMillis()
             || ! messageQueue.isEmpty();
     }
 
 
+    /**
+     *  Called before the main loop, to ensure that the writer is able to perform
+     *  its job. If unable, reconfigures the writer to discard all message.
+     */
     protected boolean initialize()
     {
         boolean success = true;
@@ -315,7 +319,12 @@ implements LogWriter
     }
 
 
-    public synchronized void processBatch(long waitUntil)
+    /**
+     *  Called from the main loop to build a batch of messages and send them.
+     *  Waits until the specified timestamp for the first message, then waits
+     *  for the batch delay before passing the messages to {@link #sendBatch}.
+     */
+    protected synchronized void processBatch(long waitUntil)
     {
         List<LogMessage> currentBatch = buildBatch(waitUntil);
         if (currentBatch.size() > 0)
@@ -401,7 +410,12 @@ implements LogWriter
     }
 
 
-    public void cleanup()
+    /**
+     *  Called after the main loop exits, to shut down the AWS client. Also removes
+     *  any shutdown hook (this is only relevant when the logging framework has been
+     *  shut down before the JVM).
+     */
+    private void cleanup()
     {
         stopAWSClient();
 

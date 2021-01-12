@@ -37,11 +37,6 @@ extends SNSLogWriter
     public TestableSNSLogWriter(SNSWriterConfig config, SNSWriterStatistics stats, InternalLogger logger, SNSFacade facade)
     {
         super(config, stats, logger, facade);
-
-        // replace the stndard retry logic with something that operates much more quickly
-//        describeRetry = new RetryManager(50, 200, false);
-//        createRetry = new RetryManager(50, 200, false);
-//        sendRetry = new RetryManager(50, 200, false);
     }
 
 
@@ -51,15 +46,11 @@ extends SNSLogWriter
         try
         {
             allowWriterThread.acquire();
+            super.processBatch(waitUntil);
         }
         catch (InterruptedException ex)
         {
             throw new RuntimeException("could not acquire semaphore");
-        }
-
-        try
-        {
-            super.processBatch(waitUntil);
         }
         finally
         {

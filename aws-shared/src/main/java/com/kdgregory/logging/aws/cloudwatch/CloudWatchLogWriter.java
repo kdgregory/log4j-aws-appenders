@@ -102,10 +102,64 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
 
 
     @Override
-    protected List<LogMessage> sendBatch(List<LogMessage> currentBatch)
+    protected List<LogMessage> sendBatch(List<LogMessage> batch)
     {
-        Collections.sort(currentBatch);
-        return attemptToSend(currentBatch);
+        if (batch.isEmpty())
+            return batch;
+
+        Collections.sort(batch);
+        // TODO - validate that all messages meet time constraints, discard those that don't
+
+        List<LogMessage> result = sendRetry.invoke(() ->
+        {
+            try
+            {
+                sequenceToken = facade.putEvents(nextSequenceToken(), batch);
+                return Collections.emptyList();
+            }
+            catch (CloudWatchFacadeException ex)
+            {
+                switch (ex.getReason())
+                {
+                    case THROTTLING:
+                        return null;
+                    case INVALID_SEQUENCE_TOKEN:
+                        // force the token to be fetched next time through
+                        sequenceToken = null;
+                        stats.updateWriterRaceRetries();
+                        return null;
+                    case ALREADY_PROCESSED:
+                        logger.warn("received DataAlreadyAcceptedException, dropping batch");
+                        return Collections.emptyList();
+                    case MISSING_LOG_GROUP:
+                    case MISSING_LOG_STREAM:
+                        reportError(ex.getMessage(), ex);
+                        ensureDestinationAvailable();
+                        return batch;
+                    default:
+                        reportError("failed to send: " + ex.getMessage(), ex.getCause());
+                        return batch;
+                }
+            }
+        });
+
+        // either success or an exception
+        if (result != null)
+            return result;
+
+        // if we get here we timed-out, need to figure out cause
+        if (sequenceToken == null)
+        {
+            logger.warn("batch failed: unrecovered sequence token race");
+            stats.updateUnrecoveredWriterRaceRetries();
+        }
+        else
+        {
+            logger.warn("batch failed: repeated throttling");
+        }
+
+        // in either case, return the original batch for reprocessing
+        return batch;
     }
 
 
@@ -182,65 +236,6 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
         // force a retrieve, and wait until it returns something
         sequenceToken = null;
         nextSequenceToken();
-    }
-
-
-    // note: protected so that it can be overridden for testing
-    protected List<LogMessage> attemptToSend(List<LogMessage> batch)
-    {
-        if (batch.isEmpty())
-            return batch;
-
-        List<LogMessage> result = sendRetry.invoke(() ->
-        {
-            try
-            {
-                sequenceToken = facade.putEvents(nextSequenceToken(), batch);
-                return Collections.emptyList();
-            }
-            catch (CloudWatchFacadeException ex)
-            {
-                switch (ex.getReason())
-                {
-                    case THROTTLING:
-                        return null;
-                    case INVALID_SEQUENCE_TOKEN:
-                        // force the token to be fetched next time through
-                        sequenceToken = null;
-                        stats.updateWriterRaceRetries();
-                        return null;
-                    case ALREADY_PROCESSED:
-                        logger.warn("received DataAlreadyAcceptedException, dropping batch");
-                        return Collections.emptyList();
-                    case MISSING_LOG_GROUP:
-                    case MISSING_LOG_STREAM:
-                        reportError(ex.getMessage(), ex);
-                        ensureDestinationAvailable();
-                        return batch;
-                    default:
-                        reportError("failed to send: " + ex.getMessage(), ex.getCause());
-                        return batch;
-                }
-            }
-        });
-
-        // either success or an exception
-        if (result != null)
-            return result;
-
-        // if we get here we timed-out, need to figure out cause
-        if (sequenceToken == null)
-        {
-            logger.warn("batch failed: unrecovered sequence token race");
-            stats.updateUnrecoveredWriterRaceRetries();
-        }
-        else
-        {
-            logger.warn("batch failed: repeated throttling");
-        }
-
-        // in either case, return the original batch for reprocessing
-        return batch;
     }
 
 

@@ -51,15 +51,11 @@ extends CloudWatchLogWriter
         try
         {
             allowWriterThread.acquire();
+            super.processBatch(waitUntil);
         }
         catch (InterruptedException ex)
         {
             throw new RuntimeException("could not acquire semaphore");
-        }
-
-        try
-        {
-            super.processBatch(waitUntil);
         }
         finally
         {

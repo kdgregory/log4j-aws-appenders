@@ -885,49 +885,4 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
     }
-
-
-//    @Test
-//    public void testShutdown() throws Exception
-//    {
-//        // this test is the only place that we expicitly test shutdown logic, to avoid cluttering
-//        // the "operation" tests; it's otherwise identical to the "existing stream" test
-//
-//        // it actually tests functionality in AbstractAppender, but I've replicated for all concrete
-//        // subclasses simply because it's a key piece of functionality
-//
-//        createWriter();
-//
-//        assertEquals("after creation, shutdown time should be infinite", Long.MAX_VALUE, getShutdownTime());
-//
-//        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
-//
-//        // the immediate stop should interrupt waitForMessage, but there's no guarantee
-//        writer.stop();
-//
-//        long now = System.currentTimeMillis();
-//        long shutdownTime = getShutdownTime();
-//        assertInRange("after stop(), shutdown time should be based on batch delay", now, now + config.getBatchDelay() + 100, shutdownTime);
-//
-//        // the batch should still be processed
-//        mock.allowWriterThread();
-//
-//        assertEquals("putRecords: invocation count",        1,                          mock.putRecordsInvocationCount);
-//        assertEquals("putRecords: source record count",     1,                          mock.putRecordsSourceRecords.size());
-//
-//        // another call to stop should be ignored -- sleep to ensure times would be different
-//        Thread.sleep(100);
-//        writer.stop();
-//        assertEquals("second call to stop() should be no-op", shutdownTime, getShutdownTime());
-//
-//        joinWriterThread();
-//
-//        assertEquals("shutdown: invocation count",          1,                          mock.shutdownInvocationCount);
-//
-//        internalLogger.assertInternalDebugLog(
-//            "log writer starting.*",
-//            "log writer initialization complete.*",
-//            "log.writer shut down.*");
-//        internalLogger.assertInternalErrorLog();
-//    }
 }

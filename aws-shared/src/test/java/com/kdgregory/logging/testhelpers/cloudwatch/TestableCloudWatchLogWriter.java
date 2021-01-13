@@ -33,6 +33,8 @@ extends CloudWatchLogWriter
     private Semaphore allowMainThread   = new Semaphore(0);
     private Semaphore allowWriterThread = new Semaphore(0);
 
+    public Thread writerThread;
+
 
     public TestableCloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger logger, CloudWatchFacade facade)
     {
@@ -42,6 +44,14 @@ extends CloudWatchLogWriter
         describeRetry = new RetryManager(50, 200, false);
         createRetry = new RetryManager(50, 200, false);
         sendRetry = new RetryManager(50, 200, false);
+    }
+
+
+    @Override
+    public void run()
+    {
+        writerThread = Thread.currentThread();
+        super.run();
     }
 
 

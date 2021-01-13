@@ -43,7 +43,7 @@ implements LogWriter
     protected StatsType stats;
     protected InternalLogger logger;
 
-    // created during constructor or by initializat()
+    // created during initialization
     private MessageQueue messageQueue;
     private Thread dispatchThread;
 
@@ -263,7 +263,6 @@ implements LogWriter
     {
         try
         {
-            // this test avoids hung tests
             if ((dispatchThread != null) && (dispatchThread != Thread.currentThread()))
             {
                 dispatchThread.join(millisToWait);

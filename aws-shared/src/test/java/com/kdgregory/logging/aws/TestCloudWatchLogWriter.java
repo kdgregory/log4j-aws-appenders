@@ -17,6 +17,7 @@ package com.kdgregory.logging.aws;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
 import org.junit.Before;
@@ -24,8 +25,10 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.StringUtil;
+import static net.sf.kdgcommons.test.NumericAsserts.*;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
+import com.kdgregory.logging.aws.internal.Utils;
 import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
 import com.kdgregory.logging.aws.internal.facade.CloudWatchFacadeException;
 import com.kdgregory.logging.aws.internal.facade.CloudWatchFacadeException.ReasonCode;
@@ -1405,81 +1408,69 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         internalLogger.assertInternalErrorLog();
     }
 
+    // note: the following two tests actually exercies AbstractLogWriter functionality; they're not
+    // replicated for other writers
 
-//    @Test
-//    public void testShutdown() throws Exception
-//    {
-//        // this test is the only place that we expicitly test shutdown logic, to avoid cluttering the "operation" tests
-//        // it actually tests AbstractAppender, but I've replicated for all writer tests because it's key functionality
-//
-//        mock = new MockCloudWatchFacade(config);
-//        createWriter();
-//
-//        assertEquals("after creation, shutdown time should be infinite", Long.MAX_VALUE, getShutdownTime());
-//
-//        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
-//
-//        // the call to stop() should interrupt batch building
-//        writer.stop();
-//
-//        long now = System.currentTimeMillis();
-//        long shutdownTime = getShutdownTime();
-//        NumericAsserts.assertInRange("after stop(), shutdown time should be based on batch delay", now, now + config.getBatchDelay() + 100, shutdownTime);
-//
-//        // there's a race condition between the test thread and the writer thread, which this assertion method should resolve
-//        assertStatisticsTotalMessagesSent(1);
-//
-//        assertEquals("putEvents: invocation count",               1,                          mock.sendMessagesInvocationCount);
-//        assertEquals("putEvents: last call #/messages",           1,                          mock.sendMessagesMessages.size());
-//
-//        // another call to stop should be ignored -- sleep to ensure times would be different
-//        Thread.sleep(100);
-//        writer.stop();
-//
-//        assertEquals("second call to stop() should be no-op", shutdownTime, getShutdownTime());
-//
-//        joinWriterThread();
-//
-//        assertEquals("shutdown: invocation count",                  1,                          mock.shutdownInvocationCount);
-//
-//        internalLogger.assertInternalDebugLog(
-//            "log writer starting.*",
-//            "using existing CloudWatch log group: argle",
-//            "using existing CloudWatch log stream: bargle",
-//            "log writer initialization complete.*",
-//            "log.writer shut down.*");
-//        internalLogger.assertInternalErrorLog();
-//    }
-//
-//
-//    @Test
-//    public void testShutdownHook() throws Exception
-//    {
-//        // this is the only test for shutdown hooks: it's part of the abstract writer functionality
-//        // so doesn't need to be replicated (TODO - we need TestAbstractLogWriter)
-//
-//        // we can't actually test a shutdown hook, so we have to assume that it's called as expected
-//        // nor can we test the behavior of removing a shutdown hook during shutdown
-//
-//        // since createWriter() uses a thread factory that doesn't install a shutdown hook, we need
-//        // to explicitly create the writer
-//
-//        writer = (CloudWatchLogWriter)mock.newWriterFactory().newLogWriter(config, stats, internalLogger);
-//
-//        new DefaultThreadFactory("test").startLoggingThread(writer, true, defaultUncaughtExceptionHandler);
-//        assertTrue("writer running", writer.waitUntilInitialized(5000));
-//
-//        Thread writerThread = ClassUtil.getFieldValue(writer, "dispatchThread", Thread.class);
-//        assertTrue("writer thread active", writerThread.isAlive());
-//
-//        Thread shutdownHook = ClassUtil.getFieldValue(writer, "shutdownHook", Thread.class);
-//        assertNotNull("shutdown hook exists", shutdownHook);
-//
-//        shutdownHook.start();
-//        shutdownHook.join();
-//
-//        assertFalse("writer thread no longer active", writerThread.isAlive());
-//        assertNull("shutdown hook has been cleared on writer", ClassUtil.getFieldValue(writer, "shutdownHook", Thread.class));
-//        assertFalse("shutdown hook has been deregistered in JVM", Runtime.getRuntime().removeShutdownHook(shutdownHook));
-//    }
+    @Test
+    public void testShutdown() throws Exception
+    {
+        // we want a longish delay so that the main thread can do stuff while waiting,
+        // but not so long that the test takes forever
+        final int batchDelay = 500;
+        final int stopDelay = batchDelay / 2;
+        config.setBatchDelay(batchDelay);
+
+        mock = new MockCloudWatchFacade(config);
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+
+        // at this point the writer should be blocked by the semaphore; the main thread will
+        // become blocked by waitForWriterThread(); we'll trigger the stop() from a new thread,
+        // and verify its behavior by the time taken to complete processing
+
+        AtomicInteger messagesOnQueueAtStop = new AtomicInteger();
+        new Thread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                Utils.sleepQuietly(stopDelay);
+                messagesOnQueueAtStop.set(messageQueue.size());
+                writer.stop();
+            }
+        }).start();
+
+        assertEquals("messages on queue before writer release",     2,                                  messageQueue.size());
+
+        long writerReleasedAt = System.currentTimeMillis();
+        waitForWriterThread();
+        long mainReturnedAt = System.currentTimeMillis();
+
+        assertTrue("writer is still running",                                                           writer.isRunning());
+        assertEquals("messages on queue when stop() called",        0,                                  messagesOnQueueAtStop.get());
+        assertEquals("putEvents: invocation count",                 1,                                  mock.putEventsInvocationCount);
+        assertEquals("putEvents: #/messages",                       2,                                  mock.putEventsMessages.size());
+        assertInRange("time to process",                            stopDelay - 10, stopDelay + 100,    mainReturnedAt - writerReleasedAt);
+
+        // after the stop, writer should wait for batchDelay for any more messages, so let it run again
+        // ... if this never returns, we know that the shutdown processing was incorrect
+        waitForWriterThread();
+
+        // the writer thread should be fully done at this point; the join() won't return if not
+        ((TestableCloudWatchLogWriter)writer).writerThread.join();
+        long shutdownTime = System.currentTimeMillis();
+
+        assertFalse("writer has stopped",                                                               writer.isRunning());
+        assertInRange("time to process",                            batchDelay - 100, batchDelay + 100, shutdownTime - mainReturnedAt);
+
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "using existing CloudWatch log group: argle",
+                                              "using existing CloudWatch log stream: bargle",
+                                              "log writer initialization complete.*",
+                                              "log.writer shut down.*");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
+    }
 }

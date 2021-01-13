@@ -37,7 +37,7 @@ public class DefaultThreadFactory implements ThreadFactory
 
 
     @Override
-    public void startLoggingThread(final LogWriter writer, boolean useShutdownHook, UncaughtExceptionHandler exceptionHandler)
+    public void startWriterThread(final LogWriter writer, boolean useShutdownHook, UncaughtExceptionHandler exceptionHandler)
     {
         final Thread writerThread = createThread(writer, exceptionHandler);
 

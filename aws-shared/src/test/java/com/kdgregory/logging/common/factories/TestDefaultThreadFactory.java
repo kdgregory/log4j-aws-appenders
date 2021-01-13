@@ -62,7 +62,7 @@ public class TestDefaultThreadFactory
         // a convenience method that will use a built-in exception handler
         public void startLoggingThread(LogWriter writer)
         {
-            startLoggingThread(writer, false, new UncaughtExceptionHandler()
+            startWriterThread(writer, false, new UncaughtExceptionHandler()
             {
                 @Override
                 public void uncaughtException(Thread t, Throwable e)

@@ -143,7 +143,7 @@ public class CloudWatchLogWriterIntegrationTest
     {
         CloudWatchLogWriter writer = (CloudWatchLogWriter)writerFactory.newLogWriter(config, stats, internalLogger);
         writers.add(writer);
-        threadFactory.startLoggingThread(writer, false, null);
+        threadFactory.startWriterThread(writer, false, null);
         return writer;
     }
 

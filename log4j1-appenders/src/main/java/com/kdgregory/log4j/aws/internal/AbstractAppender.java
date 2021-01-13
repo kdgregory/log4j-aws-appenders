@@ -489,7 +489,7 @@ extends AppenderSkeleton
             try
             {
                 writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats, internalLogger);
-                threadFactory.startLoggingThread(writer, useShutdownHook, new UncaughtExceptionHandler()
+                threadFactory.startWriterThread(writer, useShutdownHook, new UncaughtExceptionHandler()
                 {
                     @Override
                     public void uncaughtException(Thread t, Throwable ex)

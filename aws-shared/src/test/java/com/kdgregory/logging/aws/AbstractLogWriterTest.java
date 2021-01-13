@@ -97,7 +97,7 @@ public abstract class AbstractLogWriterTest
         writer = (WriterType)factory.newLogWriter(config, stats, internalLogger);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
-        new DefaultThreadFactory("test").startLoggingThread(writer, false, defaultUncaughtExceptionHandler);
+        new DefaultThreadFactory("test").startWriterThread(writer, false, defaultUncaughtExceptionHandler);
 
         assertTrue("writer running", writer.waitUntilInitialized(5000));
     }

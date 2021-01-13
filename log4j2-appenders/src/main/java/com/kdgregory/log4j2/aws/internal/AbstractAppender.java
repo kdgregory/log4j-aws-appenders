@@ -253,7 +253,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
             try
             {
                 writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats, internalLogger);
-                threadFactory.startLoggingThread(writer, false, new UncaughtExceptionHandler()
+                threadFactory.startWriterThread(writer, false, new UncaughtExceptionHandler()
                 {
                     @Override
                     public void uncaughtException(Thread t, Throwable ex)

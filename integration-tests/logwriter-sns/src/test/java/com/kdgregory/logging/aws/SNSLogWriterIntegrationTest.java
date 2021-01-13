@@ -109,7 +109,7 @@ public class SNSLogWriterIntegrationTest
         factory = new SNSWriterFactory();
         writer = (SNSLogWriter)factory.newLogWriter(config, stats, internalLogger);
 
-        new DefaultThreadFactory("test").startLoggingThread(writer, false, null);
+        new DefaultThreadFactory("test").startWriterThread(writer, false, null);
     }
 
 

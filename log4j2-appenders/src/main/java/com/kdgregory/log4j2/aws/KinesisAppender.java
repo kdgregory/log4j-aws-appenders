@@ -164,7 +164,7 @@ import com.kdgregory.logging.common.util.InternalLogger;
  */
 @Plugin(name = "KinesisAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class KinesisAppender
-extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWriterStatisticsMXBean,KinesisWriterConfig>
+extends AbstractAppender<KinesisWriterConfig,KinesisAppenderConfig,KinesisWriterStatistics,KinesisWriterStatisticsMXBean>
 {
 
 //----------------------------------------------------------------------------
@@ -344,25 +344,17 @@ extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWr
     @Override
     protected KinesisWriterConfig generateWriterConfig()
     {
-        StrSubstitutor l4jsubs    = config.getConfiguration().getStrSubstitutor();
+        StrSubstitutor l4jsubs    = appenderConfig.getConfiguration().getStrSubstitutor();
         Substitutions subs        = new Substitutions(new Date(), 0);
 
-        String actualStreamName   = subs.perform(l4jsubs.replace(config.getStreamName()));
-        String actualPartitionKey = subs.perform(l4jsubs.replace(config.getPartitionKey()));
+        String actualStreamName   = subs.perform(l4jsubs.replace(appenderConfig.getStreamName()));
+        String actualPartitionKey = subs.perform(l4jsubs.replace(appenderConfig.getPartitionKey()));
 
         return new KinesisWriterConfig()
                .setStreamName(actualStreamName)
                .setPartitionKey(actualPartitionKey)
-               .setAutoCreate(config.getAutoCreate())
-               .setShardCount(config.getShardCount())
-               .setRetentionPeriod(config.getRetentionPeriod())
-               .setTruncateOversizeMessages(false)
-               .setBatchDelay(config.getBatchDelay())
-               .setDiscardThreshold(config.getDiscardThreshold())
-               .setDiscardAction(discardAction)
-               .setClientFactoryMethod(config.getClientFactory())
-               .setAssumedRole(config.getAssumedRole())
-               .setClientRegion(config.getClientRegion())
-               .setClientEndpoint(config.getClientEndpoint());
+               .setAutoCreate(appenderConfig.getAutoCreate())
+               .setShardCount(appenderConfig.getShardCount())
+               .setRetentionPeriod(appenderConfig.getRetentionPeriod());
     }
 }

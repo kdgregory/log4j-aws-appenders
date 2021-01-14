@@ -23,6 +23,7 @@ import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.StringLayout;
 
+import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
@@ -47,11 +48,13 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *  strangeness here is in stop(): there are two versions defined by the interface,
  *  but current versions of Log4J call only one of them.
  */
-public abstract class AbstractAppender<
+public abstract class AbstractAppender
+    <
+    WriterConfigType extends AbstractWriterConfig<WriterConfigType>,
     AppenderConfigType extends AbstractAppenderConfig,
     AppenderStatsType extends AbstractWriterStatistics,
-    AppenderStatsMXBeanType,
-    WriterConfigType>
+    AppenderStatsMXBeanType
+    >
 extends org.apache.logging.log4j.core.appender.AbstractAppender
 {
     // factories for creating writer and thread
@@ -63,24 +66,19 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
     protected WriterFactory<WriterConfigType,AppenderStatsType> writerFactory;
 
     // used for internal logging: we manage this and expose it to our subclasses
-
     protected InternalLogger internalLogger;
 
     // the appender stats object; we keep the reference because we call writer factory
-
     protected AppenderStatsType appenderStats;
 
     // the MX bean type for the appender stats object
-
     private Class<AppenderStatsMXBeanType> appenderStatsMXBeanClass;
 
     // this object is used for synchronization of initialization and writer change
-
     private Object initializationLock = new Object();
 
     // this is provided to us by subclass
-
-    protected AppenderConfigType config;
+    protected AppenderConfigType appenderConfig;
 
     // character set for handling header/footer; extracted from layout if possible
     protected Charset layoutCharset = StandardCharsets.UTF_8;
@@ -103,7 +101,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
         InternalLogger providedInternalLogger)
     {
         super(name, config.getFilter(), config.getLayout());
-        this.config = config;
+        this.appenderConfig = config;
         this.threadFactory = threadFactory;
         this.writerFactory = writerFactory;
         this.appenderStats = appenderStats;
@@ -145,7 +143,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
      */
     public AppenderConfigType getConfig()
     {
-        return config;
+        return appenderConfig;
     }
 
 //----------------------------------------------------------------------------
@@ -233,8 +231,10 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
 //----------------------------------------------------------------------------
 
     /**
-     *  Called just before a writer is created, so that the subclass can
-     *  perform substitutions on the configuration.
+     *  Called as part of initialization. Subclass should provide a config
+     *  object that is populated with everything the subclass controls, and
+     *  with all substitutions applied. The abstract class will populate
+     *  with everything that it controls (eg, connection info).
      */
     protected abstract WriterConfigType generateWriterConfig();
 
@@ -248,11 +248,21 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
      */
     private void startWriter()
     {
+        WriterConfigType writerConfig = generateWriterConfig()
+                .setTruncateOversizeMessages(appenderConfig.getTruncateOversizeMessages())
+                .setBatchDelay(appenderConfig.getBatchDelay())
+                .setDiscardThreshold(appenderConfig.getDiscardThreshold())
+                .setDiscardAction(discardAction)
+                .setClientFactoryMethod(appenderConfig.getClientFactory())
+                .setAssumedRole(appenderConfig.getAssumedRole())
+                .setClientRegion(appenderConfig.getClientRegion())
+                .setClientEndpoint(appenderConfig.getClientEndpoint());
+
         synchronized (initializationLock)
         {
             try
             {
-                writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats, internalLogger);
+                writer = writerFactory.newLogWriter(writerConfig, appenderStats, internalLogger);
                 threadFactory.startWriterThread(writer, false, new UncaughtExceptionHandler()
                 {
                     @Override

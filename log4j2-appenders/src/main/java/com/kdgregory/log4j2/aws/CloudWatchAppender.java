@@ -180,7 +180,7 @@ import com.kdgregory.logging.common.util.InternalLogger;
  */
 @Plugin(name = "CloudWatchAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class CloudWatchAppender
-extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,CloudWatchWriterStatisticsMXBean,CloudWatchWriterConfig>
+extends AbstractAppender<CloudWatchWriterConfig,CloudWatchAppenderConfig,CloudWatchWriterStatistics,CloudWatchWriterStatisticsMXBean>
 {
 
 //----------------------------------------------------------------------------
@@ -347,22 +347,15 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
     @Override
     protected CloudWatchWriterConfig generateWriterConfig()
     {
-        StrSubstitutor l4jsubs = config.getConfiguration().getStrSubstitutor();
+        StrSubstitutor l4jsubs = appenderConfig.getConfiguration().getStrSubstitutor();
         Substitutions subs     = new Substitutions(new Date(), 0);
-        String actualLogGroup  = subs.perform(l4jsubs.replace(config.getLogGroup()));
-        String actualLogStream = subs.perform(l4jsubs.replace(config.getLogStream()));
+        String actualLogGroup  = subs.perform(l4jsubs.replace(appenderConfig.getLogGroup()));
+        String actualLogStream = subs.perform(l4jsubs.replace(appenderConfig.getLogStream()));
 
         return new CloudWatchWriterConfig()
                .setLogGroupName(actualLogGroup)
                .setLogStreamName(actualLogStream)
                .setRetentionPeriod(retentionPeriod)
-               .setDedicatedWriter(config.isDedicatedWriter())
-               .setTruncateOversizeMessages(false)    // TODO - why?
-               .setBatchDelay(config.getBatchDelay())
-               .setDiscardThreshold(config.getDiscardThreshold())
-               .setDiscardAction(discardAction)
-               .setClientFactoryMethod(config.getClientFactory())
-               .setAssumedRole(config.getAssumedRole())
-               .setClientRegion(config.getClientRegion())
-               .setClientEndpoint(config.getClientEndpoint());    }
+               .setDedicatedWriter(appenderConfig.isDedicatedWriter());
+    }
 }

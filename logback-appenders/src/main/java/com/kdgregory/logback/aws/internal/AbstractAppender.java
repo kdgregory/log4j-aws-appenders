@@ -16,6 +16,7 @@ package com.kdgregory.logback.aws.internal;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 
+import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
@@ -51,7 +52,13 @@ import ch.qos.logback.core.UnsynchronizedAppenderBase;
  *  lot of logging). However, there are some critical sections within {@link #append},
  *  and these are protected by internal lock objects.
  */
-public abstract class AbstractAppender<WriterConfigType,AppenderStatsType extends AbstractWriterStatistics,AppenderStatsMXBeanType,LogbackEventType>
+public abstract class AbstractAppender
+    <
+    WriterConfigType extends AbstractWriterConfig<WriterConfigType>,
+    AppenderStatsType extends AbstractWriterStatistics,
+    AppenderStatsMXBeanType,
+    LogbackEventType
+    >
 extends UnsynchronizedAppenderBase<LogbackEventType>
 {
     // factories for creating writer and thread
@@ -63,6 +70,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     protected WriterFactory<WriterConfigType,AppenderStatsType> writerFactory;
 
     // used for internal logging: we manage this and expose it to our subclasses
+
     protected InternalLogger internalLogger;
 
     // the appender stats object; we keep the reference because we call writer factory
@@ -449,8 +457,10 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
 //----------------------------------------------------------------------------
 
     /**
-     *  Called just before a writer is created, so that the subclass can
-     *  perform substitutions on the configuration.
+     *  Called as part of initialization. Subclass should provide a config
+     *  object that is populated with everything the subclass controls, and
+     *  with all substitutions applied. The abstract class will populate
+     *  with everything that it controls (eg, connection info).
      */
     protected abstract WriterConfigType generateWriterConfig();
 
@@ -459,16 +469,25 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
 //----------------------------------------------------------------------------
 
     /**
-     *  Called by {@link #initialize} and also {@link #rotate}, to switch to a new
-     *  writer. Does not close the old writer, if any.
+     *  Called by {@link #initialize} to create the writer.
      */
     private void startWriter()
     {
+        WriterConfigType config = generateWriterConfig()
+                                  .setTruncateOversizeMessages(truncateOversizeMessages)
+                                  .setBatchDelay(batchDelay)
+                                  .setDiscardThreshold(discardThreshold)
+                                  .setDiscardAction(discardAction)
+                                  .setClientFactoryMethod(clientFactory)
+                                  .setAssumedRole(assumedRole)
+                                  .setClientRegion(clientRegion)
+                                  .setClientEndpoint(clientEndpoint);
+
         synchronized (initializationLock)
         {
             try
             {
-                writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats, internalLogger);
+                writer = writerFactory.newLogWriter(config, appenderStats, internalLogger);
                 threadFactory.startWriterThread(writer, useShutdownHook, new UncaughtExceptionHandler()
                 {
                     @Override

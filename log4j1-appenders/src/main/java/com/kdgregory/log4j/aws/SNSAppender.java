@@ -261,13 +261,6 @@ extends AbstractAppender<SNSWriterConfig,SNSWriterStatistics,SNSWriterStatistics
                .setTopicName(actualTopicName)
                .setTopicArn(actualTopicArn)
                .setSubject(actualSubject)
-               .setAutoCreate(autoCreate)
-               .setTruncateOversizeMessages(truncateOversizeMessages)
-               .setDiscardThreshold(discardThreshold)
-               .setDiscardAction(discardAction)
-               .setClientFactoryMethod(clientFactory)
-               .setAssumedRole(assumedRole)
-               .setClientRegion(clientRegion)
-               .setClientEndpoint(clientEndpoint);
+               .setAutoCreate(autoCreate);
     }
 }

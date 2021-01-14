@@ -308,14 +308,6 @@ extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWrit
                .setPartitionKey(actualPartitionKey)
                .setAutoCreate(autoCreate)
                .setShardCount(shardCount)
-               .setRetentionPeriod(retentionPeriod)
-               .setTruncateOversizeMessages(truncateOversizeMessages)
-               .setBatchDelay(batchDelay)
-               .setDiscardThreshold(discardThreshold)
-               .setDiscardAction(discardAction)
-               .setClientFactoryMethod(clientFactory)
-               .setAssumedRole(assumedRole)
-               .setClientRegion(clientRegion)
-               .setClientEndpoint(clientEndpoint);
+               .setRetentionPeriod(retentionPeriod);
     }
 }

@@ -19,6 +19,7 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.spi.LoggingEvent;
 
+import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
@@ -49,7 +50,12 @@ import com.kdgregory.logging.common.util.DiscardAction;
  *  but do not share an appender list. For that reason, we use internal synchronization
  *  of critical sections.
  */
-public abstract class AbstractAppender<WriterConfigType,AppenderStatsType extends AbstractWriterStatistics,AppenderStatsMXBeanType>
+public abstract class AbstractAppender
+    <
+    WriterConfigType extends AbstractWriterConfig<WriterConfigType>,
+    AppenderStatsType extends AbstractWriterStatistics,
+    AppenderStatsMXBeanType
+    >
 extends AppenderSkeleton
 {
     // flag to indicate whether we need to run setup
@@ -123,17 +129,6 @@ extends AppenderSkeleton
         discardThreshold = 10000;
         discardAction = DiscardAction.oldest;
         useShutdownHook = true;
-    }
-
-//----------------------------------------------------------------------------
-//  Overrides of AppenderSkeleton
-//----------------------------------------------------------------------------
-
-    @Override
-    public void setName(String name)
-    {
-        super.setName(name);
-        internalLogger.setAppenderName(name);
     }
 
 //----------------------------------------------------------------------------
@@ -378,10 +373,17 @@ extends AppenderSkeleton
         return closed;
     }
 
+//----------------------------------------------------------------------------
+//  Appender/AppenderSkeleton overrides
+//----------------------------------------------------------------------------
 
-//----------------------------------------------------------------------------
-//  Appender overrides
-//----------------------------------------------------------------------------
+    @Override
+    public void setName(String name)
+    {
+        super.setName(name);
+        internalLogger.setAppenderName(name);
+    }
+
 
     @Override
     protected void append(LoggingEvent event)
@@ -449,8 +451,10 @@ extends AppenderSkeleton
 //----------------------------------------------------------------------------
 
     /**
-     *  Called just before a writer is created, so that the subclass can
-     *  perform substitutions on the configuration.
+     *  Called as part of initialization. Subclass should provide a config
+     *  object that is populated with everything the subclass controls, and
+     *  with all substitutions applied. The abstract class will populate
+     *  with everything that it controls (eg, connection info).
      */
     protected abstract WriterConfigType generateWriterConfig();
 
@@ -484,11 +488,21 @@ extends AppenderSkeleton
      */
     private void startWriter()
     {
+        WriterConfigType config = generateWriterConfig()
+                                  .setTruncateOversizeMessages(truncateOversizeMessages)
+                                  .setBatchDelay(batchDelay)
+                                  .setDiscardThreshold(discardThreshold)
+                                  .setDiscardAction(discardAction)
+                                  .setClientFactoryMethod(clientFactory)
+                                  .setAssumedRole(assumedRole)
+                                  .setClientRegion(clientRegion)
+                                  .setClientEndpoint(clientEndpoint);
+
         synchronized (initializationLock)
         {
             try
             {
-                writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats, internalLogger);
+                writer = writerFactory.newLogWriter(config, appenderStats, internalLogger);
                 threadFactory.startWriterThread(writer, useShutdownHook, new UncaughtExceptionHandler()
                 {
                     @Override

@@ -146,7 +146,7 @@ import com.kdgregory.logging.common.util.InternalLogger;
  */
 @Plugin(name = "SNSAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class SNSAppender
-extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterStatisticsMXBean,SNSWriterConfig>
+extends AbstractAppender<SNSWriterConfig,SNSAppenderConfig,SNSWriterStatistics,SNSWriterStatisticsMXBean>
 {
 
 //----------------------------------------------------------------------------
@@ -322,24 +322,17 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterStatisti
     @Override
     protected SNSWriterConfig generateWriterConfig()
     {
-        StrSubstitutor l4jsubs  = config.getConfiguration().getStrSubstitutor();
+        StrSubstitutor l4jsubs  = appenderConfig.getConfiguration().getStrSubstitutor();
         Substitutions subs      = new Substitutions(new Date(), 0);
 
-        String actualTopicName  = subs.perform(l4jsubs.replace(config.getTopicName()));
-        String actualTopicArn   = subs.perform(l4jsubs.replace(config.getTopicArn()));
-        String actualSubject    = subs.perform(l4jsubs.replace(config.getSubject()));
+        String actualTopicName  = subs.perform(l4jsubs.replace(appenderConfig.getTopicName()));
+        String actualTopicArn   = subs.perform(l4jsubs.replace(appenderConfig.getTopicArn()));
+        String actualSubject    = subs.perform(l4jsubs.replace(appenderConfig.getSubject()));
 
         return new SNSWriterConfig()
                .setTopicName(actualTopicName)
                .setTopicArn(actualTopicArn)
                .setSubject(actualSubject)
-               .setAutoCreate(config.isAutoCreate())
-               .setTruncateOversizeMessages(false)
-               .setDiscardThreshold(config.getDiscardThreshold())
-               .setDiscardAction(discardAction)
-               .setClientFactoryMethod(config.getClientFactory())
-               .setAssumedRole(config.getAssumedRole())
-               .setClientRegion(config.getClientRegion())
-               .setClientEndpoint(config.getClientEndpoint());
+               .setAutoCreate(appenderConfig.isAutoCreate());
     }
 }

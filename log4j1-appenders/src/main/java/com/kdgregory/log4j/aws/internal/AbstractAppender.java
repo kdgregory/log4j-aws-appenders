@@ -490,6 +490,7 @@ extends AppenderSkeleton
     {
         WriterConfigType config = generateWriterConfig()
                                   .setTruncateOversizeMessages(truncateOversizeMessages)
+                                  .setSynchronousMode(synchronous)
                                   .setBatchDelay(batchDelay)
                                   .setDiscardThreshold(discardThreshold)
                                   .setDiscardAction(discardAction)

@@ -864,7 +864,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
     @Test
     public void testSynchronousOperation() throws Exception
     {
-        config.setSynchronous(true);
+        config.setSynchronousMode(true);
         mock = new MockKinesisFacade(config);
 
         createWriter();

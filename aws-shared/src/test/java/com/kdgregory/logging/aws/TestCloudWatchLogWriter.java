@@ -1382,7 +1382,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testSynchronousOperation() throws Exception
     {
-        config.setSynchronous(true);
+        config.setSynchronousMode(true);
         mock = new MockCloudWatchFacade(config);
 
         createWriter();

@@ -1,0 +1,21 @@
+<Configuration status="warn" packages="com.kdgregory.log4j2.testhelpers">
+
+    <Appenders>
+        <TestableKinesisAppender name="TEST">
+            <PatternLayout pattern="%m" />
+            <streamName>Irrelevant</streamName>
+            <partitionKey>Irrelevant</partitionKey>
+            <synchronous>true</synchronous>
+            <batchDelay>9876</batchDelay> <!-- note: overridden -->
+        </TestableKinesisAppender>
+    </Appenders>
+
+    <Loggers>
+        <Root level="off">
+        </Root>
+        <Logger name="com.kdgregory.log4j2.aws.TestKinesisAppender" level="debug">
+            <AppenderRef ref="TEST" />
+        </Logger>
+    </Loggers>
+
+</Configuration>

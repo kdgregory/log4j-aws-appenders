@@ -250,6 +250,7 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
     {
         WriterConfigType writerConfig = generateWriterConfig()
                 .setTruncateOversizeMessages(appenderConfig.getTruncateOversizeMessages())
+                .setSynchronousMode(appenderConfig.isSynchronous())
                 .setBatchDelay(appenderConfig.getBatchDelay())
                 .setDiscardThreshold(appenderConfig.getDiscardThreshold())
                 .setDiscardAction(discardAction)

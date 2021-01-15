@@ -508,7 +508,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
     @Test
     public void testSynchronousOperation() throws Exception
     {
-        config.setSynchronous(true);
+        config.setSynchronousMode(true);
         mock = new MockSNSFacade(config, TEST_TOPIC_NAME);
 
         createWriter();

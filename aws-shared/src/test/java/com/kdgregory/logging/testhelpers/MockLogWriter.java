@@ -96,7 +96,7 @@ implements LogWriter
     @Override
     public boolean isSynchronous()
     {
-        return config.getSynchronous();
+        return config.getSynchronousMode();
     }
 
 

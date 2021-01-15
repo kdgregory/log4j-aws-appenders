@@ -135,7 +135,7 @@ implements LogWriter
 
         do
         {
-            if (config.getSynchronous())
+            if (config.getSynchronousMode())
             {
                 long timeToShutdown = shutdownTime - System.currentTimeMillis();
                 Utils.sleepQuietly(timeToShutdown);
@@ -187,7 +187,7 @@ implements LogWriter
     @Override
     public boolean isSynchronous()
     {
-        return config.getSynchronous();
+        return config.getSynchronousMode();
     }
 
 
@@ -217,7 +217,7 @@ implements LogWriter
 
         messageQueue.enqueue(message);
 
-        if (config.getSynchronous())
+        if (config.getSynchronousMode())
         {
             processBatch(System.currentTimeMillis());
         }

@@ -73,12 +73,12 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("truncate oversize messages", false,                       appender.getTruncateOversizeMessages());
         assertEquals("discard threshold",       12345,                          appender.getDiscardThreshold());
         assertEquals("discard action",          "newest",                       appender.getDiscardAction());
-        assertEquals("synchronous mode",        false,                          appender.getSynchronous());
-        assertEquals("use shutdown hook",       false,                          appender.getUseShutdownHook());
         assertEquals("assumed role",            "AssumableRole",                appender.getAssumedRole());
         assertEquals("client factory",          "com.example.Foo.bar",          appender.getClientFactory());
         assertEquals("client region",           "us-west-1",                    appender.getClientRegion());
-        assertEquals("client endpoint",         "logs.us-west-2.amazonaws.com", appender.getClientEndpoint());
+        assertEquals("writer client endpoint",  "mylogs.example.com",           appender.getClientEndpoint());
+        assertEquals("synchronous mode",        false,                          appender.getSynchronous());
+        assertEquals("use shutdown hook",       false,                          appender.getUseShutdownHook());
     }
 
 
@@ -164,7 +164,24 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("writer batch delay",              9876L,                              writer.config.getBatchDelay());
         assertEquals("writer discard threshold",        12345,                              writer.config.getDiscardThreshold());
         assertEquals("writer discard action",           DiscardAction.newest,               writer.config.getDiscardAction());
+        assertEquals("assumed role",                    "AssumableRole",                    appender.getAssumedRole());
         assertEquals("writer client factory method",    "com.example.Foo.bar",              writer.config.getClientFactoryMethod());
-        assertEquals("writer client endpoint",          "logs.us-west-2.amazonaws.com",     writer.config.getClientEndpoint());
+        assertEquals("writer client region",            "us-west-2",                        writer.config.getClientRegion());
+        assertEquals("writer client endpoint",          "mylogs.example.com",               writer.config.getClientEndpoint());
+        assertFalse("synchronous mode",                                                     writer.config.getSynchronousMode());
+    }
+
+
+    @Test
+    public void testWriterInitializationSynchronousMode() throws Exception
+    {
+        initialize("testWriterInitializationSynchronousMode");
+
+        logger.debug("this triggers writer creation");
+
+        MockCloudWatchWriter writer = appender.getMockWriter();
+
+        assertTrue("synchronous mode",                                                      writer.config.getSynchronousMode());
+        assertEquals("batch delay",                     0L,                                 writer.config.getBatchDelay());
     }
 }

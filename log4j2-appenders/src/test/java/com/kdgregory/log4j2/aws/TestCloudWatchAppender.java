@@ -203,4 +203,18 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
         // no reason to think that any of the other writer config will be different from prior test
     }
+
+
+    @Test
+    public void testWriterInitializationSynchronousMode() throws Exception
+    {
+        initialize("testWriterInitializationSynchronousMode");
+
+        logger.debug("this triggers writer creation");
+
+        MockCloudWatchWriter writer = appender.getMockWriter();
+
+        assertTrue("synchronous mode",                                                      writer.config.getSynchronousMode());
+        assertEquals("batch delay",                     0L,                                 writer.config.getBatchDelay());
+    }
 }

@@ -20,10 +20,13 @@ import com.kdgregory.logging.common.util.DiscardAction;
 /**
  *  Holds common configuration; writer-specific config objects are subclasses.
  *  See documentation pages for information about specific properties.
+ *  <p>
+ *  Note: some fields are marked volatile, because they may be changed during
+ *  runtime.
  */
 public class AbstractWriterConfig<T extends AbstractWriterConfig<T>>
 {
-    private volatile boolean        truncateOversizeMessages;
+    private boolean                 truncateOversizeMessages;
     private boolean                 isSynchronous;
     private volatile long           batchDelay;
     private volatile int            discardThreshold;
@@ -43,17 +46,18 @@ public class AbstractWriterConfig<T extends AbstractWriterConfig<T>>
     {
         truncateOversizeMessages = value;
         return (T)this;
-    }
+    }  
+
     
-    
-    public boolean getSynchronous()
+    public boolean getSynchronousMode()
     {
         return isSynchronous;
     }
     
-    public void setSynchronous(boolean value)
+    public T setSynchronousMode(boolean value)
     {
         isSynchronous = value;
+        return (T)this;
     }
 
 
@@ -138,5 +142,5 @@ public class AbstractWriterConfig<T extends AbstractWriterConfig<T>>
     {
         clientEndpoint = value;
         return (T)this;
-    }
+    }  
 }

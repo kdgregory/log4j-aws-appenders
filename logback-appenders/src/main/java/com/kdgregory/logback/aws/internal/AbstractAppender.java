@@ -475,6 +475,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     {
         WriterConfigType config = generateWriterConfig()
                                   .setTruncateOversizeMessages(truncateOversizeMessages)
+                                  .setSynchronousMode(synchronous)
                                   .setBatchDelay(batchDelay)
                                   .setDiscardThreshold(discardThreshold)
                                   .setDiscardAction(discardAction)

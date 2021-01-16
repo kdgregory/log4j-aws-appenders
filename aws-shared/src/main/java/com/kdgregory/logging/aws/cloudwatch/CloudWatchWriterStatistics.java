@@ -17,13 +17,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 
+
 /**
- *  Statistics specific to the CloudWatch appender.
- *  <p>
- *  Since it's possible that there may be multiple logwriters alive at once, we
- *  need to synchronize any methods that update a statistic. Simple writes are
- *  fine just being volatile (in general, those fields will only be set when the
- *  writer is created).
+ *  Statistics specific to CloudWatchLogWriter.
  */
 public class CloudWatchWriterStatistics
 extends AbstractWriterStatistics

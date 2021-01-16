@@ -26,6 +26,10 @@ import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriter;
 
 
+/**
+ *  These tests exercise appender logic specific to KinesisAppender, using a
+ *  mock log-writer.
+ */
 public class TestKinesisAppender
 extends AbstractUnitTest<TestableKinesisAppender>
 {

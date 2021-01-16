@@ -21,12 +21,14 @@ import java.util.Map;
 import java.util.TimeZone;
 
 /**
- *  Transforms a Map into a JSON string. Transforms strings, numbers, booleans,
- *  and null as expected; maps become nested objects; arrays and collections
- *  (list, set, whatever) become arrays; dates become strings formatted as
- *  ISO-8601 timestamps; anything else is converted to a string.
+ *  Yet another JSON serializer; this exists to avoid external dependencies.
+ *
+ *  Strings, numbers, booleans, and null are transformed as expected. Maps become
+ *  nested objects; arrays and collections (list, set, whatever) become arrays.
+ *  Dates are stringified as ISO-8601 timestamps. Anything else is stringified
+ *  using its <code>toString()</code> method.
  *  <p>
- *  Instances are not thread-safe
+ *  Instances are not thread-safe.
  */
 public class JsonConverter
 {

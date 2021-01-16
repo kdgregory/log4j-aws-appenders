@@ -21,6 +21,10 @@ import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
 
 
+/**
+ *  A writer factory for appender tests (replace the default factory in the
+ *  test). It creates a mock writer, and records factory invocations.
+ */
 public class MockKinesisWriterFactory
 implements WriterFactory<KinesisWriterConfig,KinesisWriterStatistics>
 {

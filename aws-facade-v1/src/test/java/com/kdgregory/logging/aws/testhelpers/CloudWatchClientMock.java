@@ -25,27 +25,26 @@ import com.amazonaws.services.logs.model.*;
 
 
 /**
- *  A proxy-based mock for the CloudWatch client that allows deep testing of
- *  writer behavior. I don't particularly like using mock objects with this
- *  level of  complexity, but they're the only way to experiement with error
- *  conditions.
+ *  Supports mock-object testing of the CloudWatch facade.
  *  <p>
- *  Construct with a list of loggroups and logstreams; there's no pairing of
- *  groups and streams. There's a default constructor that uses predefined lists,
- *  and a more complex constructor that breaks the list into fixed-sized chunks
- *  to verify multiple calls to the "describe" functions. Adding a group or stream
- *  will update the instance lists, which are available to the test code.
+ *  This is a proxy-based mock: you create an instance of the mock, and from it
+ *  create an instance of a proxy that implements the client interface. Each of
+ *  the supported client methods is implemented in the mock, and called from the
+ *  invocation handler. To test specific behaviors, subclasses should override
+ *  the method implementation.
  *  <p>
- *  Each method invocation is counted, whether or not it succeeds. Only those
- *  methods that are used by the writer are implemented; everything else throws.
- *  Tests can override the method to change default behavior (for example, to
- *  throw or return an empty list).
+ *  Each method has an associated invocation counter, along with variables that
+ *  hold the last set of arguments passed to this method. These variables are
+ *  public, to minimize boilerplate code; if testcases modify the variables, they
+ *  only hurt themselves.
  *  <p>
- *  The tests that use this writer will have a background thread running, so will
- *  to coordinate behaviors between the main thread and writer thread. There are
- *  semaphores to control interaction with message publication: call {@link
- *  #allowWriterThread} after logging a message to wait for that message to be
- *  passed to putRecords.
+ *  The mock is assumed to be invoked from a single thread, so no effort has been
+ *  taken to make it threadsafe.
+ *  <p>
+ *  This specific mock can be constructed with a list of "known" log groups and
+ *  streams, and simulates enough of the "describe" API to return appropriate
+ *  responses. It also provides the ability to set a batch size for these methods,
+ *  to test pagination in the consumer.
  */
 public class CloudWatchClientMock
 implements InvocationHandler

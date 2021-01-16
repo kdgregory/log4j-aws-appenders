@@ -41,8 +41,8 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *  hooks that are implemented in the appender proper.
  *  <p>
  *  Most of the member variables defined by this class are protected. This is intended
- *  to support testing. If you decide to subclass and access those variables, well,
- *  this is an internal class: they may go away.
+ *  to support testing. If you decide to subclass and access those variables, remember
+ *  that this is an internal class: they may go away.
  *  <p>
  *  Log4J2, like Logback, explicitly initializes the appender before use. The only
  *  strangeness here is in stop(): there are two versions defined by the interface,

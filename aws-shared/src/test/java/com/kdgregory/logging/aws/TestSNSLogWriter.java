@@ -40,7 +40,9 @@ import com.kdgregory.logging.testhelpers.sns.TestableSNSLogWriter;
 
 
 /**
- *  Performs mock-facade testing of the SNS writer.
+ *  Performs mock-facade testing of <code>SNSLogWriter</code>.
+ *  <p>
+ *  The goal of these tests is to verify the invocaton and retry logic of the writer.
  */
 public class TestSNSLogWriter
 extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>

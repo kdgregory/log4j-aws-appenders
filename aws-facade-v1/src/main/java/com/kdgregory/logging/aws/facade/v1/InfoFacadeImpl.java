@@ -27,6 +27,9 @@ import com.kdgregory.logging.aws.internal.RetryManager;
 import com.kdgregory.logging.aws.internal.facade.InfoFacade;
 
 
+/**
+ *  Provides a facade over various "information" services using the v1 SDK.
+ */
 public class InfoFacadeImpl
 implements InfoFacade
 {

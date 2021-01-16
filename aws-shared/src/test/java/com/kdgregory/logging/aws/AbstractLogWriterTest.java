@@ -38,11 +38,11 @@ import com.kdgregory.logging.testhelpers.TestableInternalLogger;
  *  used by all tests.
  */
 public abstract class AbstractLogWriterTest
-<
+    <
     WriterType extends AbstractLogWriter<?,?>,
     ConfigType extends AbstractWriterConfig<ConfigType>,
     StatsType extends AbstractWriterStatistics
->
+    >
 {
     protected TestableInternalLogger internalLogger = new TestableInternalLogger();
 

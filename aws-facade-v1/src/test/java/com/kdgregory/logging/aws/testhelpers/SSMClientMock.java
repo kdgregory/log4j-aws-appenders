@@ -25,7 +25,21 @@ import com.amazonaws.services.simplesystemsmanagement.model.*;
 
 
 /**
- *  A mock object to support Facade testing.
+ *  Supports mock-object testing of the InfoFacade parameter store retrieval.
+ *  <p>
+ *  This is a proxy-based mock: you create an instance of the mock, and from it
+ *  create an instance of a proxy that implements the client interface. Each of
+ *  the supported client methods is implemented in the mock, and called from the
+ *  invocation handler. To test specific behaviors, subclasses should override
+ *  the method implementation.
+ *  <p>
+ *  Each method has an associated invocation counter, along with variables that
+ *  hold the last set of arguments passed to this method. These variables are
+ *  public, to minimize boilerplate code; if testcases modify the variables, they
+ *  only hurt themselves.
+ *  <p>
+ *  The mock is assumed to be invoked from a single thread, so no effort has been
+ *  taken to make it threadsafe.
  */
 public class SSMClientMock
 implements InvocationHandler

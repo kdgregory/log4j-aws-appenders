@@ -22,7 +22,7 @@ import com.kdgregory.logging.common.util.InternalLogger;
 
 
 /**
- *  Factory to create <code>KinesisLogWriter</code> instances.
+ *  Factory to create {@link KinesisLogWriter} instances.
  */
 public class KinesisWriterFactory implements WriterFactory<KinesisWriterConfig, KinesisWriterStatistics>
 {

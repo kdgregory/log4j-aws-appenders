@@ -16,9 +16,16 @@ package com.kdgregory.logging.aws.internal.facade;
 
 import com.kdgregory.logging.common.LogMessage;
 
+
 /**
- *  A facade for Simple Notification Service (SNS) operations. All operations
- *  may throw {@link SNSFacadeException}.
+ *  Exposes the CloudWatch Logs APIs used by <code>SNShLogWriter</code>.
+ *  <p>
+ *  Instances are created by {@link FacadaFactory}, and are tied to a single
+ *  writer's configuration.
+ *  <p>
+ *  All operations may throw {@link SNSFacadeException}. Callers are expected to
+ *  catch this exception (it's checked), and take action based on the reason code 
+ *  that it exposes.
  */
 public interface SNSFacade
 {

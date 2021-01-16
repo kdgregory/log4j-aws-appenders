@@ -28,11 +28,10 @@ import com.kdgregory.logging.common.LogMessage;
 
 
 /**
- *  A mock object that records its invocations.
+ *  A mock object for testing <code>CloudWatchLogWriter</code>. 
  *  <p>
- *  This object is invoked from the writer thread. To avoid races between the
- *  writer and main (test) threads, you will need to apply synchronization in
- *  the logwriter so that actions can be inspected.
+ *  The default implementation assumes that everything works; override methods
+ *  to test failure behavior. 
  */
 public class MockCloudWatchFacade
 implements InvocationHandler

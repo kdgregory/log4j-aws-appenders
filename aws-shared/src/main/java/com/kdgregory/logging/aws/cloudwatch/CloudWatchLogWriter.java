@@ -26,6 +26,10 @@ import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.util.InternalLogger;
 
 
+/**
+ *  Writes messages to a CloudWatch log stream. Auto-create both group and stream
+ *  if they do not exist, and re-creates them if they're deleted during operation.
+ */
 public class CloudWatchLogWriter
 extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
 {

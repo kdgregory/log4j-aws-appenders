@@ -16,12 +16,19 @@ package com.kdgregory.logging.aws.internal.facade;
 
 
 /**
- *  A facade for various read-only operations. Unlike the service-level
- *  facades, these operations are "best effort": if unable to perform
- *  the operation, the implementation is permitted to return a default
- *  value (although they are expected to retry if throttled).
+ *  A facade for various operations that retrieve information about the
+ *  AWS environment. 
  *  <p>
- *  Note also that these operations use the default service client.
+ *  Unlike the service-level facades, these operations are "best effort": if 
+ *  unable to perform the operation, the implementation is permitted to return 
+ *  a default value (typically null).
+ *  <p>
+ *  Also unlike service-level facades, implemtations are expected to retry if
+ *  throttled.
+ *  <p>
+ *  Finally, these operations use the default client for whatever service they
+ *  invoke. They do not attempt to assume a role or connect to an alternate
+ *  region.
  */
 public interface InfoFacade
 {

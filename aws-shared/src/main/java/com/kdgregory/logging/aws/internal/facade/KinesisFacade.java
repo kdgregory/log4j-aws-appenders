@@ -21,8 +21,14 @@ import com.kdgregory.logging.common.LogMessage;
 
 
 /**
- *  A facade for Kinesis Streams operations. All operations may throw
- *  {@link KinesisFacadeException}.
+ *  Exposes the CloudWatch Logs APIs used by <code>KinesisLogWriter</code>.
+ *  <p>
+ *  Instances are created by {@link FacadaFactory}, and are tied to a single
+ *  writer's configuration.
+ *  <p>
+ *  All operations may throw {@link KinesisFacadeException}. Callers are expected
+ *  to catch this exception (it's checked), and take action based on the reason code 
+ *  that it exposes.
  */
 public interface KinesisFacade
 {

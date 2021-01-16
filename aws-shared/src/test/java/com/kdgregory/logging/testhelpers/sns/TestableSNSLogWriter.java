@@ -24,7 +24,8 @@ import com.kdgregory.logging.common.util.InternalLogger;
 
 
 /**
- *  Provides semaphores to synchronize test and writer threads.
+ *  Used by appender tests. Provides semaphores to synchronize test (main) and 
+ *  writer threads.
  */
 public class TestableSNSLogWriter
 extends SNSLogWriter

@@ -35,14 +35,9 @@ import com.kdgregory.logging.common.util.DiscardAction;
  *  log messages, and shut down. Most of the code to do that lives here, with a few
  *  hooks that are implemented in the appender proper.
  *  <p>
- *  Some behaviors, such as log rotation, are implemented here even if they are not
- *  supported by all appenders. The appenders that do not support those behaviors are
- *  responsible for disabling them. For example, an appender that does not support log
- *  rotation should throw if {@link #setRotationMode} is called.
- *  <p>
  *  Most of the member variables defined by this class are protected. This is intended
- *  to support testing. If you decide to subclass and access those variables, well,
- *  this is an internal class: they may go away.
+ *  to support testing. If you decide to subclass and access those variables, remember
+ *  that this is an internal class: they may go away.
  *  <p>
  *  Note: Log4J synchronizes calls to appenders by logger. In typical usage, this means
  *  that all calls will be synchronized and we shouldn't synchronize outself. However,

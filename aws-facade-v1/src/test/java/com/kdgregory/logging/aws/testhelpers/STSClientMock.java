@@ -23,7 +23,24 @@ import com.amazonaws.services.securitytoken.model.*;
 
 
 /**
- *  Mocks the STS operations that we care about (at this point, only getCallerIdentity).
+ *  Supports mock-object testing of facade code that uses STS.
+ *  <p>
+ *  This is a proxy-based mock: you create an instance of the mock, and from it
+ *  create an instance of a proxy that implements the client interface. Each of
+ *  the supported client methods is implemented in the mock, and called from the
+ *  invocation handler. To test specific behaviors, subclasses should override
+ *  the method implementation.
+ *  <p>
+ *  Each method has an associated invocation counter, along with variables that
+ *  hold the last set of arguments passed to this method. These variables are
+ *  public, to minimize boilerplate code; if testcases modify the variables, they
+ *  only hurt themselves.
+ *  <p>
+ *  The mock is assumed to be invoked from a single thread, so no effort has been
+ *  taken to make it threadsafe.
+ *  <p>
+ *  At this time, the only supported IAM operation is <code>GetCallerIdentity</code>.
+ *  Note that this mock is <em>not</em> used for assumed-role client testing.
  */
 public class STSClientMock
 implements InvocationHandler

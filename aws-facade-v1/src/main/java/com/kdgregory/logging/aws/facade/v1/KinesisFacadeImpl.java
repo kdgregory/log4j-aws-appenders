@@ -33,6 +33,9 @@ import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
 
 
+/**
+ *  Provides a facade over the Kinesis API using the v1 SDK.
+ */
 public class KinesisFacadeImpl
 implements KinesisFacade
 {

@@ -26,6 +26,9 @@ import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 import com.kdgregory.logging.testhelpers.TestingException;
 
 
+/**
+ *  This layout is used to test appender error handling.
+ */
 @Plugin(name = "ThrowingLayout", category = Node.CATEGORY, elementType = Layout.ELEMENT_TYPE, printObject = true)
 public class ThrowingLayout
 extends AbstractStringLayout

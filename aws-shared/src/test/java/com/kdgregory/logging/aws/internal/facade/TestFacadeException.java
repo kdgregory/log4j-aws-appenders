@@ -18,9 +18,6 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 
-/**
- *  This test class primarily verifies message construction.
- */
 public class TestFacadeException
 {
     @Test

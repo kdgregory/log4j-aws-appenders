@@ -27,9 +27,25 @@ import com.amazonaws.services.kinesis.model.*;
 
 
 /**
- *  A proxy-based mock for the Kinesis client that allows deep testing of writer
- *  behavior. I don't particularly like using mock objects with this level of
- *  complexity, but they're the only way to experiment with error conditions.
+ *  Supports mock-object testing of the Kinesis facade.
+ *  <p>
+ *  This is a proxy-based mock: you create an instance of the mock, and from it
+ *  create an instance of a proxy that implements the client interface. Each of
+ *  the supported client methods is implemented in the mock, and called from the
+ *  invocation handler. To test specific behaviors, subclasses should override
+ *  the method implementation.
+ *  <p>
+ *  Each method has an associated invocation counter, along with variables that
+ *  hold the last set of arguments passed to this method. These variables are
+ *  public, to minimize boilerplate code; if testcases modify the variables, they
+ *  only hurt themselves.
+ *  <p>
+ *  The mock is assumed to be invoked from a single thread, so no effort has been
+ *  taken to make it threadsafe.
+ *  <p>
+ *  This mock can be configured with a single "known" stream, and the "describe"
+ *  operation will respond appropriately. Also, the "create" operation updates the
+ *  known streams, so a create followed by a describe will behave appropriately.
  */
 public class KinesisClientMock
 implements InvocationHandler
@@ -193,6 +209,9 @@ implements InvocationHandler
                .withRecords(resultRecords);
     }
 
+//----------------------------------------------------------------------------
+//  Supporting methods that can also be overridden
+//----------------------------------------------------------------------------
 
     protected PutRecordsResultEntry processRequestEntry(int index, PutRecordsRequestEntry entry)
     {

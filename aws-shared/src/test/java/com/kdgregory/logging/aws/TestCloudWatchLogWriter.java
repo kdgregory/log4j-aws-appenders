@@ -45,12 +45,9 @@ import com.kdgregory.logging.testhelpers.cloudwatch.TestableCloudWatchLogWriter;
 
 
 /**
- *  Performs mock-client testing of the CloudWatch writer. This exercises
- *  normal writer operation, including running on a background thread. To
- *  test messaging, you will need to synchronize the main (test) thread
- *  with the background thread; the mock provides {@link #waitForWriterThread}
- *  to do this. Most tests just need to wait for the writer to finish its
- *  initialization, which happens before {@link #createWriter} returns.
+ *  Performs mock-facade testing of <code>CloudWatchLogWriter</code>.
+ *  <p>
+ *  The goal of these tests is to verify the invocaton and retry logic of the writer.
  */
 public class TestCloudWatchLogWriter
 extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWatchWriterStatistics>

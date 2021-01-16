@@ -18,10 +18,8 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 
-/**
- *  Verifies that the shared facade factory returns the correct implementation
- *  classes for this library.
- */
+// verifies that th facade factory properly handles a missing implementation
+// (if this succeeds, the dependencies on this module are incorrect!)
 public class TestFacadeFactory
 {
     @Test
@@ -39,5 +37,4 @@ public class TestFacadeFactory
                          ex.getMessage());
         }
     }
-
 }

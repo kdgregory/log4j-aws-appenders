@@ -22,7 +22,10 @@ import com.kdgregory.logging.aws.internal.facade.SNSFacade;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.util.InternalLogger;
 
-
+/**
+ *  Writes log messages to an SNS topic. Optionally creates the topic at
+ *  startup, but will fail if the topic is deleted during operation.
+ */
 public class SNSLogWriter
 extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics>
 {

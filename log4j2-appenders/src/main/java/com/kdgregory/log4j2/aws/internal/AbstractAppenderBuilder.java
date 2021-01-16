@@ -25,7 +25,7 @@ import com.kdgregory.logging.common.util.DiscardAction;
 
 
 /**
- * Manages the configuration elements that are common across appenders.
+ *  Manages the configuration elements that are common across appenders.
  */
 public abstract class AbstractAppenderBuilder<T extends AbstractAppenderBuilder<T>>
 implements AbstractAppenderConfig

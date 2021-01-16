@@ -28,13 +28,25 @@ import com.amazonaws.services.sns.model.*;
 
 
 /**
- *  A proxy-based mock instance that allows unit testing of facade behavior.
+ *  Supports mock-object testing of the SNS facade.
  *  <p>
- *  All invocation handlers are exposed so that they can be overridden to throw exceptions.
+ *  This is a proxy-based mock: you create an instance of the mock, and from it
+ *  create an instance of a proxy that implements the client interface. Each of
+ *  the supported client methods is implemented in the mock, and called from the
+ *  invocation handler. To test specific behaviors, subclasses should override
+ *  the method implementation.
  *  <p>
- *  Invocation counts are incremented when the invocation handler is called, regardless of
- *  the result. If you need to track whether the invocation handler succeeded, you should
- *  decrement the count inside the failing handler.
+ *  Each method has an associated invocation counter, along with variables that
+ *  hold the last set of arguments passed to this method. These variables are
+ *  public, to minimize boilerplate code; if testcases modify the variables, they
+ *  only hurt themselves.
+ *  <p>
+ *  The mock is assumed to be invoked from a single thread, so no effort has been
+ *  taken to make it threadsafe.
+ *  <p>
+ *  This mock can be constructed with a list of known topic names, which are used
+ *  by the "describe" and "publish" operations. It also supports a batch size for
+ *  the "describe" operation, and simulates the API's pagination behavior.
  */
 public class SNSClientMock implements InvocationHandler
 {

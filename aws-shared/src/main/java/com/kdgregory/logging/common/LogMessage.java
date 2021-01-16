@@ -18,8 +18,8 @@ import java.nio.charset.StandardCharsets;
 
 
 /**
- *  Holder for an in-queue logging message. Each instance has a timestamp and the
- *  message, stored as both a string and UTF-8 encoded bytes.
+ *  Holder for an in-queue logging message. Each instance has a timestamp and a
+ *  message body. The latter is held both as a string and as UTF-8 encoded bytes.
  */
 public class LogMessage
 implements Comparable<LogMessage>
@@ -41,7 +41,7 @@ implements Comparable<LogMessage>
 
 
     /**
-     *  Returns the timestamp of the original logging event.
+     *  Returns the timestamp.
      */
     public long getTimestamp()
     {
@@ -50,7 +50,7 @@ implements Comparable<LogMessage>
 
 
     /**
-     *  Returns the size of the message after conversion to UTF-8.
+     *  Returns the size of the UTF-8 representation.
      */
     public int size()
     {

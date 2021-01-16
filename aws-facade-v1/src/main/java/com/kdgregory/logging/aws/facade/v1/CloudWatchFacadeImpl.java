@@ -28,6 +28,9 @@ import com.kdgregory.logging.aws.internal.facade.CloudWatchFacadeException.Reaso
 import com.kdgregory.logging.common.LogMessage;
 
 
+/**
+ *  Provides a facade over the CloudWatch API using the v1 SDK.
+ */
 public class CloudWatchFacadeImpl
 implements CloudWatchFacade
 {

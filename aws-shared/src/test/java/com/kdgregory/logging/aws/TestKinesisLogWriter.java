@@ -44,7 +44,9 @@ import com.kdgregory.logging.testhelpers.kinesis.TestableKinesisLogWriter;
 
 
 /**
- *  Performs mock-client testing of the Kinesis writer.
+ *  Performs mock-facade testing of <code>KinesisLogWriter</code>.
+ *  <p>
+ *  The goal of these tests is to verify the invocaton and retry logic of the writer.
  */
 public class TestKinesisLogWriter
 extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriterStatistics>

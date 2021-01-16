@@ -28,10 +28,6 @@ import com.kdgregory.logging.aws.internal.facade.KinesisFacade;
 import com.kdgregory.logging.aws.internal.facade.SNSFacade;
 
 
-/**
- *  Verifies that the shared facade factory returns the correct implementation
- *  classes for this library.
- */
 public class TestFacadeFactory
 {
     @Test

@@ -25,6 +25,9 @@ import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
 
 
+/**
+ *  Provides a facade over the SNS API using the v1 SDK.
+ */
 public class SNSFacadeImpl
 implements SNSFacade
 {

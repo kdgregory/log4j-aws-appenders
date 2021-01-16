@@ -38,14 +38,9 @@ import ch.qos.logback.core.UnsynchronizedAppenderBase;
  *  log messages, and shut down. Most of the code to do that lives here, with a few
  *  hooks that are implemented in the appender proper.
  *  <p>
- *  Some behaviors, such as log rotation, are implemented here even if they are not
- *  supported by all appenders. The appenders that do not support those behaviors are
- *  responsible for disabling them. For example, an appender that does not support log
- *  rotation should throw if {@link #setRotationMode} is called.
- *  <p>
  *  Most of the member variables defined by this class are protected. This is intended
- *  to support testing. If you decide to subclass and access those variables, well,
- *  this is an internal class: they may go away.
+ *  to support testing. If you decide to subclass and access those variables, remember
+ *  that this is an internal class: they may go away.
  *  <p>
  *  Note: this appender is built on <code>UnsynchronizedAppenderBase</code>, which is
  *  perhaps unnecessary (if you're worried about contention you shouldn't be doing a
@@ -53,12 +48,12 @@ import ch.qos.logback.core.UnsynchronizedAppenderBase;
  *  and these are protected by internal lock objects.
  */
 public abstract class AbstractAppender
-    <
+<
     WriterConfigType extends AbstractWriterConfig<WriterConfigType>,
     AppenderStatsType extends AbstractWriterStatistics,
     AppenderStatsMXBeanType,
     LogbackEventType
-    >
+>
 extends UnsynchronizedAppenderBase<LogbackEventType>
 {
     // factories for creating writer and thread

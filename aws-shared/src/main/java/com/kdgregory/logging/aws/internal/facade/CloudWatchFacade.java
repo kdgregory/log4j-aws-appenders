@@ -20,14 +20,14 @@ import com.kdgregory.logging.common.LogMessage;
 
 
 /**
- *  Exposes the CloudWatch Logs APIs that the logwriter needs, invoked through
- *  the v1 SDK. Instances are tied to a single log group/stream, provided via
- *  configuration.
+ *  Exposes the CloudWatch Logs APIs used by <code>CloudWatchLogWriter</code>.
  *  <p>
- *  All operations other than {@link #validateConfig} will throw
- *  {@link CloudWatchFacadeException} to indicate any situation not on the
- *  "happy path". Callers must catch this exception (it's checked), and take
- *  action based on the reason code that it exposes.
+ *  Instances are created by {@link FacadaFactory}, and are tied to a single
+ *  writer's configuration.
+ *  <p>
+ *  All operations may throw {@link CloudWatchFacadeException}. Callers are expected
+ *  to catch this exception (it's checked), and take action based on the reason code 
+ *  that it exposes.
  */
 public interface CloudWatchFacade
 {

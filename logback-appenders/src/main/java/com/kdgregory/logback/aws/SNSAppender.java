@@ -70,7 +70,7 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *      <td> If <code>true</code> (the default), oversize messages are truncated to
  *           the maximum length permitted by SNS. If <code>false</code>, they are
  *           discarded. In either case, the oversized message is reported to the
- *           Logback debug log.
+ *           Log4J debug log.
  *
  *  <tr VALIGN="top">
  *      <th> discardThreshold
@@ -113,16 +113,11 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *      <th> clientRegion
  *      <td> Specifies a non-default service region. This setting is ignored if you
  *           use a client factory.
- *           <p>
- *           Note that the region must be supported by the current SDK version.
  *
  *  <tr VALIGN="top">
  *      <th> clientEndpoint
- *      <td> Specifies a non-default service endpoint. This is intended for use with
- *           older AWS SDK versions that do not provide client factories and default
- *           to us-east-1 for constructed clients, although it can be used for newer
- *           releases when you want to override the default region provider. This
- *           setting is ignored if you use a client factory.
+ *      <td> Specifies a non-default service endpoint. Typically used when running in
+ *           a VPC, when the normal endpoint is not available.
  *
  *  <tr VALIGN="top">
  *      <th> useShutdownHook

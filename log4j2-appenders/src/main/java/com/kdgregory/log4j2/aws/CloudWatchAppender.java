@@ -43,7 +43,6 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *  This appender supports the following configuration parameters:
  *  <p>
  *  <table>
- *
  *  <tr VALIGN="top">
  *      <th> logGroup
  *      <td> Name of the CloudWatch log group where messages are sent; may use
@@ -126,7 +125,6 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *           The default, 10,000, is based on the assumptions that (1) each message
  *           will be 1k or less, and (2) any app that uses remote logging can afford
  *           10MB.
- *           <p>
  *
  *  <tr VALIGN="top">
  *      <th> discardAction
@@ -158,22 +156,16 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *      <th> clientRegion
  *      <td> Specifies a non-default service region. This setting is ignored if you
  *           use a client factory.
- *           <p>
- *           Note that the region must be supported by the current SDK version.
  *
  *  <tr VALIGN="top">
  *      <th> clientEndpoint
- *      <td> Specifies a non-default service endpoint. This is intended for use with
- *           older AWS SDK versions that do not provide client factories and default
- *           to us-east-1 for constructed clients, although it can be used for newer
- *           releases when you want to override the default region provider. This
- *           setting is ignored if you use a client factory.
+ *      <td> Specifies a non-default service endpoint. Typically used when running in
+ *           a VPC, when the normal endpoint is not available.
  *
  *  <tr VALIGN="top">
  *      <th> useShutdownHook
- *      <td> Controls whether the appender uses a shutdown hook to attempt to process
- *           outstanding messages when the JVM exits. This is true by default; set to
- *           false to disable.
+ *      <td> This exists for consistency with other appenders but ignored; Log4J2 provides
+ *           its own shutdown hooks.
  *  </table>
  *
  *  @see <a href="https://github.com/kdgregory/log4j-aws-appenders/blob/master/docs/cloudwatch.md">Appender documentation</a>

@@ -25,6 +25,9 @@ import static net.sf.kdgcommons.test.StringAsserts.*;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 
 
+/**
+ *  Verifies validation and coordinated-setter logic.
+ */
 public class TestKinesisWriterConfig
 {
     @Test

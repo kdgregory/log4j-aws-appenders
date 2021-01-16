@@ -22,23 +22,15 @@ import com.kdgregory.logging.common.LogWriter;
 /**
  *  Creates and starts a new thread for running the LogWriter.
  *  <p>
- *  Appenders expected to create a background thread (via factory) at the same time
- *  they create the logwriter (also via factory), and pass the latter to the former.
- *  In practice, this will happen in an abstract superclass, and the factory allows
- *  that superclass to know nothing of the actual writer type.
+ *  Appenders create a background thread (via factory) at the same time that they
+ *  create the logwriter (also via factory), and pass the latter to the former. In
+ *  normal operation they'll use {@link DefaultThreadFactory}. However, tests may
+ *  instead use an factory that doesn't actually create a thread (so all operations
+ *  happen inline) or use some other configuration.
  *  <p>
  *  To handle unexpected thread death, the appender must provide an uncaught
- *  exception handler. A typical handler will log the event using the internal
- *  logger, and then shut itself down (the assumption is that recoverable exceptions
- *  will be caught).
- *  <p>
- *  The appender may also specify whether the writer thread should register a shutdown
- *  hook. In general, such a hook will call the writer's <code>stop()</code> method
- *  and then wait for the writer thread to finish.
- *  <p>
- *  <code>DefaultThreadFactory</code> provides a standard implementation of this
- *  interface. This module also provides <code>NullThreadFactory</code> and
- *  <code>InlineThreadFactory</code>, which are used for unit tests.
+ *  exception handler. A typical handler logs what happens and then shuts down
+ *  the appender(the assumption is that recoverable exceptions will be handled).
  */
 public interface ThreadFactory
 {

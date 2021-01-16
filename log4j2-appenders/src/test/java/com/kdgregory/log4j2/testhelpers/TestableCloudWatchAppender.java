@@ -37,6 +37,11 @@ import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriterFactory;
 
 
+/**
+ *  This class provides visibility into the protected variables held by
+ *  CloudWatchAppender and AbstractAppender. It also updates the factories
+ *  so that we don't get a real writer.
+ */
 @Plugin(name = "TestableCloudWatchAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class TestableCloudWatchAppender
 extends CloudWatchAppender

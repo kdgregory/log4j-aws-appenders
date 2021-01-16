@@ -21,10 +21,11 @@ import java.util.stream.Collectors;
 /**
  *  A wrapper for any exceptions that happen inside a facade implementation.
  *  Provides information about where the exception occurred, and whether it's
- *  retriable.
+ *  retryable.
  *  <p>
  *  Note that the "major" facades have their own subclasses of this exception,
- *  which provide additional information that can be used to control a response.
+ *  which provide additional information that can be used to control the caller's
+ *  subsequent action.
  */
 public class FacadeException
 extends RuntimeException

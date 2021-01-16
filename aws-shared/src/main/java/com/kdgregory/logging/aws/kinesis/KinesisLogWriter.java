@@ -26,6 +26,10 @@ import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.util.InternalLogger;
 
 
+/**
+ *  Writes log messages to a Kinesis stream. Optionally creates the stream at
+ *  startup, but will fail if the stream is deleted during operation.
+ */
 public class KinesisLogWriter
 extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics>
 {

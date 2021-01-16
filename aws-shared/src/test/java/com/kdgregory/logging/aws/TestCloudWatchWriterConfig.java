@@ -24,6 +24,9 @@ import net.sf.kdgcommons.test.StringAsserts;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 
 
+/**
+ *  Verifies validation and coordinated-setter logic.
+ */
 public class TestCloudWatchWriterConfig
 {
     @Test

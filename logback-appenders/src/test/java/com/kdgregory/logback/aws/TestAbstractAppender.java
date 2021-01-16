@@ -34,8 +34,7 @@ import ch.qos.logback.classic.LoggerContext;
 
 /**
  *  These tests exercise appender logic that's implemented in AbstractAppender,
- *  using CloudWatchAppender as a concrete implementation class with a mock
- *  log-writer.
+ *  using CloudWatchAppender as a concrete implementation class.
  */
 public class TestAbstractAppender
 extends AbstractUnitTest<TestableCloudWatchAppender>

@@ -24,8 +24,8 @@ import com.amazonaws.services.identitymanagement.model.Role;
 
 /**
  *  Used by {@link #ClientFactory} to create an <code>STSAssumeRoleSessionCredentialsProvider</code>.
- *  This is a separate class to (1) ensure that there isn't a hard reference to the STS
- *  SDK, and (2) to simplify testing.
+ *  This is a separate class to (1) ensure that there isn't a hard reference to the STS SDK, and
+ *  (2) to simplify testing.
  */
 public class AssumedRoleCredentialsProviderProvider
 {

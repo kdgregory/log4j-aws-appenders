@@ -17,9 +17,14 @@ package com.kdgregory.logging.common.factories;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.util.InternalLogger;
 
+
 /**
- *  Defines a function to create a {@link LogWriter}. This is called by the
- *  appender as part of its initialization.
+ *  Defines a function to create a {@link LogWriter}. Each of the writers
+ *  defines its own implementation, which returns the concrete writer object.
+ *  <p>
+ *  This class exists primarily to support testing: appenders are constructed
+ *  with the default implementation, but tests replace with an implementation
+ *  that creates a "testable" writer.
  */
 public interface WriterFactory<C,S>
 {

@@ -17,6 +17,9 @@ package com.kdgregory.logging.aws.kinesis;
 import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 
 
+/**
+ *  Statistics specific to KinesisLogWriter.
+ */
 public class KinesisWriterStatistics
 extends AbstractWriterStatistics
 implements KinesisWriterStatisticsMXBean

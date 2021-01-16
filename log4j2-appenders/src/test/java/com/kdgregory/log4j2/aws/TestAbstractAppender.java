@@ -32,6 +32,10 @@ import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriterFactory;
 
 
+/**
+ *  These tests exercise appender logic that's implemented in AbstractAppender,
+ *  using CloudWatchAppender as a concrete implementation class.
+ */
 public class TestAbstractAppender
 extends AbstractUnitTest<TestableCloudWatchAppender>
 {

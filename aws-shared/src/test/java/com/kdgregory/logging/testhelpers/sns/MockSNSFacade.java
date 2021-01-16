@@ -26,8 +26,13 @@ import com.kdgregory.logging.common.LogMessage;
 
 
 /**
- *  A mock implementation of the facade. Maintains an internal list of known topics,
- *  so can be used for present/not-present tests without overriding methods.
+ *  A mock object for testing <code>SNSLogWriter</code>.
+ *  <p>
+ *  The default implementation assumes that everything works; override methods
+ *  to test failure behavior.
+ *  <p>
+ *  This object maintains a list of known topics, initialized at construction-time.
+ *  It is checked by {@link #lookupTopic}, and updated by {@link #createTopic}.
  */
 public class MockSNSFacade
 implements InvocationHandler

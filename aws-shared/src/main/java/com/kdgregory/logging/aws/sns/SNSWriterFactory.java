@@ -22,7 +22,7 @@ import com.kdgregory.logging.common.util.InternalLogger;
 
 
 /**
- *  Factory to create <code>SNSLogWriter</code> instances.
+ *  Factory to create {@link SNSLogWriter} instances.
  */
 public class SNSWriterFactory
 implements WriterFactory<SNSWriterConfig,SNSWriterStatistics>

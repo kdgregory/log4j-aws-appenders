@@ -26,6 +26,9 @@ import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.testhelpers.sns.MockSNSWriter;
 
 
+/**
+ *  These tests exercise appender logic specific to SNSAppender, using a mock log-writer.
+ */
 public class TestSNSAppender
 extends AbstractUnitTest<TestableSNSAppender>
 {

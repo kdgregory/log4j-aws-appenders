@@ -30,10 +30,14 @@ import com.kdgregory.logging.common.LogMessage;
 
 
 /**
- *  A mock object for testing KinesisLogWriter. The default implementation assumes
- *  that everything works; override methods to test other behavior. Since stream
- *  status is a big deal, you can construct with a list of status returns; after
- *  that list is exhausted, retrieveStreamStatus() returns ACTIVE.
+ *  A mock object for testing <code>KinesisLogWriter</code>. 
+ *  <p>
+ *  The default implementation assumes that everything works; override methods
+ *  to test failure behavior. 
+ *  <p>
+ *  Since stream status is a big deal, you can construct  with a list of status values 
+ *  that are returned in order. After that list is exhausted, <code>retrieveStreamStatus()</code> 
+ *  always returns the last item in the list.
  */
 public class MockKinesisFacade
 implements InvocationHandler
@@ -53,7 +57,7 @@ implements InvocationHandler
     public List<LogMessage> putRecordsHistory = new ArrayList<LogMessage>();
     public Thread putRecordsThread;
 
-    // this is the status returned after iterator expires; set from last iterator value
+    // this is the status returned after iterator expires; updated from iterator
     private StreamStatus defaultStatus = StreamStatus.ACTIVE;
 
 

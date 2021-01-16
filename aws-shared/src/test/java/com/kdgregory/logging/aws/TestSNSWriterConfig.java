@@ -25,6 +25,9 @@ import net.sf.kdgcommons.lang.StringUtil;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 
 
+/**
+ *  Verifies validation and coordinated-setter logic.
+ */
 public class TestSNSWriterConfig
 {
     // this is valid; set fields to make invalid

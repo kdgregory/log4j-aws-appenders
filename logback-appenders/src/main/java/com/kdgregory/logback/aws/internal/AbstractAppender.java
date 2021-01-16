@@ -475,21 +475,22 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     {
         WriterConfigType config = generateWriterConfig()
                                   .setTruncateOversizeMessages(truncateOversizeMessages)
-                                  .setSynchronousMode(synchronous)
                                   .setBatchDelay(batchDelay)
                                   .setDiscardThreshold(discardThreshold)
                                   .setDiscardAction(discardAction)
                                   .setClientFactoryMethod(clientFactory)
                                   .setAssumedRole(assumedRole)
                                   .setClientRegion(clientRegion)
-                                  .setClientEndpoint(clientEndpoint);
+                                  .setClientEndpoint(clientEndpoint)
+                                  .setSynchronousMode(synchronous)
+                                  .setUseShutdownHook(useShutdownHook);
 
         synchronized (initializationLock)
         {
             try
             {
                 writer = writerFactory.newLogWriter(config, appenderStats, internalLogger);
-                threadFactory.startWriterThread(writer, useShutdownHook, new UncaughtExceptionHandler()
+                threadFactory.startWriterThread(writer, new UncaughtExceptionHandler()
                 {
                     @Override
                     public void uncaughtException(Thread t, Throwable ex)

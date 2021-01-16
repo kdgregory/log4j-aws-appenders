@@ -37,33 +37,9 @@ public class DefaultThreadFactory implements ThreadFactory
 
 
     @Override
-    public void startWriterThread(final LogWriter writer, boolean useShutdownHook, UncaughtExceptionHandler exceptionHandler)
+    public void startWriterThread(final LogWriter writer, UncaughtExceptionHandler exceptionHandler)
     {
         final Thread writerThread = createThread(writer, exceptionHandler);
-
-        if (useShutdownHook)
-        {
-            Thread shutdownHook = new Thread(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    writer.stop();
-                    try
-                    {
-                        writerThread.join();
-                    }
-                    catch (InterruptedException e)
-                    {
-                        // we've done our best, que sera sera
-                    }
-                }
-            });
-            shutdownHook.setName(writerThread.getName() + "-shutdownHook");
-            writer.setShutdownHook(shutdownHook);
-            Runtime.getRuntime().addShutdownHook(shutdownHook);
-        }
-
         writerThread.start();
     }
 

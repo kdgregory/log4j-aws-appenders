@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
 import static net.sf.kdgcommons.test.NumericAsserts.*;
 
@@ -1462,13 +1463,49 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         ((TestableCloudWatchLogWriter)writer).writerThread.join();
         long shutdownTime = System.currentTimeMillis();
 
-        assertFalse("writer has stopped",                                                               writer.isRunning());
+        assertFalse("writer has stopped",                           writer.isRunning());
         assertInRange("time to process",                            batchDelay - 100, batchDelay + 100, shutdownTime - mainReturnedAt);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               "using existing CloudWatch log group: argle",
                                               "using existing CloudWatch log stream: bargle",
                                               "log writer initialization complete.*",
+                                              "log.writer shut down.*");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testShutdownHook() throws Exception
+    {
+        config.setUseShutdownHook(true);
+        mock = new MockCloudWatchFacade(config);
+
+        createWriter();
+        ((TestableCloudWatchLogWriter)writer).disableThreadSynchronization();
+
+        assertTrue("writer is running", writer.isRunning());
+
+        Thread shutdownHook = ClassUtil.getFieldValue(writer, "shutdownHook", Thread.class);
+        assertNotNull("writer has shutdown hook", shutdownHook);
+
+        // this is an easy way to assert that the writer added the hook, without digging into
+        // JVM internals; plus, we don't want it to actually run
+        assertTrue("writer set shutdown hook", Runtime.getRuntime().removeShutdownHook(shutdownHook));
+
+        shutdownHook.start();
+
+        writer.waitUntilStopped(10000);
+        assertFalse("writer has stopped", writer.isRunning());
+
+        // this will never return if the shutdown hook hasn't run
+        shutdownHook.join();
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "using existing CloudWatch log group: argle",
+                                              "using existing CloudWatch log stream: bargle",
+                                              "log writer initialization complete.*",
+                                              "shutdown hook invoked",
                                               "log.writer shut down.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();

@@ -52,6 +52,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("post-initialization: calls to writer factory",                1,              writerFactory.invocationCount);
         assertNotNull("post-initialization: writer created",                                        writer);
         assertNotNull("post-initialization: writer running on background thread",                   writer.writerThread);
+        assertFalse("post-initialization: writer told not to use shutdown hook",                    writer.config.getUseShutdownHook());
         assertEquals("post-initialization: actual log-group name",                  "argle",        writer.config.getLogGroupName());
         assertRegex("post-initialization: actual log-stream name",                  "20\\d{12}",    writer.config.getLogStreamName());
 

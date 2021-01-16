@@ -65,7 +65,7 @@ extends CloudWatchLogWriter
         }
         catch (InterruptedException ex)
         {
-            throw new RuntimeException("could not acquire semaphore");
+            // this should happen during forced shutdown
         }
         finally
         {

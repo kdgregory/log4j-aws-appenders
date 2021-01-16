@@ -102,7 +102,7 @@ public class KinesisLogWriterIntegrationTest
         factory = new KinesisWriterFactory();
         writer = (KinesisLogWriter)factory.newLogWriter(config, stats, internalLogger);
 
-        new DefaultThreadFactory("test").startWriterThread(writer, false, null);
+        new DefaultThreadFactory("test").startWriterThread(writer, null);
     }
 
 

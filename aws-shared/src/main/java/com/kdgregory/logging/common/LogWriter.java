@@ -52,16 +52,6 @@ extends Runnable
 
 
     /**
-     *  Used when shutdown hooks are in effect, so that the writer can retain that hook
-     *  and remove it during during cleanup.
-     *  <p>
-     *  See {@link com.kdgregory.logging.common.factories.DefaultThreadFactory} for this
-     *  in action.
-     */
-    void setShutdownHook(Thread shutdownHook);
-
-
-    /**
      *  Returns a flag to indicate whether the writer is operating in synchrnous mode.
      */
     boolean isSynchronous();

@@ -178,16 +178,28 @@ implements LogWriter
 
 
     @Override
-    public void setShutdownHook(Thread shutdownHook)
+    public boolean isSynchronous()
     {
-        this.shutdownHook = shutdownHook;
+        return config.getSynchronousMode();
     }
 
 
     @Override
-    public boolean isSynchronous()
+    public boolean waitUntilInitialized(long millisToWait)
     {
-        return config.getSynchronousMode();
+        long timeoutAt = System.currentTimeMillis() + millisToWait;
+        while (! initializationComplete && (System.currentTimeMillis() < timeoutAt))
+        {
+            try
+            {
+                Thread.sleep(100);
+            }
+            catch (InterruptedException ex)
+            {
+                return false;
+            }
+        }
+        return initializationComplete;
     }
 
 
@@ -221,25 +233,6 @@ implements LogWriter
         {
             processBatch(System.currentTimeMillis());
         }
-    }
-
-
-    @Override
-    public boolean waitUntilInitialized(long millisToWait)
-    {
-        long timeoutAt = System.currentTimeMillis() + millisToWait;
-        while (! initializationComplete && (System.currentTimeMillis() < timeoutAt))
-        {
-            try
-            {
-                Thread.sleep(100);
-            }
-            catch (InterruptedException ex)
-            {
-                return false;
-            }
-        }
-        return initializationComplete;
     }
 
 
@@ -300,6 +293,7 @@ implements LogWriter
         try
         {
             success = ensureDestinationAvailable();
+            optAddShutdownHook();
         }
         catch (Exception ex)
         {
@@ -432,6 +426,38 @@ implements LogWriter
             {
                 shutdownHook = null;
             }
+        }
+    }
+
+
+    /**
+     *  If the writer is configured to use shutdown hooks, adds one.
+     */
+    private void optAddShutdownHook()
+    {
+        if (config.getUseShutdownHook())
+        {
+            shutdownHook = new Thread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    logger.debug("shutdown hook invoked");
+                    setBatchDelay(1);
+                    AbstractLogWriter.this.stop();
+                    try
+                    {
+                        if (dispatchThread != null)
+                            dispatchThread.join();
+                    }
+                    catch (InterruptedException e)
+                    {
+                        // we've done our best, que sera sera
+                    }
+                }
+            });
+            shutdownHook.setName(Thread.currentThread().getName() + "-shutdownHook");
+            Runtime.getRuntime().addShutdownHook(shutdownHook);
         }
     }
 

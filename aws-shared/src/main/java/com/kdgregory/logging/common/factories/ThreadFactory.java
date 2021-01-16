@@ -42,5 +42,5 @@ import com.kdgregory.logging.common.LogWriter;
  */
 public interface ThreadFactory
 {
-    void startWriterThread(LogWriter writer, boolean useShutdownHook, UncaughtExceptionHandler exceptionHandler);
+    void startWriterThread(LogWriter writer, UncaughtExceptionHandler exceptionHandler);
 }

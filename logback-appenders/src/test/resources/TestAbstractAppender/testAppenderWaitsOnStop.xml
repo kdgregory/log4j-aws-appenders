@@ -6,8 +6,8 @@
     <layout class="ch.qos.logback.classic.PatternLayout">
       <pattern>%date{yyyy} %logger{0} %msg</pattern>
     </layout>
-    <useDefaultThreadFactory>true</useDefaultThreadFactory>
     <logGroup>argle</logGroup>
+    <useDefaultThreadFactory>true</useDefaultThreadFactory>
   </appender>
 
   <logger name="com.kdgregory.logback.aws.TestAbstractAppender" level="debug">

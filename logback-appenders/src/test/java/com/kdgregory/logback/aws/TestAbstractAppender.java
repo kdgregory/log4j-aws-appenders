@@ -57,6 +57,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("post-initialization: calls to writer factory",                1,              writerFactory.invocationCount);
         assertNotNull("post-initialization: writer created",                                        writer);
         assertNotNull("post-initialization: writer running on background thread",                   writer.writerThread);
+        assertTrue("post-initialization: writer told to install shutdown hook",                     writer.config.getUseShutdownHook());
         assertEquals("post-initialization: actual log-group name",                  "argle",        writer.config.getLogGroupName());
         assertRegex("post-initialization: actual log-stream name",                  "20\\d{12}",    writer.config.getLogStreamName());
 
@@ -127,35 +128,20 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
 
     @Test
-    public void testShutdownHook() throws Exception
+    public void testDisableShutdownHook() throws Exception
     {
-        initialize("testShutdownHook");
+        initialize("testDisableShutdownHook");
 
         MockCloudWatchWriter writer = appender.getMockWriter();
-        writer.waitUntilInitialized(10000);
 
-        assertNotNull("writer thread created", writer.writerThread);
-
-        // the run() method should save the thread and exit immediately; if not the test will hang
-        writer.writerThread.join();
-
-        assertNotNull("writer has shutdown hook", writer.shutdownHook);
-        assertFalse("writer has not yet been stopped", writer.stopped);
-        assertEquals("cleanup has not yet been called", 0, writer.cleanupInvocationCount);
-
-        writer.shutdownHook.start();
-        writer.shutdownHook.join();
-
-        assertTrue("writer has been stopped", writer.stopped);
-
-        // a real LogWriter will call cleanup being stopped; we'll assume logwriter tests cover that
+        assertFalse("writer was told not to install shutdown hook", writer.config.getUseShutdownHook());
     }
 
 
     @Test
     public void testAppenderWaitsOnStop() throws Exception
     {
-        initialize("testShutdownHook"); // this uses a real thread
+        initialize("testAppenderWaitsOnStop");
 
         MockCloudWatchWriter writer = appender.getMockWriter();
         writer.waitUntilInitialized(10000);

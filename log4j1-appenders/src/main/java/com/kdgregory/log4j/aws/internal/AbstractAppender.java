@@ -96,16 +96,16 @@ extends AppenderSkeleton
 
     // all member vars below this point are shared configuration
 
-    protected boolean               synchronous;
     protected long                  batchDelay;
     protected boolean               truncateOversizeMessages;
     protected int                   discardThreshold;
     protected DiscardAction         discardAction;
-    protected boolean               useShutdownHook;
     protected String                assumedRole;
     protected String                clientFactory;
     protected String                clientRegion;
     protected String                clientEndpoint;
+    protected boolean               synchronous;
+    protected boolean               useShutdownHook;
 
 //----------------------------------------------------------------------------
 //  Constructor
@@ -490,21 +490,22 @@ extends AppenderSkeleton
     {
         WriterConfigType config = generateWriterConfig()
                                   .setTruncateOversizeMessages(truncateOversizeMessages)
-                                  .setSynchronousMode(synchronous)
                                   .setBatchDelay(batchDelay)
                                   .setDiscardThreshold(discardThreshold)
                                   .setDiscardAction(discardAction)
                                   .setClientFactoryMethod(clientFactory)
                                   .setAssumedRole(assumedRole)
                                   .setClientRegion(clientRegion)
-                                  .setClientEndpoint(clientEndpoint);
+                                  .setClientEndpoint(clientEndpoint)
+                                  .setSynchronousMode(synchronous)
+                                  .setUseShutdownHook(useShutdownHook);
 
         synchronized (initializationLock)
         {
             try
             {
                 writer = writerFactory.newLogWriter(config, appenderStats, internalLogger);
-                threadFactory.startWriterThread(writer, useShutdownHook, new UncaughtExceptionHandler()
+                threadFactory.startWriterThread(writer, new UncaughtExceptionHandler()
                 {
                     @Override
                     public void uncaughtException(Thread t, Throwable ex)

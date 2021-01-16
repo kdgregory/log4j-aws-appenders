@@ -79,13 +79,6 @@ implements LogWriter
 
 
     @Override
-    public void setShutdownHook(Thread shutdownHook)
-    {
-        this.shutdownHook = shutdownHook;
-    }
-
-
-    @Override
     public int maxMessageSize()
     {
         // destination-specific subclasses should override this

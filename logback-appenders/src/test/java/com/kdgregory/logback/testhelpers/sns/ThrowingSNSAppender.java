@@ -22,8 +22,8 @@ import com.kdgregory.logging.testhelpers.ThrowingWriterFactory;
 
 /**
  *  This class provides visibility into the protected variables held by
- *  SNSAppender and AbstractAppender. It also updates the factories so
- *  that we don't get a real writer.
+ *  SNSAppender and AbstractAppender. It also updates the factories
+ *  so that we don't get a real writer.
  */
 public class ThrowingSNSAppender
 extends TestableSNSAppender

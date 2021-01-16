@@ -22,11 +22,10 @@ import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 
 import com.kdgregory.logging.common.util.DiscardAction;
-import com.kdgregory.logging.common.util.RotationMode;
 
 
 /**
- * Manages the configuration elements that are common across appenders.
+ *  Manages the configuration elements that are common across appenders.
  */
 public abstract class AbstractAppenderBuilder<T extends AbstractAppenderBuilder<T>>
 implements AbstractAppenderConfig
@@ -290,27 +289,5 @@ implements AbstractAppenderConfig
     public boolean isUseShutdownHook()
     {
         return useShutdownHook;
-    }
-
-// the following getters return default values here, are overridden by appenders that use them
-
-    @Override
-    public int getSequence()
-    {
-        return 0;
-    }
-
-
-    @Override
-    public String getRotationMode()
-    {
-        return RotationMode.none.name();
-    }
-
-
-    @Override
-    public long getRotationInterval()
-    {
-        return -1;
     }
 }

@@ -1,0 +1,17 @@
+<configuration debug="false">
+
+  <root level="off"/>
+
+  <appender name="TEST" class="com.kdgregory.logback.testhelpers.cloudwatch.TestableCloudWatchAppender">
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <pattern>%date{yyyy} %logger{0} %msg</pattern>
+    </layout>
+    <logGroup>argle</logGroup>
+    <useDefaultThreadFactory>true</useDefaultThreadFactory>
+  </appender>
+
+  <logger name="com.kdgregory.logback.aws.TestAbstractAppender" level="debug">
+    <appender-ref ref="TEST" />
+  </logger>
+
+</configuration>

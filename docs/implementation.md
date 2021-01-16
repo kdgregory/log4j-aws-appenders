@@ -3,6 +3,59 @@
 These may be helpful if you dig into the code ... or when I go back to the code after
 six months away.
 
+## Facades
+
+This is the big change for the 3.0 release: to support old and new AWS SDKs (which changed
+class, package, and method names, but <em>not</em> the underlying API), the log-writers
+now interact with a facade class rather than the SDK.
+
+There are currently four facade classes: `CloudWatchFacade`, `KinesisFacade`, `SNSFacade`,
+and `InfoFacade`. The first three are thin wrappers around the corresponding service API;
+all logic for retries and exceptional conditions is in the corresponding log-writer. The
+fourth is intended to provide information about the deployment environment in a "best
+effort" manner; the appenders do not depend on its operation.
+
+All facades are instantiated via `FacadeFactory.createFacade()`, a static method that uses
+reflection to determine which implementation library is linked into the application (and
+which throws if none is). Since this is a static method, it can be called from any point
+in the codebase (and this is leveraged by [substitutions](substitutions.md) to access the
+`InfoFacade`).
+
+The "service" facades all take an object that contains appender configuration. They use
+this object to (1) figure out how to [create the service client](client.md), and (2) to
+provide information such as log group/stream name to the SDK.
+
+As noted above, the various log-writers are responsible for all logic (such as retries)
+when interacting with the service; the facade is a thin wrapper that translates
+SDK-specific classes into something else. In most cases, this something else is a
+service-specific facade exception (eg, `CloudWatchFacadeException`); the log-writer
+interprets the exception's "reason code" to decide whether the failure is something
+important. In the case of describe operations, the "something else" is `null` to signify
+that the thing being described doesn't exist.
+
+I went back and forth several times on how heavyweight the facades should be. In the end,
+I decided based on limiting the amount of code that would have to be duplicated to support
+the v2 SDK. I think this also improved the layerability and testability of the framework.
+
+
+## Locking
+
+The logging framework may or may not synchronize calls to the appender. Log4J1, for
+example, uses one large synchronized block to call all appenders, while Log4J2 assumes
+they'll synchronize themselves.
+
+The appenders don't do any explicitly synchronization of the `append()` call. Instead,
+they perform as much work as they can in a thread-safe manner, and then put the message
+on a concurrent queue for consumption by the log writer.
+
+The one thing that is explicitly synchronized within this library is writer creation
+and shutdown, using the `initializationLock` variable. I think this may be a "belt and
+suspenders" protection for Logback and Log4J2, because the library is responsible for
+initializing the appender (and, one presumes, is smart enough to only do that once).
+And even Log4J1, with lazily initialization, shouldn't need this protection because
+of the framework's synchronization. However, leaving it in place is a low-pain way to
+ensure that we don't have hard-to-diagnose issues.
+
 
 ## Log4J1 Initialization
 
@@ -14,33 +67,3 @@ In practice this means that you won't discover logging configuration problems un
 first time that you try to use a logger, which may be some time after your application
 starts. As a work-around -- and a generally good practice -- log an "I'm here!" message
 at the start of your `main` method.
-
-
-## Locking
-
-There are two locks used by the appenders: `initializationLock`, which is called around
-writer creation, and `appendLock`, which single-threads the rotation check and message
-enqueue to ensure that we don't initiate rotation from two threads. In normal operation
-these locks should have low contention: while the append lock is called for every append,
-it covers very few instructions (message formatting, for example, happens outside the
-lock).
-
-
-## Writer Rotation
-
-In retrospect, writer rotation is one of the worst features of this library. When first
-designed, of course, it seemed perfectly reasonable: the library supported only CloudWatch
-Logs, with few thoughts of other destinations, and in those pre-Insight days long log
-streams were a pain to review.
-
-The main problem with rotation is that it has to tie into the appender at a very low level:
-the "do we rotate?" decision has to happen every time a message is written. And this happens
-in all appenders, even though it's only relevant for the CloudWatch appender. Worse, the
-same code is replicated across all framework implementations.
-
-In an attempt to minimize the cost of this action, the `shouldRotate()` method is overridden
-in the Kinesis and SNS appenders. My expectation is that Hotspot will eventually inline the
-`return false` (at least for Kinesis), reducing the impact of this decision. The default
-implementation of this method (which again, is only relevant to CloudWatch) remains in the
-abstract appender, because it needs access to the internal variables that track message
-count and rotation times.

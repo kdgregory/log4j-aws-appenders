@@ -16,43 +16,144 @@ package com.kdgregory.logging.aws.internal;
 
 import com.kdgregory.logging.common.util.DiscardAction;
 
-/**
- *  Holds common configuration; all writer-specific config objects are subclasses.
- */
-public class AbstractWriterConfig
-{
-    public volatile boolean truncateOversizeMessages;
-    public volatile long batchDelay;
-    public volatile int discardThreshold;
-    public volatile DiscardAction discardAction;
-    public String clientFactoryMethod;
-    public String assumedRole;
-    public String clientRegion;
-    public String clientEndpoint;
 
-    /**
-     *  @param truncateOversizeMessages If true, messages that are too large for the service are
-     *                                  truncated to fit; if false, they are discarded.
-     *  @param batchDelay               Number of milliseconds to wait after receiving first
-     *                                  message in batch. May be updated while running.
-     *  @param discardThreshold         Maximum number of messages to retain if unable to send.
-     *  @param discardAction            What to do with unsent messages over the threshold.
-     *  @param clientFactoryMethod      Optional: fully-qualified name of a static method to create client.
-     *  @param assumedRole              Optional: name or ARN of a role to assume when creating client.
-     *  @param clientRegion             Optional: explicit region for client (used with ctor and SDK builder).
-     *  @param clientEndpoint           Optional: explicit endpoint for client (only used with constructors).
-     */
-    public AbstractWriterConfig(
-        boolean truncateOversizeMessages, long batchDelay, int discardThreshold, DiscardAction discardAction,
-        String clientFactoryMethod, String assumedRole, String clientRegion, String clientEndpoint)
+/**
+ *  Holds common configuration; writer-specific config objects are subclasses.
+ *  See documentation pages for information about specific properties.
+ *  <p>
+ *  Note: some fields are marked volatile, because they may be changed during
+ *  runtime.
+ */
+public class AbstractWriterConfig<T extends AbstractWriterConfig<T>>
+{
+    private boolean                 truncateOversizeMessages;
+    private boolean                 isSynchronous;
+    private volatile long           batchDelay;
+    private volatile int            discardThreshold;
+    private volatile DiscardAction  discardAction;
+    private String                  clientFactoryMethod;
+    private String                  assumedRole;
+    private String                  clientRegion;
+    private String                  clientEndpoint;
+    private boolean                 useShowdownHook;
+
+
+    public boolean getTruncateOversizeMessages()
     {
-        this.truncateOversizeMessages = truncateOversizeMessages;
-        this.batchDelay = batchDelay;
-        this.discardThreshold = discardThreshold;
-        this.discardAction = discardAction;
-        this.clientFactoryMethod = clientFactoryMethod;
-        this.assumedRole = assumedRole;
-        this.clientRegion = clientRegion;
-        this.clientEndpoint = clientEndpoint;
+        return truncateOversizeMessages;
+    }
+
+    public T setTruncateOversizeMessages(boolean value)
+    {
+        truncateOversizeMessages = value;
+        return (T)this;
+    }  
+
+    
+    public boolean getSynchronousMode()
+    {
+        return isSynchronous;
+    }
+    
+    public T setSynchronousMode(boolean value)
+    {
+        isSynchronous = value;
+        return (T)this;
+    }
+
+
+    public long getBatchDelay()
+    {
+        return batchDelay;
+    }
+
+    public T setBatchDelay(long value)
+    {
+        batchDelay = value;
+        return (T)this;
+    }
+
+
+    public int getDiscardThreshold()
+    {
+        return discardThreshold;
+    }
+
+    public T setDiscardThreshold(int value)
+    {
+        discardThreshold = value;
+        return (T)this;
+    }
+
+
+    public DiscardAction getDiscardAction()
+    {
+        return discardAction;
+    }
+
+    public T setDiscardAction(DiscardAction value)
+    {
+        discardAction = value;
+        return (T)this;
+    }
+
+
+    public String getClientFactoryMethod()
+    {
+        return clientFactoryMethod;
+    }
+
+    public T setClientFactoryMethod(String value)
+    {
+        clientFactoryMethod = value;
+        return (T)this;
+    }
+
+
+    public String getAssumedRole()
+    {
+        return assumedRole;
+    }
+
+    public T setAssumedRole(String value)
+    {
+        assumedRole = value;
+        return (T)this;
+    }
+
+
+    public String getClientRegion()
+    {
+        return clientRegion;
+    }
+
+    public T setClientRegion(String value)
+    {
+        clientRegion = value;
+        return (T)this;
+    }
+
+
+    public String getClientEndpoint()
+    {
+        return clientEndpoint;
+    }
+
+    public T setClientEndpoint(String value)
+    {
+        clientEndpoint = value;
+        return (T)this;
+    }
+
+
+    public boolean getUseShutdownHook()
+    {
+        return useShowdownHook;
+    }
+
+    public T setUseShutdownHook(boolean value)
+    {
+        useShowdownHook = value;
+        return (T)this;
     }
 }

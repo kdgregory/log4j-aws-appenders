@@ -18,7 +18,6 @@ import java.util.Date;
 
 import com.kdgregory.log4j.aws.internal.AbstractAppender;
 import com.kdgregory.logging.aws.common.Substitutions;
-import com.kdgregory.logging.aws.internal.Utils;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSWriterStatisticsMXBean;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
@@ -114,16 +113,11 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *      <th> clientRegion
  *      <td> Specifies a non-default service region. This setting is ignored if you
  *           use a client factory.
- *           <p>
- *           Note that the region must be supported by the current SDK version.
  *
  *  <tr VALIGN="top">
  *      <th> clientEndpoint
- *      <td> Specifies a non-default service endpoint. This is intended for use with
- *           older AWS SDK versions that do not provide client factories and default
- *           to us-east-1 for constructed clients, although it can be used for newer
- *           releases when you want to override the default region provider. This
- *           setting is ignored if you use a client factory.
+ *      <td> Specifies a non-default service endpoint. Typically used when running in
+ *           a VPC, when the normal endpoint is not available.
  *
  *  <tr VALIGN="top">
  *      <th> useShutdownHook
@@ -223,13 +217,6 @@ extends AbstractAppender<SNSWriterConfig,SNSWriterStatistics,SNSWriterStatistics
     public void setSubject(String value)
     {
         this.subject = value;
-        if (writer == null)
-            return;
-
-        // I don't particularly like using reflection here, but the alternative
-        // is to create a whole set of LogWriter sub-interfaces (or get rid of
-        // the mock-object unit tests)
-        Utils.invokeSetterQuietly(writer, "setSubject", String.class, value);
     }
 
 
@@ -253,28 +240,22 @@ extends AbstractAppender<SNSWriterConfig,SNSWriterStatistics,SNSWriterStatistics
     }
 
 //----------------------------------------------------------------------------
-//  AbstractAppender
+//  AbstractAppender overrides
 //----------------------------------------------------------------------------
 
     @Override
     protected SNSWriterConfig generateWriterConfig()
     {
-        Substitutions subs = new Substitutions(new Date(), sequence.get());
+        Substitutions subs = new Substitutions(new Date(), 0);
 
         String actualTopicName  = subs.perform(topicName);
         String actualTopicArn   = subs.perform(topicArn);
         String actualSubject    = subs.perform(subject);
 
-        return new SNSWriterConfig(
-            actualTopicName, actualTopicArn, actualSubject, autoCreate,
-            truncateOversizeMessages, discardThreshold, discardAction,
-            clientFactory, assumedRole, clientRegion, clientEndpoint);
-    }
-
-
-    @Override
-    protected boolean shouldRotate(long now)
-    {
-        return false;
+        return new SNSWriterConfig()
+               .setTopicName(actualTopicName)
+               .setTopicArn(actualTopicArn)
+               .setSubject(actualSubject)
+               .setAutoCreate(autoCreate);
     }
 }

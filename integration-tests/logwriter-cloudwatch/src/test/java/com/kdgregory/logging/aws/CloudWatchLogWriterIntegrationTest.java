@@ -34,9 +34,10 @@ import org.slf4j.MDC;
 import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
 
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.logs.AWSLogs;
-import com.amazonaws.services.logs.AWSLogsClient;
+import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.OutputLogEvent;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchConstants;
@@ -44,6 +45,7 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterFactory;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
+import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
@@ -58,10 +60,10 @@ public class CloudWatchLogWriterIntegrationTest
     private final static String BASE_LOGGROUP_NAME = "CloudWatchLogWriterIntegrationTest";
 
     // single "helper" client that's shared by all tests
-    private static AWSLogsClient helperClient;
+    private static AWSLogs helperClient;
 
     // this one is created by the "alternate region" tests
-    private AWSLogsClient altClient;
+    private AWSLogs altClient;
 
     // this client is used in testFactoryMethod(), should be null everywhere else
     private static AWSLogs factoryClient;
@@ -124,7 +126,12 @@ public class CloudWatchLogWriterIntegrationTest
      */
     private CloudWatchWriterConfig defaultConfig()
     {
-        return new CloudWatchWriterConfig(logGroupName, logStreamName, null, false, false, 250, 10000, DiscardAction.oldest, null, null, null, null);
+        return new CloudWatchWriterConfig()
+               .setLogGroupName(logGroupName)
+               .setLogStreamName(logStreamName)
+               .setBatchDelay(250)
+               .setDiscardThreshold(10000)
+               .setDiscardAction(DiscardAction.oldest);
     }
 
 
@@ -136,7 +143,7 @@ public class CloudWatchLogWriterIntegrationTest
     {
         CloudWatchLogWriter writer = (CloudWatchLogWriter)writerFactory.newLogWriter(config, stats, internalLogger);
         writers.add(writer);
-        threadFactory.startLoggingThread(writer, false, null);
+        threadFactory.startWriterThread(writer, null);
         return writer;
     }
 
@@ -162,7 +169,7 @@ public class CloudWatchLogWriterIntegrationTest
 
     public static AWSLogs staticClientFactory()
     {
-        factoryClient = new AWSLogsClient();
+        factoryClient = AWSLogsClientBuilder.defaultClient();
         return factoryClient;
     }
 
@@ -173,8 +180,7 @@ public class CloudWatchLogWriterIntegrationTest
     @BeforeClass
     public static void beforeClass()
     {
-        // constructor because we're running against 1.11.0
-        helperClient = new AWSLogsClient();
+        helperClient = AWSLogsClientBuilder.defaultClient();
     }
 
 
@@ -250,7 +256,7 @@ public class CloudWatchLogWriterIntegrationTest
         init("testFactoryMethod", helperClient);
 
         CloudWatchWriterConfig config = defaultConfig();
-        config.clientFactoryMethod = getClass().getName() + ".staticClientFactory";
+        config.setClientFactoryMethod(getClass().getName() + ".staticClientFactory");
         CloudWatchLogWriter writer = createWriter(config);
 
         new MessageWriter(writer, numMessages).run();
@@ -259,7 +265,11 @@ public class CloudWatchLogWriterIntegrationTest
         testHelper.assertMessages(logStreamName, numMessages);
 
         assertNotNull("factory method was called", factoryClient);
-        assertSame("factory-created client used by writer", factoryClient, ClassUtil.getFieldValue(writer, "client", AWSLogs.class));
+
+        // this is getting a little obsessive...
+        Object facade = ClassUtil.getFieldValue(writer, "facade", CloudWatchFacade.class);
+        Object client = ClassUtil.getFieldValue(facade, "client", AWSLogs.class);
+        assertSame("factory-created client used by writer", factoryClient, client);
 
         testHelper.deleteLogGroupIfExists();
     }
@@ -270,13 +280,12 @@ public class CloudWatchLogWriterIntegrationTest
     {
         final int numMessages = 1001;
 
-        // default region for constructor is always us-east-1
-        altClient = new AWSLogsClient().withRegion(Regions.US_WEST_1);
+        altClient = AWSLogsClientBuilder.standard().withRegion(Regions.US_WEST_1).build();
 
         init("testAlternateRegion", altClient);
 
         CloudWatchWriterConfig config = defaultConfig();
-        config.clientRegion = "us-west-1";
+        config.setClientRegion("us-west-1");
         CloudWatchLogWriter writer = createWriter(config);
 
         new MessageWriter(writer, numMessages).run();
@@ -297,15 +306,15 @@ public class CloudWatchLogWriterIntegrationTest
     {
         final int numMessages = 1001;
 
-        // the goal here is to verify that we can use a region that didn't exist when 1.11.0 came out
-        // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
-        //         if that is your default, then the test will fail
-        altClient = new AWSLogsClient().withEndpoint("logs.us-east-2.amazonaws.com");
+        altClient = AWSLogsClientBuilder.standard()
+                    .withEndpointConfiguration(
+                        new EndpointConfiguration("logs.us-east-2.amazonaws.com", null))
+                    .build();
 
         init("testAlternateEndpoint", altClient);
 
         CloudWatchWriterConfig config = defaultConfig();
-        config.clientEndpoint = "logs.us-east-2.amazonaws.com";
+        config.setClientEndpoint("logs.us-east-2.amazonaws.com");
         CloudWatchLogWriter writer = createWriter(config);
 
         new MessageWriter(writer, numMessages).run();
@@ -327,7 +336,7 @@ public class CloudWatchLogWriterIntegrationTest
         init("testRetentionPeriod", helperClient);
 
         CloudWatchWriterConfig config = defaultConfig();
-        config.retentionPeriod = 3;
+        config.setRetentionPeriod(3);
         CloudWatchLogWriter writer = createWriter(config);
 
         // will write a single message so that we have something to wait for
@@ -352,8 +361,8 @@ public class CloudWatchLogWriterIntegrationTest
         {
             localLogger.debug("creating writer {}", ii);
             CloudWatchWriterConfig config = defaultConfig();
-            config.logStreamName = "testDedicatedWriter-" + ii;
-            config.dedicatedWriter = true;
+            config.setLogStreamName("testDedicatedWriter-" + ii);
+            config.setDedicatedWriter(true);
             createWriter(config);
         }
 
@@ -392,7 +401,7 @@ public class CloudWatchLogWriterIntegrationTest
         init("testOversizeMessageTruncation", helperClient);
 
         CloudWatchWriterConfig config = defaultConfig();
-        config.truncateOversizeMessages = true;
+        config.setTruncateOversizeMessages(true);
         CloudWatchLogWriter writer = createWriter(config);
 
         new MessageWriter(writer, numMessages)

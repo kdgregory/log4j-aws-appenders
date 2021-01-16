@@ -14,15 +14,15 @@
 
 package com.kdgregory.logging.aws.sns;
 
-import com.amazonaws.services.sns.AmazonSNS;
-
-import com.kdgregory.logging.aws.common.DefaultClientFactory;
+import com.kdgregory.logging.aws.internal.facade.FacadeFactory;
+import com.kdgregory.logging.aws.internal.facade.SNSFacade;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
 
+
 /**
- *  Factory to create <code>SNSLogWriter</code> instances.
+ *  Factory to create {@link SNSLogWriter} instances.
  */
 public class SNSWriterFactory
 implements WriterFactory<SNSWriterConfig,SNSWriterStatistics>
@@ -32,8 +32,6 @@ implements WriterFactory<SNSWriterConfig,SNSWriterStatistics>
     {
         return new SNSLogWriter(
                 config, stats, logger,
-                new DefaultClientFactory<AmazonSNS>(
-                    AmazonSNS.class, config.clientFactoryMethod, config.assumedRole,
-                    config.clientRegion, config.clientEndpoint, logger));
+                FacadeFactory.createFacade(SNSFacade.class, config));
     }
 }

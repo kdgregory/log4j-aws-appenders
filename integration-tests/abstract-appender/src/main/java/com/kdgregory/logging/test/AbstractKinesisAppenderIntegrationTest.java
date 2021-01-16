@@ -30,6 +30,7 @@ import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 
+import com.kdgregory.logging.aws.internal.facade.KinesisFacade;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.testhelpers.CommonTestHelper;
@@ -287,9 +288,9 @@ public abstract class AbstractKinesisAppenderIntegrationTest
 
         testHelper.assertStats(accessor.getStats(), numMessages);
 
-        KinesisLogWriter writer = accessor.getWriter();
-        AmazonKinesis actualClient = ClassUtil.getFieldValue(writer, "client", AmazonKinesis.class);
-        assertSame("factory should have been used to create client", factoryClient, actualClient);
+        KinesisFacade facade = ClassUtil.getFieldValue(accessor.getWriter(), "facade", KinesisFacade.class);
+        AmazonKinesis client = ClassUtil.getFieldValue(facade, "client", AmazonKinesis.class);
+        assertSame("factory should have been used to create client", factoryClient, client);
 
         testHelper.deleteStreamIfExists();
     }

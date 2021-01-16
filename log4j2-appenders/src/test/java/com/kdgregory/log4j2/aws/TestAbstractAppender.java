@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import static net.sf.kdgcommons.test.NumericAsserts.*;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import org.apache.logging.log4j.core.LoggerContext;
@@ -33,6 +32,10 @@ import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriterFactory;
 
 
+/**
+ *  These tests exercise appender logic that's implemented in AbstractAppender,
+ *  using CloudWatchAppender as a concrete implementation class.
+ */
 public class TestAbstractAppender
 extends AbstractUnitTest<TestableCloudWatchAppender>
 {
@@ -53,8 +56,9 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("post-initialization: calls to writer factory",                1,              writerFactory.invocationCount);
         assertNotNull("post-initialization: writer created",                                        writer);
         assertNotNull("post-initialization: writer running on background thread",                   writer.writerThread);
-        assertEquals("post-initialization: actual log-group name",                  "argle",        writer.config.logGroupName);
-        assertRegex("post-initialization: actual log-stream name",                  "20\\d{12}",    writer.config.logStreamName);
+        assertFalse("post-initialization: writer told not to use shutdown hook",                    writer.config.getUseShutdownHook());
+        assertEquals("post-initialization: actual log-group name",                  "argle",        writer.config.getLogGroupName());
+        assertRegex("post-initialization: actual log-stream name",                  "20\\d{12}",    writer.config.getLogStreamName());
 
         long initialTimestamp = System.currentTimeMillis();
         logger.debug("first message");
@@ -116,34 +120,6 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("header is first",     "File Header\u00a9",    mockWriter.getMessage(0));
         assertEquals("message is middle",   "blah blah blah",       mockWriter.getMessage(1));
         assertEquals("footer is last",      "File Footer\u00a9",    mockWriter.getMessage(2));
-    }
-
-
-    @Test
-    public void testSynchronousMode() throws Exception
-    {
-        initialize("testSynchronousMode");
-
-        long start = System.currentTimeMillis();
-
-        MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
-        MockCloudWatchWriter writer = appender.getMockWriter();
-
-        assertEquals("calls to writer factory",                 1,                                      writerFactory.invocationCount);
-        assertNotNull("writer was created",                                                             writer);
-        assertNull("writer not started on thread",                                                      writer.writerThread);
-        assertEquals("initialize() called",                     1,                                      writer.initializeInvocationCount);
-
-        logger.debug("message one");
-
-        assertEquals("batch has been processed",                1,                                      writer.processBatchInvocationCount);
-        assertInRange("batch processing time",                  start, System.currentTimeMillis(),      writer.processBatchLastTimeout);
-
-        assertEquals("before stop, calls to cleanup()",         0,                                      writer.cleanupInvocationCount);
-
-        appender.stop(0, TimeUnit.MILLISECONDS);
-
-        assertEquals("after stop, calls to cleanup()",          1,                                      writer.cleanupInvocationCount);
     }
 
 
@@ -226,7 +202,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         MockCloudWatchWriter writer = appender.getMockWriter();
 
         assertEquals("discard action, from appender",    DiscardAction.oldest,  appender.getDiscardAction());
-        assertEquals("discard action, from writer",      DiscardAction.oldest,  writer.config.discardAction);
+        assertEquals("discard action, from writer",      DiscardAction.oldest,  writer.config.getDiscardAction());
 
         appenderInternalLogger.assertDebugLog();
         appenderInternalLogger.assertErrorLog("invalid discard action.*bogus.*");

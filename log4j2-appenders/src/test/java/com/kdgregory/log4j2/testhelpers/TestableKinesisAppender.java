@@ -33,6 +33,11 @@ import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriter;
 import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriterFactory;
 
 
+/**
+ *  This class provides visibility into the protected variables held by
+ *  KinesisAppender and AbstractAppender. It also updates the factories
+ *  so that we don't get a real writer.
+ */
 @Plugin(name = "TestableKinesisAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class TestableKinesisAppender
 extends KinesisAppender

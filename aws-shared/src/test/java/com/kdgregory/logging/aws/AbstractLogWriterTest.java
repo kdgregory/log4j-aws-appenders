@@ -27,23 +27,22 @@ import static net.sf.kdgcommons.test.StringAsserts.*;
 import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 import com.kdgregory.logging.aws.internal.AbstractLogWriter;
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
-import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.MessageQueue;
 import com.kdgregory.logging.testhelpers.TestableInternalLogger;
+
 
 /**
  *  Base class for the writer tests. Defines utility methods and variables
  *  used by all tests.
  */
 public abstract class AbstractLogWriterTest
-<
-    WriterType extends AbstractLogWriter<?,?,?>,
-    ConfigType extends AbstractWriterConfig,
-    StatsType extends AbstractWriterStatistics,
-    AWSClientType
->
+    <
+    WriterType extends AbstractLogWriter<?,?>,
+    ConfigType extends AbstractWriterConfig<ConfigType>,
+    StatsType extends AbstractWriterStatistics
+    >
 {
     protected TestableInternalLogger internalLogger = new TestableInternalLogger();
 
@@ -89,21 +88,6 @@ public abstract class AbstractLogWriterTest
 
 
     /**
-     *  This is used whenever we explicitly create a writer (rather than use the
-     *  mock factory. It creates a null client, so any attempt to use that client
-     *  will throw.
-     */
-    protected ClientFactory<AWSClientType> dummyClientFactory = new ClientFactory<AWSClientType>()
-    {
-        @Override
-        public AWSClientType createClient()
-        {
-            return null;
-        }
-    };
-
-
-    /**
      *  Creates a writer using the provided factory, waiting for it to be initialized.
      *  The writer thread will not use a shutdown handler.
      */
@@ -113,7 +97,7 @@ public abstract class AbstractLogWriterTest
         writer = (WriterType)factory.newLogWriter(config, stats, internalLogger);
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
-        new DefaultThreadFactory("test").startLoggingThread(writer, false, defaultUncaughtExceptionHandler);
+        new DefaultThreadFactory("test").startWriterThread(writer, defaultUncaughtExceptionHandler);
 
         assertTrue("writer running", writer.waitUntilInitialized(5000));
     }
@@ -142,6 +126,25 @@ public abstract class AbstractLogWriterTest
         Thread writerThread = ClassUtil.getFieldValue(writer, "dispatchThread", Thread.class);
         assertNotNull("expeted to retrieve writer thread", writerThread);
         writerThread.join();
+    }
+
+
+//----------------------------------------------------------------------------
+//  Common assertions
+//----------------------------------------------------------------------------
+
+    /**
+     *  Follows the chain of exceptions to its end, and verifies that the
+     *  last exception in the chain is the expected exception. This is needed
+     *  because writers catch and rethrow at multiple levels.
+     */
+    protected void assertUltimateCause(String message, Throwable expectedCause, Throwable ex)
+    {
+        while (ex.getCause() != null)
+        {
+            ex = ex.getCause();
+        }
+        assertSame(message, expectedCause, ex);
     }
 
 //----------------------------------------------------------------------------

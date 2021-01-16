@@ -14,47 +14,116 @@
 
 package com.kdgregory.logging.aws.cloudwatch;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
+
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
-import com.kdgregory.logging.common.util.DiscardAction;
+
 
 /**
- *  Holds configuration that is passed to the writer factory.
+ *  Configuration for CloudWatchLogWriter.
  */
 public class CloudWatchWriterConfig
-extends AbstractWriterConfig
+extends AbstractWriterConfig<CloudWatchWriterConfig>
 {
-    public String logGroupName;
-    public String logStreamName;
-    public Integer retentionPeriod;
-    public boolean dedicatedWriter;
+    private String  logGroupName;
+    private String  logStreamName;
+    private Integer retentionPeriod;
+    private boolean dedicatedWriter;
+
+
+    public String getLogGroupName()
+    {
+        return logGroupName;
+    }
+
+    public CloudWatchWriterConfig setLogGroupName(String value)
+    {
+        logGroupName = value;
+        return this;
+    }
+
+
+    public String getLogStreamName()
+    {
+        return logStreamName;
+    }
+
+    public CloudWatchWriterConfig setLogStreamName(String value)
+    {
+        logStreamName = value;
+        return this;
+    }
+
+
+    public Integer getRetentionPeriod()
+    {
+        return retentionPeriod;
+    }
+
+    public CloudWatchWriterConfig setRetentionPeriod(Integer value)
+    {
+        retentionPeriod = value;
+        return this;
+    }
+
+
+    public boolean getDedicatedWriter()
+    {
+        return dedicatedWriter;
+    }
+
+    public CloudWatchWriterConfig setDedicatedWriter(boolean value)
+    {
+        dedicatedWriter = value;
+        return this;
+    }
 
 
     /**
-     *  @param actualLogGroup           Name of the log group, with all substitutions applied.
-     *  @param actualLogStream          Name of the log stream, with all substitutions applied.
-     *  @param retentionPeriod          A non-default retention period to use when creating log group.
-     *  @param dedicatedWriter          Indicates whether the stream will only be written by this writer.
-     *  @param truncateOversizeMessages If true, messages that are too large for the service are
-     *                                  truncated to fit; if false, they are discarded.
-     *  @param batchDelay               Number of milliseconds to wait after receiving first
-     *                                  message in batch.
-     *  @param discardThreshold         Maximum number of messages to retain if unable to send.
-     *  @param discardAction            What to do with unsent messages over the threshold.
-     *  @param clientFactoryMethod      Optional: fully-qualified name of a static method to create client.
-     *  @param assumedRole              Optional: name or ARN of a role to assume when creating client.
-     *  @param clientRegion             Optional: explicit region for client (used with ctor and SDK builder).
-     *  @param clientEndpoint           Optional: explicit endpoint for client (only used with constructors).
+     *  Validates the configuration, returning a list of any validation errors.
+     *  An empty list indicates a valid config.
      */
-    public CloudWatchWriterConfig(
-        String actualLogGroup, String actualLogStream, Integer retentionPeriod, boolean dedicatedWriter,
-        boolean truncateOversizeMessages, long batchDelay, int discardThreshold, DiscardAction discardAction,
-        String clientFactoryMethod, String assumedRole, String clientRegion, String clientEndpoint)
+    public List<String> validate()
     {
-        super(truncateOversizeMessages, batchDelay, discardThreshold, discardAction, clientFactoryMethod, assumedRole, clientRegion, clientEndpoint);
+        List<String> result = new ArrayList<>();
 
-        this.logGroupName = actualLogGroup;
-        this.logStreamName = actualLogStream;
-        this.retentionPeriod = retentionPeriod;
-        this.dedicatedWriter = dedicatedWriter;
+        if (logGroupName == null)
+        {
+            result.add("missing log group name");
+        }
+        else if (logGroupName.isEmpty())
+        {
+            result.add("blank log group name");
+        }
+        else if (! Pattern.matches(CloudWatchConstants.ALLOWED_GROUP_NAME_REGEX, logGroupName))
+        {
+            result.add("invalid log group name: " + logGroupName);
+        }
+
+        if (logStreamName == null)
+        {
+            result.add("missing log stream name");
+        }
+        else if (logStreamName.isEmpty())
+        {
+            result.add("blank log stream name");
+        }
+        else if (! Pattern.matches(CloudWatchConstants.ALLOWED_STREAM_NAME_REGEX, logStreamName))
+        {
+            result.add("invalid log stream name: " + logStreamName);
+        }
+
+        try
+        {
+            CloudWatchConstants.validateRetentionPeriod(retentionPeriod);
+        }
+        catch (IllegalArgumentException ex)
+        {
+            result.add(ex.getMessage());
+        }
+
+        return result;
     }
 }

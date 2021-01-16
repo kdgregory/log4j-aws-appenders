@@ -4,7 +4,6 @@ The CloudWatch appender provides the following features:
 
 * User-specified log-group and log-stream names.
 * Substitution variables to customize log-group and log-stream names.
-* Auto-rotation of log streams, based either on a time delay (specified interval, hourly, daily) or number of messages.
 * Configurable discard in case of network connectivity issues.
 
 
@@ -17,16 +16,13 @@ Name                        | Description
 `logGroup`                  | Name of the CloudWatch log group where messages are sent; may use [substitutions](substitutions.md). If this group doesn't exist it will be created. No default.
 `logStream`                 | Name of the CloudWatch log stream where messages are sent; may use [substitutions](substitutions.md). If this stream doesn't exist it will be created. Defaults to `{startupTimestamp}`.
 `retentionPeriod`           | (optional) Specifies a non-default retention period for created CloudWatch log groups.
-`dedicatedWriter`           | If `true`, the appender assumes that it will be the only writer to the log stream, and will not retrieve a sequence token before each write. Defaults to `false` for legacy behavior. See [below](#invalidsequencetokenexception-and-logstream-throttling) for more information.
-`rotationMode`              | Controls whether auto-rotation is enabled. Values are `none`, `count`, `interval`, `hourly`, and `daily`; default is `none`. See below for more information.
-`rotationInterval`          | Used only for `count` and `interval` rotation modes: for the former, the number of messages, and for the latter, the number of milliseconds between rotations.
-`sequence`                  | A value that is incremented each time the stream is rotated. Defaults to 0.
+`dedicatedWriter`           | If `true` (the default), the appender assumes that it will be the only writer to the log stream, and will not retrieve a sequence token before each write. Defaults to `false` for legacy behavior. See [below](#invalidsequencetokenexception-and-logstream-throttling) for more information.
 `synchronous`               | If `true`, the appender will operate in [synchronous mode](design.md#synchronous-mode), sending messages from the invoking thread on every call to `append()`.
 `batchDelay`                | The time, in milliseconds, that the writer will wait to accumulate messages for a batch. See the [design doc](design.md#message-batches) for more information.
 `truncateOversizeMessages`  | If `true` (the default), truncate any messages that are too large for CloudWatch; if `false`, discard them. See [below](#oversize-messages) for more information.
 `discardThreshold`          | The threshold count for discarding messages; default is 10,000. See the [design doc](design.md#message-discard) for more information.
 `discardAction`             | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
-`useShutdownHook`           | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default, set to `false` to disable. Ignored for Log4J2. See [docs](design.md#shutdown-hooks) for more information.
+`useShutdownHook`           | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default, set to `false` to disable. Ignored for Log4J2. See [docs](design.md#shutdown) for more information.
 
 
 ### Example: Log4J 1.x
@@ -34,8 +30,7 @@ Name                        | Description
 ```
 log4j.appender.cloudwatch=com.kdgregory.log4j.aws.CloudWatchAppender
 log4j.appender.cloudwatch.logGroup={env:APP_NAME}-{sysprop:deployment:dev}
-log4j.appender.cloudwatch.logStream={hostname}-{startupTimestamp}-{sequence}
-log4j.appender.cloudwatch.rotationMode=daily
+log4j.appender.cloudwatch.logStream={hostname}-{startupTimestamp}
 log4j.appender.cloudwatch.dedicatedWriter=true
 
 log4j.appender.cloudwatch.layout=org.apache.log4j.PatternLayout
@@ -51,8 +46,7 @@ in addition to library-provided substitutions.
 ```
 <CloudWatchAppender name="CLOUDWATCH">
     <logGroup>${env:APP_NAME}-${sys:deployment:-dev}</logGroup>
-    <logStream>{hostname}-{startupTimestamp}-{sequence}</logStream>
-    <rotationMode>daily</rotationMode>
+    <logStream>{hostname}-{startupTimestamp}</logStream>
     <dedicatedWriter>true</dedicatedWriter>
     <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %p - %c - %m" />
 </CloudWatchAppender>
@@ -64,8 +58,7 @@ in addition to library-provided substitutions.
 ```
 <appender name="CLOUDWATCH" class="com.kdgregory.logback.aws.CloudWatchAppender">
     <logGroup>{env:APP_NAME}-{sysprop:deployment:dev}</logGroup>
-    <logStream>{hostname}-{startupTimestamp}-{sequence}</logStream>
-    <rotationMode>daily</rotationMode>
+    <logStream>{hostname}-{startupTimestamp}</logStream>
     <dedicatedWriter>true</dedicatedWriter>
     <layout class="ch.qos.logback.classic.PatternLayout">
         <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level - %logger{36} - %msg%n</pattern>
@@ -113,42 +106,6 @@ If you don't have permission to set the retention policy, that will also be logg
 an error and the setting ignored.
 
 
-## LogStream rotation
-
-While CloudWatch allows you to select arbitrary date ranges when viewing log messages, it's often easier
-to drill down to events if there's a separate log stream organized by time range. The `rotationMode`
-parameter, in concert with `rotationInterval`, controls how the appender switches to a new stream:
-
-* `none` (default)
-
-  Automatic log rotation is disabled, although you can explicitly call the appender's `rotate()` method.
-
-* `count`
-
-  The log will be rotated after a specified number of messages have been written. This is intended
-  primarily for testing, although there may be cases where you want to have relatively equally-sized
-  chunks of log data (for example, if you were to export to S3 and analyze with Hadoop). If you use
-  this mode, you should use a `timestamp` or `sequence` substitution in the log stream name.
-
-* `interval`
-
-  The log is rotated after a specific interval, specified in milliseconds. This is probably not that
-  useful, as you'll end up with arbitrary log intervals based on when the server was started. If you
-  use this mode, you should use a `timestamp` substitution in the log stream name.
-
-* `hourly`
-
-  The log is rotated at the top of each hour. It is possible that some log messages will be written to
-  the next hour's log, due message batching. If you use this mode, you should use the `hourlyTimestamp`
-  substitution in your stream name.
-
-* `daily`
-
-  The log is rotated at midnight UTC. As with hourly rotation, it is possible that some log messages
-  will be written to the next day's log. If you use this mode, you should use the `date` or `timestamp`
-  substitutions in your log stream name.
-
-
 ## InvalidSequenceTokenException and Logstream Throttling
 
 When writing a batch of events to CloudWatch Logs, you must provide a sequence token. You
@@ -163,18 +120,19 @@ you _did_ give each appender its own stream, this was unnecessary, and could res
 especially when deploying a large cluster.
 
 To resolve that problem, the `dedicatedWriter` configuration parameter was introduced in the
-2.2.2 release. If set to `true`, it tells the appender to retrieve the sequence token from the
-previous request, rather than describing the stream for each write.
+2.2.2 release. It defaults to `true`, which tells the appender to cache the sequence token from
+the previous request, rather than describing the stream prior to each write.
 
-> This parameter defaults to `false` for compatibility with previous releases. You should 
-  set it to `true` if you can.
+> The appender will continue to work properly with this default if there are multiple writers:
+  it will try to write using the cached sequence token (which fails), then retrieve the current
+  sequence token and retry.
 
 If you do have multiple writers, however, the two-step process is still necessary. And it has
 the possibility of a race condition: if two appenders write batches at the same time they might
 both get the same sequence token, but only one of the writes will succeed. As with any batch-level
 error, the appender will try again; there will be no message loss unless the error happens so
 frequently that the appender fills its message queue (which is extremely unlikely, as the chance
-of winning this race is equally likely for all appenders).
+of winning this race is the same for all appenders).
 
 In releases prior to 2.0.1, the appender would report this situation as an error, which was
 distracting. Retries are now transparent, unless they happen repeatedly, in which case they'll

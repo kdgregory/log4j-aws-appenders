@@ -15,7 +15,6 @@
 package com.kdgregory.logging.testhelpers.sns;
 
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
-import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.testhelpers.MockLogWriter;
 
 
@@ -35,20 +34,5 @@ extends MockLogWriter<SNSWriterConfig>
     public void setBatchDelay(long value)
     {
         throw new IllegalStateException("this function should never be called");
-    }
-
-
-    @Override
-    public boolean isMessageTooLarge(LogMessage message)
-    {
-        // there are no tests for this, so we'll pretend everything's great
-        return false;
-    }
-
-    // this doesn't actually test that the real writer would be updated, just
-    // that the appender tried to
-    public void setSubject(String subject)
-    {
-        config.subject = subject;
     }
 }

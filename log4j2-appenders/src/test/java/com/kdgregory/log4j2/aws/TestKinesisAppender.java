@@ -26,6 +26,10 @@ import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriter;
 
 
+/**
+ *  These tests exercise appender logic specific to KinesisAppender, using a
+ *  mock log-writer.
+ */
 public class TestKinesisAppender
 extends AbstractUnitTest<TestableKinesisAppender>
 {
@@ -150,16 +154,16 @@ extends AbstractUnitTest<TestableKinesisAppender>
 
         MockKinesisWriter writer = appender.getMockWriter();
 
-        assertEquals("writer stream name",              "MyStream-example",                 writer.config.streamName);
-        assertRegex("writer partition key",             "20\\d{6}-\\{bogus}",               writer.config.partitionKey);
-        assertTrue("writer autoCreate",                                                     writer.config.autoCreate);
-        assertEquals("writer shardCount",               7,                                  writer.config.shardCount);
-        assertEquals("writer retentionPeriod",          Integer.valueOf(48),                writer.config.retentionPeriod);
-        assertEquals("writer batch delay",              1234L,                              writer.config.batchDelay);
-        assertEquals("writer discard threshold",        54321,                              writer.config.discardThreshold);
-        assertEquals("writer discard action",           DiscardAction.newest,               writer.config.discardAction);
-        assertEquals("writer client factory method",    "com.example.Foo.bar",              writer.config.clientFactoryMethod);
-        assertEquals("writer client endpoint",          "kinesis.us-west-1.amazonaws.com",  writer.config.clientEndpoint);
+        assertEquals("writer stream name",              "MyStream-example",                 writer.config.getStreamName());
+        assertRegex("writer partition key",             "20\\d{6}-\\{bogus}",               writer.config.getPartitionKey());
+        assertTrue("writer autoCreate",                                                     writer.config.getAutoCreate());
+        assertEquals("writer shardCount",               7,                                  writer.config.getShardCount());
+        assertEquals("writer retentionPeriod",          Integer.valueOf(48),                writer.config.getRetentionPeriod());
+        assertEquals("writer batch delay",              1234L,                              writer.config.getBatchDelay());
+        assertEquals("writer discard threshold",        54321,                              writer.config.getDiscardThreshold());
+        assertEquals("writer discard action",           DiscardAction.newest,               writer.config.getDiscardAction());
+        assertEquals("writer client factory method",    "com.example.Foo.bar",              writer.config.getClientFactoryMethod());
+        assertEquals("writer client endpoint",          "kinesis.us-west-1.amazonaws.com",  writer.config.getClientEndpoint());
     }
 
 
@@ -178,9 +182,23 @@ extends AbstractUnitTest<TestableKinesisAppender>
 
         MockKinesisWriter writer = appender.getMockWriter();
 
-        assertEquals("writer log group name",       "example",                  writer.config.streamName);
-        assertRegex("writer log stream name",       "[0-9]{1,5}-[0-9]{1,5}",    writer.config.partitionKey);
+        assertEquals("writer log group name",       "example",                  writer.config.getStreamName());
+        assertRegex("writer log stream name",       "[0-9]{1,5}-[0-9]{1,5}",    writer.config.getPartitionKey());
 
         // we'll assume everything else was set as in above test
+    }
+
+
+    @Test
+    public void testWriterInitializationSynchronousMode() throws Exception
+    {
+        initialize("testWriterInitializationSynchronousMode");
+
+        logger.debug("this triggers writer creation");
+
+        MockKinesisWriter writer = appender.getMockWriter();
+
+        assertTrue("synchronous mode",                                                      writer.config.getSynchronousMode());
+        assertEquals("batch delay",                     0L,                                 writer.config.getBatchDelay());
     }
 }

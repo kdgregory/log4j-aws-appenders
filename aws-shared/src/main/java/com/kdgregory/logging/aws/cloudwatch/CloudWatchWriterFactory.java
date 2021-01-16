@@ -14,16 +14,16 @@
 
 package com.kdgregory.logging.aws.cloudwatch;
 
-import com.amazonaws.services.logs.AWSLogs;
-
-import com.kdgregory.logging.aws.common.DefaultClientFactory;
+import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
+import com.kdgregory.logging.aws.internal.facade.FacadeFactory;
+import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
 
 
 /**
- *  Factory to create <code>CloudWatchLogWriter</code> instances.
+ *  Factory to create {@link SNSLogWriter} instances.
  */
 public class CloudWatchWriterFactory
 implements WriterFactory<CloudWatchWriterConfig,CloudWatchWriterStatistics>
@@ -33,8 +33,6 @@ implements WriterFactory<CloudWatchWriterConfig,CloudWatchWriterStatistics>
     {
         return new CloudWatchLogWriter(
                 config, stats, logger,
-                new DefaultClientFactory<AWSLogs>(
-                    AWSLogs.class, config.clientFactoryMethod, config.assumedRole,
-                    config.clientRegion, config.clientEndpoint, logger));
+                FacadeFactory.createFacade(CloudWatchFacade.class, config));
     }
 }

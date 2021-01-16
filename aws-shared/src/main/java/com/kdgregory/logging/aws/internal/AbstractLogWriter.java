@@ -20,7 +20,6 @@ import java.util.List;
 
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
-import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.common.util.InternalLogger;
 import com.kdgregory.logging.common.util.MessageQueue;
@@ -31,9 +30,8 @@ import com.kdgregory.logging.common.util.MessageQueue;
  */
 public abstract class AbstractLogWriter
 <
-    ConfigType extends AbstractWriterConfig,
-    StatsType extends AbstractWriterStatistics,
-    AWSClientType
+    ConfigType extends AbstractWriterConfig<ConfigType>,
+    StatsType extends AbstractWriterStatistics
 >
 implements LogWriter
 {
@@ -45,18 +43,9 @@ implements LogWriter
     protected StatsType stats;
     protected InternalLogger logger;
 
-    // this is provided to constructor, used only here
-    private ClientFactory<AWSClientType> clientFactory;
-
-    // this is assigned during initialization, used only by subclass
-    protected AWSClientType client;
-
-    // created during constructor or by initializat()
+    // created during initialization
     private MessageQueue messageQueue;
     private Thread dispatchThread;
-
-    // this will be set to true on either success or failure
-    private volatile boolean initializationComplete;
 
     // updated by stop()
     private volatile long shutdownTime = NEVER_SHUTDOWN;
@@ -65,18 +54,23 @@ implements LogWriter
     // can remove it as part of cleanup
     private volatile Thread shutdownHook;
 
-    // this is intended for testing
+    // intended for testing; will be set to true on either success or failure
+    private volatile boolean initializationComplete;
+
+    // exposed for testing
+    private volatile boolean isRunning;
+
+    // exposed for testing
     private volatile int batchCount;
 
 
-    public AbstractLogWriter(ConfigType config, StatsType appenderStats, InternalLogger logger, ClientFactory<AWSClientType> clientFactory)
+    public AbstractLogWriter(ConfigType config, StatsType appenderStats, InternalLogger logger)
     {
         this.config = config;
         this.stats = appenderStats;
         this.logger = logger;
-        this.clientFactory = clientFactory;
 
-        messageQueue = new MessageQueue(config.discardThreshold, config.discardAction);
+        messageQueue = new MessageQueue(config.getDiscardThreshold(), config.getDiscardAction());
         this.stats.setMessageQueue(messageQueue);
     }
 
@@ -85,11 +79,21 @@ implements LogWriter
 //----------------------------------------------------------------------------
 
     /**
+     *  Returns whether or not the writer is currently running. This is intended
+     *  for testing.
+     */
+    public boolean isRunning()
+    {
+        return isRunning;
+    }
+
+
+    /**
      *  Returns the current batch delay. This is intended for testing.
      */
     public long getBatchDelay()
     {
-        return config.batchDelay;
+        return config.getBatchDelay();
     }
 
 
@@ -111,8 +115,12 @@ implements LogWriter
         logger.debug("log writer starting (thread: " + Thread.currentThread().getName() + ")");
 
         if (! initialize())
+        {
+            logger.error("log writer failed to initialize (thread: " + Thread.currentThread().getName() + ")", null);
             return;
+        }
 
+        isRunning = true;
         logger.debug("log writer initialization complete (thread: " + Thread.currentThread().getName() + ")");
 
         // to avoid any mid-initialization interrupts, we don't set the thread until done
@@ -122,15 +130,24 @@ implements LogWriter
 
         // the do-while loop ensures that we attempt to process at least one batch, even if
         // the writer is started and immediately stopped; that's not likely to happen in the
-        // real world, but was causing problems with the smoketest (which is configured to
-        // quickly transition writers)
+        // real world, but was causing problems with the integration tests (which quickly
+        // transition writers)
 
         do
         {
-            processBatch(shutdownTime);
+            if (config.getSynchronousMode())
+            {
+                long timeToShutdown = shutdownTime - System.currentTimeMillis();
+                Utils.sleepQuietly(timeToShutdown);
+            }
+            else
+            {
+                processBatch(shutdownTime);
+            }
         } while (keepRunning());
 
         cleanup();
+        isRunning = false;
         logger.debug("log-writer shut down (thread: " + Thread.currentThread().getName()
                      + " (#" + Thread.currentThread().getId() + ")");
     }
@@ -142,7 +159,7 @@ implements LogWriter
     @Override
     public void setBatchDelay(long value)
     {
-        config.batchDelay = value;
+        config.setBatchDelay(value);
     }
 
 
@@ -161,64 +178,9 @@ implements LogWriter
 
 
     @Override
-    public void setShutdownHook(Thread shutdownHook)
+    public boolean isSynchronous()
     {
-        this.shutdownHook = shutdownHook;
-    }
-
-
-    @Override
-    public void addMessage(LogMessage message)
-    {
-        if (message.size() == 0)
-        {
-            logger.debug("discarded empty message");
-            return;
-        }
-
-        if (message.size() > maxMessageSize())
-        {
-            stats.incrementOversizeMessages();
-            if (config.truncateOversizeMessages)
-            {
-                logger.debug("truncated oversize message (" + message.size() + " bytes to " + maxMessageSize() + ")");
-                message.truncate(maxMessageSize());
-            }
-            else
-            {
-                logger.debug("discarded oversize message (" + message.size() + " bytes, limit is " + maxMessageSize() + ")");
-                return;
-            }
-        }
-
-        messageQueue.enqueue(message);
-    }
-
-
-    @Override
-    public boolean initialize()
-    {
-        boolean success = true;
-
-        try
-        {
-            client = clientFactory.createClient();
-            success = ensureDestinationAvailable();
-        }
-        catch (Exception ex)
-        {
-            reportError("exception in initializer", ex);
-            success = false;
-        }
-
-        if (!success)
-        {
-            messageQueue.setDiscardThreshold(0);
-            messageQueue.setDiscardAction(DiscardAction.oldest);
-        }
-
-        initializationComplete = true;
-        return success;
+        return config.getSynchronousMode();
     }
 
 
@@ -242,7 +204,120 @@ implements LogWriter
 
 
     @Override
-    public synchronized void processBatch(long waitUntil)
+    public void addMessage(LogMessage message)
+    {
+        if (message.size() == 0)
+        {
+            logger.warn("discarded empty message");
+            return;
+        }
+
+        if (message.size() > maxMessageSize())
+        {
+            stats.incrementOversizeMessages();
+            if (config.getTruncateOversizeMessages())
+            {
+                logger.warn("truncated oversize message (" + message.size() + " bytes to " + maxMessageSize() + ")");
+                message.truncate(maxMessageSize());
+            }
+            else
+            {
+                logger.warn("discarded oversize message (" + message.size() + " bytes, limit is " + maxMessageSize() + ")");
+                return;
+            }
+        }
+
+        messageQueue.enqueue(message);
+
+        if (config.getSynchronousMode())
+        {
+            processBatch(System.currentTimeMillis());
+        }
+    }
+
+
+    @Override
+    public void stop()
+    {
+        // if someone else already called stop then we shouldn't do it again
+        if (shutdownTime != NEVER_SHUTDOWN)
+            return;
+
+        shutdownTime = System.currentTimeMillis() + config.getBatchDelay();
+        if (dispatchThread != null)
+        {
+            dispatchThread.interrupt();
+        }
+    }
+
+
+    @Override
+    public void waitUntilStopped(long millisToWait)
+    {
+        try
+        {
+            if ((dispatchThread != null) && (dispatchThread != Thread.currentThread()))
+            {
+                dispatchThread.join(millisToWait);
+            }
+        }
+        catch (InterruptedException ignored)
+        {
+            // return silently
+        }
+    }
+
+//----------------------------------------------------------------------------
+//  Internals -- these are protected so they can be overridden for testing
+//----------------------------------------------------------------------------
+
+    /**
+     *  A check for whether we should keep running: either we haven't been shut
+     *  down or there's still messages to process
+     */
+    protected boolean keepRunning()
+    {
+        return shutdownTime > System.currentTimeMillis()
+            || ! messageQueue.isEmpty();
+    }
+
+
+    /**
+     *  Called before the main loop, to ensure that the writer is able to perform
+     *  its job. If unable, reconfigures the writer to discard all message.
+     */
+    protected boolean initialize()
+    {
+        boolean success = true;
+
+        try
+        {
+            success = ensureDestinationAvailable();
+            optAddShutdownHook();
+        }
+        catch (Exception ex)
+        {
+            reportError("exception in initializer", ex);
+            success = false;
+        }
+
+        if (! success)
+        {
+            messageQueue.setDiscardThreshold(0);
+            messageQueue.setDiscardAction(DiscardAction.oldest);
+        }
+
+        initializationComplete = true;
+        return success;
+    }
+
+
+    /**
+     *  Called from the main loop to build a batch of messages and send them.
+     *  Waits until the specified timestamp for the first message, then waits
+     *  for the batch delay before passing the messages to {@link #sendBatch}.
+     */
+    protected synchronized void processBatch(long waitUntil)
     {
         List<LogMessage> currentBatch = buildBatch(waitUntil);
         if (currentBatch.size() > 0)
@@ -256,76 +331,6 @@ implements LogWriter
             stats.setMessagesSentLastBatch(currentBatch.size() - failures.size());
             stats.updateMessagesSent(currentBatch.size() - failures.size());
         }
-    }
-
-
-    @Override
-    public void stop()
-    {
-        // if someone else already called stop then we shouldn't do it again
-        if (shutdownTime != NEVER_SHUTDOWN)
-            return;
-
-        shutdownTime = System.currentTimeMillis() + config.batchDelay;
-        if (dispatchThread != null)
-        {
-            dispatchThread.interrupt();
-        }
-    }
-
-
-    @Override
-    public void waitUntilStopped(long millisToWait)
-    {
-        try
-        {
-            // this test avoids hung tests
-            if ((dispatchThread != null) && (dispatchThread != Thread.currentThread()))
-            {
-                dispatchThread.join(millisToWait);
-            }
-        }
-        catch (InterruptedException ignored)
-        {
-            // return silently
-        }
-    }
-
-
-    @Override
-    public void cleanup()
-    {
-        stopAWSClient();
-
-        if (shutdownHook != null)
-        {
-            try
-            {
-                Runtime.getRuntime().removeShutdownHook(shutdownHook);
-            }
-            catch (Exception ignored)
-            {
-                // we expect an IllegalThreadStateException
-            }
-            finally
-            {
-                shutdownHook = null;
-            }
-        }
-    }
-
-//----------------------------------------------------------------------------
-//  Internals
-//----------------------------------------------------------------------------
-
-    /**
-     *  A check for whether we should keep running: either we haven't been shut
-     *  down or there's still messages to process
-     */
-    private boolean keepRunning()
-    {
-        return shutdownTime > System.currentTimeMillis()
-            || ! messageQueue.isEmpty();
     }
 
 
@@ -348,7 +353,7 @@ implements LogWriter
         if (message == null)
             return batch;
 
-        long batchTimeout = System.currentTimeMillis() + config.batchDelay;
+        long batchTimeout = System.currentTimeMillis() + config.getBatchDelay();
         int batchBytes = 0;
         int batchMsgs = 0;
         while (message != null)
@@ -379,7 +384,7 @@ implements LogWriter
      */
     private LogMessage waitForMessage(long waitUntil)
     {
-        long waitTime = waitUntil - System.currentTimeMillis();
+        long waitTime = Math.max(1, waitUntil - System.currentTimeMillis());
         return messageQueue.dequeue(waitTime);
     }
 
@@ -394,6 +399,65 @@ implements LogWriter
         for (LogMessage message : messages)
         {
             messageQueue.requeue(message);
+        }
+    }
+
+
+    /**
+     *  Called after the main loop exits, to shut down the AWS client. Also removes
+     *  any shutdown hook (this is only relevant when the logging framework has been
+     *  shut down before the JVM).
+     */
+    private void cleanup()
+    {
+        stopAWSClient();
+
+        if (shutdownHook != null)
+        {
+            try
+            {
+                Runtime.getRuntime().removeShutdownHook(shutdownHook);
+            }
+            catch (Exception ignored)
+            {
+                // we expect an IllegalThreadStateException
+            }
+            finally
+            {
+                shutdownHook = null;
+            }
+        }
+    }
+
+
+    /**
+     *  If the writer is configured to use shutdown hooks, adds one.
+     */
+    private void optAddShutdownHook()
+    {
+        if (config.getUseShutdownHook())
+        {
+            shutdownHook = new Thread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    logger.debug("shutdown hook invoked");
+                    setBatchDelay(1);
+                    AbstractLogWriter.this.stop();
+                    try
+                    {
+                        if (dispatchThread != null)
+                            dispatchThread.join();
+                    }
+                    catch (InterruptedException e)
+                    {
+                        // we've done our best, que sera sera
+                    }
+                }
+            });
+            shutdownHook.setName(Thread.currentThread().getName() + "-shutdownHook");
+            Runtime.getRuntime().addShutdownHook(shutdownHook);
         }
     }
 
@@ -445,9 +509,9 @@ implements LogWriter
 
     /**
      *  Reports an operational error to both the internal logger and the stats
-     *  bean..
+     *  bean.
      */
-    protected void reportError(String message, Exception exception)
+    protected void reportError(String message, Throwable exception)
     {
         logger.error(message, exception);
         stats.setLastError(message, exception);

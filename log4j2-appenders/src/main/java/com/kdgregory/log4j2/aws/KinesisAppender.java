@@ -72,7 +72,6 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *      <th> shardCount
  *      <td> For auto-created streams, the number of shards in the stream.
  *
- *
  *  <tr VALIGN="top">
  *      <th> retentionPeriod
  *      <td> For auto-created streams, the number of hours that messages will be
@@ -142,29 +141,23 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *      <th> clientRegion
  *      <td> Specifies a non-default service region. This setting is ignored if you
  *           use a client factory.
- *           <p>
- *           Note that the region must be supported by the current SDK version.
  *
  *  <tr VALIGN="top">
  *      <th> clientEndpoint
- *      <td> Specifies a non-default service endpoint. This is intended for use with
- *           older AWS SDK versions that do not provide client factories and default
- *           to us-east-1 for constructed clients, although it can be used for newer
- *           releases when you want to override the default region provider. This
- *           setting is ignored if you use a client factory.
+ *      <td> Specifies a non-default service endpoint. Typically used when running in
+ *           a VPC, when the normal endpoint is not available.
  *
  *  <tr VALIGN="top">
  *      <th> useShutdownHook
- *      <td> Controls whether the appender uses a shutdown hook to attempt to process
- *           outstanding messages when the JVM exits. This is true by default; set to
- *           false to disable.
+ *      <td> This exists for consistency with other appenders but ignored; Log4J2 provides 
+ *           its own shutdown hooks.
  *  </table>
  *
  *  @see <a href="https://github.com/kdgregory/log4j-aws-appenders/blob/master/docs/kinesis.md">Appender documentation</a>
  */
 @Plugin(name = "KinesisAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class KinesisAppender
-extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWriterStatisticsMXBean,KinesisWriterConfig>
+extends AbstractAppender<KinesisWriterConfig,KinesisAppenderConfig,KinesisWriterStatistics,KinesisWriterStatisticsMXBean>
 {
 
 //----------------------------------------------------------------------------
@@ -338,34 +331,23 @@ extends AbstractAppender<KinesisAppenderConfig,KinesisWriterStatistics,KinesisWr
     }
 
 //----------------------------------------------------------------------------
-//  Additional public API
-//----------------------------------------------------------------------------
-
-
-//----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
 
     @Override
     protected KinesisWriterConfig generateWriterConfig()
     {
-        StrSubstitutor l4jsubs    = config.getConfiguration().getStrSubstitutor();
-        Substitutions subs        = new Substitutions(new Date(), sequence.get());
+        StrSubstitutor l4jsubs    = appenderConfig.getConfiguration().getStrSubstitutor();
+        Substitutions subs        = new Substitutions(new Date(), 0);
 
-        String actualStreamName   = subs.perform(l4jsubs.replace(config.getStreamName()));
-        String actualPartitionKey = subs.perform(l4jsubs.replace(config.getPartitionKey()));
+        String actualStreamName   = subs.perform(l4jsubs.replace(appenderConfig.getStreamName()));
+        String actualPartitionKey = subs.perform(l4jsubs.replace(appenderConfig.getPartitionKey()));
 
-        return new KinesisWriterConfig(
-            actualStreamName, actualPartitionKey,
-            config.getAutoCreate(), config.getShardCount(), config.getRetentionPeriod(),
-            false, config.getBatchDelay(), config.getDiscardThreshold(), discardAction,
-            config.getClientFactory(), config.getAssumedRole(), config.getClientRegion(), config.getClientEndpoint());
-    }
-
-
-    @Override
-    protected boolean shouldRotate(long now)
-    {
-        return false;
+        return new KinesisWriterConfig()
+               .setStreamName(actualStreamName)
+               .setPartitionKey(actualPartitionKey)
+               .setAutoCreate(appenderConfig.getAutoCreate())
+               .setShardCount(appenderConfig.getShardCount())
+               .setRetentionPeriod(appenderConfig.getRetentionPeriod());
     }
 }

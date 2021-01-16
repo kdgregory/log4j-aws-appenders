@@ -27,6 +27,7 @@ import static org.junit.Assert.*;
 import net.sf.kdgcommons.lang.StringUtil;
 
 import com.kdgregory.logging.aws.common.Substitutions;
+import com.kdgregory.logging.testhelpers.MockInfoFacade;
 
 
 /**
@@ -39,10 +40,14 @@ public class TestSubstitutions
     private static Date TEST_DATE = new Date(1496082062000L);    // Mon May 29 14:21:02 EDT 2017
 
     // these are populated by @BeforeClass, using independent implementation
-    // of the logic in Substittions
+    // of the logic in Substitutions
     private static String pid;
     private static String hostname;
     private static String startupTimestamp;
+
+    // this is initialized for every test, can be configured however you want
+    private MockInfoFacade mockInfoFacade = new MockInfoFacade();
+
 
     @BeforeClass
     public static void initExpectedValues()
@@ -62,7 +67,7 @@ public class TestSubstitutions
     @Test
     public void testNullInput() throws Exception
     {
-        Substitutions subs = new Substitutions(TEST_DATE, 0);
+        Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
         assertEquals(null, subs.perform(null));
     }
 
@@ -70,7 +75,7 @@ public class TestSubstitutions
     @Test
     public void testEmptyInput() throws Exception
     {
-        Substitutions subs = new Substitutions(TEST_DATE, 0);
+        Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
         assertEquals("", subs.perform(""));
     }
 
@@ -78,7 +83,7 @@ public class TestSubstitutions
     @Test
     public void testDate() throws Exception
     {
-        Substitutions subs = new Substitutions(TEST_DATE, 0);
+        Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
 
         assertEquals("20170529", subs.perform("{date}"));
     }
@@ -87,7 +92,7 @@ public class TestSubstitutions
     @Test
     public void testTimestamp() throws Exception
     {
-        Substitutions subs = new Substitutions(TEST_DATE, 0);
+        Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
 
         assertEquals("20170529182102", subs.perform("{timestamp}"));
     }
@@ -96,7 +101,7 @@ public class TestSubstitutions
     @Test
     public void testHourlyTimestamp() throws Exception
     {
-        Substitutions subs = new Substitutions(TEST_DATE, 0);
+        Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
 
         assertEquals("20170529180000", subs.perform("{hourlyTimestamp}"));
     }
@@ -105,7 +110,7 @@ public class TestSubstitutions
     @Test
     public void testStartupTimestamp() throws Exception
     {
-        Substitutions subs = new Substitutions(TEST_DATE, 0);
+        Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
 
         assertEquals(startupTimestamp, subs.perform("{startupTimestamp}"));
     }
@@ -114,7 +119,7 @@ public class TestSubstitutions
     @Test
     public void testPid() throws Exception
     {
-        Substitutions subs = new Substitutions(TEST_DATE, 0);
+        Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
 
         assertEquals(pid, subs.perform("{pid}"));
     }
@@ -123,7 +128,7 @@ public class TestSubstitutions
     @Test
     public void testHostname() throws Exception
     {
-        Substitutions subs = new Substitutions(TEST_DATE, 0);
+        Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
 
         assertEquals(hostname, subs.perform("{hostname}"));
     }
@@ -133,7 +138,7 @@ public class TestSubstitutions
     // variables defined; if not, feel free to @Ignore
     @Test
     public void testEnvar() throws Exception  {
-        Substitutions subs = new Substitutions(TEST_DATE, 0);
+        Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
 
         // happy paths
         assertEquals(System.getenv("HOME"),                         subs.perform("{env:HOME}"));
@@ -156,7 +161,7 @@ public class TestSubstitutions
         String value2 = "this is another test";
         System.setProperty("TestSubstitutions.testSysprop-2", value2);
 
-        Substitutions subs = new Substitutions(TEST_DATE, 0);
+        Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
 
         // happy paths
         assertEquals(value1,                        subs.perform("{sysprop:TestSubstitutions.testSysprop-1}"));
@@ -174,15 +179,56 @@ public class TestSubstitutions
 
     @Test
     public void testSequence() throws Exception  {
-        Substitutions subs = new Substitutions(TEST_DATE, 123);
+        Substitutions subs = new Substitutions(TEST_DATE, 123, mockInfoFacade);
         assertEquals("123", subs.perform("{sequence}"));
+    }
+
+
+    @Test
+    public void testAccountId() throws Exception
+    {
+        mockInfoFacade.accountId = "123456789012";
+
+        Substitutions subs = new Substitutions(TEST_DATE, 123, mockInfoFacade);
+        assertEquals("123456789012", subs.perform("{aws:accountId}"));
+    }
+
+
+    @Test
+    public void testEC2InstanceId() throws Exception
+    {
+        mockInfoFacade.ec2InstanceId = "i-12345678";
+
+        Substitutions subs = new Substitutions(TEST_DATE, 123, mockInfoFacade);
+        assertEquals("i-12345678", subs.perform("{ec2:instanceId}"));
+    }
+
+
+    @Test
+    public void testEC2Region() throws Exception
+    {
+        mockInfoFacade.ec2Region = "us-east-1";
+
+        Substitutions subs = new Substitutions(TEST_DATE, 123, mockInfoFacade);
+        assertEquals("us-east-1", subs.perform("{ec2:region}"));
+    }
+
+
+    @Test
+    public void testParameterStore() throws Exception
+    {
+        mockInfoFacade.parameterValues.put("foo",   "bar");
+        mockInfoFacade.parameterValues.put("argle", "bargle");
+
+        Substitutions subs = new Substitutions(TEST_DATE, 123, mockInfoFacade);
+        assertEquals("bar bargle {ssm:biff} baz", subs.perform("{ssm:foo} {ssm:argle} {ssm:biff} {ssm:biff:baz}"));
     }
 
 
     @Test
     public void testBogusSubstitution() throws Exception
     {
-        Substitutions subs = new Substitutions(TEST_DATE, 0);
+        Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
 
         assertEquals("{bogus}", subs.perform("{bogus}"));
     }
@@ -191,7 +237,7 @@ public class TestSubstitutions
     @Test
     public void testUnterminatedSubstitution() throws Exception
     {
-        Substitutions subs = new Substitutions(TEST_DATE, 0);
+        Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
 
         assertEquals("{date", subs.perform("{date"));
     }
@@ -200,8 +246,18 @@ public class TestSubstitutions
     @Test
     public void testMultipleSubstitution() throws Exception
     {
-        Substitutions subs = new Substitutions(TEST_DATE, 0);
+        Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
 
-        assertEquals("x20170529x20170529x", subs.perform("x{date}x{date}x"));
+        assertEquals(" 20170529 20170529 ", subs.perform(" {date} {date} "));
+    }
+
+
+    @Test
+    public void testSubstitutionAfterFailure() throws Exception
+    {
+        Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
+
+        // was succeeding if the bogus substitution was the first thing
+        assertEquals(" 20170529 {bogus} 20170529", subs.perform(" {date} {bogus} {date}"));
     }
 }

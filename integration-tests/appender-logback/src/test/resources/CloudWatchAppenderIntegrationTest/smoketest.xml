@@ -11,12 +11,9 @@
             <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
         </layout>
         <logGroup>AppenderIntegrationTest-smoketest</logGroup>
-        <logStream>AppenderTest-{sequence}</logStream>
+        <logStream>AppenderTest</logStream>
         <retentionPeriod>7</retentionPeriod>
         <batchDelay>500</batchDelay>
-        <rotationMode>count</rotationMode>
-        <rotationInterval>333</rotationInterval>
-        <sequence>1</sequence>
     </appender>
 
     <root level="info">

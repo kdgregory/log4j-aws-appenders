@@ -31,6 +31,12 @@ public class SNSConstants
 
 
     /**
+     *  Validation regex for a topic ARN.
+     */
+    public final static String TOPIC_ARN_REGEX = "arn:aws[-a-z]*:sns:[-a-z]*-[0-9]:\\d{12}:" + TOPIC_NAME_REGEX;
+
+
+    /**
      *  Maximum number of bytes in a for a single message.
      */
     public final static int MAX_MESSAGE_BYTES = 256 * 1024;

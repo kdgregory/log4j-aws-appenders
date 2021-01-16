@@ -25,7 +25,6 @@ import org.w3c.dom.Document;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -37,7 +36,6 @@ import org.apache.log4j.WriterAppender;
 import org.apache.log4j.helpers.LogLog;
 
 import net.sf.kdgcommons.lang.StringUtil;
-import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import net.sf.practicalxml.converter.JsonConverter;
 import net.sf.practicalxml.junit.DomAsserts;
@@ -269,39 +267,6 @@ public class TestJsonLayout
         assertCommonElements(TEST_MESSAGE);
 
         DomAsserts.assertCount("no hostname element", 0, dom, new XPathWrapper("/data/hostname"));
-    }
-
-
-    @Test
-    @Ignore("this test should only be run on an EC2 instance")
-    public void testInstanceId() throws Exception
-    {
-        initialize("testInstanceId");
-
-        logger.debug(TEST_MESSAGE);
-
-        captureLoggingOutputAndParse();
-        assertCommonElements(TEST_MESSAGE);
-
-        String instanceId = new XPathWrapper("/data/instanceId").evaluateAsString(dom);
-        assertTrue("instance ID starts with i- (was: " + instanceId + ")",
-                   instanceId.startsWith("i-"));
-    }
-
-
-    @Test
-    @Ignore("this test should only be run if you have AWS credentials")
-    public void testAccountId() throws Exception
-    {
-        initialize("testAccountId");
-
-        logger.debug(TEST_MESSAGE);
-
-        captureLoggingOutputAndParse();
-        assertCommonElements(TEST_MESSAGE);
-
-        String accountId = new XPathWrapper("/data/accountId").evaluateAsString(dom);
-        assertRegex("\\d{12}", accountId);
     }
 
 

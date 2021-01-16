@@ -15,18 +15,17 @@
 package com.kdgregory.log4j.aws.internal;
 
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.spi.LoggingEvent;
 
+import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.factories.ThreadFactory;
 import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.DiscardAction;
-import com.kdgregory.logging.common.util.RotationMode;
 
 
 /**
@@ -36,14 +35,9 @@ import com.kdgregory.logging.common.util.RotationMode;
  *  log messages, and shut down. Most of the code to do that lives here, with a few
  *  hooks that are implemented in the appender proper.
  *  <p>
- *  Some behaviors, such as log rotation, are implemented here even if they are not
- *  supported by all appenders. The appenders that do not support those behaviors are
- *  responsible for disabling them. For example, an appender that does not support log
- *  rotation should throw if {@link #setRotationMode} is called.
- *  <p>
  *  Most of the member variables defined by this class are protected. This is intended
- *  to support testing. If you decide to subclass and access those variables, well,
- *  this is an internal class: they may go away.
+ *  to support testing. If you decide to subclass and access those variables, remember
+ *  that this is an internal class: they may go away.
  *  <p>
  *  Note: Log4J synchronizes calls to appenders by logger. In typical usage, this means
  *  that all calls will be synchronized and we shouldn't synchronize outself. However,
@@ -51,7 +45,12 @@ import com.kdgregory.logging.common.util.RotationMode;
  *  but do not share an appender list. For that reason, we use internal synchronization
  *  of critical sections.
  */
-public abstract class AbstractAppender<WriterConfigType,AppenderStatsType extends AbstractWriterStatistics,AppenderStatsMXBeanType>
+public abstract class AbstractAppender
+    <
+    WriterConfigType extends AbstractWriterConfig<WriterConfigType>,
+    AppenderStatsType extends AbstractWriterStatistics,
+    AppenderStatsMXBeanType
+    >
 extends AppenderSkeleton
 {
     // flag to indicate whether we need to run setup
@@ -86,36 +85,22 @@ extends AppenderSkeleton
 
     protected volatile LogWriter writer;
 
-    // the last time we rotated the writer
-
-    protected volatile long lastRotationTimestamp;
-
-    // number of messages since we last rotated the writer (used for count-based rotation)
-
-    protected volatile int messagesSinceLastRotation;
-
     // this object is used for synchronization of initialization and writer change
 
     private Object initializationLock = new Object();
 
-    // this object is used to synchronize the critical section in append()
-    private Object appendLock = new Object();
-
     // all member vars below this point are shared configuration
 
-    protected boolean               synchronous;
     protected long                  batchDelay;
     protected boolean               truncateOversizeMessages;
     protected int                   discardThreshold;
     protected DiscardAction         discardAction;
-    protected volatile RotationMode rotationMode;
-    protected volatile long         rotationInterval;
-    protected AtomicInteger         sequence;
-    protected boolean               useShutdownHook;
     protected String                assumedRole;
     protected String                clientFactory;
     protected String                clientRegion;
     protected String                clientEndpoint;
+    protected boolean               synchronous;
+    protected boolean               useShutdownHook;
 
 //----------------------------------------------------------------------------
 //  Constructor
@@ -138,89 +123,12 @@ extends AppenderSkeleton
         truncateOversizeMessages = true;
         discardThreshold = 10000;
         discardAction = DiscardAction.oldest;
-        rotationMode = RotationMode.none;
-        rotationInterval = -1;
-        sequence = new AtomicInteger();
         useShutdownHook = true;
-    }
-
-//----------------------------------------------------------------------------
-//  Overrides of AppenderSkeleton
-//----------------------------------------------------------------------------
-
-    @Override
-    public void setName(String name)
-    {
-        super.setName(name);
-        internalLogger.setAppenderName(name);
     }
 
 //----------------------------------------------------------------------------
 //  Shared Configuration Properties
 //----------------------------------------------------------------------------
-
-    /**
-     *  Sets the <code>rotationMode</code> configuration property.
-     *  <p>
-     *  This method must be explicitly overridden and made public by appenders that support rotation.
-     */
-    protected void setRotationMode(String value)
-    {
-        RotationMode newMode = RotationMode.lookup(value);
-        if (newMode == null)
-        {
-            newMode = RotationMode.none;
-            internalLogger.error("invalid rotation mode: " + value + ", setting to " + newMode, null);
-        }
-        this.rotationMode = newMode;
-    }
-
-
-    /**
-     *  Returns the <code>rotationMode</code> configuration property.
-     */
-    public String getRotationMode()
-    {
-        return this.rotationMode.name();
-    }
-
-
-    /**
-     *  Sets the <code>rotationInterval</code> configuration property.
-     */
-    public void setRotationInterval(long value)
-    {
-        this.rotationInterval = value;
-    }
-
-
-    /**
-     *  Returns the <code>rotationInterval</code> configuration property.
-     */
-    public long getRotationInterval()
-    {
-        return rotationInterval;
-    }
-
-
-    /**
-     *  Sets the <code>sequence</code> configuration property.
-     */
-    public void setSequence(int value)
-    {
-        sequence.set(value);
-    }
-
-
-    /**
-     *  Returns the current <code>sequence</code> value (which will be updated each
-     *  time the appender rotates).
-     */
-    public int getSequence()
-    {
-        return sequence.get();
-    }
-
 
     /**
      *  Sets the <code>synchronous</code> configuration property. This can only
@@ -460,10 +368,17 @@ extends AppenderSkeleton
         return closed;
     }
 
+//----------------------------------------------------------------------------
+//  Appender/AppenderSkeleton overrides
+//----------------------------------------------------------------------------
 
-//----------------------------------------------------------------------------
-//  Appender overrides
-//----------------------------------------------------------------------------
+    @Override
+    public void setName(String name)
+    {
+        super.setName(name);
+        internalLogger.setAppenderName(name);
+    }
+
 
     @Override
     protected void append(LoggingEvent event)
@@ -527,31 +442,14 @@ extends AppenderSkeleton
 
 
 //----------------------------------------------------------------------------
-//  Methods that may be exposed by subclasses
-//----------------------------------------------------------------------------
-
-    /**
-     *  Rotates the log writer. This will create in a new writer thread, with
-     *  the pre-rotation writer shutting down after processing all messages in
-     *  its queue.
-     */
-    protected void rotate()
-    {
-        synchronized (initializationLock)
-        {
-            stopWriter();
-            sequence.incrementAndGet();
-            startWriter();
-        }
-    }
-
-//----------------------------------------------------------------------------
 //  Subclass hooks
 //----------------------------------------------------------------------------
 
     /**
-     *  Called just before a writer is created, so that the subclass can
-     *  perform substitutions on the configuration.
+     *  Called as part of initialization. Subclass should provide a config
+     *  object that is populated with everything the subclass controls, and
+     *  with all substitutions applied. The abstract class will populate
+     *  with everything that it controls (eg, connection info).
      */
     protected abstract WriterConfigType generateWriterConfig();
 
@@ -585,38 +483,44 @@ extends AppenderSkeleton
      */
     private void startWriter()
     {
+        WriterConfigType config = generateWriterConfig()
+                                  .setTruncateOversizeMessages(truncateOversizeMessages)
+                                  .setBatchDelay(batchDelay)
+                                  .setDiscardThreshold(discardThreshold)
+                                  .setDiscardAction(discardAction)
+                                  .setClientFactoryMethod(clientFactory)
+                                  .setAssumedRole(assumedRole)
+                                  .setClientRegion(clientRegion)
+                                  .setClientEndpoint(clientEndpoint)
+                                  .setSynchronousMode(synchronous)
+                                  .setUseShutdownHook(useShutdownHook);
+
         synchronized (initializationLock)
         {
             try
             {
-                writer = writerFactory.newLogWriter(generateWriterConfig(), appenderStats, internalLogger);
-                if (synchronous)
+                writer = writerFactory.newLogWriter(config, appenderStats, internalLogger);
+                threadFactory.startWriterThread(writer, new UncaughtExceptionHandler()
                 {
-                    writer.initialize();
-                }
-                else
-                {
-                    threadFactory.startLoggingThread(writer, useShutdownHook, new UncaughtExceptionHandler()
+                    @Override
+                    public void uncaughtException(Thread t, Throwable ex)
                     {
-                        @Override
-                        public void uncaughtException(Thread t, Throwable ex)
-                        {
-                            internalLogger.error("unhandled exception in writer", ex);
-                            appenderStats.setLastError(null, ex);
-                            writer = null;
-                        }
-                    });
+                        internalLogger.error("unhandled exception in writer", ex);
+                        appenderStats.setLastError(null, ex);
+                        writer = null;
+                    }
+                });
+
+                if (! writer.waitUntilInitialized(60000))
+                {
+                    internalLogger.error("writer initialization timed out", null);
+                    return;
                 }
 
                 if (layout.getHeader() != null)
                 {
                     internalAppend(new LogMessage(System.currentTimeMillis(), layout.getHeader()));
                 }
-
-                // note the header doesn't contribute to the message count
-
-                lastRotationTimestamp = System.currentTimeMillis();
-                messagesSinceLastRotation = 0;
             }
             catch (Exception ex)
             {
@@ -644,11 +548,7 @@ extends AppenderSkeleton
                 }
 
                 writer.stop();
-
-                if (synchronous)
-                {
-                    writer.cleanup();
-                }
+                writer.waitUntilStopped(batchDelay * 2);
             }
             catch (Exception ex)
             {
@@ -694,55 +594,6 @@ extends AppenderSkeleton
             return;
         }
 
-        synchronized (appendLock)
-        {
-            long now = System.currentTimeMillis();
-            if (shouldRotate(now))
-            {
-                long secondsSinceLastRotation = (now - lastRotationTimestamp) / 1000;
-                internalLogger.debug("rotating: messagesSinceLastRotation = " + messagesSinceLastRotation + ", secondsSinceLastRotation = " + secondsSinceLastRotation);
-                rotate();
-                if (writer == null)
-                {
-                    internalLogger.error("failed to rotate writer", null);
-                    return;
-                }
-            }
-
-            writer.addMessage(message);
-            messagesSinceLastRotation++;
-        }
-
-        // for Log4J, append() happens within a big synchronized block managed by the framework
-        // however, logically, I want to separate putting a message on the queue from sending it
-        if (synchronous)
-        {
-            writer.processBatch(System.currentTimeMillis());
-        }
-    }
-
-
-    /**
-     *  Determines whether the appender should rotate its writer. This is called on every
-     *  append, so should be as performant as possible. Subclasses that don't rotate should
-     *  override and return false (Hotspot will quickly inline them).
-     */
-    protected boolean shouldRotate(long now)
-    {
-        switch (rotationMode)
-        {
-            case none:
-                return false;
-            case count:
-                return (rotationInterval > 0) && (messagesSinceLastRotation >= rotationInterval);
-            case interval:
-                return (rotationInterval > 0) && ((now - lastRotationTimestamp) > rotationInterval);
-            case hourly:
-                return (lastRotationTimestamp / 3600000) < (now / 3600000);
-            case daily:
-                return (lastRotationTimestamp / 86400000) < (now / 86400000);
-            default:
-                return false;
-        }
+        writer.addMessage(message);
     }
 }

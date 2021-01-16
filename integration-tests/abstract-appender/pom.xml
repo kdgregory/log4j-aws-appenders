@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.kdgregory.logging</groupId>
         <artifactId>parent</artifactId>
-        <version>2.4.1</version>
+        <version>3.0.0-SNAPSHOT</version>
         <relativePath/>
     </parent>
 
@@ -20,8 +20,6 @@
 
 
     <properties>
-        <!-- appender integration tests use a recent-ish version of the SDK -->
-        <aws-sdk.version>1.11.600</aws-sdk.version>
     </properties>
 
 
@@ -43,31 +41,31 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-logs</artifactId>
-            <version>${aws-sdk.version}</version>
+            <version>${aws-sdk-v1.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-kinesis</artifactId>
-            <version>${aws-sdk.version}</version>
+            <version>${aws-sdk-v1.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sns</artifactId>
-            <version>${aws-sdk.version}</version>
+            <version>${aws-sdk-v1.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sqs</artifactId>
-            <version>${aws-sdk.version}</version>
+            <version>${aws-sdk-v1.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sts</artifactId>
-            <version>${aws-sdk.version}</version>
+            <version>${aws-sdk-v1.version}</version>
             <scope>provided</scope>
         </dependency>
 

@@ -61,7 +61,6 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *      <th> shardCount
  *      <td> For auto-created streams, the number of shards in the stream.
  *
- *
  *  <tr VALIGN="top">
  *      <th> retentionPeriod
  *      <td> For auto-created streams, the number of hours that messages will be
@@ -131,16 +130,11 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *      <th> clientRegion
  *      <td> Specifies a non-default service region. This setting is ignored if you
  *           use a client factory.
- *           <p>
- *           Note that the region must be supported by the current SDK version.
  *
  *  <tr VALIGN="top">
  *      <th> clientEndpoint
- *      <td> Specifies a non-default service endpoint. This is intended for use with
- *           older AWS SDK versions that do not provide client factories and default
- *           to us-east-1 for constructed clients, although it can be used for newer
- *           releases when you want to override the default region provider. This
- *           setting is ignored if you use a client factory.
+ *      <td> Specifies a non-default service endpoint. Typically used when running in
+ *           a VPC, when the normal endpoint is not available.
  *
  *  <tr VALIGN="top">
  *      <th> useShutdownHook
@@ -295,32 +289,21 @@ extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWrit
     }
 
 //----------------------------------------------------------------------------
-//  Appender-specific methods
-//----------------------------------------------------------------------------
-
-
-//----------------------------------------------------------------------------
 //  AbstractAppender overrides
 //----------------------------------------------------------------------------
 
     @Override
     protected KinesisWriterConfig generateWriterConfig()
     {
-        Substitutions subs = new Substitutions(new Date(), sequence.get());
+        Substitutions subs = new Substitutions(new Date(), 0);
         actualStreamName   = subs.perform(streamName);
         actualPartitionKey = subs.perform(partitionKey);
 
-        return new KinesisWriterConfig(
-            actualStreamName, actualPartitionKey,
-            autoCreate, shardCount, retentionPeriod,
-            truncateOversizeMessages, batchDelay, discardThreshold, discardAction,
-            clientFactory, assumedRole, clientRegion, clientEndpoint);
-    }
-
-
-    @Override
-    protected boolean shouldRotate(long now)
-    {
-        return false;
+        return new KinesisWriterConfig()
+               .setStreamName(actualStreamName)
+               .setPartitionKey(actualPartitionKey)
+               .setAutoCreate(autoCreate)
+               .setShardCount(shardCount)
+               .setRetentionPeriod(retentionPeriod);
     }
 }

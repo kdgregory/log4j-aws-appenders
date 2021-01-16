@@ -300,8 +300,8 @@ public class KinesisTestHelper
         for (RetrievedRecord message : messages)
         {
             actualPartitionKeys.add(message.partitionKey);
-            StringAsserts.assertRegex("8-character numeric partition key (was: " + message.partitionKey + ")",
-                                      "\\d{8}", message.partitionKey);
+            StringAsserts.assertRegex("6-character numeric partition key (was: " + message.partitionKey + ")",
+                                      "\\d{6}", message.partitionKey);
         }
 
         NumericAsserts.assertApproximate("number of distinct partition keys", expectedMessageCount, actualPartitionKeys.size(), 10);

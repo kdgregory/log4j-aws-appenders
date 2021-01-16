@@ -62,7 +62,7 @@ public class TestDefaultThreadFactory
         // a convenience method that will use a built-in exception handler
         public void startLoggingThread(LogWriter writer)
         {
-            startLoggingThread(writer, false, new UncaughtExceptionHandler()
+            startWriterThread(writer, new UncaughtExceptionHandler()
             {
                 @Override
                 public void uncaughtException(Thread t, Throwable e)
@@ -89,7 +89,7 @@ public class TestDefaultThreadFactory
     public void testBasicOperation() throws Exception
     {
         TestableDefaultThreadFactory factory = new TestableDefaultThreadFactory("test");
-        MockLogWriter<AbstractWriterConfig> writer = new MockLogWriter<>(null);
+        MockLogWriter<AbstractWriterConfig<?>> writer = new MockLogWriter<>(null);
 
         factory.startLoggingThread(writer);
         assertTrue("writer was started", writer.waitUntilInitialized(1000));

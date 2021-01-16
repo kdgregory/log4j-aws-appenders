@@ -35,7 +35,6 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatisticsMXBean;
 import com.kdgregory.logging.aws.common.Substitutions;
 import com.kdgregory.logging.common.factories.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
-import com.kdgregory.logging.common.util.RotationMode;
 
 
 /**
@@ -44,7 +43,6 @@ import com.kdgregory.logging.common.util.RotationMode;
  *  This appender supports the following configuration parameters:
  *  <p>
  *  <table>
- *
  *  <tr VALIGN="top">
  *      <th> logGroup
  *      <td> Name of the CloudWatch log group where messages are sent; may use
@@ -75,30 +73,12 @@ import com.kdgregory.logging.common.util.RotationMode;
  *
  *  <tr VALIGN="top">
  *      <th> dedicatedWriter
- *      <td> If true, the appender assumes that it will be the only writer to
- *           the log stream, and will not retrieve a sequence token before each
- *           write. Defaults to false for legacy behavior.
- *
- *  <tr VALIGN="top">
- *      <th> rotationMode
- *      <td> Controls whether auto-rotation is enabled. Values are none, count,
- *           interval, hourly, and daily; default is none.
- *
- *  <tr VALIGN="top">
- *      <th> rotationInterval
- *      <td> Sets the rotation interval, for those appenders that support rotation.
- *           This parameter is valid only when the <code>rotationMode</code> parameter
- *           is "interval" or "count": for the former, it's the number of milliseconds
- *           between rotations, for the latter the number of messages.
- *           <p>
- *           If using interval rotation, you should include <code>{timestamp}</code>
- *           in the log stream name. If using counted rotation, you should include
- *           <code>{sequence}</code>.
- *
- *  <tr VALIGN="top">
- *      <th> sequence
- *      <td> A value that is incremented each time the stream is rotated. May be
- *           accessed as the <code>{sequence}</code> substitution. Defaults to 0.
+ *      <td> If true (the default), the appender assumes that it is the only thing
+ *           writing to the log stream, and does not fetch a sequence token before
+ *           each write. This improves performance and reduces the likelihood of
+ *           throttling when there are a large number of processes (as long as they
+ *           write to different streams). If you need to have multiple appenders
+ *           writing to the same stream, set this to false.
  *
  *  <tr VALIGN="top">
  *      <th> synchronous
@@ -145,7 +125,6 @@ import com.kdgregory.logging.common.util.RotationMode;
  *           The default, 10,000, is based on the assumptions that (1) each message
  *           will be 1k or less, and (2) any app that uses remote logging can afford
  *           10MB.
- *           <p>
  *
  *  <tr VALIGN="top">
  *      <th> discardAction
@@ -177,29 +156,23 @@ import com.kdgregory.logging.common.util.RotationMode;
  *      <th> clientRegion
  *      <td> Specifies a non-default service region. This setting is ignored if you
  *           use a client factory.
- *           <p>
- *           Note that the region must be supported by the current SDK version.
  *
  *  <tr VALIGN="top">
  *      <th> clientEndpoint
- *      <td> Specifies a non-default service endpoint. This is intended for use with
- *           older AWS SDK versions that do not provide client factories and default
- *           to us-east-1 for constructed clients, although it can be used for newer
- *           releases when you want to override the default region provider. This
- *           setting is ignored if you use a client factory.
+ *      <td> Specifies a non-default service endpoint. Typically used when running in
+ *           a VPC, when the normal endpoint is not available.
  *
  *  <tr VALIGN="top">
  *      <th> useShutdownHook
- *      <td> Controls whether the appender uses a shutdown hook to attempt to process
- *           outstanding messages when the JVM exits. This is true by default; set to
- *           false to disable.
+ *      <td> This exists for consistency with other appenders but ignored; Log4J2 provides
+ *           its own shutdown hooks.
  *  </table>
  *
  *  @see <a href="https://github.com/kdgregory/log4j-aws-appenders/blob/master/docs/cloudwatch.md">Appender documentation</a>
  */
 @Plugin(name = "CloudWatchAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class CloudWatchAppender
-extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,CloudWatchWriterStatisticsMXBean,CloudWatchWriterConfig>
+extends AbstractAppender<CloudWatchWriterConfig,CloudWatchAppenderConfig,CloudWatchWriterStatistics,CloudWatchWriterStatisticsMXBean>
 {
 
 //----------------------------------------------------------------------------
@@ -302,7 +275,7 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
 
 
         @PluginBuilderAttribute("dedicatedWriter")
-        private boolean dedicatedWriter;
+        private boolean dedicatedWriter = true;
 
         /**
          *  Sets the <code>dedicatedWriter</code> configuration property.
@@ -320,74 +293,6 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
         public boolean isDedicatedWriter()
         {
             return dedicatedWriter;
-        }
-
-
-        @PluginBuilderAttribute("rotationMode")
-        private String rotationMode = RotationMode.none.name();
-
-        /**
-         *  Sets the <code>rotationMode</code> configuration property.
-         */
-        public CloudWatchAppenderBuilder setRotationMode(String value)
-        {
-            // note: validation happens in appender because Log4J bypasses
-            //       this setter during normal configuration
-            this.rotationMode = value;
-            return this;
-        }
-
-        /**
-         *  Returns the <code>rotationMode</code> configuration property.
-         */
-        @Override
-        public String getRotationMode()
-        {
-            return rotationMode;
-        }
-
-
-        @PluginBuilderAttribute("rotationInterval")
-        private long rotationInterval = -1;
-
-        /**
-         *  Sets the <code>rotationInterval</code> configuration property.
-         */
-        public CloudWatchAppenderBuilder setRotationInterval(long value)
-        {
-            this.rotationInterval = value;
-            return this;
-        }
-
-        /**
-         *  Returns the <code>rotationInterval</code> configuration property.
-         */
-        @Override
-        public long getRotationInterval()
-        {
-            return rotationInterval;
-        }
-
-
-        @PluginBuilderAttribute("sequence")
-        private int sequence;
-
-        /**
-         *  Sets the <code>rotationInterval</code> configuration property.
-         */
-        public CloudWatchAppenderBuilder setSequence(int value)
-        {
-            this.sequence = value;
-            return this;
-        }
-
-        /**
-         *  Returns the <code>rotationInterval</code> configuration property.
-         */
-        @Override
-        public int getSequence()
-        {
-            return sequence;
         }
 
 
@@ -428,33 +333,21 @@ extends AbstractAppender<CloudWatchAppenderConfig,CloudWatchWriterStatistics,Clo
     }
 
 //----------------------------------------------------------------------------
-//  Additional public API
-//----------------------------------------------------------------------------
-
-    /**
-     *  Explicitly switch to a new log stream.
-     */
-    @Override
-    protected void rotate()
-    {
-        super.rotate();
-    }
-
-//----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
 
     @Override
     protected CloudWatchWriterConfig generateWriterConfig()
     {
-        StrSubstitutor l4jsubs = config.getConfiguration().getStrSubstitutor();
-        Substitutions subs     = new Substitutions(new Date(), sequence.get());
-        String actualLogGroup  = subs.perform(l4jsubs.replace(config.getLogGroup()));
-        String actualLogStream = subs.perform(l4jsubs.replace(config.getLogStream()));
+        StrSubstitutor l4jsubs = appenderConfig.getConfiguration().getStrSubstitutor();
+        Substitutions subs     = new Substitutions(new Date(), 0);
+        String actualLogGroup  = subs.perform(l4jsubs.replace(appenderConfig.getLogGroup()));
+        String actualLogStream = subs.perform(l4jsubs.replace(appenderConfig.getLogStream()));
 
-        return new CloudWatchWriterConfig(
-            actualLogGroup, actualLogStream, retentionPeriod, config.isDedicatedWriter(),
-            false, config.getBatchDelay(), config.getDiscardThreshold(), discardAction,
-            config.getClientFactory(), config.getAssumedRole(), config.getClientRegion(), config.getClientEndpoint());
+        return new CloudWatchWriterConfig()
+               .setLogGroupName(actualLogGroup)
+               .setLogStreamName(actualLogStream)
+               .setRetentionPeriod(retentionPeriod)
+               .setDedicatedWriter(appenderConfig.isDedicatedWriter());
     }
 }

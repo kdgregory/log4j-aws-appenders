@@ -33,8 +33,8 @@ import com.kdgregory.logging.testhelpers.ParameterStoreTestHelper;
 
 
 /**
- *  This class tests substitutions that require AWS credentials and/or running
- *  on an EC2 instance.
+ *  Tests that AWS-specific substitutions will retrieve an InfoFacade when running
+ *  in a real environment.
  *  <p>
  *  Note: remove the @Ignore annotations when running on EC2.
  */

@@ -4,7 +4,7 @@
 
     <groupId>com.kdgregory.logging</groupId>
     <artifactId>log4j1-aws-appenders-example</artifactId>
-    <version>2.4.1</version>
+    <version>3.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Log4J 1.x Example</name>
@@ -16,7 +16,7 @@
 
 
     <properties>
-        <jdk.version>1.7</jdk.version>
+        <jdk.version>1.8</jdk.version>
 
         <!-- build configuration props, because Maven can't pick a sensible default -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -37,10 +37,17 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.kdgregory.logging</groupId>
+            <artifactId>aws-facade-v1</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>${log4j1.version}</version>
         </dependency>
+
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-logs</artifactId>

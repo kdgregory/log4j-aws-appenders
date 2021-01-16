@@ -14,9 +14,7 @@
 
 package com.kdgregory.logging.testhelpers.cloudwatch;
 
-import com.kdgregory.logging.aws.cloudwatch.CloudWatchConstants;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
-import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.testhelpers.MockLogWriter;
 
 
@@ -29,13 +27,5 @@ extends MockLogWriter<CloudWatchWriterConfig>
     public MockCloudWatchWriter(CloudWatchWriterConfig config)
     {
         super(config);
-    }
-
-
-    @Override
-    public boolean isMessageTooLarge(LogMessage message)
-    {
-        // this is copied from CloudWatchLogWriter
-        return (message.size() + CloudWatchConstants.MESSAGE_OVERHEAD)  >= CloudWatchConstants.MAX_BATCH_BYTES;
     }
 }

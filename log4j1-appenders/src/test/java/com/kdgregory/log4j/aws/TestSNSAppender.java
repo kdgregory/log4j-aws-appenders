@@ -136,31 +136,28 @@ extends AbstractUnitTest<TestableSNSAppender>
 
         MockSNSWriter writer = appender.getMockWriter();
 
-        assertRegex("writer topicName",                 "name-20\\d{6}",                    writer.config.topicName);
-        assertRegex("writer topicArn",                  "arn-20\\d{6}",                     writer.config.topicArn);
-        assertEquals("writer subject",                  "example",                          writer.config.subject);
-        assertTrue("writer autoCreate",                                                     writer.config.autoCreate);
-        assertEquals("writer batch delay",              1L,                                 writer.config.batchDelay);
-        assertEquals("writer discard threshold",        123,                                writer.config.discardThreshold);
-        assertEquals("writer discard action",           DiscardAction.newest,               writer.config.discardAction);
-        assertEquals("writer client factory method",    "com.example.Foo.bar",              writer.config.clientFactoryMethod);
-        assertEquals("writer client endpoint",          "sns.us-east-2.amazonaws.com",      writer.config.clientEndpoint);
+        assertRegex("writer topicName",                 "name-20\\d{6}",                    writer.config.getTopicName());
+        assertRegex("writer topicArn",                  "arn-20\\d{6}",                     writer.config.getTopicArn());
+        assertEquals("writer subject",                  "example",                          writer.config.getSubject());
+        assertTrue("writer autoCreate",                                                     writer.config.getAutoCreate());
+        assertEquals("writer batch delay",              1L,                                 writer.config.getBatchDelay());
+        assertEquals("writer discard threshold",        123,                                writer.config.getDiscardThreshold());
+        assertEquals("writer discard action",           DiscardAction.newest,               writer.config.getDiscardAction());
+        assertEquals("writer client factory method",    "com.example.Foo.bar",              writer.config.getClientFactoryMethod());
+        assertEquals("writer client endpoint",          "sns.us-east-2.amazonaws.com",      writer.config.getClientEndpoint());
     }
 
 
     @Test
-    public void testChangeSubject() throws Exception
+    public void testWriterInitializationSynchronousMode() throws Exception
     {
-        initialize("testChangeSubject");
+        initialize("testWriterInitializationSynchronousMode");
 
         logger.debug("this triggers writer creation");
 
         MockSNSWriter writer = appender.getMockWriter();
 
-        assertEquals("initial subject",                 "First Subject",                    writer.config.subject);
-
-        appender.setSubject("Second Subject");
-
-        assertEquals("updated subject",                 "Second Subject",                   writer.config.subject);
+        assertTrue("synchronous mode",                                                      writer.config.getSynchronousMode());
+        assertEquals("batch delay",                     1L,                                 writer.config.getBatchDelay());
     }
 }

@@ -124,29 +124,23 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *      <th> clientRegion
  *      <td> Specifies a non-default service region. This setting is ignored if you
  *           use a client factory.
- *           <p>
- *           Note that the region must be supported by the current SDK version.
  *
  *  <tr VALIGN="top">
  *      <th> clientEndpoint
- *      <td> Specifies a non-default service endpoint. This is intended for use with
- *           older AWS SDK versions that do not provide client factories and default
- *           to us-east-1 for constructed clients, although it can be used for newer
- *           releases when you want to override the default region provider. This
- *           setting is ignored if you use a client factory.
+ *      <td> Specifies a non-default service endpoint. Typically used when running in
+ *           a VPC, when the normal endpoint is not available.
  *
  *  <tr VALIGN="top">
  *      <th> useShutdownHook
- *      <td> Controls whether the appender uses a shutdown hook to attempt to process
- *           outstanding messages when the JVM exits. This is true by default; set to
- *           false to disable.
+ *      <td> This exists for consistency with other appenders but ignored; Log4J2 provides
+ *           its own shutdown hooks.
  *  </table>
  *
  *  @see <a href="https://github.com/kdgregory/log4j-aws-appenders/blob/master/docs/sns.md">Appender documentation</a>
  */
 @Plugin(name = "SNSAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class SNSAppender
-extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterStatisticsMXBean,SNSWriterConfig>
+extends AbstractAppender<SNSWriterConfig,SNSAppenderConfig,SNSWriterStatistics,SNSWriterStatisticsMXBean>
 {
 
 //----------------------------------------------------------------------------
@@ -316,35 +310,23 @@ extends AbstractAppender<SNSAppenderConfig,SNSWriterStatistics,SNSWriterStatisti
     }
 
 //----------------------------------------------------------------------------
-//  Additional public API
-//----------------------------------------------------------------------------
-
-
-//----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
 
     @Override
     protected SNSWriterConfig generateWriterConfig()
     {
-        StrSubstitutor l4jsubs  = config.getConfiguration().getStrSubstitutor();
-        Substitutions subs      = new Substitutions(new Date(), sequence.get());
+        StrSubstitutor l4jsubs  = appenderConfig.getConfiguration().getStrSubstitutor();
+        Substitutions subs      = new Substitutions(new Date(), 0);
 
-        String actualTopicName  = subs.perform(l4jsubs.replace(config.getTopicName()));
-        String actualTopicArn   = subs.perform(l4jsubs.replace(config.getTopicArn()));
-        String actualSubject    = subs.perform(l4jsubs.replace(config.getSubject()));
+        String actualTopicName  = subs.perform(l4jsubs.replace(appenderConfig.getTopicName()));
+        String actualTopicArn   = subs.perform(l4jsubs.replace(appenderConfig.getTopicArn()));
+        String actualSubject    = subs.perform(l4jsubs.replace(appenderConfig.getSubject()));
 
-        return new SNSWriterConfig(
-            actualTopicName, actualTopicArn, actualSubject, config.isAutoCreate(),
-            false, config.getDiscardThreshold(), discardAction,
-            config.getClientFactory(), config.getAssumedRole(), config.getClientRegion(), config.getClientEndpoint());
-
-    }
-
-
-    @Override
-    protected boolean shouldRotate(long now)
-    {
-        return false;
+        return new SNSWriterConfig()
+               .setTopicName(actualTopicName)
+               .setTopicArn(actualTopicArn)
+               .setSubject(actualSubject)
+               .setAutoCreate(appenderConfig.isAutoCreate());
     }
 }

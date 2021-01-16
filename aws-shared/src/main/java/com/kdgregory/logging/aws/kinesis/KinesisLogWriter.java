@@ -14,74 +14,53 @@
 
 package com.kdgregory.logging.aws.kinesis;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Random;
-import java.util.regex.Pattern;
-
-import com.amazonaws.services.kinesis.AmazonKinesis;
-import com.amazonaws.services.kinesis.model.*;
+import java.util.function.Consumer;
 
 import com.kdgregory.logging.aws.internal.AbstractLogWriter;
-import com.kdgregory.logging.aws.internal.Utils;
+import com.kdgregory.logging.aws.internal.RetryManager;
+import com.kdgregory.logging.aws.internal.facade.KinesisFacade;
+import com.kdgregory.logging.aws.internal.facade.KinesisFacadeException;
+import com.kdgregory.logging.aws.kinesis.KinesisConstants.StreamStatus;
 import com.kdgregory.logging.common.LogMessage;
-import com.kdgregory.logging.common.factories.ClientFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
 
 
+/**
+ *  Writes log messages to a Kinesis stream. Optionally creates the stream at
+ *  startup, but will fail if the stream is deleted during operation.
+ */
 public class KinesisLogWriter
-extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKinesis>
+extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics>
 {
     /**
      *  This string is used in configuration to specify random partition keys.
      */
     public final static String RANDOM_PARTITION_KEY_CONFIG = "{random}";
 
+    // passed into constructor
+    private KinesisFacade facade;
 
-    // this controls the number of times that we'll accept rate limiting on describe
-    private final static int DESCRIBE_TRIES = 300;
+    // controls retries for initial stream describe; may be throttled
+    protected RetryManager describeRetry = new RetryManager(50, 1000, true);
 
-    // and the number of milliseconds to sleep between tries
-    private final static int DESCRIBE_SLEEP = 100;
+    // controls retries for stream creation; may be throttled
+    protected RetryManager createRetry = new RetryManager(200, 5000, true);
 
-    // this controls the number of tries that we wait for a stream to become active
-    private final static int STREAM_ACTIVE_TRIES = 240;
+    // controls retries for describing stream after; may take a long time
+    protected RetryManager postCreateRetry = new RetryManager(200, 120000, true);
 
-    // and the number of milliseconds that we wait between tries
-    private final static long STREAM_ACTIVE_SLEEP = 250;
-
-    // this controls the number of times that we attempt to create a stream
-    private final static int CREATE_RETRY_LIMIT = 12;
-
-    // and how long we'll sleep between attempts
-    private final static int CREATE_RETRY_SLEEP = 5000;
-
-    // the length of a partition key after UTF-8 conversion; will use a constant for random keys
-    private int partitionKeyLength;
-
-    // rather than use String.equals() to check for random partition keys, we'll cache result
-    private boolean randomPartitionKeys;
-
-    // only used for random partition keys; cheap enough we'll eagerly create
-    private Random rnd = new Random();
+    // controls retries for sending messages; may be thottled
+    protected RetryManager sendRetry = new RetryManager(200, 2000, true);
 
 
-    public KinesisLogWriter(KinesisWriterConfig config, KinesisWriterStatistics stats, InternalLogger logger, ClientFactory<AmazonKinesis> clientFactory)
+    public KinesisLogWriter(KinesisWriterConfig config, KinesisWriterStatistics stats, InternalLogger logger, KinesisFacade facade)
     {
-        super(config, stats, logger, clientFactory);
+        super(config, stats, logger);
 
-        randomPartitionKeys = RANDOM_PARTITION_KEY_CONFIG.equals(config.partitionKey)
-                           || "".equals(config.partitionKey)
-                           || (null == config.partitionKey);
+        this.facade = facade;
 
-        partitionKeyLength = randomPartitionKeys
-                           ? 8
-                           : config.partitionKey.getBytes(StandardCharsets.UTF_8).length;
-
-        stats.setActualStreamName(config.streamName);
+        stats.setActualStreamName(config.getStreamName());
     }
 
 //----------------------------------------------------------------------------
@@ -89,16 +68,9 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
 //----------------------------------------------------------------------------
 
     @Override
-    public boolean isMessageTooLarge(LogMessage message)
-    {
-        return (effectiveSize(message)) > KinesisConstants.MAX_MESSAGE_BYTES;
-    }
-
-
-    @Override
     public int maxMessageSize()
     {
-        return KinesisConstants.MAX_MESSAGE_BYTES - partitionKeyLength;
+        return KinesisConstants.MAX_MESSAGE_BYTES - config.getPartitionKeyHelper().getLength();
     }
 
 //----------------------------------------------------------------------------
@@ -108,45 +80,41 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
     @Override
     protected boolean ensureDestinationAvailable()
     {
-        if (! Pattern.matches(KinesisConstants.ALLOWED_STREAM_NAME_REGEX, config.streamName))
+        List<String> configErrors = config.validate();
+        if (! configErrors.isEmpty())
         {
-            reportError("invalid stream name: " + config.streamName, null);
-            return false;
-        }
-
-        if ((config.partitionKey == null) || (config.partitionKey.length() > 256))
-        {
-            reportError("invalid partition key: length must be 1-256", null);
+            for (String error : configErrors)
+                reportError("configuration error: " + error, null);
             return false;
         }
 
         try
         {
-            String streamStatus = getStreamStatus();
-            if (streamStatus == null)
+            // short-circuit if stream exists and is active; retry in case of throttling
+            StreamStatus status = describeRetry.invoke(() -> facade.retrieveStreamStatus());
+            if (status == StreamStatus.ACTIVE)
+                return true;
+
+            if (status == StreamStatus.DOES_NOT_EXIST)
             {
-                if (config.autoCreate)
+                if (config.getAutoCreate())
                 {
-                    createStream();
-                    waitForStreamToBeActive();
-                    setRetentionPeriodIfNeeded();
+                    return createStream() && setRetentionPeriod();
                 }
                 else
                 {
-                    reportError("stream \"" + config.streamName + "\" does not exist and auto-create not enabled", null);
+                    reportError("stream \"" + config.getStreamName() + "\" does not exist and auto-create not enabled", null);
                     return false;
                 }
             }
-            else if (! StreamStatus.ACTIVE.toString().equals(streamStatus))
-            {
-                // just created or being modifed by someone else
-                waitForStreamToBeActive();
-            }
-            return true;
+
+            // if we got here, then the stream was being created/updated by someone
+            // else; wait until that's done
+            return waitForStreamToBeActive();
         }
         catch (Exception ex)
         {
-            reportError("unable to configure stream: " + config.streamName, ex);
+            reportError("unable to configure stream: " + config.getStreamName(), ex);
             return false;
         }
     }
@@ -155,15 +123,22 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
     @Override
     protected List<LogMessage> sendBatch(List<LogMessage> currentBatch)
     {
-        PutRecordsRequest request = convertBatchToRequest(currentBatch);
-        if (request != null)
+        try
         {
-            List<Integer> failures = attemptToSend(request);
-            return extractFailures(currentBatch, failures);
+            List<LogMessage> result = sendRetry.invoke(
+                                            () -> facade.putRecords(currentBatch),
+                                            new DefaultExceptionHandler());
+            if (result == null)
+            {
+                logger.warn("timeout while sending batch");
+                return currentBatch;
+            }
+            return result;  // either empty or partial list of source messages
         }
-        else
+        catch (Exception ex)
         {
-            return Collections.emptyList();
+            logger.error("exception while sending batch", ex);
+            return currentBatch;
         }
     }
 
@@ -171,7 +146,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
     @Override
     protected int effectiveSize(LogMessage message)
     {
-        return message.size() + partitionKeyLength;
+        return message.size() + config.getPartitionKeyHelper().getLength();
     }
 
 
@@ -186,7 +161,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
     @Override
     protected void stopAWSClient()
     {
-        client.shutdown();
+        facade.shutdown();
     }
 
 //----------------------------------------------------------------------------
@@ -194,205 +169,74 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics,AmazonKine
 //----------------------------------------------------------------------------
 
     /**
-     *  Attempts to create the stream, silently succeeding if it already exists.
+     *  Attempts to create the stream and waits for it to become ready, returning
+     *  <code>true</code> if successful, <code>false</code> on timeout.
      */
-    private void createStream()
+    private boolean createStream()
     {
-        for (int retry = 0 ; retry < CREATE_RETRY_LIMIT ; retry++)
+        logger.debug("creating kinesis stream: " + config.getStreamName());
+
+        createRetry.invoke(() -> { facade.createStream() ; return Boolean.TRUE; },
+                           new DefaultExceptionHandler());
+
+        return waitForStreamToBeActive();
+    }
+
+
+    /**
+     *  Attempts to set the retention period on a stream (if configured) and waits
+     *  for it to become ready. Returns <code>true</code> if successful or no need
+     *  to act, <code>false</code> on timeout.
+     */
+    private boolean setRetentionPeriod()
+    {
+        if (config.getRetentionPeriod() == null)
+            return true;
+
+        logger.debug("setting retention period on stream \"" + config.getStreamName()
+                     + "\" to " + config.getRetentionPeriod() + " hours");
+
+        createRetry.invoke(() -> { facade.setRetentionPeriod() ; return Boolean.TRUE; },
+                           new DefaultExceptionHandler());
+
+        return waitForStreamToBeActive();
+    }
+
+
+    /**
+     *  Waits for stream to become active, logging a message if it doesn't.
+     */
+    private boolean waitForStreamToBeActive()
+    {
+        StreamStatus status = postCreateRetry.invoke( () ->
         {
-            try
-            {
-                logger.debug("creating Kinesis stream: " + config.streamName + " with " + config.shardCount + " shards");
-                CreateStreamRequest request = new CreateStreamRequest()
-                                              .withStreamName(config.streamName)
-                                              .withShardCount(config.shardCount);
-                client.createStream(request);
+            StreamStatus check = facade.retrieveStreamStatus();
+            return (check == StreamStatus.ACTIVE) ? check : null;
+        });
+
+        if (status != StreamStatus.ACTIVE)
+        {
+            logger.error("timeout waiting for stream " + config.getStreamName() + " to become active", null);
+            return false;
+        }
+
+        return true;
+    }
+
+
+    /**
+     *  A common exception handler that will decide whether or not to retry.
+     */
+    private static class DefaultExceptionHandler
+    implements Consumer<RuntimeException>
+    {
+        @Override
+        public void accept(RuntimeException ex)
+        {
+            if ((ex instanceof KinesisFacadeException) && ((KinesisFacadeException)ex).isRetryable())
                 return;
-            }
-            catch (ResourceInUseException ignored)
-            {
-                // someone else created stream while we were trying; that's OK
-                return;
-            }
-            catch (LimitExceededException ex)
-            {
-                // AWS limits number of streams that can be created; and also total
-                // number of shards, with no way to distinguish; sleep a long time
-                // but eventually time-out
-                Utils.sleepQuietly(CREATE_RETRY_SLEEP);
-            }
-        }
-        throw new IllegalStateException("unable to create stream after " + CREATE_RETRY_LIMIT + " tries");
-    }
-
-
-    /**
-     *  Waits for stream to become active, logging a message and throwing if it doesn't
-     *  within a set time.
-     */
-    private void waitForStreamToBeActive()
-    {
-        for (int ii = 0 ; ii < STREAM_ACTIVE_TRIES ; ii++)
-        {
-            if (StreamStatus.ACTIVE.toString().equals(getStreamStatus()))
-            {
-                return;
-            }
-            Utils.sleepQuietly(STREAM_ACTIVE_SLEEP);
-        }
-        throw new IllegalStateException("stream did not become active within " + STREAM_ACTIVE_TRIES + " seconds");
-    }
-
-
-    /**
-     *  Returns current stream status, null if the stream doesn't exist. Will
-     *  internally handle rate-limit exceptions, retrying every 100 milliseconds
-     *  and eventually timing out after 30 seconds with an IllegalStateException.
-     */
-    private String getStreamStatus()
-    {
-        for (int ii = 0 ; ii < DESCRIBE_TRIES ; ii++)
-        {
-            try
-            {
-                DescribeStreamRequest request = new DescribeStreamRequest().withStreamName(config.streamName);
-                DescribeStreamResult response = client.describeStream(request);
-                return response.getStreamDescription().getStreamStatus();
-            }
-            catch (ResourceNotFoundException ex)
-            {
-                return null;
-            }
-            catch (LimitExceededException ex)
-            {
-                Utils.sleepQuietly(DESCRIBE_SLEEP);
-            }
-        }
-        throw new IllegalStateException("unable to describe stream after 30 seconds");
-    }
-
-
-    /**
-     *  If the caller has configured a retention period, set it.
-     */
-    private void setRetentionPeriodIfNeeded()
-    {
-        if (config.retentionPeriod != null)
-        {
-            try
-            {
-                client.increaseStreamRetentionPeriod(new IncreaseStreamRetentionPeriodRequest()
-                                                     .withStreamName(config.streamName)
-                                                     .withRetentionPeriodHours(config.retentionPeriod));
-                waitForStreamToBeActive();
-            }
-            catch (InvalidArgumentException ignored)
-            {
-                // it's possible that someone else created the stream and set the retention period
-            }
-        }
-    }
-
-
-    private PutRecordsRequest convertBatchToRequest(List<LogMessage> batch)
-    {
-        if (batch.isEmpty())
-            return null;
-
-        List<PutRecordsRequestEntry> requestRecords = new ArrayList<PutRecordsRequestEntry>(batch.size());
-        for (LogMessage message : batch)
-        {
-            requestRecords.add(new PutRecordsRequestEntry()
-                       .withPartitionKey(partitionKey())
-                       .withData(ByteBuffer.wrap(message.getBytes())));
-        }
-
-        return new PutRecordsRequest()
-                   .withStreamName(config.streamName)
-                   .withRecords(requestRecords);
-    }
-
-
-    /**
-     *  Attempts to send current request, retrying on any request-level failure.
-     *  Returns a list of the indexes for records that failed.
-     */
-    private List<Integer> attemptToSend(PutRecordsRequest request)
-    {
-        List<Integer> failures = new ArrayList<Integer>(request.getRecords().size());
-
-        try
-        {
-            PutRecordsResult response = client.putRecords(request);
-            int ii = 0;
-            for (PutRecordsResultEntry entry : response.getRecords())
-            {
-                if (entry.getErrorCode() != null)
-                {
-                    failures.add(Integer.valueOf(ii));
-                }
-                ii++;
-            }
-            return failures;
-        }
-        catch (ResourceNotFoundException ex)
-        {
-            reportError("failed to send batch: stream " + request.getStreamName() + " no longer exists", null);
-        }
-        catch (Exception ex)
-        {
-            reportError("failed to send batch", ex);
-        }
-
-        // drop-through from exception handler; all messages in batch must be requeued
-        for (int ii = 0 ; ii < request.getRecords().size() ; ii++)
-        {
-            failures.add(Integer.valueOf(ii));
-        }
-        return failures;
-    }
-
-
-    /**
-     *  Re-inserts any failed records into the head of the message queue, so that they'll
-     *  be picked up by the next batch.
-     */
-    private List<LogMessage> extractFailures(List<LogMessage> currentBatch, List<Integer> failureIndexes)
-    {
-        if (! failureIndexes.isEmpty())
-        {
-            List<LogMessage> messages = new ArrayList<LogMessage>(failureIndexes.size());
-            for (Integer idx : failureIndexes)
-            {
-                messages.add(currentBatch.get(idx.intValue()));
-            }
-            return messages;
-        }
-        else
-        {
-            return Collections.emptyList();
-        }
-    }
-
-
-    /**
-     *  Returns the partition key. This either comes from the configuration
-     *  or is randomly generated.
-     */
-    private String partitionKey()
-    {
-        if (randomPartitionKeys)
-        {
-            StringBuilder sb = new StringBuilder(16);
-            for (int ii = 0 ; ii < partitionKeyLength ; ii++)
-            {
-                sb.append((char)('0' + rnd.nextInt(10)));
-            }
-            return sb.toString();
-        }
-        else
-        {
-            return config.partitionKey;
+            else
+                throw ex;
         }
     }
 }

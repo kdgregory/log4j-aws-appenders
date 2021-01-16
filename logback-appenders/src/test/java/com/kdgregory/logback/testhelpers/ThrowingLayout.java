@@ -14,8 +14,6 @@
 
 package com.kdgregory.logback.testhelpers;
 
-
-
 import com.kdgregory.logging.testhelpers.TestingException;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;

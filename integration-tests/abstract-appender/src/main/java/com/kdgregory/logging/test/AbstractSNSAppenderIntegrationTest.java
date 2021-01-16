@@ -32,6 +32,7 @@ import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 
+import com.kdgregory.logging.aws.internal.facade.SNSFacade;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.testhelpers.CommonTestHelper;
@@ -317,9 +318,9 @@ public abstract class AbstractSNSAppenderIntegrationTest
         assertEquals("number of messages", numMessages, messages.size());
         testHelper.assertMessageContent(messages);
 
-        SNSLogWriter writer = accessor.getWriter();
-        AmazonSNS actualClient = ClassUtil.getFieldValue(writer, "client", AmazonSNS.class);
-        assertSame("factory should have been used to create client", factoryClient, actualClient);
+        SNSFacade facade = ClassUtil.getFieldValue(accessor.getWriter(), "facade", SNSFacade.class);
+        AmazonSNS client = ClassUtil.getFieldValue(facade, "client", AmazonSNS.class);
+        assertSame("factory should have been used to create client", factoryClient, client);
 
         testHelper.deleteTopicAndQueue();
     }

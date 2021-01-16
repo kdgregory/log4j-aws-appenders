@@ -1,0 +1,21 @@
+<Configuration status="warn" packages="com.kdgregory.log4j2.testhelpers">
+
+    <Appenders>
+        <TestableCloudWatchAppender name="TEST">
+            <PatternLayout pattern="%m" />
+            <logGroup>Irrelevant</logGroup>
+            <logStream>Irrelevant</logStream>
+            <synchronous>true</synchronous>
+            <batchDelay>9876</batchDelay> <!-- note: overridden -->
+        </TestableCloudWatchAppender>
+    </Appenders>
+
+    <Loggers>
+        <Root level="off">
+        </Root>
+        <Logger name="com.kdgregory.log4j2.aws.TestCloudWatchAppender" level="debug">
+            <AppenderRef ref="TEST" />
+        </Logger>
+    </Loggers>
+
+</Configuration>

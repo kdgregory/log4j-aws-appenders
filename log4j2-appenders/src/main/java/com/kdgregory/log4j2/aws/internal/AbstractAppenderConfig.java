@@ -30,12 +30,6 @@ public interface AbstractAppenderConfig
     Filter getFilter();
     Configuration getConfiguration();
 
-    // these three are only used by CloudWatchAppender, but appear here
-    // because rotation is implemented in AbstractAppender
-    int getSequence();
-    String getRotationMode();
-    long getRotationInterval();
-
     long getBatchDelay();
     boolean getTruncateOversizeMessages();
     int getDiscardThreshold();

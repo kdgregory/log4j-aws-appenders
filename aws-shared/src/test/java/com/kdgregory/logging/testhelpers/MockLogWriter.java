@@ -15,6 +15,7 @@
 package com.kdgregory.logging.testhelpers;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
@@ -26,7 +27,7 @@ import com.kdgregory.logging.common.util.DiscardAction;
 /**
  *  Common functionality for destination-specific writer mocks.
  */
-public class MockLogWriter<T extends AbstractWriterConfig>
+public class MockLogWriter<T extends AbstractWriterConfig<?>>
 implements LogWriter
 {
     public T config;
@@ -34,7 +35,8 @@ implements LogWriter
     public volatile Thread writerThread;
     public Thread shutdownHook;
 
-    public List<LogMessage> messages = new ArrayList<LogMessage>();
+    // the actual writers use a concurrent queue
+    public List<LogMessage> messages = Collections.synchronizedList(new ArrayList<LogMessage>());
     public LogMessage lastMessage;
 
     public boolean stopped;
@@ -58,36 +60,21 @@ implements LogWriter
     @Override
     public void setBatchDelay(long value)
     {
-        this.config.batchDelay = value;
+        this.config.setBatchDelay(value);
     }
 
 
     @Override
     public void setDiscardThreshold(int value)
     {
-        this.config.discardThreshold = value;
+        this.config.setDiscardThreshold(value);
     }
 
 
     @Override
     public void setDiscardAction(DiscardAction value)
     {
-        this.config.discardAction = value;
-    }
-
-
-    @Override
-    public void setShutdownHook(Thread shutdownHook)
-    {
-        this.shutdownHook = shutdownHook;
-    }
-
-
-    @Override
-    public boolean isMessageTooLarge(LogMessage message)
-    {
-        // destination-specific subclasses should override this
-        return false;
+        this.config.setDiscardAction(value);
     }
 
 
@@ -100,6 +87,13 @@ implements LogWriter
 
 
     @Override
+    public boolean isSynchronous()
+    {
+        return config.getSynchronousMode();
+    }
+
+
+    @Override
     public void addMessage(LogMessage message)
     {
         messages.add(message);
@@ -107,7 +101,6 @@ implements LogWriter
     }
 
 
-    @Override
     public boolean initialize()
     {
         initializeInvocationCount++;
@@ -136,7 +129,6 @@ implements LogWriter
     }
 
 
-    @Override
     public synchronized void processBatch(long shutdownTime)
     {
         processBatchInvocationCount++;
@@ -168,7 +160,6 @@ implements LogWriter
         }
     }
 
-    @Override
     public void cleanup()
     {
         cleanupInvocationCount++;

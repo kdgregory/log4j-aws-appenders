@@ -67,4 +67,15 @@ public class KinesisConstants
      */
     public final static int MAXIMUM_RETENTION_PERIOD = 168;
 
+
+    /**
+     *  An SDK-independent enumeration of stream status codes as returned by
+     *  <code>DescribeStream</code>, with the addition of a status indicating
+     *  that the stream does not exist.
+     */
+    public enum StreamStatus
+    {
+        DOES_NOT_EXIST, CREATING, DELETING, ACTIVE, UPDATING
+    }
+
 }

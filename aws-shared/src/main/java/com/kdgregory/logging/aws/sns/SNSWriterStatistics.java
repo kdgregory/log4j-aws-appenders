@@ -17,6 +17,9 @@ package com.kdgregory.logging.aws.sns;
 import com.kdgregory.logging.aws.internal.AbstractWriterStatistics;
 
 
+/**
+ *  Statistics specific to SNSLogWriter.
+ */
 public class SNSWriterStatistics
 extends AbstractWriterStatistics
 implements SNSWriterStatisticsMXBean

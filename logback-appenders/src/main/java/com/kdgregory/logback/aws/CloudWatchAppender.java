@@ -32,7 +32,6 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *  This appender supports the following configuration parameters:
  *  <p>
  *  <table>
- *
  *  <tr VALIGN="top">
  *      <th> logGroup
  *      <td> Name of the CloudWatch log group where messages are sent; may use
@@ -63,30 +62,12 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *
  *  <tr VALIGN="top">
  *      <th> dedicatedWriter
- *      <td> If true, the appender assumes that it will be the only writer to
- *           the log stream, and will not retrieve a sequence token before each
- *           write. Defaults to false for legacy behavior.
- *
- *  <tr VALIGN="top">
- *      <th> rotationMode
- *      <td> Controls whether auto-rotation is enabled. Values are none, count,
- *           interval, hourly, and daily; default is none.
- *
- *  <tr VALIGN="top">
- *      <th> rotationInterval
- *      <td> Sets the rotation interval, for those appenders that support rotation.
- *           This parameter is valid only when the <code>rotationMode</code> parameter
- *           is "interval" or "count": for the former, it's the number of milliseconds
- *           between rotations, for the latter the number of messages.
- *           <p>
- *           If using interval rotation, you should include <code>{timestamp}</code>
- *           in the log stream name. If using counted rotation, you should include
- *           <code>{sequence}</code>.
- *
- *  <tr VALIGN="top">
- *      <th> sequence
- *      <td> A value that is incremented each time the stream is rotated. May be
- *           accessed as the <code>{sequence}</code> substitution. Defaults to 0.
+ *      <td> If true (the default), the appender assumes that it is the only thing
+ *           writing to the log stream, and does not fetch a sequence token before
+ *           each write. This improves performance and reduces the likelihood of
+ *           throttling when there are a large number of processes (as long as they
+ *           write to different streams). If you need to have multiple appenders
+ *           writing to the same stream, set this to false.
  *
  *  <tr VALIGN="top">
  *      <th> synchronous
@@ -121,7 +102,7 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *      <td> If <code>true</code> (the default), oversize messages are truncated to
  *           the maximum length permitted by CloudWatch Logs. If <code>false</code>
  *           they are discarded. In either case, the oversized message is reported
- *           to the Logback debug log.
+ *           to the Log4J debug log.
  *
  *  <tr VALIGN="top">
  *      <th> discardThreshold
@@ -133,7 +114,6 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *           The default, 10,000, is based on the assumptions that (1) each message
  *           will be 1k or less, and (2) any app that uses remote logging can afford
  *           10MB.
- *           <p>
  *
  *  <tr VALIGN="top">
  *      <th> discardAction
@@ -165,16 +145,11 @@ import com.kdgregory.logging.common.factories.DefaultThreadFactory;
  *      <th> clientRegion
  *      <td> Specifies a non-default service region. This setting is ignored if you
  *           use a client factory.
- *           <p>
- *           Note that the region must be supported by the current SDK version.
  *
  *  <tr VALIGN="top">
  *      <th> clientEndpoint
- *      <td> Specifies a non-default service endpoint. This is intended for use with
- *           older AWS SDK versions that do not provide client factories and default
- *           to us-east-1 for constructed clients, although it can be used for newer
- *           releases when you want to override the default region provider. This
- *           setting is ignored if you use a client factory.
+ *      <td> Specifies a non-default service endpoint. Typically used when running in
+ *           a VPC, when the normal endpoint is not available.
  *
  *  <tr VALIGN="top">
  *      <th> useShutdownHook
@@ -191,7 +166,7 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
     private String  logGroup;
     private String  logStream;
     private Integer retentionPeriod;
-    private boolean dedicatedWriter;
+    private boolean dedicatedWriter = true;
 
 
     public CloudWatchAppender()
@@ -284,32 +259,17 @@ extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,Cloud
 //  AbstractAppender overrides
 //----------------------------------------------------------------------------
 
-    /** {@inheritDoc} */
-    @Override
-    public void setRotationMode(String value)
-    {
-        super.setRotationMode(value);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void rotate()
-    {
-        super.rotate();
-    }
-
-
     @Override
     protected CloudWatchWriterConfig generateWriterConfig()
     {
-        Substitutions subs     = new Substitutions(new Date(), sequence.get());
+        Substitutions subs     = new Substitutions(new Date(), 0);
         String actualLogGroup  = subs.perform(logGroup);
         String actualLogStream = subs.perform(logStream);
 
-        return new CloudWatchWriterConfig(
-            actualLogGroup, actualLogStream, retentionPeriod, dedicatedWriter,
-            false, batchDelay, discardThreshold, discardAction,
-            clientFactory, assumedRole, clientRegion, clientEndpoint);
+        return new CloudWatchWriterConfig()
+               .setLogGroupName(actualLogGroup)
+               .setLogStreamName(actualLogStream)
+               .setRetentionPeriod(retentionPeriod)
+               .setDedicatedWriter(dedicatedWriter);
     }
 }

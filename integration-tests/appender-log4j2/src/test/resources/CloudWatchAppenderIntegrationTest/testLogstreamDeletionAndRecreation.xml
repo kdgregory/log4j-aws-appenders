@@ -8,9 +8,8 @@
         <CloudWatchAppender name="test">
             <PatternLayout pattern="[%t] %-5p %c - %m%n" />
             <logGroup>AppenderIntegrationTest-testLogstreamDeletionAndRecreation</logGroup>
-            <logStream>AppenderTest-{sequence}</logStream>
+            <logStream>AppenderTest</logStream>
             <batchDelay>250</batchDelay>
-            <sequence>1</sequence>
         </CloudWatchAppender>
     </Appenders>
 

@@ -26,7 +26,6 @@ import javax.servlet.http.HttpSession;
 
 import org.w3c.dom.Document;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -215,23 +214,6 @@ public class TestJsonAccessLayout
         applyLayoutAndParse(layout);
 
         DomAsserts.assertEquals("query string", "?name=value", dom, "/data/queryString");
-    }
-
-
-    @Test
-    @Ignore("only run this on an EC2 instance")
-    public void testEnableInstanceId() throws Exception
-    {
-        JsonAccessLayout layout = new JsonAccessLayout();
-        layout.setEnableInstanceId(true);
-
-        constructMocks("/example", "name=value", "success!");
-        request.addHeader("Host", "www.example.com");
-
-        applyLayoutAndParse(layout);
-
-        String hostname = new XPathWrapper("/data/instanceId").evaluateAsString(dom);
-        assertFalse("hostname present and non-blank", StringUtil.isBlank(hostname));
     }
 
 

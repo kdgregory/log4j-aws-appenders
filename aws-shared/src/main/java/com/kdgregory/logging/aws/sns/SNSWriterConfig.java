@@ -14,47 +14,152 @@
 
 package com.kdgregory.logging.aws.sns;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
-import com.kdgregory.logging.common.util.DiscardAction;
 
 
 /**
- *  Holds configuration for the LogWriter. This is a simple struct, with writable fields
- *  (because config can change). It is not exposed to the outside world.
+ *  Configuration for SNSLogWriter.
+ *  <p>
+ *  Note: the setters for name, ARN, and subject transparently replace empty
+ *  or blank values with null. This is a flag that indicates that the value
+ *  should not be used.
  */
 public class SNSWriterConfig
-extends AbstractWriterConfig
+extends AbstractWriterConfig<SNSWriterConfig>
 {
-    public String topicName;
-    public String topicArn;
-    public boolean autoCreate;
-    public String subject;
+    private String  topicName;
+    private String  topicArn;
+    private String  subject;
+    private boolean autoCreate;
 
+
+    public SNSWriterConfig()
+    {
+        super();
+        super.setBatchDelay(1);
+    }
+
+//----------------------------------------------------------------------------
+//  Accessors
+//----------------------------------------------------------------------------
+
+    public String getTopicName()
+    {
+        return topicName;
+    }
+
+    public SNSWriterConfig setTopicName(String value)
+    {
+        topicName = (value != null) && value.trim().isEmpty() ? null : value;
+        return this;
+    }
+
+
+    public String getTopicArn()
+    {
+        return topicArn;
+    }
+
+    public SNSWriterConfig setTopicArn(String value)
+    {
+        topicArn = (value != null) && value.trim().isEmpty() ? null : value;
+        return this;
+    }
+
+
+    public String getSubject()
+    {
+        return subject;
+    }
+
+    public SNSWriterConfig setSubject(String value)
+    {
+        subject = value;
+        return this;
+    }
+
+
+    public boolean getAutoCreate()
+    {
+        return autoCreate;
+    }
+
+    public SNSWriterConfig setAutoCreate(boolean value)
+    {
+        autoCreate = value;
+        return this;
+    }
+
+
+    @Override
+    public SNSWriterConfig setBatchDelay(long value)
+    {
+        // SNS writer uses a fixed batch delay; this call is a no-op
+        return this;
+    }
+
+//----------------------------------------------------------------------------
+//  Other public methods
+//----------------------------------------------------------------------------
 
     /**
-     *  @param topicName                Identifies the destination topic by name; may be null.
-     *  @param topicArn                 Identifies the destination topic by ARN; may be null.
-     *  @param subject                  The subject to be applied to outgoing messages; blank disables.
-     *  @param autoCreate               Flag to indicate topic should be created if it doesn't exist.
-     *  @param truncateOversizeMessages If true, messages that are too large for the service are
-     *                                  truncated to fit; if false, they are discarded.
-     *  @param discardThreshold         The maximum number of messages that will be retained in the queue.
-     *  @param discardAction            Controls how messages are discarded from the queue to remain within threshold.
-     *  @param clientFactoryMethod      Optional: fully-qualified name of a static method to create client.
-     *  @param assumedRole              Optional: name or ARN of a role to assume when creating client.
-     *  @param clientRegion             Optional: explicit region for client (used with ctor and SDK builder).
-     *  @param clientEndpoint           Optional: explicit endpoint for client (only used with constructors).
+     *  Validates the configuration, returning a list of any validation errors.
+     *  An empty list indicates a valid config.
      */
-    public SNSWriterConfig(
-        String topicName, String topicArn, String subject, boolean autoCreate,
-        boolean truncateOversizeMessages, int discardThreshold, DiscardAction discardAction,
-        String clientFactoryMethod, String assumedRole, String clientRegion, String clientEndpoint)
+    public List<String> validate()
     {
-        super(truncateOversizeMessages, 1, discardThreshold, discardAction, clientFactoryMethod, assumedRole, clientRegion, clientEndpoint);
+        List<String> result = new ArrayList<>();
 
-        this.topicName = topicName;
-        this.topicArn = topicArn;
-        this.autoCreate = autoCreate;
-        this.subject = subject;
+        if ((topicName == null) && (topicArn == null))
+        {
+            result.add("must specify either ARN or topic name");
+        }
+
+        if ((topicName != null) && !topicName.matches(SNSConstants.TOPIC_NAME_REGEX))
+        {
+            result.add("invalid SNS topic name: " + topicName);
+        }
+
+        if ((topicArn != null) && !topicArn.matches(SNSConstants.TOPIC_ARN_REGEX))
+        {
+            result.add("invalid SNS topic ARN: " + topicArn);
+        }
+
+        if ((subject != null) && (subject.length() > 100))
+        {
+            result.add("invalid SNS subject: over 100 characters");
+        }
+
+        if ((subject != null) && (subject.charAt(0) == ' '))
+        {
+            result.add("invalid SNS subject: begins with space");
+        }
+
+        if (subject != null)
+        {
+            for (int ii = 0 ; ii < subject.length() ; ii++)
+            {
+                if (subject.charAt(ii) > 127)
+                {
+                    result.add("invalid SNS subject: must contain ASCII characters only");
+                    break;
+                }
+                if ((subject.charAt(ii) < 32) || (subject.charAt(ii) == 127))
+                {
+                    result.add("invalid SNS subject: may not contain control characters or newlines");
+                    break;
+                }
+            }
+        }
+
+        if (autoCreate && (topicArn != null))
+        {
+            result.add("must not specify ARN if auto-create enabled");
+        }
+
+        return result;
     }
 }

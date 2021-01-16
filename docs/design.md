@@ -77,7 +77,7 @@ even the standard `FileAppender` is not guaranteed to save all messages, because
 buffered in memory before they're actually written to the disk.
 
 
-### Synchronous Mode
+## Synchronous Mode
 
 While batching and asynchronous delivery is the most efficient way to send messages, it is not
 appropriate when the background thread does not have the opportunity to run, as with a [short-duration
@@ -92,14 +92,17 @@ is still the possibility of an exception during the send, which will requeue the
 deliver (which might never happen).
 
 
-### Shutdown Hooks
+## Shutdown
 
-One other case where batching and background operation is a problem is at application shutdown,
-especially for short-running applications. The writer thread is a daemon thread: it will not
-prevent the application from shutting down when all of the non-daemon threads (normally just
-the main thread) exit. However, there may still be messages in the queue at shutdown.
+When the logging framework is shut down (or an indivudal appender is explicitly stopped), the
+log-writer attempts to send one last batch. The configured `batchDelay` is the maximum amount
+of time that it will wait to build that batch, and any failures are not retried.
 
-To avoid this problem, the Log4J1 and Logback appenders install a
+A bigger issue is the JVM shutting down without first shutting down the logging framework. Since the
+log-writer runs on a daemon thread, it would not normally get a chance to send any queued messages.
+This is a particular issue with short-running applications.
+
+To avoid this problem, by default the Log4J1 and Logback appenders install a
 [shutdown hook](https://docs.oracle.com/javase/8/docs/api/java/lang/Runtime.html#addShutdownHook)
 when they start the writer thread. This hook calls the writer's `stop()` method, and then
 joins to the writer thread, delaying shutdown until that thread finishes (which will take
@@ -108,12 +111,9 @@ joins to the writer thread, delaying shutdown until that thread finishes (which 
 > Note: Log4J2 has its own shutdown hook, and the appenders leverage it. While the configuration
   option is retained for consistency, it is ignored.
 
-Note that this still does not guarantee all messages will be delivered: aside from persistent
-errors writing to the destination, the JVM may not remain running long enough for shutdown
-hooks to complete. This is particularly likely in the case where the operating system is itself
-shutting down (ie, a scale-in operation): the OS typically gives applications a short window
-to gracefully shut themselves down, then sends a SIGKILL to forcibly terminate them.
+When the shutdown hook is enabled, the JVM will not shut down until the final batch is sent (or it's
+hard-killed). This means that the main thread can continue running unexpectedly (ie, it's in a loop
+and the program was killed with `kill -15` or Ctrl-C).
 
 If you do not want this shutdown hook, you can set the `useShutdownHook` configuration parameter
-to `false`. The only reason that I can see for doing this is when running in a web container and
-using a context listener that explicitly shuts down the logging framework on undeploy.
+to `false`. Beware that doing so means you might lose messages.

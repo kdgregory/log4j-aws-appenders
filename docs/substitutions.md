@@ -24,13 +24,16 @@ Variable            | Description
 If unable to replace a substitution variable, the tag will be left in place. This could happen due
 to a incorrect or unclosed tag, or an unresolvable system property or environment variable.
 
+Substitutions may not be nested: if you use an `env` substitution that returns the string `{date}`,
+that literal value will be the substitution result.
+
 The `pid` and `hostname` values are parsed from `RuntimeMxBean.getName()` and may not be available
 on all JVMs (in particular non-OpenJDK JVMs may use a different format). When running in a Docker
 container, the container ID is reported as the hostname.
 
 The `aws` substitutions connect to AWS to retrieve information. If you do not have network
 connectivity or properly configured credentials these will fail. You must also have the relevant
-AWS SDK library in your classpath.
+AWS SDK library in your classpath (see below).
 
 The `ec2` substitutions retrieve their information from the EC2 metadata service. Using these
 variables in any other environment will result in a (long) wait as the SDK tries to make an HTTP
@@ -90,7 +93,7 @@ but are deprecated and have been removed from the documentation.
 
 ## Caveats and additional information
 
-A particular destination may not accept all of the characters produced by a substitution, and the
-appenders will not initialize if that happens. As a general rule you should limit substituted
+A particular service may not allow all of the characters produced by a substitution, and
+appenders initialization may fail as a result. As a general rule you should limit substituted
 values (from environment variable or system properties) to alphanumeric characters, hyphens, and
 underscores.

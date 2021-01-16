@@ -4,12 +4,18 @@
 
 * Support AWS SDK v2.
   ([#118](https://github.com/kdgregory/log4j-aws-appenders/issues/118))
-* Removed support for early versions of the AWS SDK. See the [client
-  docs](docs/client.md) for more information.
-* CloudWatch Logs no longer supports logstream rotation
+* Now requires a minimum AWS SDK version of XXX or XXX, and a minimum
+  JDK version of 1.8.
+* Now supports client endpoint configuration in all cases.
+  ([#129](https://github.com/kdgregory/log4j-aws-appenders/issues/129))
+* Fixed bug in substitutions, in which a failed multi-part substitutions
+  prevented subsequent substitutions from being applied.
+  ([#130](https://github.com/kdgregory/log4j-aws-appenders/issues/130))
+* CloudWatch Logs appender no longer supports logstream rotation
   ([more info](docs/changes-3.0.md#cloudwatch-logs-no-longer-supports-logstream-rotation).
-* CloudWatch Logs `dedicatedWriter` property now defaults to `true`
+* CloudWatch Logs appender `dedicatedWriter` property now defaults to `true`
   ([more info](docs/changes-3.0.md#cloudwatch-logs-now-sets-dedicatedwriter-true-by-default).
+* Other minor breaking changes as described [here](docs/changes-3.0.md).
 
 ## 2.4.1 (2020-07-29)
 

@@ -18,12 +18,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
+import com.kdgregory.logging.aws.facade.CloudWatchFacade;
+import com.kdgregory.logging.aws.facade.CloudWatchFacadeException;
 import com.kdgregory.logging.aws.internal.AbstractLogWriter;
-import com.kdgregory.logging.aws.internal.RetryManager;
-import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
-import com.kdgregory.logging.aws.internal.facade.CloudWatchFacadeException;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.util.InternalLogger;
+import com.kdgregory.logging.common.util.RetryManager;
 
 
 /**

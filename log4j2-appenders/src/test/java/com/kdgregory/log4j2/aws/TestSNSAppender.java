@@ -22,7 +22,7 @@ import static net.sf.kdgcommons.test.StringAsserts.*;
 import com.kdgregory.log4j2.aws.SNSAppender.SNSAppenderBuilder;
 import com.kdgregory.log4j2.testhelpers.TestableSNSAppender;
 import com.kdgregory.log4j2.testhelpers.TestableSNSAppender.TestableSNSAppenderBuilder;
-import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
 import com.kdgregory.logging.testhelpers.sns.MockSNSWriter;
 
 

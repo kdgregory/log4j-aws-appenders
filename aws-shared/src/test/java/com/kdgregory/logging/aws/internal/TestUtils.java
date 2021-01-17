@@ -19,6 +19,8 @@ import java.lang.reflect.Method;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import com.kdgregory.logging.common.internal.Utils;
+
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
 

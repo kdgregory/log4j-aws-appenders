@@ -26,10 +26,9 @@ import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagement
 import com.amazonaws.services.simplesystemsmanagement.model.*;
 
 import com.kdgregory.logging.aws.facade.v1.InfoFacadeImpl;
-import com.kdgregory.logging.aws.internal.RetryManager;
-import com.kdgregory.logging.aws.internal.facade.InfoFacade;
 import com.kdgregory.logging.aws.testhelpers.SSMClientMock;
 import com.kdgregory.logging.aws.testhelpers.STSClientMock;
+import com.kdgregory.logging.common.util.RetryManager;
 
 
 public class TestInfoFacadeImpl

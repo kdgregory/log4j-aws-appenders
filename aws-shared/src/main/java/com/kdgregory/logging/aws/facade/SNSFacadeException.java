@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logging.aws.internal.facade;
+package com.kdgregory.logging.aws.facade;
 
 
 /**
- *  This exception is thown by {@link CloudWatchFacade} for any situation that
+ *  This exception is thown by {@link SNSFacade} for any situation that
  *  requires intervention by the caller. Each instance has a reason code, and
  *  an indication of whether the condition is retryable. Where relevant, it may
  *  wrap an underlying SDK-specific cause.
  */
-public class CloudWatchFacadeException
+public class SNSFacadeException
 extends FacadeException
 {
     private static final long serialVersionUID = 1L;
@@ -43,45 +43,15 @@ extends FacadeException
 
 
         /**
-         *  The log group was not found, in a call where it should have existed.
-         *  Caller must create, then retry the failed call.
+         *  The requested SNS topic does not exist.
          */
-        MISSING_LOG_GROUP,
-
-
-        /**
-         *  The log stream was not found, in a call where it should have existed.
-         *  Caller must create, then retry the failed call.
-         */
-        MISSING_LOG_STREAM,
-
-
-        /**
-         *  The API call was aborted; according to the Interwebs, this is caused by
-         *  thread interruption. Caller should retry.
-         */
-        ABORTED,
+        MISSING_TOPIC,
 
 
         /**
          *  The API call was throttled; caller should retry.
          */
-        THROTTLING,
-
-
-        /**
-         *  Sequence token passed to PutLogEvents is invalid; retrieve another one and
-         *  retry.
-         */
-        INVALID_SEQUENCE_TOKEN,
-
-
-        /**
-         *  CloudWatch already received these events. Unclear how this happens, although
-         *  it seems to be tied to sequence number collisions. Can discard messages and
-         *  go on with life.
-         */
-        ALREADY_PROCESSED
+        THROTTLING
     }
 
 //----------------------------------------------------------------------------
@@ -94,7 +64,7 @@ extends FacadeException
     /**
      *  Base constructor.
      */
-    public CloudWatchFacadeException(String message, Throwable cause, ReasonCode reasonCode, boolean isRetryable, String functionName, Object... args)
+    public SNSFacadeException(String message, Throwable cause, ReasonCode reasonCode, boolean isRetryable, String functionName, Object... args)
     {
         super(message, cause, isRetryable, functionName, args);
         this.reasonCode = reasonCode;
@@ -105,7 +75,7 @@ extends FacadeException
      *  Convenience constructor, for conditions where there is no underlying exception,
      *  or where it's irrelevant.
      */
-    public CloudWatchFacadeException(String message, ReasonCode reasonCode, boolean isRetryable, String functionName, Object... args)
+    public SNSFacadeException(String message, ReasonCode reasonCode, boolean isRetryable, String functionName, Object... args)
     {
         this(message, null, reasonCode, isRetryable, functionName, args);
     }
@@ -114,7 +84,7 @@ extends FacadeException
     /**
      *  Convenience constructor for testing. Do not use in normal code!
      */
-    public CloudWatchFacadeException(ReasonCode reasonCode, boolean isRetryable, Throwable cause)
+    public SNSFacadeException(ReasonCode reasonCode, boolean isRetryable, Throwable cause)
     {
         this("use for testing only", cause, reasonCode, isRetryable, null);
     }

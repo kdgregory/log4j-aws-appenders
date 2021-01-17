@@ -20,7 +20,7 @@ import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.kdgregory.logging.aws.internal.facade.SNSFacade;
+import com.kdgregory.logging.aws.facade.SNSFacade;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
 

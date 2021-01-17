@@ -20,9 +20,10 @@ import java.util.List;
 
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
-import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.common.internal.Utils;
 import com.kdgregory.logging.common.util.InternalLogger;
 import com.kdgregory.logging.common.util.MessageQueue;
+import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
 
 
 /**

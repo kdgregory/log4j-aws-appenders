@@ -27,10 +27,8 @@ import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.*;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
+import com.kdgregory.logging.aws.facade.CloudWatchFacadeException.ReasonCode;
 import com.kdgregory.logging.aws.facade.v1.CloudWatchFacadeImpl;
-import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
-import com.kdgregory.logging.aws.internal.facade.CloudWatchFacadeException;
-import com.kdgregory.logging.aws.internal.facade.CloudWatchFacadeException.ReasonCode;
 import com.kdgregory.logging.aws.testhelpers.CloudWatchClientMock;
 import com.kdgregory.logging.common.LogMessage;
 

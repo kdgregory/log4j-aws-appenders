@@ -33,7 +33,43 @@ import com.kdgregory.logging.common.LogMessage;
  */
 public class MessageQueue
 {
-
+    /**
+     *  Controls how messages are discarded once the threshold is reached.
+     */
+    public enum DiscardAction
+    {
+        /**
+         *  Never discard; has potential to run out of memory.
+         */
+        none,
+    
+        /**
+         *  Discard oldest messages once threshold is reached.
+         */
+        oldest,
+    
+        /**
+         *  Discard newest messages once threshold is reached.
+         */
+        newest;
+    
+    
+        public static DiscardAction lookup(String value)
+        {
+            if (value == null)
+                return null;
+    
+            try
+            {
+                return DiscardAction.valueOf(value.toLowerCase());
+            }
+            catch (IllegalArgumentException ex)
+            {
+                return null;
+            }
+        }
+    }
+    
 //----------------------------------------------------------------------------
 //  Instance variables and constructor
 //----------------------------------------------------------------------------

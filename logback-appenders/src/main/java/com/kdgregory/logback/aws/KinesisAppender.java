@@ -23,7 +23,7 @@ import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterFactory;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatisticsMXBean;
-import com.kdgregory.logging.common.factories.DefaultThreadFactory;
+import com.kdgregory.logging.common.util.DefaultThreadFactory;
 
 
 /**

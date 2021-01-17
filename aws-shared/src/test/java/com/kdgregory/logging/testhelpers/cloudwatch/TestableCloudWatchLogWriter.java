@@ -19,9 +19,9 @@ import java.util.concurrent.Semaphore;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
-import com.kdgregory.logging.aws.internal.RetryManager;
-import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
+import com.kdgregory.logging.aws.facade.CloudWatchFacade;
 import com.kdgregory.logging.common.util.InternalLogger;
+import com.kdgregory.logging.common.util.RetryManager;
 
 
 /**

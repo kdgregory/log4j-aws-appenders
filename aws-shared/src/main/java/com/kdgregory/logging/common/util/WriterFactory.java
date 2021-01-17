@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logging.common.factories;
+package com.kdgregory.logging.common.util;
 
 import com.kdgregory.logging.common.LogWriter;
-import com.kdgregory.logging.common.util.InternalLogger;
 
 
 /**

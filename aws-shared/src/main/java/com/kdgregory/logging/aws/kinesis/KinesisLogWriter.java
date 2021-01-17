@@ -17,13 +17,13 @@ package com.kdgregory.logging.aws.kinesis;
 import java.util.List;
 import java.util.function.Consumer;
 
+import com.kdgregory.logging.aws.facade.KinesisFacade;
+import com.kdgregory.logging.aws.facade.KinesisFacadeException;
 import com.kdgregory.logging.aws.internal.AbstractLogWriter;
-import com.kdgregory.logging.aws.internal.RetryManager;
-import com.kdgregory.logging.aws.internal.facade.KinesisFacade;
-import com.kdgregory.logging.aws.internal.facade.KinesisFacadeException;
 import com.kdgregory.logging.aws.kinesis.KinesisConstants.StreamStatus;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.util.InternalLogger;
+import com.kdgregory.logging.common.util.RetryManager;
 
 
 /**

@@ -23,8 +23,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import com.kdgregory.logging.aws.internal.facade.KinesisFacade;
 import com.kdgregory.logging.aws.kinesis.KinesisConstants.StreamStatus;
+import com.kdgregory.logging.aws.facade.KinesisFacade;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
 

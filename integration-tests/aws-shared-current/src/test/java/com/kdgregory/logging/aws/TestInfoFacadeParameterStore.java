@@ -25,8 +25,8 @@ import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagement
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementClientBuilder;
 import com.amazonaws.services.simplesystemsmanagement.model.ParameterType;
 
-import com.kdgregory.logging.aws.internal.facade.FacadeFactory;
-import com.kdgregory.logging.aws.internal.facade.InfoFacade;
+import com.kdgregory.logging.aws.facade.FacadeFactory;
+import com.kdgregory.logging.aws.facade.InfoFacade;
 import com.kdgregory.logging.testhelpers.ParameterStoreTestHelper;
 
 

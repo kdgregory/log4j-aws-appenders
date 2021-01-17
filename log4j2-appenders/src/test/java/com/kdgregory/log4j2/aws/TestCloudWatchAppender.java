@@ -22,7 +22,7 @@ import static org.junit.Assert.*;
 import com.kdgregory.log4j2.aws.CloudWatchAppender.CloudWatchAppenderBuilder;
 import com.kdgregory.log4j2.testhelpers.TestableCloudWatchAppender;
 import com.kdgregory.log4j2.testhelpers.TestableCloudWatchAppender.TestableCloudWatchAppenderBuilder;
-import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
 
 

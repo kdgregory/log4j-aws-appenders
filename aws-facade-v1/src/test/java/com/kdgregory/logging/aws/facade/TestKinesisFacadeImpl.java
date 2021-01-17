@@ -28,10 +28,8 @@ import java.util.List;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.*;
 
+import com.kdgregory.logging.aws.facade.KinesisFacadeException.ReasonCode;
 import com.kdgregory.logging.aws.facade.v1.KinesisFacadeImpl;
-import com.kdgregory.logging.aws.internal.facade.KinesisFacade;
-import com.kdgregory.logging.aws.internal.facade.KinesisFacadeException;
-import com.kdgregory.logging.aws.internal.facade.KinesisFacadeException.ReasonCode;
 import com.kdgregory.logging.aws.kinesis.KinesisConstants.StreamStatus;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.testhelpers.KinesisClientMock;

@@ -30,7 +30,7 @@ import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 
-import com.kdgregory.logging.aws.internal.facade.KinesisFacade;
+import com.kdgregory.logging.aws.facade.KinesisFacade;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.testhelpers.CommonTestHelper;

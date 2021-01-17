@@ -24,8 +24,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.TimeZone;
 
-import com.kdgregory.logging.aws.internal.facade.FacadeFactory;
-import com.kdgregory.logging.aws.internal.facade.InfoFacade;
+import com.kdgregory.logging.aws.facade.FacadeFactory;
+import com.kdgregory.logging.aws.facade.InfoFacade;
 
 
 /**

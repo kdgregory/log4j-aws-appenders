@@ -17,7 +17,7 @@ package com.kdgregory.logging.testhelpers;
 import java.lang.Thread.UncaughtExceptionHandler;
 
 import com.kdgregory.logging.common.LogWriter;
-import com.kdgregory.logging.common.factories.ThreadFactory;
+import com.kdgregory.logging.common.util.ThreadFactory;
 
 
 /**

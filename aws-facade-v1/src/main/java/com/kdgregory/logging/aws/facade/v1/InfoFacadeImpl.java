@@ -23,8 +23,8 @@ import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagement
 import com.amazonaws.services.simplesystemsmanagement.model.*;
 import com.amazonaws.util.EC2MetadataUtils;
 
-import com.kdgregory.logging.aws.internal.RetryManager;
-import com.kdgregory.logging.aws.internal.facade.InfoFacade;
+import com.kdgregory.logging.aws.facade.InfoFacade;
+import com.kdgregory.logging.common.util.RetryManager;
 
 
 /**

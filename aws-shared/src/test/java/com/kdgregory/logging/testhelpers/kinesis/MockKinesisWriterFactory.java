@@ -17,8 +17,8 @@ package com.kdgregory.logging.testhelpers.kinesis;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.common.LogWriter;
-import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
+import com.kdgregory.logging.common.util.WriterFactory;
 
 
 /**

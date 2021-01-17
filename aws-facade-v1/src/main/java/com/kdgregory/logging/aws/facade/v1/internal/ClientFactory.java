@@ -26,9 +26,9 @@ import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
-import com.kdgregory.logging.aws.internal.Utils;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
+import com.kdgregory.logging.common.internal.Utils;
 
 
 /**

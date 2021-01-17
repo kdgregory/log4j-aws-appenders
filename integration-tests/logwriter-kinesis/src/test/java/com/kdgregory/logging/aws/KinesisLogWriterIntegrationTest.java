@@ -37,15 +37,15 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 
-import com.kdgregory.logging.aws.internal.facade.KinesisFacade;
+import com.kdgregory.logging.aws.facade.KinesisFacade;
 import com.kdgregory.logging.aws.kinesis.KinesisConstants;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterFactory;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.common.LogMessage;
-import com.kdgregory.logging.common.factories.DefaultThreadFactory;
-import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.common.util.DefaultThreadFactory;
+import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
 import com.kdgregory.logging.testhelpers.KinesisTestHelper;
 import com.kdgregory.logging.testhelpers.KinesisTestHelper.RetrievedRecord;
 import com.kdgregory.logging.testhelpers.TestableInternalLogger;

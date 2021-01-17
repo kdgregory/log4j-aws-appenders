@@ -17,7 +17,7 @@ package com.kdgregory.logging.testhelpers;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.kdgregory.logging.aws.internal.facade.InfoFacade;
+import com.kdgregory.logging.aws.facade.InfoFacade;
 
 
 /**

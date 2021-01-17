@@ -19,8 +19,8 @@ import org.junit.Test;
 
 import net.sf.kdgcommons.test.StringAsserts;
 
-import com.kdgregory.logging.aws.internal.facade.FacadeFactory;
-import com.kdgregory.logging.aws.internal.facade.InfoFacade;
+import com.kdgregory.logging.aws.facade.FacadeFactory;
+import com.kdgregory.logging.aws.facade.InfoFacade;
 
 
 /**

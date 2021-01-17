@@ -17,8 +17,8 @@ package com.kdgregory.logging.aws.sns;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.kdgregory.logging.aws.facade.SNSFacade;
 import com.kdgregory.logging.aws.internal.AbstractLogWriter;
-import com.kdgregory.logging.aws.internal.facade.SNSFacade;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.util.InternalLogger;
 

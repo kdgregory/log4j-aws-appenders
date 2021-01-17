@@ -24,17 +24,17 @@ import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.StringUtil;
 
-import com.kdgregory.logging.aws.internal.facade.SNSFacade;
-import com.kdgregory.logging.aws.internal.facade.SNSFacadeException;
-import com.kdgregory.logging.aws.internal.facade.SNSFacadeException.ReasonCode;
+import com.kdgregory.logging.aws.facade.SNSFacade;
+import com.kdgregory.logging.aws.facade.SNSFacadeException;
+import com.kdgregory.logging.aws.facade.SNSFacadeException.ReasonCode;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
-import com.kdgregory.logging.common.factories.WriterFactory;
-import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.common.util.InternalLogger;
+import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
+import com.kdgregory.logging.common.util.WriterFactory;
 import com.kdgregory.logging.testhelpers.sns.MockSNSFacade;
 import com.kdgregory.logging.testhelpers.sns.TestableSNSLogWriter;
 

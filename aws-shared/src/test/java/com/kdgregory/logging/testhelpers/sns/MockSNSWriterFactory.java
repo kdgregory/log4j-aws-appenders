@@ -17,8 +17,8 @@ package com.kdgregory.logging.testhelpers.sns;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.common.LogWriter;
-import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
+import com.kdgregory.logging.common.util.WriterFactory;
 
 
 /**

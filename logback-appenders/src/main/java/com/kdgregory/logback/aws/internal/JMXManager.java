@@ -14,7 +14,7 @@
 
 package com.kdgregory.logback.aws.internal;
 
-import com.kdgregory.logging.common.jmx.AbstractJMXManager;
+import com.kdgregory.logging.aws.internal.AbstractJMXManager;
 
 import ch.qos.logback.core.spi.ContextAware;
 

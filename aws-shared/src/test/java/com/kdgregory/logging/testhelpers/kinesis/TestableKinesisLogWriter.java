@@ -16,12 +16,12 @@ package com.kdgregory.logging.testhelpers.kinesis;
 
 import java.util.concurrent.Semaphore;
 
-import com.kdgregory.logging.aws.internal.RetryManager;
-import com.kdgregory.logging.aws.internal.facade.KinesisFacade;
+import com.kdgregory.logging.aws.facade.KinesisFacade;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.common.util.InternalLogger;
+import com.kdgregory.logging.common.util.RetryManager;
 
 
 /**

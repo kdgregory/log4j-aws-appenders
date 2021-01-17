@@ -27,18 +27,18 @@ import static org.junit.Assert.*;
 import net.sf.kdgcommons.lang.StringUtil;
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
-import com.kdgregory.logging.aws.internal.facade.KinesisFacade;
-import com.kdgregory.logging.aws.internal.facade.KinesisFacadeException;
-import com.kdgregory.logging.aws.internal.facade.KinesisFacadeException.ReasonCode;
 import com.kdgregory.logging.aws.kinesis.KinesisConstants.StreamStatus;
+import com.kdgregory.logging.aws.facade.KinesisFacade;
+import com.kdgregory.logging.aws.facade.KinesisFacadeException;
+import com.kdgregory.logging.aws.facade.KinesisFacadeException.ReasonCode;
 import com.kdgregory.logging.aws.kinesis.KinesisLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
-import com.kdgregory.logging.common.factories.WriterFactory;
-import com.kdgregory.logging.common.util.DiscardAction;
 import com.kdgregory.logging.common.util.InternalLogger;
+import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
+import com.kdgregory.logging.common.util.WriterFactory;
 import com.kdgregory.logging.testhelpers.kinesis.MockKinesisFacade;
 import com.kdgregory.logging.testhelpers.kinesis.TestableKinesisLogWriter;
 

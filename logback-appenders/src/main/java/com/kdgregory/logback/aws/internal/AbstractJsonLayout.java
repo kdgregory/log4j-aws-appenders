@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import com.kdgregory.logging.aws.common.Substitutions;
-import com.kdgregory.logging.common.util.JsonConverter;
+import com.kdgregory.logging.common.internal.JsonConverter;
 
 import ch.qos.logback.core.LayoutBase;
 

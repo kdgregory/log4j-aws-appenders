@@ -21,7 +21,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 
-import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
 
 
 /**

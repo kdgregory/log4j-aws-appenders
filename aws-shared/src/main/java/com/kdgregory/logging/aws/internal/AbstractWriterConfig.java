@@ -14,7 +14,7 @@
 
 package com.kdgregory.logging.aws.internal;
 
-import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
 
 
 /**

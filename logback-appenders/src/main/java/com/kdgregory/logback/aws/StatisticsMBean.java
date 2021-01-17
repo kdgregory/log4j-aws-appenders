@@ -18,7 +18,7 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import com.kdgregory.logback.aws.internal.JMXManager;
-import com.kdgregory.logging.common.jmx.AbstractMarkerBean;
+import com.kdgregory.logging.aws.internal.AbstractMarkerBean;
 
 
 /**

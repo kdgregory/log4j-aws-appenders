@@ -22,7 +22,7 @@ import static net.sf.kdgcommons.test.StringAsserts.*;
 import com.kdgregory.log4j2.aws.KinesisAppender.KinesisAppenderBuilder;
 import com.kdgregory.log4j2.testhelpers.TestableKinesisAppender;
 import com.kdgregory.log4j2.testhelpers.TestableKinesisAppender.TestableKinesisAppenderBuilder;
-import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
 import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriter;
 
 

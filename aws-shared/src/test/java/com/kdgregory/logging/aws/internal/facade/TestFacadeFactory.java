@@ -17,6 +17,9 @@ package com.kdgregory.logging.aws.internal.facade;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import com.kdgregory.logging.aws.facade.CloudWatchFacade;
+import com.kdgregory.logging.aws.facade.FacadeFactory;
+
 
 // verifies that th facade factory properly handles a missing implementation
 // (if this succeeds, the dependencies on this module are incorrect!)

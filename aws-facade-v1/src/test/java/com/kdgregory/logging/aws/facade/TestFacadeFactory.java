@@ -21,11 +21,6 @@ import com.kdgregory.logging.aws.facade.v1.CloudWatchFacadeImpl;
 import com.kdgregory.logging.aws.facade.v1.InfoFacadeImpl;
 import com.kdgregory.logging.aws.facade.v1.KinesisFacadeImpl;
 import com.kdgregory.logging.aws.facade.v1.SNSFacadeImpl;
-import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
-import com.kdgregory.logging.aws.internal.facade.FacadeFactory;
-import com.kdgregory.logging.aws.internal.facade.InfoFacade;
-import com.kdgregory.logging.aws.internal.facade.KinesisFacade;
-import com.kdgregory.logging.aws.internal.facade.SNSFacade;
 
 
 public class TestFacadeFactory

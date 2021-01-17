@@ -24,6 +24,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 import com.kdgregory.logging.common.LogMessage;
+import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
 
 
 public class TestMessageQueue

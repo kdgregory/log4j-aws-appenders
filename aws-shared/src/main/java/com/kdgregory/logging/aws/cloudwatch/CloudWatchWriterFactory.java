@@ -14,12 +14,12 @@
 
 package com.kdgregory.logging.aws.cloudwatch;
 
-import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
-import com.kdgregory.logging.aws.internal.facade.FacadeFactory;
+import com.kdgregory.logging.aws.facade.CloudWatchFacade;
+import com.kdgregory.logging.aws.facade.FacadeFactory;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.common.LogWriter;
-import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
+import com.kdgregory.logging.common.util.WriterFactory;
 
 
 /**

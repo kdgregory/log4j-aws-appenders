@@ -42,15 +42,15 @@ import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 
-import com.kdgregory.logging.aws.internal.facade.SNSFacade;
+import com.kdgregory.logging.aws.facade.SNSFacade;
 import com.kdgregory.logging.aws.sns.SNSConstants;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterFactory;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.common.LogMessage;
-import com.kdgregory.logging.common.factories.DefaultThreadFactory;
-import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.common.util.DefaultThreadFactory;
+import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
 import com.kdgregory.logging.testhelpers.SNSTestHelper;
 import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 

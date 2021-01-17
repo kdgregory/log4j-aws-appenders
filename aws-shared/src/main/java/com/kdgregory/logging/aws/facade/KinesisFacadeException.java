@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logging.aws.internal.facade;
+package com.kdgregory.logging.aws.facade;
 
 
 /**
- *  This exception is thown by {@link SNSFacade} for any situation that
+ *  This exception is thown by {@link KinesisFacade} for any situation that
  *  requires intervention by the caller. Each instance has a reason code, and
  *  an indication of whether the condition is retryable. Where relevant, it may
  *  wrap an underlying SDK-specific cause.
  */
-public class SNSFacadeException
+public class KinesisFacadeException
 extends FacadeException
 {
     private static final long serialVersionUID = 1L;
@@ -43,9 +43,23 @@ extends FacadeException
 
 
         /**
-         *  The requested SNS topic does not exist.
+         *  The requested stream does not exist.
          */
-        MISSING_TOPIC,
+        MISSING_STREAM,
+
+
+        /**
+         *  The current operation could not be performed, but may be retried.
+         */
+        INVALID_STATE,
+
+
+        /**
+         *  The requested operation exceeded some limit. This may be retryable or not:
+         *  caller may attempt to retry, but should log failures and be prepared for
+         *  ultimate failure.
+         */
+        LIMIT_EXCEEDED,
 
 
         /**
@@ -64,7 +78,7 @@ extends FacadeException
     /**
      *  Base constructor.
      */
-    public SNSFacadeException(String message, Throwable cause, ReasonCode reasonCode, boolean isRetryable, String functionName, Object... args)
+    public KinesisFacadeException(String message, Throwable cause, ReasonCode reasonCode, boolean isRetryable, String functionName, Object... args)
     {
         super(message, cause, isRetryable, functionName, args);
         this.reasonCode = reasonCode;
@@ -75,16 +89,17 @@ extends FacadeException
      *  Convenience constructor, for conditions where there is no underlying exception,
      *  or where it's irrelevant.
      */
-    public SNSFacadeException(String message, ReasonCode reasonCode, boolean isRetryable, String functionName, Object... args)
+    public KinesisFacadeException(String message, ReasonCode reasonCode, boolean isRetryable, String functionName, Object... args)
     {
         this(message, null, reasonCode, isRetryable, functionName, args);
     }
 
 
     /**
-     *  Convenience constructor for testing. Do not use in normal code!
+     *  Convenience constructor, for conditions where there is no underlying exception,
+     *  or where it's irrelevant.
      */
-    public SNSFacadeException(ReasonCode reasonCode, boolean isRetryable, Throwable cause)
+    public KinesisFacadeException(ReasonCode reasonCode, boolean isRetryable, Throwable cause)
     {
         this("use for testing only", cause, reasonCode, isRetryable, null);
     }

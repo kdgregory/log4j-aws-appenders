@@ -27,6 +27,8 @@ import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.test.NumericAsserts;
 
+import com.kdgregory.logging.common.util.RetryManager;
+
 
 public class TestRetryManager
 {

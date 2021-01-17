@@ -30,6 +30,7 @@ import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 import com.kdgregory.logging.common.LogWriter;
+import com.kdgregory.logging.common.util.DefaultThreadFactory;
 import com.kdgregory.logging.testhelpers.MockLogWriter;
 import com.kdgregory.logging.testhelpers.ThrowingWriterFactory;
 

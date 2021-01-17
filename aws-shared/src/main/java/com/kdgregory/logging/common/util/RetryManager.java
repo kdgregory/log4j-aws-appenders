@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logging.aws.internal;
+package com.kdgregory.logging.common.util;
 
 import java.time.Duration;
 import java.util.function.Consumer;

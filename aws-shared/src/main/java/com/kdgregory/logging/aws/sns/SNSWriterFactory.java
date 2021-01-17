@@ -14,11 +14,11 @@
 
 package com.kdgregory.logging.aws.sns;
 
-import com.kdgregory.logging.aws.internal.facade.FacadeFactory;
-import com.kdgregory.logging.aws.internal.facade.SNSFacade;
+import com.kdgregory.logging.aws.facade.FacadeFactory;
+import com.kdgregory.logging.aws.facade.SNSFacade;
 import com.kdgregory.logging.common.LogWriter;
-import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
+import com.kdgregory.logging.common.util.WriterFactory;
 
 
 /**

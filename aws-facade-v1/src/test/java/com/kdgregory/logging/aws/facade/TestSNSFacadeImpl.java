@@ -26,10 +26,8 @@ import static org.junit.Assert.*;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.*;
 
+import com.kdgregory.logging.aws.facade.SNSFacadeException.ReasonCode;
 import com.kdgregory.logging.aws.facade.v1.SNSFacadeImpl;
-import com.kdgregory.logging.aws.internal.facade.SNSFacade;
-import com.kdgregory.logging.aws.internal.facade.SNSFacadeException;
-import com.kdgregory.logging.aws.internal.facade.SNSFacadeException.ReasonCode;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.testhelpers.SNSClientMock;
 import com.kdgregory.logging.common.LogMessage;

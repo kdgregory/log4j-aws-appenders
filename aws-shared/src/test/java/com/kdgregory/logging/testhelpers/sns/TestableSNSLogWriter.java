@@ -16,7 +16,7 @@ package com.kdgregory.logging.testhelpers.sns;
 
 import java.util.concurrent.Semaphore;
 
-import com.kdgregory.logging.aws.internal.facade.SNSFacade;
+import com.kdgregory.logging.aws.facade.SNSFacade;
 import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;

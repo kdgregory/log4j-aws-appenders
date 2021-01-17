@@ -25,7 +25,7 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.helpers.LogLog;
 
 import com.kdgregory.log4j.testhelpers.cloudwatch.TestableCloudWatchAppender;
-import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
 
 

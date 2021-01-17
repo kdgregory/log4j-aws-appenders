@@ -17,6 +17,8 @@ package com.kdgregory.logging.aws.internal.facade;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import com.kdgregory.logging.aws.facade.FacadeException;
+
 
 public class TestFacadeException
 {

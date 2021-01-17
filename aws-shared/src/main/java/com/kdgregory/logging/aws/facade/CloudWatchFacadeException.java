@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.kdgregory.logging.aws.internal.facade;
+package com.kdgregory.logging.aws.facade;
 
 
 /**
- *  This exception is thown by {@link KinesisFacade} for any situation that
+ *  This exception is thown by {@link CloudWatchFacade} for any situation that
  *  requires intervention by the caller. Each instance has a reason code, and
  *  an indication of whether the condition is retryable. Where relevant, it may
  *  wrap an underlying SDK-specific cause.
  */
-public class KinesisFacadeException
+public class CloudWatchFacadeException
 extends FacadeException
 {
     private static final long serialVersionUID = 1L;
@@ -43,29 +43,45 @@ extends FacadeException
 
 
         /**
-         *  The requested stream does not exist.
+         *  The log group was not found, in a call where it should have existed.
+         *  Caller must create, then retry the failed call.
          */
-        MISSING_STREAM,
+        MISSING_LOG_GROUP,
 
 
         /**
-         *  The current operation could not be performed, but may be retried.
+         *  The log stream was not found, in a call where it should have existed.
+         *  Caller must create, then retry the failed call.
          */
-        INVALID_STATE,
+        MISSING_LOG_STREAM,
 
 
         /**
-         *  The requested operation exceeded some limit. This may be retryable or not:
-         *  caller may attempt to retry, but should log failures and be prepared for
-         *  ultimate failure.
+         *  The API call was aborted; according to the Interwebs, this is caused by
+         *  thread interruption. Caller should retry.
          */
-        LIMIT_EXCEEDED,
+        ABORTED,
 
 
         /**
          *  The API call was throttled; caller should retry.
          */
-        THROTTLING
+        THROTTLING,
+
+
+        /**
+         *  Sequence token passed to PutLogEvents is invalid; retrieve another one and
+         *  retry.
+         */
+        INVALID_SEQUENCE_TOKEN,
+
+
+        /**
+         *  CloudWatch already received these events. Unclear how this happens, although
+         *  it seems to be tied to sequence number collisions. Can discard messages and
+         *  go on with life.
+         */
+        ALREADY_PROCESSED
     }
 
 //----------------------------------------------------------------------------
@@ -78,7 +94,7 @@ extends FacadeException
     /**
      *  Base constructor.
      */
-    public KinesisFacadeException(String message, Throwable cause, ReasonCode reasonCode, boolean isRetryable, String functionName, Object... args)
+    public CloudWatchFacadeException(String message, Throwable cause, ReasonCode reasonCode, boolean isRetryable, String functionName, Object... args)
     {
         super(message, cause, isRetryable, functionName, args);
         this.reasonCode = reasonCode;
@@ -89,17 +105,16 @@ extends FacadeException
      *  Convenience constructor, for conditions where there is no underlying exception,
      *  or where it's irrelevant.
      */
-    public KinesisFacadeException(String message, ReasonCode reasonCode, boolean isRetryable, String functionName, Object... args)
+    public CloudWatchFacadeException(String message, ReasonCode reasonCode, boolean isRetryable, String functionName, Object... args)
     {
         this(message, null, reasonCode, isRetryable, functionName, args);
     }
 
 
     /**
-     *  Convenience constructor, for conditions where there is no underlying exception,
-     *  or where it's irrelevant.
+     *  Convenience constructor for testing. Do not use in normal code!
      */
-    public KinesisFacadeException(ReasonCode reasonCode, boolean isRetryable, Throwable cause)
+    public CloudWatchFacadeException(ReasonCode reasonCode, boolean isRetryable, Throwable cause)
     {
         this("use for testing only", cause, reasonCode, isRetryable, null);
     }

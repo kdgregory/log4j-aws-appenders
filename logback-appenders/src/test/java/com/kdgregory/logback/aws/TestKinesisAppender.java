@@ -21,7 +21,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 import com.kdgregory.logback.testhelpers.kinesis.TestableKinesisAppender;
-import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
 import com.kdgregory.logging.testhelpers.kinesis.MockKinesisWriter;
 
 

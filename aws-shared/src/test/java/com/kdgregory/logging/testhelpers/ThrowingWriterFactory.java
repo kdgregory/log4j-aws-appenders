@@ -19,8 +19,8 @@ import java.util.concurrent.CountDownLatch;
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
-import com.kdgregory.logging.common.factories.WriterFactory;
 import com.kdgregory.logging.common.util.InternalLogger;
+import com.kdgregory.logging.common.util.WriterFactory;
 
 
 /**

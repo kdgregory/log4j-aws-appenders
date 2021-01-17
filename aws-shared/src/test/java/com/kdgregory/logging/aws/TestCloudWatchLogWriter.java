@@ -29,17 +29,17 @@ import net.sf.kdgcommons.lang.StringUtil;
 import static net.sf.kdgcommons.test.NumericAsserts.*;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
-import com.kdgregory.logging.aws.internal.Utils;
-import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
-import com.kdgregory.logging.aws.internal.facade.CloudWatchFacadeException;
-import com.kdgregory.logging.aws.internal.facade.CloudWatchFacadeException.ReasonCode;
+import com.kdgregory.logging.aws.facade.CloudWatchFacade;
+import com.kdgregory.logging.aws.facade.CloudWatchFacadeException;
+import com.kdgregory.logging.aws.facade.CloudWatchFacadeException.ReasonCode;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
-import com.kdgregory.logging.common.factories.WriterFactory;
-import com.kdgregory.logging.common.util.DiscardAction;
+import com.kdgregory.logging.common.internal.Utils;
 import com.kdgregory.logging.common.util.InternalLogger;
+import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
+import com.kdgregory.logging.common.util.WriterFactory;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchFacade;
 import com.kdgregory.logging.testhelpers.cloudwatch.TestableCloudWatchLogWriter;
 

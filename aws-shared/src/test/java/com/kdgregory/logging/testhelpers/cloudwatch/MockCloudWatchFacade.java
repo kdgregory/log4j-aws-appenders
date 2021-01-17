@@ -22,8 +22,8 @@ import java.util.Base64;
 import java.util.List;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
-import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
-import com.kdgregory.logging.aws.internal.facade.CloudWatchFacadeException;
+import com.kdgregory.logging.aws.facade.CloudWatchFacade;
+import com.kdgregory.logging.aws.facade.CloudWatchFacadeException;
 import com.kdgregory.logging.common.LogMessage;
 
 

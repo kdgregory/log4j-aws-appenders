@@ -27,7 +27,7 @@ import com.amazonaws.services.logs.AWSLogsClientBuilder;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
-import com.kdgregory.logging.aws.internal.facade.CloudWatchFacade;
+import com.kdgregory.logging.aws.facade.CloudWatchFacade;
 import com.kdgregory.logging.testhelpers.CloudWatchTestHelper;
 import com.kdgregory.logging.testhelpers.CommonTestHelper;
 import com.kdgregory.logging.testhelpers.MessageWriter;

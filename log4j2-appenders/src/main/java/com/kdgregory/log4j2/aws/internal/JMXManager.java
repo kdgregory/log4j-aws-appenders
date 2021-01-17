@@ -14,7 +14,7 @@
 
 package com.kdgregory.log4j2.aws.internal;
 
-import com.kdgregory.logging.common.jmx.AbstractJMXManager;
+import com.kdgregory.logging.aws.internal.AbstractJMXManager;
 
 
 /**

@@ -11,11 +11,22 @@ logs](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-b
 not a replacement for them.
 
 
-## Configuration
+## Configuring your application server
 
-See the [logback-access documentation](https://logback.qos.ch/access.html) for information about configuring
-your server. You will need to copy both the `logback-aws-appenders` and `aws-shared` JARs into your server's
-lib directory, in addition to the Logback JARs and any required AWS SDK JARs and their dependencies.
+Start by reading the [logback-access documentation](https://logback.qos.ch/access.html).
+
+In addition to to copying the Logback JARs into your server's `lib` directory, you'll also need
+to copy the AWS SDK JARs and the folling JARs from this library:
+
+* `logback-aws-appenders`
+* `shared`
+* `aws-facade-v1` or `aws-facade-v2`, depending on which AWS SDK you use
+
+A simple way to get these JARs is to build one of the logback examples (ensurng that you pick the
+right AWS SDK version), and then copy the JARs that it downloads.
+
+
+## Configuration
 
 The complete list of properties is as follows (also available in the JavaDoc). Boolean properties are
 explicitly enabled with the case-insensitive value "true", explicitly disabled with the case-insensitive

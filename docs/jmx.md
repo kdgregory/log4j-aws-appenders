@@ -80,7 +80,7 @@ All log writers support the following attributes:
   The stacktrace from the last writer error, if it involved an exception.
 
 `CloudWatchLogWriter` provides the following additional attributes, defined by
-[CloudWatchWriterStatisticsMXBean](../aws-shared/src/main/java/com/kdgregory/logging/aws/cloudwatch/CloudWatchWriterStatisticsMXBean.java):
+[CloudWatchWriterStatisticsMXBean](../library/shared/src/main/java/com/kdgregory/logging/aws/cloudwatch/CloudWatchWriterStatisticsMXBean.java):
 
 * `ActualLogGroupName`  
   The actual destination log group name, after subsitutions have been applied to the configured name.
@@ -95,13 +95,13 @@ All log writers support the following attributes:
   that you have too many appenders writing to the same stream.
 
 `KinesisLogWriter` provides the following additional attributes, defined by
-[KinesisWriterStatisticsMXBean](../aws-shared/src/main/java/com/kdgregory/logging/aws/kinesis/KinesisWriterStatisticsMXBean.java).
+[KinesisWriterStatisticsMXBean](../library/shared/src/main/java/com/kdgregory/logging/aws/kinesis/KinesisWriterStatisticsMXBean.java).
 
 * `ActualStreamName`  
   The actual destination stream name, after subsitutions have been applied to the configured name.
 
 `SNSLogWriter` provides the following additional attributes, defined by
-[SNSWriterStatisticsMXBean](../aws-shared/src/main/java/com/kdgregory/logging/aws/sns/SNSWriterStatisticsMXBean.java).
+[SNSWriterStatisticsMXBean](../library/shared/src/main/java/com/kdgregory/logging/aws/sns/SNSWriterStatisticsMXBean.java).
 
 * `ActualTopicName`  
   The actual destination topic name, after substitutions have been applied. This is set from configuration

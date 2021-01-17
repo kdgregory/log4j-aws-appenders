@@ -14,13 +14,13 @@
     </description>
 
     <modules>
-        <module>parent</module>
-        <module>aws-facade-v1</module>
-        <module>aws-shared</module>
-        <module>log4j1-appenders</module>
-        <module>log4j2-appenders</module>
-        <module>logback-appenders</module>
-        <module>integration-tests/helpers</module>
+        <module>library/parent</module>
+        <module>library/shared</module>
+        <module>library/aws-facade-v1</module>
+        <module>library/log4j1-appenders</module>
+        <module>library/log4j2-appenders</module>
+        <module>library/logback-appenders</module>
+        <module>integration-tests-v1/helpers</module>
     </modules>
 
 </project>

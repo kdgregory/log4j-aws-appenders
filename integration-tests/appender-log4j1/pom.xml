@@ -9,7 +9,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.kdgregory.logging.integration-test</groupId>
+    <groupId>com.kdgregory.logging.integration-test.v1</groupId>
     <artifactId>appender-log4j1</artifactId>
 
     <name>Log4J 1.x Appender Integration Tests</name>
@@ -52,13 +52,13 @@
         </dependency>
 
         <dependency>
-            <groupId>com.kdgregory.logging.integration-test</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>test-helpers</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.kdgregory.logging.integration-test</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>abstract-appender</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>

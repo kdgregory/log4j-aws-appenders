@@ -3,14 +3,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.kdgregory.logging</groupId>
-    <artifactId>integration-tests</artifactId>
+    <artifactId>integration-tests-v1</artifactId>
     <version>3.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>AWS Logging Appenders - Integration Tests</name>
+    <name>Integration Tests V1</name>
 
     <description>
-        Driver POM to build the integration tests.
+        Driver POM to build/run integration tests using the V1 SDK.
     </description>
 
     <modules>

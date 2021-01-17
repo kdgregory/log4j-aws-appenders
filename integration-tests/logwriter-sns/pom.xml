@@ -9,7 +9,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.kdgregory.logging.integration-test</groupId>
+    <groupId>com.kdgregory.logging.integration-test.v1</groupId>
     <artifactId>logwriter-sns</artifactId>
 
     <name>SNS LogWriter Integration Tests</name>
@@ -45,7 +45,7 @@
         </dependency>
 
         <dependency>
-            <groupId>com.kdgregory.logging.integration-test</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>test-helpers</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>

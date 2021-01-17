@@ -9,7 +9,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.kdgregory.logging.integration-test</groupId>
+    <groupId>com.kdgregory.logging.integration-test.v1</groupId>
     <artifactId>abstract-appender</artifactId>
 
     <name>Abstract Appender Integration Tests</name>
@@ -28,12 +28,6 @@
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
             <artifactId>shared</artifactId>
-            <version>${project.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.kdgregory.logging.integration-test</groupId>
-            <artifactId>test-helpers</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
@@ -69,6 +63,12 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>test-helpers</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

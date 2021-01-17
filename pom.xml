@@ -20,7 +20,7 @@
         <module>library/log4j1-appenders</module>
         <module>library/log4j2-appenders</module>
         <module>library/logback-appenders</module>
-        <module>integration-tests/helpers</module>
+        <module>integration-tests-v1/helpers</module>
     </modules>
 
 </project>

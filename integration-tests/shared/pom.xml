@@ -10,23 +10,23 @@
     </parent>
 
     <groupId>com.kdgregory.logging.integration-test</groupId>
-    <artifactId>aws-shared-current</artifactId>
+    <artifactId>shared</artifactId>
 
-    <name>Current-Version AWS-Shared Integration Tests</name>
+    <name>Shared Functionality Integration Tests</name>
 
     <description>
-        Tests core functionality outside of the context of an appender,
-        using a recent SDK version.
+        Tests core functionality outside of the context of an appender.
     </description>
 
 
     <properties>
     </properties>
 
+
     <dependencies>
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
-            <artifactId>aws-shared</artifactId>
+            <artifactId>shared</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -39,7 +39,7 @@
 
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
-            <artifactId>aws-shared</artifactId>
+            <artifactId>shared</artifactId>
             <classifier>tests</classifier>
             <type>test-jar</type>
             <version>${project.version}</version>

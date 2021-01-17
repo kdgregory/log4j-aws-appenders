@@ -9,13 +9,13 @@
         <relativePath>../parent</relativePath>
     </parent>
 
-    <artifactId>aws-shared</artifactId>
+    <artifactId>shared</artifactId>
     <packaging>jar</packaging>
 
-    <name>AWS Writers</name>
+    <name>Shared Components</name>
 
     <description>
-        AWS log writers. These are independent of both the logging framework and the underlying AWS SDK.
+        Contains the log-writers, along with utility classes used by both facades and appenders.
     </description>
 
     <dependencies>

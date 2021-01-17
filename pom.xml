@@ -15,8 +15,8 @@
 
     <modules>
         <module>library/parent</module>
+        <module>library/shared</module>
         <module>library/aws-facade-v1</module>
-        <module>library/aws-shared</module>
         <module>library/log4j1-appenders</module>
         <module>library/log4j2-appenders</module>
         <module>library/logback-appenders</module>

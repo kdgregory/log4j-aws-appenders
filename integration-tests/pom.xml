@@ -14,7 +14,7 @@
     </description>
 
     <modules>
-        <module>aws-shared-current</module>
+        <module>shared</module>
         <module>logwriter-cloudwatch</module>
         <module>logwriter-kinesis</module>
         <module>logwriter-sns</module>

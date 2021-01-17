@@ -31,8 +31,8 @@ import com.kdgregory.logging.testhelpers.MockInfoFacade;
 
 
 /**
- *  This tests substituions that don't involve AWS. Look at the aws-shared
- *  integration tests for those that do.
+ *  This tests substituions that don't involve AWS. Look at the integration tests
+ *  for those that do.
  */
 public class TestSubstitutions
 {

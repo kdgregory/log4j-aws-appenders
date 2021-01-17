@@ -21,7 +21,7 @@
     <dependencies>
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
-            <artifactId>aws-shared</artifactId>
+            <artifactId>shared</artifactId>
             <version>${project.version}</version>
         </dependency>
         
@@ -56,7 +56,7 @@
 
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
-            <artifactId>aws-shared</artifactId>
+            <artifactId>shared</artifactId>
             <classifier>tests</classifier>
             <type>test-jar</type>
             <version>${project.version}</version>

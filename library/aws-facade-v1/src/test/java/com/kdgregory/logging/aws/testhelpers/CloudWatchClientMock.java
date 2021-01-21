@@ -193,12 +193,6 @@ implements InvocationHandler
             putLogEventsGroupName = request.getLogGroupName();
             putLogEventsStreamName = request.getLogStreamName();
             putLogEventsEvents = request.getLogEvents();
-            if (! logGroupNames.contains(request.getLogGroupName()))
-                throw new ResourceNotFoundException("no such log group: " + request.getLogGroupName());
-            if (! logStreamNames.contains(request.getLogStreamName()))
-                throw new ResourceNotFoundException("no such log stream: " + request.getLogStreamName());
-            if (Integer.parseInt(request.getSequenceToken()) != nextSequenceToken)
-                throw new InvalidSequenceTokenException("was " + request.getSequenceToken() + " expected " + nextSequenceToken);
             return putLogEvents(request);
         }
         else if (methodName.equals("shutdown"))
@@ -321,6 +315,13 @@ implements InvocationHandler
 
     protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
     {
+        if (! logGroupNames.contains(request.getLogGroupName()))
+            throw new ResourceNotFoundException("no such log group: " + request.getLogGroupName());
+        if (! logStreamNames.contains(request.getLogStreamName()))
+            throw new ResourceNotFoundException("no such log stream: " + request.getLogStreamName());
+        if (Integer.parseInt(request.getSequenceToken()) != nextSequenceToken)
+            throw new InvalidSequenceTokenException("was " + request.getSequenceToken() + " expected " + nextSequenceToken);
+
         return new PutLogEventsResult()
                .withNextSequenceToken(String.valueOf(++nextSequenceToken));
     }

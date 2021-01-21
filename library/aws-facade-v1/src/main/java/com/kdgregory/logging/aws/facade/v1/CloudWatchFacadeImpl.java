@@ -243,7 +243,15 @@ implements CloudWatchFacade
                     "missing log group",
                     ReasonCode.MISSING_LOG_GROUP,
                     false,
-                    "putEvents", config.getLogGroupName());
+                    "putEvents", config.getLogGroupName(), config.getLogStreamName());
+        }
+        catch (DataAlreadyAcceptedException ex)
+        {
+            throw new CloudWatchFacadeException(
+                    "already processed",
+                    ReasonCode.ALREADY_PROCESSED,
+                    false,
+                    "putEvents", config.getLogGroupName(), config.getLogStreamName());
         }
         catch (Exception ex)
         {
@@ -298,12 +306,6 @@ implements CloudWatchFacade
             reason = ReasonCode.ABORTED;
             message = "request aborted";
             isRetryable = true;
-        }
-        else if (cause instanceof DataAlreadyAcceptedException)
-        {
-            reason = ReasonCode.ALREADY_PROCESSED;
-            message = "already processed";
-            isRetryable = false;
         }
         else if (cause instanceof AWSLogsException)
         {

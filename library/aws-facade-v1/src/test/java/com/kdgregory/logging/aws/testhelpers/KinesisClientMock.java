@@ -58,7 +58,7 @@ implements InvocationHandler
     public int creatingStatusCount;
 
     // the number of times each method was invoked
-    public volatile int describeStreamInvocationCount;
+    public volatile int describeStreamSummaryInvocationCount;
     public volatile int createStreamInvocationCount;
     public volatile int putRecordsInvocationCount;
     public volatile int increaseRetentionPeriodInvocationCount;
@@ -120,10 +120,10 @@ implements InvocationHandler
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
     {
         String methodName = method.getName();
-        if (methodName.equals("describeStream"))
+        if (methodName.equals("describeStreamSummary"))
         {
-            describeStreamInvocationCount++;
-            DescribeStreamRequest request = (DescribeStreamRequest)args[0];
+            describeStreamSummaryInvocationCount++;
+            DescribeStreamSummaryRequest request = (DescribeStreamSummaryRequest)args[0];
             describeStreamStreamName = request.getStreamName();
             return describeStream(request);
         }
@@ -166,13 +166,13 @@ implements InvocationHandler
 //  Default mock implementations -- override for specific tests
 //----------------------------------------------------------------------------
 
-    protected DescribeStreamResult describeStream(DescribeStreamRequest request)
+    protected DescribeStreamSummaryResult describeStream(DescribeStreamSummaryRequest request)
     {
         if (knownStreams.contains(request.getStreamName()))
         {
-            StreamDescription streamDesc = new StreamDescription()
+            StreamDescriptionSummary desc = new StreamDescriptionSummary()
                                            .withStreamStatus(StreamStatus.ACTIVE);
-            return new DescribeStreamResult().withStreamDescription(streamDesc);
+            return new DescribeStreamSummaryResult().withStreamDescriptionSummary(desc);
         }
         else
         {
@@ -196,7 +196,7 @@ implements InvocationHandler
 
     protected PutRecordsResult putRecords(PutRecordsRequest request)
     {
-        List<PutRecordsResultEntry> resultRecords = new ArrayList<PutRecordsResultEntry>(request.getRecords().size());
+        List<PutRecordsResultEntry> resultRecords = new ArrayList<>(request.getRecords().size());
         int errorCount = 0;
         for (int ii = 0 ; ii < request.getRecords().size() ; ii++)
         {

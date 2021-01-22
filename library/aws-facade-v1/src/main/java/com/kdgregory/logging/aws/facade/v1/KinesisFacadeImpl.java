@@ -64,12 +64,11 @@ implements KinesisFacade
     @Override
     public StreamStatus retrieveStreamStatus()
     {
-        // TODO - if DescribeStreamSummary is available, use it
         try
         {
-            DescribeStreamRequest request = new DescribeStreamRequest().withStreamName(config.getStreamName());
-            DescribeStreamResult response = client().describeStream(request);
-            return STATUS_LOOKUP.get(response.getStreamDescription().getStreamStatus());
+            DescribeStreamSummaryRequest request = new DescribeStreamSummaryRequest().withStreamName(config.getStreamName());
+            DescribeStreamSummaryResult response = client().describeStreamSummary(request);
+            return STATUS_LOOKUP.get(response.getStreamDescriptionSummary().getStreamStatus());
         }
         catch (ResourceNotFoundException ex)
         {
@@ -216,7 +215,7 @@ implements KinesisFacade
 
     private PutRecordsRequest createPutRecordsRequest(List<LogMessage> batch)
     {
-        List<PutRecordsRequestEntry> requestRecords = new ArrayList<PutRecordsRequestEntry>(batch.size());
+        List<PutRecordsRequestEntry> requestRecords = new ArrayList<>(batch.size());
         for (LogMessage message : batch)
         {
             requestRecords.add(new PutRecordsRequestEntry()
@@ -233,6 +232,9 @@ implements KinesisFacade
     private List<LogMessage> extractPutRecordsFailures(List<LogMessage> batch, PutRecordsResult response)
     {
         List<LogMessage> result = new ArrayList<>(batch.size());
+        
+        if ((response.getFailedRecordCount() == null) || (response.getFailedRecordCount().intValue() == 0))
+            return result;
 
         Iterator<LogMessage> lmItx = batch.iterator();
         Iterator<PutRecordsResultEntry> rspItx = response.getRecords().iterator();
@@ -246,7 +248,6 @@ implements KinesisFacade
             }
         }
 
-        // these two should match exactly, so not testing that there are any records remaining
         return result;
     }
 }

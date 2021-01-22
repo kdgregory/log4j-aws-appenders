@@ -90,7 +90,10 @@ The minimum supported dependency versions are:
   This version is required to support `JsonAccessLayout`. If you don't use that,
   version 1.0.0 will work.
 
-* **AWS v1 SDK**: 1.11.200  
+* **AWS v1 SDK**: 1.11.233  
+
+  This is the minimum version needed to support all features. As-of this writing
+  it's more than three years old, so if you haven't updated yet you should.
 
 * **AWS v2 SDK**: TBD
 

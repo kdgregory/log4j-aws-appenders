@@ -68,7 +68,7 @@ public class SNSClientMock implements InvocationHandler
     public volatile int listTopicsInvocationCount;
     public volatile int createTopicInvocationCount;
     public volatile int publishInvocationCount;
-    public volatile int shutdownInvocationCount;
+    public volatile int closeInvocationCount;
 
     // after this are the invocation arguments for the various methods
 
@@ -146,8 +146,8 @@ public class SNSClientMock implements InvocationHandler
                 publishSubject = request.subject();
                 publishMessage = request.message();
                 return publish(request);
-            case "shutdown":
-                shutdownInvocationCount++;
+            case "close":
+                closeInvocationCount++;
                 return null;
             default:
                 System.err.println("invocation handler called unexpectedly: " + methodName);

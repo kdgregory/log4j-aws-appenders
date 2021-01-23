@@ -232,7 +232,7 @@ implements KinesisFacade
     private List<LogMessage> extractPutRecordsFailures(List<LogMessage> batch, PutRecordsResult response)
     {
         List<LogMessage> result = new ArrayList<>(batch.size());
-        
+
         if ((response.getFailedRecordCount() == null) || (response.getFailedRecordCount().intValue() == 0))
             return result;
 

@@ -18,6 +18,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
@@ -96,6 +97,15 @@ implements InvocationHandler
     // the last arguments passed to putRetentionPolicy
     public String putRetentionPolicyGroupName;
     public Integer putRetentionPolicyValue;
+
+
+    /**
+     *  Constructs an instance that doesn't know of any groups or streams.
+     */
+    public CloudWatchClientMock()
+    {
+        this(Collections.emptyList(), Collections.emptyList());
+    }
 
 
     /**

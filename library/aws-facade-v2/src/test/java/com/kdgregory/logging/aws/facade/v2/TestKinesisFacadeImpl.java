@@ -126,7 +126,7 @@ public class TestKinesisFacadeImpl
         assertEquals("createStream invocation count",               0,      mock.createStreamInvocationCount);
         assertEquals("increaseRetentionPeriod invocation count",    0,      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 0,      mock.putRecordsInvocationCount);
-        assertEquals("shutdown invocation count",                   0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown invocation count",                   0,      mock.closeInvocationCount);
     }
 
 
@@ -142,7 +142,7 @@ public class TestKinesisFacadeImpl
         assertEquals("createStream invocation count",               0,      mock.createStreamInvocationCount);
         assertEquals("increaseRetentionPeriod invocation count",    0,      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 0,      mock.putRecordsInvocationCount);
-        assertEquals("shutdown invocation count",                   0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown invocation count",                   0,      mock.closeInvocationCount);
     }
 
 
@@ -165,7 +165,7 @@ public class TestKinesisFacadeImpl
         assertEquals("createStream invocation count",               0,      mock.createStreamInvocationCount);
         assertEquals("increaseRetentionPeriod invocation count",    0,      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 0,      mock.putRecordsInvocationCount);
-        assertEquals("shutdown invocation count",                   0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown invocation count",                   0,      mock.closeInvocationCount);
     }
 
 
@@ -197,7 +197,7 @@ public class TestKinesisFacadeImpl
         assertEquals("createStream invocation count",               0,      mock.createStreamInvocationCount);
         assertEquals("increaseRetentionPeriod invocation count",    0,      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 0,      mock.putRecordsInvocationCount);
-        assertEquals("shutdown invocation count",                   0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown invocation count",                   0,      mock.closeInvocationCount);
     }
 
 
@@ -216,7 +216,7 @@ public class TestKinesisFacadeImpl
         assertEquals("createStream invocation count",               1,      mock.createStreamInvocationCount);
         assertEquals("increaseRetentionPeriod invocation count",    0,      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 0,      mock.putRecordsInvocationCount);
-        assertEquals("shutdown invocation count",                   0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown invocation count",                   0,      mock.closeInvocationCount);
     }
 
 
@@ -240,7 +240,7 @@ public class TestKinesisFacadeImpl
         assertEquals("createStream invocation count",               1,      mock.createStreamInvocationCount);
         assertEquals("increaseRetentionPeriod invocation count",    0,      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 0,      mock.putRecordsInvocationCount);
-        assertEquals("shutdown invocation count",                   0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown invocation count",                   0,      mock.closeInvocationCount);
     }
 
 
@@ -272,7 +272,7 @@ public class TestKinesisFacadeImpl
         assertEquals("createStream invocation count",               1,      mock.createStreamInvocationCount);
         assertEquals("increaseRetentionPeriod invocation count",    0,      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 0,      mock.putRecordsInvocationCount);
-        assertEquals("shutdown invocation count",                   0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown invocation count",                   0,      mock.closeInvocationCount);
     }
 
 
@@ -305,7 +305,7 @@ public class TestKinesisFacadeImpl
         assertEquals("createStream invocation count",               1,      mock.createStreamInvocationCount);
         assertEquals("increaseRetentionPeriod invocation count",    0,      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 0,      mock.putRecordsInvocationCount);
-        assertEquals("shutdown invocation count",                   0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown invocation count",                   0,      mock.closeInvocationCount);
     }
 
 
@@ -324,7 +324,7 @@ public class TestKinesisFacadeImpl
         assertEquals("createStream invocation count",               0,      mock.createStreamInvocationCount);
         assertEquals("increaseRetentionPeriod invocation count",    1,      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 0,      mock.putRecordsInvocationCount);
-        assertEquals("shutdown invocation count",                   0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown invocation count",                   0,      mock.closeInvocationCount);
     }
 
 
@@ -340,7 +340,7 @@ public class TestKinesisFacadeImpl
         assertEquals("createStream invocation count",               0,      mock.createStreamInvocationCount);
         assertEquals("increaseRetentionPeriod invocation count",    0,      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 0,      mock.putRecordsInvocationCount);
-        assertEquals("shutdown invocation count",                   0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown invocation count",                   0,      mock.closeInvocationCount);
     }
 
 
@@ -372,7 +372,7 @@ public class TestKinesisFacadeImpl
         assertEquals("createStream invocation count",               0,      mock.createStreamInvocationCount);
         assertEquals("increaseRetentionPeriod invocation count",    1,      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 0,      mock.putRecordsInvocationCount);
-        assertEquals("shutdown invocation count",                   0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown invocation count",                   0,      mock.closeInvocationCount);
     }
 
 
@@ -405,7 +405,7 @@ public class TestKinesisFacadeImpl
         assertEquals("createStream invocation count",               0,      mock.createStreamInvocationCount);
         assertEquals("increaseRetentionPeriod invocation count",    1,      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 0,      mock.putRecordsInvocationCount);
-        assertEquals("shutdown invocation count",                   0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown invocation count",                   0,      mock.closeInvocationCount);
     }
 
 
@@ -437,7 +437,7 @@ public class TestKinesisFacadeImpl
         assertEquals("createStream invocation count",               0,                      mock.createStreamInvocationCount);
         assertEquals("increaseRetentionPeriod invocation count",    0,                      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 1,                      mock.putRecordsInvocationCount);
-        assertEquals("shutdown invocation count",                   0,                      mock.shutdownInvocationCount);
+        assertEquals("shutdown invocation count",                   0,                      mock.closeInvocationCount);
     }
 
 
@@ -480,7 +480,7 @@ public class TestKinesisFacadeImpl
         assertEquals("createStream invocation count",               0,                      mock.createStreamInvocationCount);
         assertEquals("increaseRetentionPeriod invocation count",    0,                      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 1,                      mock.putRecordsInvocationCount);
-        assertEquals("shutdown invocation count",                   0,                      mock.shutdownInvocationCount);
+        assertEquals("shutdown invocation count",                   0,                      mock.closeInvocationCount);
     }
 
 
@@ -515,7 +515,7 @@ public class TestKinesisFacadeImpl
         assertEquals("createStream invocation count",               0,                      mock.createStreamInvocationCount);
         assertEquals("increaseRetentionPeriod invocation count",    0,                      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 1,                      mock.putRecordsInvocationCount);
-        assertEquals("shutdown invocation count",                   0,                      mock.shutdownInvocationCount);
+        assertEquals("shutdown invocation count",                   0,                      mock.closeInvocationCount);
     }
 
 
@@ -551,7 +551,7 @@ public class TestKinesisFacadeImpl
         assertEquals("createStream invocation count",               0,                      mock.createStreamInvocationCount);
         assertEquals("increaseRetentionPeriod invocation count",    0,                      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 1,                      mock.putRecordsInvocationCount);
-        assertEquals("shutdown invocation count",                   0,                      mock.shutdownInvocationCount);
+        assertEquals("shutdown invocation count",                   0,                      mock.closeInvocationCount);
     }
 
 
@@ -588,6 +588,17 @@ public class TestKinesisFacadeImpl
         assertEquals("createStream invocation count",               0,                      mock.createStreamInvocationCount);
         assertEquals("increaseRetentionPeriod invocation count",    0,                      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 1,                      mock.putRecordsInvocationCount);
-        assertEquals("shutdown invocation count",                   0,                      mock.shutdownInvocationCount);
+        assertEquals("shutdown invocation count",                   0,                      mock.closeInvocationCount);
+    }
+
+
+    @Test
+    public void testShutdown() throws Exception
+    {
+         mock = new KinesisClientMock();
+
+        facade.shutdown();
+
+        assertEquals("calls to close",                              1,                          mock.closeInvocationCount);
     }
 }

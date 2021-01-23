@@ -62,7 +62,7 @@ implements InvocationHandler
     public volatile int createStreamInvocationCount;
     public volatile int putRecordsInvocationCount;
     public volatile int increaseRetentionPeriodInvocationCount;
-    public volatile int shutdownInvocationCount;
+    public volatile int closeInvocationCount;
 
     // arguments passed to the last describeStream call
     public volatile String describeStreamStreamName;
@@ -151,9 +151,9 @@ implements InvocationHandler
             putRecordsSourceRecords = request.records();
             return putRecords(request);
         }
-        else if (methodName.equals("shutdown"))
+        else if (methodName.equals("close"))
         {
-            shutdownInvocationCount++;
+            closeInvocationCount++;
             return null;
         }
 

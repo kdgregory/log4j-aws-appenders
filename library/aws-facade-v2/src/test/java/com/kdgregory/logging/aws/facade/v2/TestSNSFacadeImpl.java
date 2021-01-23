@@ -127,7 +127,7 @@ public class TestSNSFacadeImpl
         assertEquals("listTopics() invocation count",   1,      mock.listTopicsInvocationCount);
         assertEquals("createTopic() invocation count",  0,      mock.createTopicInvocationCount);
         assertEquals("publish() invocation count",      0,      mock.publishInvocationCount);
-        assertEquals("shutdown() invocation count",     0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown() invocation count",     0,      mock.closeInvocationCount);
     }
 
 
@@ -144,7 +144,7 @@ public class TestSNSFacadeImpl
         assertEquals("listTopics() invocation count",   1,      mock.listTopicsInvocationCount);
         assertEquals("createTopic() invocation count",  0,      mock.createTopicInvocationCount);
         assertEquals("publish() invocation count",      0,      mock.publishInvocationCount);
-        assertEquals("shutdown() invocation count",     0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown() invocation count",     0,      mock.closeInvocationCount);
     }
 
 
@@ -159,7 +159,7 @@ public class TestSNSFacadeImpl
         assertEquals("listTopics() invocation count",   2,      mock.listTopicsInvocationCount);
         assertEquals("createTopic() invocation count",  0,      mock.createTopicInvocationCount);
         assertEquals("publish() invocation count",      0,      mock.publishInvocationCount);
-        assertEquals("shutdown() invocation count",     0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown() invocation count",     0,      mock.closeInvocationCount);
     }
 
 
@@ -174,7 +174,7 @@ public class TestSNSFacadeImpl
         assertEquals("listTopics() invocation count",   1,      mock.listTopicsInvocationCount);
         assertEquals("createTopic() invocation count",  0,      mock.createTopicInvocationCount);
         assertEquals("publish() invocation count",      0,      mock.publishInvocationCount);
-        assertEquals("shutdown() invocation count",     0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown() invocation count",     0,      mock.closeInvocationCount);
     }
 
 
@@ -204,7 +204,7 @@ public class TestSNSFacadeImpl
         assertEquals("listTopics() invocation count",   1,      mock.listTopicsInvocationCount);
         assertEquals("createTopic() invocation count",  0,      mock.createTopicInvocationCount);
         assertEquals("publish() invocation count",      0,      mock.publishInvocationCount);
-        assertEquals("shutdown() invocation count",     0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown() invocation count",     0,      mock.closeInvocationCount);
     }
 
 
@@ -235,7 +235,7 @@ public class TestSNSFacadeImpl
         assertEquals("listTopics() invocation count",   1,      mock.listTopicsInvocationCount);
         assertEquals("createTopic() invocation count",  0,      mock.createTopicInvocationCount);
         assertEquals("publish() invocation count",      0,      mock.publishInvocationCount);
-        assertEquals("shutdown() invocation count",     0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown() invocation count",     0,      mock.closeInvocationCount);
     }
 
 
@@ -250,7 +250,7 @@ public class TestSNSFacadeImpl
         assertEquals("listTopics() invocation count",   0,      mock.listTopicsInvocationCount);
         assertEquals("createTopic() invocation count",  1,      mock.createTopicInvocationCount);
         assertEquals("publish() invocation count",      0,      mock.publishInvocationCount);
-        assertEquals("shutdown() invocation count",     0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown() invocation count",     0,      mock.closeInvocationCount);
     }
 
 
@@ -281,7 +281,7 @@ public class TestSNSFacadeImpl
         assertEquals("listTopics() invocation count",   0,      mock.listTopicsInvocationCount);
         assertEquals("createTopic() invocation count",  1,      mock.createTopicInvocationCount);
         assertEquals("publish() invocation count",      0,      mock.publishInvocationCount);
-        assertEquals("shutdown() invocation count",     0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown() invocation count",     0,      mock.closeInvocationCount);
     }
 
 
@@ -300,7 +300,7 @@ public class TestSNSFacadeImpl
         assertEquals("listTopics() invocation count",   0,      mock.listTopicsInvocationCount);
         assertEquals("createTopic() invocation count",  0,      mock.createTopicInvocationCount);
         assertEquals("publish() invocation count",      1,      mock.publishInvocationCount);
-        assertEquals("shutdown() invocation count",     0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown() invocation count",     0,      mock.closeInvocationCount);
     }
 
 
@@ -330,7 +330,7 @@ public class TestSNSFacadeImpl
         assertEquals("listTopics() invocation count",   0,      mock.listTopicsInvocationCount);
         assertEquals("createTopic() invocation count",  0,      mock.createTopicInvocationCount);
         assertEquals("publish() invocation count",      1,      mock.publishInvocationCount);
-        assertEquals("shutdown() invocation count",     0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown() invocation count",     0,      mock.closeInvocationCount);
     }
 
 
@@ -361,7 +361,7 @@ public class TestSNSFacadeImpl
         assertEquals("listTopics() invocation count",   0,      mock.listTopicsInvocationCount);
         assertEquals("createTopic() invocation count",  0,      mock.createTopicInvocationCount);
         assertEquals("publish() invocation count",      1,      mock.publishInvocationCount);
-        assertEquals("shutdown() invocation count",     0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown() invocation count",     0,      mock.closeInvocationCount);
     }
 
 
@@ -384,7 +384,7 @@ public class TestSNSFacadeImpl
         assertEquals("listTopics() invocation count",   0,      mock.listTopicsInvocationCount);
         assertEquals("createTopic() invocation count",  0,      mock.createTopicInvocationCount);
         assertEquals("publish() invocation count",      0,      mock.publishInvocationCount);
-        assertEquals("shutdown() invocation count",     0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown() invocation count",     0,      mock.closeInvocationCount);
     }
 
 
@@ -407,6 +407,17 @@ public class TestSNSFacadeImpl
         assertEquals("listTopics() invocation count",   0,      mock.listTopicsInvocationCount);
         assertEquals("createTopic() invocation count",  0,      mock.createTopicInvocationCount);
         assertEquals("publish() invocation count",      1,      mock.publishInvocationCount);
-        assertEquals("shutdown() invocation count",     0,      mock.shutdownInvocationCount);
+        assertEquals("shutdown() invocation count",     0,      mock.closeInvocationCount);
+    }
+
+
+    @Test
+    public void testShutdown() throws Exception
+    {
+        mock = new SNSClientMock(Collections.emptyList());
+
+        facade.shutdown();
+
+        assertEquals("calls to close",                  1,      mock.closeInvocationCount);
     }
 }

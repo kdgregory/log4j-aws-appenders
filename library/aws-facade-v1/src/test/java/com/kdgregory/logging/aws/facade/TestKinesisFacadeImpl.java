@@ -413,7 +413,7 @@ public class TestKinesisFacadeImpl
     {
         final String message1 = "message 1";
         final String message2 = "message \u0392";   // verifies UTF-8 translation
-        
+
         mock = new KinesisClientMock(DEFAULT_STREAM_NAME);
         config.setStreamName(DEFAULT_STREAM_NAME).setPartitionKey(DEFAULT_PARTITION_KEY);
 
@@ -587,5 +587,16 @@ public class TestKinesisFacadeImpl
         assertEquals("increaseRetentionPeriod invocation count",    0,                      mock.increaseRetentionPeriodInvocationCount);
         assertEquals("putRecords invocation count",                 1,                      mock.putRecordsInvocationCount);
         assertEquals("shutdown invocation count",                   0,                      mock.shutdownInvocationCount);
+    }
+
+
+    @Test
+    public void testShutdown() throws Exception
+    {
+        mock = new KinesisClientMock();
+
+        facade.shutdown();
+
+        assertEquals("calls to shutdown",                           1,                      mock.shutdownInvocationCount);
     }
 }

@@ -399,4 +399,15 @@ public class TestSNSFacadeImpl
         assertEquals("publish() invocation count",      1,      mock.publishInvocationCount);
         assertEquals("shutdown() invocation count",     0,      mock.shutdownInvocationCount);
     }
+
+
+    @Test
+    public void testShutdown() throws Exception
+    {
+        mock = new SNSClientMock(Collections.emptyList());
+
+        facade.shutdown();
+
+        assertEquals("calls to shutdown",               1,      mock.shutdownInvocationCount);
+    }
 }

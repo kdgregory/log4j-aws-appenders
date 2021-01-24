@@ -25,6 +25,7 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.facade.CloudWatchFacade;
 import com.kdgregory.logging.aws.facade.CloudWatchFacadeException;
 import com.kdgregory.logging.aws.facade.CloudWatchFacadeException.ReasonCode;
+import com.kdgregory.logging.aws.facade.v2.internal.ClientFactory;
 import com.kdgregory.logging.common.LogMessage;
 
 
@@ -281,9 +282,7 @@ implements CloudWatchFacade
     {
         if (client == null)
         {
-            // TODO
-            // client = new ClientFactory<>(CloudWatchLogsClient.class, config).create();
-            client = CloudWatchLogsClient.builder().build();
+            client = new ClientFactory<>(CloudWatchLogsClient.class, config).create();
         }
 
         return client;

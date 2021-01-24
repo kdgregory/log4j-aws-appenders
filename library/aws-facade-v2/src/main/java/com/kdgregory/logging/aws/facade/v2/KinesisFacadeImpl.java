@@ -27,6 +27,7 @@ import software.amazon.awssdk.services.kinesis.model.*;
 import com.kdgregory.logging.aws.facade.KinesisFacade;
 import com.kdgregory.logging.aws.facade.KinesisFacadeException;
 import com.kdgregory.logging.aws.facade.KinesisFacadeException.ReasonCode;
+import com.kdgregory.logging.aws.facade.v2.internal.ClientFactory;
 import com.kdgregory.logging.aws.kinesis.KinesisConstants.StreamStatus;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
@@ -169,9 +170,7 @@ implements KinesisFacade
     {
         if (client == null)
         {
-            // TODO - implement client factory
-//            client = new ClientFactory<>(AmazonKinesis.class, config).create();
-            client = KinesisClient.builder().build();
+            client = new ClientFactory<>(KinesisClient.class, config).create();
         }
 
         return client;

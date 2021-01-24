@@ -20,6 +20,7 @@ import software.amazon.awssdk.services.sns.model.*;
 import com.kdgregory.logging.aws.facade.SNSFacade;
 import com.kdgregory.logging.aws.facade.SNSFacadeException;
 import com.kdgregory.logging.aws.facade.SNSFacadeException.ReasonCode;
+import com.kdgregory.logging.aws.facade.v2.internal.ClientFactory;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.common.LogMessage;
 
@@ -122,9 +123,7 @@ implements SNSFacade
     {
         if (client == null)
         {
-            // TODO - implement client factory
-//            client = new ClientFactory<>(AmazonSNS.class, config).create();
-            client = SnsClient.builder().build();
+            client = new ClientFactory<>(SnsClient.class, config).create();
         }
 
         return client;

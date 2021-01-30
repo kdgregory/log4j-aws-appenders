@@ -14,10 +14,10 @@
     </description>
 
     <modules>
-        <module>shared</module>
         <module>logwriter-cloudwatch</module>
         <module>logwriter-kinesis</module>
         <module>logwriter-sns</module>
+        <module>logwriter-extended</module>
     </modules>
 
 </project>

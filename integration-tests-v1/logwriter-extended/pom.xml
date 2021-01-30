@@ -9,13 +9,13 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.kdgregory.logging.integration-test.v2</groupId>
-    <artifactId>shared</artifactId>
+    <groupId>com.kdgregory.logging.integration-test.v1</groupId>
+    <artifactId>v1-logwriter-extended</artifactId>
 
-    <name>Shared Functionality Integration Tests</name>
+    <name>LogWriter Extended Integration Tests</name>
 
     <description>
-        Tests core functionality outside of the context of an appender.
+        Tests functionality that requires more than the basic writer-specific libraries.
     </description>
 
 
@@ -32,7 +32,7 @@
         </dependency>
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
-            <artifactId>aws-facade-v2</artifactId>
+            <artifactId>aws-facade-v1</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -54,39 +54,45 @@
         </dependency>
 
         <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>iam</artifactId>
-            <version>${aws-sdk-v2.version}</version>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-iam</artifactId>
+            <version>${aws-sdk-v1.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>kinesis</artifactId>
-            <version>${aws-sdk-v2.version}</version>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-kinesis</artifactId>
+            <version>${aws-sdk-v1.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>cloudwatchlogs</artifactId>
-            <version>${aws-sdk-v2.version}</version>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-logs</artifactId>
+            <version>${aws-sdk-v1.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>sns</artifactId>
-            <version>${aws-sdk-v2.version}</version>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-sns</artifactId>
+            <version>${aws-sdk-v1.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>ssm</artifactId>
-            <version>${aws-sdk-v2.version}</version>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-sqs</artifactId>
+            <version>${aws-sdk-v1.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>sts</artifactId>
-            <version>${aws-sdk-v2.version}</version>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-ssm</artifactId>
+            <version>${aws-sdk-v1.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-sts</artifactId>
+            <version>${aws-sdk-v1.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -95,8 +101,8 @@
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
+            </dependency>
+            <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>${log4j1.version}</version>

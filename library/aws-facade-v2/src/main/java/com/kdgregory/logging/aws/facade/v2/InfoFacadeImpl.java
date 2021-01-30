@@ -22,7 +22,6 @@ import software.amazon.awssdk.services.ssm.model.*;
 import software.amazon.awssdk.services.sts.StsClient;
 import software.amazon.awssdk.services.sts.model.*;
 
-
 import com.kdgregory.logging.aws.facade.InfoFacade;
 import com.kdgregory.logging.common.util.RetryManager;
 

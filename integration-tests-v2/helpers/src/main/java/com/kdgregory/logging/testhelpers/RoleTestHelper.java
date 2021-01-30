@@ -17,7 +17,7 @@ package com.kdgregory.logging.testhelpers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.iam.IamClient;
 import software.amazon.awssdk.services.iam.model.*;
 import software.amazon.awssdk.services.sts.StsClient;
@@ -38,8 +38,8 @@ public class RoleTestHelper
 
     public RoleTestHelper()
     {
-        iamClient = IamClient.builder().build();
-        stsClient = StsClient.builder().build();
+        iamClient = IamClient.builder().region(Region.AWS_GLOBAL).build();
+        stsClient = StsClient.create();
     }
 
 

@@ -21,8 +21,9 @@
         <module>library/log4j1-appenders</module>
         <module>library/log4j2-appenders</module>
         <module>library/logback-appenders</module>
-        <module>integration-tests-v1/helpers</module>
-        <module>integration-tests-v2/helpers</module>
+        <module>integration-tests/helpers/itest-helper-v1</module>
+        <module>integration-tests/helpers/itest-helper-v2</module>
+        <module>integration-tests/appenders/abstract-appender</module>
     </modules>
 
 </project>

@@ -18,21 +18,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
-import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClient;
-import com.amazonaws.services.identitymanagement.model.AttachRolePolicyRequest;
-import com.amazonaws.services.identitymanagement.model.AttachedPolicy;
-import com.amazonaws.services.identitymanagement.model.CreateRoleRequest;
-import com.amazonaws.services.identitymanagement.model.CreateRoleResult;
-import com.amazonaws.services.identitymanagement.model.DeleteRoleRequest;
-import com.amazonaws.services.identitymanagement.model.DetachRolePolicyRequest;
-import com.amazonaws.services.identitymanagement.model.ListAttachedRolePoliciesRequest;
-import com.amazonaws.services.identitymanagement.model.ListAttachedRolePoliciesResult;
-import com.amazonaws.services.identitymanagement.model.Role;
+import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder;
+import com.amazonaws.services.identitymanagement.model.*;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
-import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
-import com.amazonaws.services.securitytoken.model.GetCallerIdentityRequest;
-import com.amazonaws.services.securitytoken.model.GetCallerIdentityResult;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
+import com.amazonaws.services.securitytoken.model.*;
 
 
 /**
@@ -46,11 +36,10 @@ public class RoleTestHelper
     private Logger localLogger = LoggerFactory.getLogger(getClass());
 
 
-    @SuppressWarnings("deprecation")
     public RoleTestHelper()
     {
-        iamClient = new AmazonIdentityManagementClient();
-        stsClient = new AWSSecurityTokenServiceClient();
+        iamClient = AmazonIdentityManagementClientBuilder.defaultClient();
+        stsClient = AWSSecurityTokenServiceClientBuilder.defaultClient();
     }
 
 
@@ -79,6 +68,16 @@ public class RoleTestHelper
             localLogger.warn("failed to shutdown STS client", ex);
         }
     }
+    
+    
+    /**
+     *  Returns the account used to run these tests.
+     */
+    public String retrieveAwsAccountId()
+    {
+        GetCallerIdentityResult response = stsClient.getCallerIdentity(new GetCallerIdentityRequest());
+        return response.getAccount();
+    }
 
 
     /**
@@ -86,14 +85,13 @@ public class RoleTestHelper
      */
     public Role createRole(String roleName, String... managedPolicyArns)
     {
-        GetCallerIdentityResult identityResponse = stsClient.getCallerIdentity(new GetCallerIdentityRequest());
         String trustPolicy
             = "{"
             + "\"Version\":\"2012-10-17\","
             + "\"Statement\": ["
             +     "{"
             +     "\"Effect\":\"Allow\","
-            +     "\"Principal\": { \"AWS\": \"" + identityResponse.getAccount() + "\"},"
+            +     "\"Principal\": { \"AWS\": \"" + retrieveAwsAccountId() + "\"},"
             +     "\"Action\":[\"sts:AssumeRole\"]"
             + "}]}";
 
@@ -129,7 +127,7 @@ public class RoleTestHelper
         long tryUntil = System.currentTimeMillis() + timeout * 1000;
         AssumeRoleRequest request = new AssumeRoleRequest()
                                     .withRoleArn(roleArn)
-                                    .withRoleSessionName(String.valueOf(tryUntil)); // gotta use something
+                                    .withRoleSessionName(getClass().getName());
 
         while (System.currentTimeMillis() < tryUntil)
         {

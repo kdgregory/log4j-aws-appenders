@@ -73,7 +73,7 @@ public class RoleTestHelper
     /**
      *  Returns the invoking user's account.
      */
-    public String getAwsAccount()
+    public String getAwsAccountId()
     {
         GetCallerIdentityRequest request = GetCallerIdentityRequest.builder().build();
         GetCallerIdentityResponse response = stsClient.getCallerIdentity(request);
@@ -92,7 +92,7 @@ public class RoleTestHelper
             + "\"Statement\": ["
             +     "{"
             +     "\"Effect\":\"Allow\","
-            +     "\"Principal\": { \"AWS\": \"" + getAwsAccount() + "\"},"
+            +     "\"Principal\": { \"AWS\": \"" + getAwsAccountId() + "\"},"
             +     "\"Action\":[\"sts:AssumeRole\"]"
             + "}]}";
 

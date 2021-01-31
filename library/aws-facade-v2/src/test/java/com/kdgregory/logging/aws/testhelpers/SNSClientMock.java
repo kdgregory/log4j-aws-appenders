@@ -186,8 +186,7 @@ public class SNSClientMock implements InvocationHandler
      */
     protected CreateTopicResponse createTopic(String topicName)
     {
-        // we don't go to the effort of adding this to the lists of known topics
-        // because it's not used anywhere else in testing
+        // we don't retrieve this topic in any tests, so no need to store it in list of known topics
         return CreateTopicResponse.builder().topicArn(ARN_PREFIX + topicName).build();
     }
 

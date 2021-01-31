@@ -168,6 +168,8 @@ public class TestLogWriterAssumedRole
             // we don't care about message content, just that we actually wrote something
             List<OutputLogEvent> messages = testHelper.retrieveAllMessages(testName, numMessages);
             assertTrue("wrote messages", messages.size() > 0);
+
+            assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
         }
         finally
         {
@@ -228,6 +230,8 @@ public class TestLogWriterAssumedRole
             // we don't care about message content, just that we actually wrote something
             List<KinesisTestHelper.RetrievedRecord> messages = testHelper.retrieveAllMessages(numMessages);
             assertTrue("wrote messages", messages.size() > 0);
+
+            assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
         }
         finally
         {
@@ -290,6 +294,8 @@ public class TestLogWriterAssumedRole
             // we don't care about message content, just that we actually wrote something
             List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
             assertTrue("wrote messages", messages.size() > 0);
+
+            assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
         }
         finally
         {

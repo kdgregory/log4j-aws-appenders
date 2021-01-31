@@ -14,6 +14,7 @@
 
 package com.kdgregory.logging.aws;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -197,6 +198,8 @@ public class SNSLogWriterIntegrationTest
         assertEquals("number of messages", numMessages, messages.size());
         testHelper.assertMessageContent(messages, DEFAULT_SUBJECT);
 
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
+
         testHelper.deleteTopicAndQueue();
     }
 
@@ -221,6 +224,8 @@ public class SNSLogWriterIntegrationTest
         Object facade = ClassUtil.getFieldValue(writer, "facade", SNSFacade.class);
         Object client = ClassUtil.getFieldValue(facade, "client", SnsClient.class);
         assertSame("factory-created client used by writer", factoryClient, client);
+
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
 
         testHelper.deleteTopicAndQueue();
     }
@@ -247,6 +252,8 @@ public class SNSLogWriterIntegrationTest
         assertNull("topic does not exist in default region",
                    (new SNSTestHelper(testHelper, helperSNSclient, helperSQSclient)).lookupTopic());
 
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
+
         testHelper.deleteTopicAndQueue();
     }
 
@@ -272,6 +279,8 @@ public class SNSLogWriterIntegrationTest
 
         assertNull("topic does not exist in default region",
                    (new SNSTestHelper(testHelper, helperSNSclient, helperSQSclient)).lookupTopic());
+
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
 
         testHelper.deleteTopicAndQueue();
     }
@@ -309,6 +318,8 @@ public class SNSLogWriterIntegrationTest
 
         assertEquals("all messages should be truncated to same value",  1, messageBodies.size());
         assertEquals("message was truncated",                           expectedMessage, messageBodies.iterator().next());
+
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
 
         testHelper.deleteTopicAndQueue();
     }

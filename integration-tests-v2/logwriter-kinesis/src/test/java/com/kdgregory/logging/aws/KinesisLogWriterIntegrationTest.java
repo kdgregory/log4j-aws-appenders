@@ -14,6 +14,7 @@
 
 package com.kdgregory.logging.aws;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -184,6 +185,8 @@ public class KinesisLogWriterIntegrationTest
         testHelper.assertMessages(records, 1, numMessages);
         testHelper.assertRandomPartitionKeys(records, numMessages);
 
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
+
         testHelper.deleteStreamIfExists();
     }
 
@@ -208,6 +211,8 @@ public class KinesisLogWriterIntegrationTest
         Object client = ClassUtil.getFieldValue(facade, "client", KinesisClient.class);
         assertSame("factory-created client used by writer", factoryClient, client);
 
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
+
         testHelper.deleteStreamIfExists();
     }
 
@@ -230,6 +235,8 @@ public class KinesisLogWriterIntegrationTest
 
         assertNull("stream does not exist in default region",
                    (new KinesisTestHelper(helperClient, "logwriter-testAlternateRegion")).describeStream());
+
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
 
         testHelper.deleteStreamIfExists();
     }
@@ -257,6 +264,8 @@ public class KinesisLogWriterIntegrationTest
 
         assertNull("stream does not exist in default region",
                    (new KinesisTestHelper(helperClient, "logwriter-testAlternateEndpoint")).describeStream());
+
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
 
         testHelper.deleteStreamIfExists();
     }
@@ -295,6 +304,8 @@ public class KinesisLogWriterIntegrationTest
 
         assertEquals("all messages should be truncated to same value", 1, messages.size());
         assertEquals("message actually written",                       expectedMessage, messages.iterator().next());
+
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
 
         testHelper.deleteStreamIfExists();
     }

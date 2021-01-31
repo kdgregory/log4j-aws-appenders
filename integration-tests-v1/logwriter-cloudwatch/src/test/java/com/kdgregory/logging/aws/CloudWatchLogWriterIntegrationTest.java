@@ -16,6 +16,7 @@ package com.kdgregory.logging.aws;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -243,6 +244,8 @@ public class CloudWatchLogWriterIntegrationTest
 
         assertNull("retention period not set", testHelper.describeLogGroup().getRetentionInDays());
 
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
+
         testHelper.deleteLogGroupIfExists();
     }
 
@@ -270,6 +273,8 @@ public class CloudWatchLogWriterIntegrationTest
         Object client = ClassUtil.getFieldValue(facade, "client", AWSLogs.class);
         assertSame("factory-created client used by writer", factoryClient, client);
 
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
+
         testHelper.deleteLogGroupIfExists();
     }
 
@@ -295,6 +300,8 @@ public class CloudWatchLogWriterIntegrationTest
         assertFalse("stream does not exist in default region",
                     new CloudWatchTestHelper(helperClient, BASE_LOGGROUP_NAME, "testAlternateRegion")
                         .isLogStreamAvailable(logStreamName));
+
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
 
         testHelper.deleteLogGroupIfExists();
     }
@@ -322,6 +329,8 @@ public class CloudWatchLogWriterIntegrationTest
                     new CloudWatchTestHelper(helperClient, BASE_LOGGROUP_NAME, "testAlternateEndpoint")
                         .isLogStreamAvailable(logStreamName));
 
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
+
         testHelper.deleteLogGroupIfExists();
     }
 
@@ -340,6 +349,8 @@ public class CloudWatchLogWriterIntegrationTest
         CommonTestHelper.waitUntilMessagesSent(stats, 1, 30000);
 
         assertEquals("retention period", 3, testHelper.describeLogGroup().getRetentionInDays().intValue());
+
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
 
         testHelper.deleteLogGroupIfExists();
     }
@@ -377,7 +388,8 @@ public class CloudWatchLogWriterIntegrationTest
         }
 
         CommonTestHelper.waitUntilMessagesSent(stats, numWriters * numReps, 30000);
-        internalLogger.assertInternalErrorLog();
+
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
 
         testHelper.deleteLogGroupIfExists();
     }
@@ -420,6 +432,8 @@ public class CloudWatchLogWriterIntegrationTest
 
         assertEquals("all messages should be truncated to same value", 1, messages.size());
         assertEquals("message actually written",                       expectedMessage, messages.iterator().next());
+
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
 
         testHelper.deleteLogGroupIfExists();
     }

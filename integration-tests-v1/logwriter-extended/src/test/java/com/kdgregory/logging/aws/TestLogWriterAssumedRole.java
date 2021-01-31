@@ -181,6 +181,8 @@ public class TestLogWriterAssumedRole
             Object credentialsProvider = ClassUtil.getFieldValue(client, "awsCredentialsProvider", Object.class);
 
             assertEquals("credentials provider class", STSAssumeRoleSessionCredentialsProvider.class, credentialsProvider.getClass());
+
+            assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
         }
         finally
         {
@@ -248,6 +250,8 @@ public class TestLogWriterAssumedRole
             Object credentialsProvider = ClassUtil.getFieldValue(client, "awsCredentialsProvider", Object.class);
 
             assertEquals("credentials provider class", STSAssumeRoleSessionCredentialsProvider.class, credentialsProvider.getClass());
+
+            assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
         }
         finally
         {
@@ -317,6 +321,8 @@ public class TestLogWriterAssumedRole
             Object credentialsProvider = ClassUtil.getFieldValue(client, "awsCredentialsProvider", Object.class);
 
             assertEquals("credentials provider class", STSAssumeRoleSessionCredentialsProvider.class, credentialsProvider.getClass());
+
+            assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
         }
         finally
         {

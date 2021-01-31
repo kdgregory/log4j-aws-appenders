@@ -296,7 +296,7 @@ public class SNSLogWriterIntegrationTest
     @Test
     public void testOversizeMessageTruncation() throws Exception
     {
-        final int numMessages = 11;
+        final int numMessages = 10;
 
         // this test verifies that what I think is the maximum message size is acceptable to SNS
         final int maxMessageSize = SNSConstants.MAX_MESSAGE_BYTES;

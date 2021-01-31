@@ -400,7 +400,7 @@ public class CloudWatchLogWriterIntegrationTest
     @Test
     public void testOversizeMessageTruncation() throws Exception
     {
-        final int numMessages = 100;
+        final int numMessages = 10;
 
         // this test verifies that what I think is the maximum message size is acceptable to CloudWatch
         final int maxMessageSize = CloudWatchConstants.MAX_MESSAGE_SIZE;

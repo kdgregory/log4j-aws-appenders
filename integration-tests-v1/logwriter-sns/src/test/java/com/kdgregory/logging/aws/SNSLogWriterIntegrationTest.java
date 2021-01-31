@@ -35,7 +35,6 @@ import net.sf.kdgcommons.lang.StringUtil;
 
 import org.slf4j.Logger;
 
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
@@ -265,14 +264,8 @@ public class SNSLogWriterIntegrationTest
         // the goal here is to verify that we can use a region that didn't exist when 1.11.0 came out
         // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
         //         if that is your default, then the test will fail
-        altSNSclient = AmazonSNSClientBuilder.standard()
-                    .withEndpointConfiguration(
-                        new EndpointConfiguration("sns.us-east-2.amazonaws.com", null))
-                    .build();
-        altSQSclient = AmazonSQSClientBuilder.standard()
-                    .withEndpointConfiguration(
-                        new EndpointConfiguration("sqs.us-east-2.amazonaws.com", null))
-                    .build();
+        altSNSclient = AmazonSNSClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
+        altSQSclient = AmazonSQSClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
 
         config.setClientEndpoint("sns.us-east-2.amazonaws.com");
         init("testAlternateEndpoint", altSNSclient, altSQSclient);

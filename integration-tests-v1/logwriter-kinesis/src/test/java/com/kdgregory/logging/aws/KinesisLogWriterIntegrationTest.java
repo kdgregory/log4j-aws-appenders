@@ -32,7 +32,6 @@ import net.sf.kdgcommons.lang.StringUtil;
 
 import org.slf4j.Logger;
 
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
@@ -242,10 +241,7 @@ public class KinesisLogWriterIntegrationTest
     {
         final int numMessages = 1001;
 
-        altClient = AmazonKinesisClientBuilder.standard()
-                    .withEndpointConfiguration(
-                        new EndpointConfiguration("kinesis.us-east-2.amazonaws.com", null))
-                    .build();
+        altClient = AmazonKinesisClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
 
         config.setClientEndpoint("kinesis.us-east-2.amazonaws.com");
         init("logwriter-testAlternateEndpoint", altClient);

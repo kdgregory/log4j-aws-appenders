@@ -14,7 +14,6 @@
 
 package com.kdgregory.logging.aws;
 
-import java.net.URI;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -242,7 +241,6 @@ public class KinesisLogWriterIntegrationTest
         final int numMessages = 1001;
 
         altClient = KinesisClient.builder()
-                    .endpointOverride(new URI("https://kinesis.us-east-2.amazonaws.com"))
                     .region(Region.US_EAST_2)
                     .build();
 

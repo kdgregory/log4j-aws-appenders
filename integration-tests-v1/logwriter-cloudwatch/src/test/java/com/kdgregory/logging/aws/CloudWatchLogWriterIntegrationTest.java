@@ -34,7 +34,6 @@ import org.slf4j.MDC;
 import net.sf.kdgcommons.lang.ClassUtil;
 import net.sf.kdgcommons.lang.StringUtil;
 
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
@@ -306,10 +305,7 @@ public class CloudWatchLogWriterIntegrationTest
     {
         final int numMessages = 1001;
 
-        altClient = AWSLogsClientBuilder.standard()
-                    .withEndpointConfiguration(
-                        new EndpointConfiguration("logs.us-east-2.amazonaws.com", null))
-                    .build();
+        altClient = AWSLogsClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
 
         init("testAlternateEndpoint", altClient);
 

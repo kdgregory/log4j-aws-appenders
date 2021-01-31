@@ -15,7 +15,6 @@
 package com.kdgregory.logging.aws;
 
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -306,7 +305,6 @@ public class CloudWatchLogWriterIntegrationTest
         final int numMessages = 1001;
 
         altClient = CloudWatchLogsClient.builder()
-                    .endpointOverride(new URI("https://logs.us-east-2.amazonaws.com"))
                     .region(Region.US_EAST_2)
                     .build();
 

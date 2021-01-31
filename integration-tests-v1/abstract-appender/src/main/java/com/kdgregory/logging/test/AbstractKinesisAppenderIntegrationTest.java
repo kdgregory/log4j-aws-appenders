@@ -314,6 +314,24 @@ public abstract class AbstractKinesisAppenderIntegrationTest
     }
 
 
+    protected void testAlternateEndpoint(LoggerAccessor accessor, KinesisTestHelper altTestHelper)
+    throws Exception
+    {
+        final int numMessages = 1001;
+
+        localLogger.info("writing messages");
+        accessor.newMessageWriter(numMessages).run();
+
+        localLogger.info("reading messages");
+        List<RetrievedRecord> messages = altTestHelper.retrieveAllMessages(numMessages);
+
+        testHelper.assertMessages(messages, 1, numMessages);
+        assertNull("stream does not exist in default region", testHelper.describeStream());
+
+        altTestHelper.deleteStreamIfExists();
+    }
+
+
     protected void testAssumedRole(LoggerAccessor accessor)
     throws Exception
     {

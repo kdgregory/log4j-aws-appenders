@@ -228,6 +228,14 @@ extends AbstractSNSAppenderIntegrationTest
 
 
     @Test
+    public void testAlternateEndpoint() throws Exception
+    {
+        init("testAlternateEndpoint", false);
+        super.testAlternateRegion(new LoggerInfo("TestLogger", "test"));
+    }
+
+
+    @Test
     public void testAssumedRole() throws Exception
     {
         // we can't change the config, so will have to pass a role name that's unlikely

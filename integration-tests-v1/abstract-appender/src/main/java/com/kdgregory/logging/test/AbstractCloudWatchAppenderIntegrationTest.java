@@ -380,6 +380,24 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
     }
 
 
+    protected void testAlternateEndpoint(LoggerAccessor accessor, CloudWatchTestHelper altTestHelper)
+    throws Exception
+    {
+        final int numMessages = 1001;
+
+        localLogger.info("writing messages");
+        accessor.newMessageWriter(numMessages).run();
+
+        localLogger.info("waiting for logger");
+        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
+
+        altTestHelper.assertMessages(LOGSTREAM_BASE, numMessages);
+        assertFalse("logstream does not exist in default region", testHelper.isLogStreamAvailable(LOGSTREAM_BASE));
+
+        altTestHelper.deleteLogGroupIfExists();
+    }
+
+
     protected void testAssumedRole(LoggerAccessor accessor)
     throws Exception
     {

@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import net.sf.kdgcommons.lang.ClassUtil;
 
 import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -334,8 +335,36 @@ public abstract class AbstractSNSAppenderIntegrationTest
         // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
         //         if that is your default, then the test will fail
 
-        altSNSclient = AmazonSNSClientBuilder.standard().withRegion("us-east-2").build();
-        altSQSclient = AmazonSQSClientBuilder.standard().withRegion("us-east-2").build();
+        altSNSclient = AmazonSNSClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
+        altSQSclient = AmazonSQSClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
+        SNSTestHelper altTestHelper = new SNSTestHelper(testHelper, altSNSclient, altSQSclient);
+
+        localLogger.info("writing messages");
+        accessor.newMessageWriter(numMessages).run();
+
+        // no queue attached to this topic so we can't read messages directly
+        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
+
+        assertNotEmpty("topic was created",                  altTestHelper.lookupTopic());
+        assertNull("topic does not exist in default region", testHelper.lookupTopic());
+
+        assertEquals("actual topic name, from statistics",  altTestHelper.getTopicName(),      accessor.getStats().getActualTopicName());
+        assertEquals("actual topic ARN, from statistics",   altTestHelper.getTopicARN(),       accessor.getStats().getActualTopicArn());
+
+        altTestHelper.deleteTopicAndQueue();
+    }
+
+
+    protected void testAlternateEndpoint(LoggerAccessor accessor)
+    throws Exception
+    {
+        final int numMessages = 11;
+
+        // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
+        //         if that is your default, then the test will fail
+
+        altSNSclient = AmazonSNSClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
+        altSQSclient = AmazonSQSClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
         SNSTestHelper altTestHelper = new SNSTestHelper(testHelper, altSNSclient, altSQSclient);
 
         localLogger.info("writing messages");

@@ -24,6 +24,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.identitymanagement.model.Role;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 
@@ -212,13 +213,29 @@ extends AbstractKinesisAppenderIntegrationTest
     {
         // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
         //         if that is your default, then the test will fail
-        altClient = AmazonKinesisClientBuilder.standard().withRegion("us-east-2").build();
+        altClient = AmazonKinesisClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
         KinesisTestHelper altTestHelper = new KinesisTestHelper(altClient, "testAlternateRegion");
 
         // have to delete any eisting stream before initializing logger
         altTestHelper.deleteStreamIfExists();
 
         init("testAlternateRegion");
+        super.testAlternateRegion(new LoggerInfo("TestLogger", "test"), altTestHelper);
+    }
+
+
+    @Test
+    public void testAlternateEndpoint() throws Exception
+    {
+        // BEWARE: my default region is us-east-1, so I use us-east-2 as the alternate
+        //         if that is your default, then the test will fail
+        altClient = AmazonKinesisClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
+        KinesisTestHelper altTestHelper = new KinesisTestHelper(altClient, "testAlternateEndpoint");
+
+        // have to delete any eisting stream before initializing logger
+        altTestHelper.deleteStreamIfExists();
+
+        init("testAlternateEndpoint");
         super.testAlternateRegion(new LoggerInfo("TestLogger", "test"), altTestHelper);
     }
 

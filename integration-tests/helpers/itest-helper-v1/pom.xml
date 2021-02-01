@@ -22,6 +22,8 @@
 
 
     <properties>
+        <!-- we reference ObjectMapper directly, but get it from AWS dependencies in use -->
+        <jackson.version>2.6.7.1</jackson.version>
     </properties>
 
 
@@ -83,6 +85,12 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

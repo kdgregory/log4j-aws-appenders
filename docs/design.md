@@ -1,5 +1,7 @@
 # Design
 
+## Constraints
+
 These are the primary design constraints for this library:
 
 * We may receive logging events on any thread, and don't want to block the thread while communicating

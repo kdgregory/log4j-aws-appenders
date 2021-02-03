@@ -4,8 +4,8 @@
 
 * Support AWS SDK v2.
   ([#118](https://github.com/kdgregory/log4j-aws-appenders/issues/118))
-* Now requires a minimum AWS SDK version of XXX or XXX, and a minimum
-  JDK version of 1.8.
+* Now requires a minimum AWS SDK version of 1.11.233 or 2.10.0, and a
+  minimum JDK version of 1.8.
 * Now supports client endpoint configuration in all cases.
   ([#129](https://github.com/kdgregory/log4j-aws-appenders/issues/129))
 * Fixed bug in substitutions, in which a failed multi-part substitutions

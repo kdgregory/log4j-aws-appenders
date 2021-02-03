@@ -18,6 +18,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.amazonaws.services.logs.AWSLogs;
@@ -92,6 +93,15 @@ implements InvocationHandler
     // the last arguments passed to putRetentionPolicy
     public String putRetentionPolicyGroupName;
     public Integer putRetentionPolicyValue;
+
+
+    /**
+     *  Constructs an instance with no known groups/streams.
+     */
+    public CloudWatchClientMock()
+    {
+        this(Collections.emptyList(), Collections.emptyList());
+    }
 
 
     /**
@@ -193,12 +203,6 @@ implements InvocationHandler
             putLogEventsGroupName = request.getLogGroupName();
             putLogEventsStreamName = request.getLogStreamName();
             putLogEventsEvents = request.getLogEvents();
-            if (! logGroupNames.contains(request.getLogGroupName()))
-                throw new ResourceNotFoundException("no such log group: " + request.getLogGroupName());
-            if (! logStreamNames.contains(request.getLogStreamName()))
-                throw new ResourceNotFoundException("no such log stream: " + request.getLogStreamName());
-            if (Integer.parseInt(request.getSequenceToken()) != nextSequenceToken)
-                throw new InvalidSequenceTokenException("was " + request.getSequenceToken() + " expected " + nextSequenceToken);
             return putLogEvents(request);
         }
         else if (methodName.equals("shutdown"))
@@ -321,6 +325,13 @@ implements InvocationHandler
 
     protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
     {
+        if (! logGroupNames.contains(request.getLogGroupName()))
+            throw new ResourceNotFoundException("no such log group: " + request.getLogGroupName());
+        if (! logStreamNames.contains(request.getLogStreamName()))
+            throw new ResourceNotFoundException("no such log stream: " + request.getLogStreamName());
+        if (Integer.parseInt(request.getSequenceToken()) != nextSequenceToken)
+            throw new InvalidSequenceTokenException("was " + request.getSequenceToken() + " expected " + nextSequenceToken);
+
         return new PutLogEventsResult()
                .withNextSequenceToken(String.valueOf(++nextSequenceToken));
     }

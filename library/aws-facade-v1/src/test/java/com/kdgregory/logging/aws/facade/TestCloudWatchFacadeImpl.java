@@ -45,7 +45,7 @@ public class TestCloudWatchFacadeImpl
     // this is "testing the mock", but makes the code look cleaner
     private final static String TEST_LOG_GROUP_ARN = "arn:aws:logs:us-east-1:123456789012:log-group:" + TEST_LOG_GROUP;
 
-    private CloudWatchClientMock mock = new CloudWatchClientMock(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS);
+    private CloudWatchClientMock mock;
 
     // note: group/stream names are from the end of the above list to verify pagination
     private CloudWatchWriterConfig config = new CloudWatchWriterConfig()
@@ -102,6 +102,8 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testFindLogGroupHappyPath() throws Exception
     {
+        mock = new CloudWatchClientMock(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS);
+
         String result = facade.findLogGroup();
 
         assertEquals("name passed to describeLogGroups",    TEST_LOG_GROUP,     mock.describeLogGroupsGroupNamePrefix);
@@ -135,7 +137,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testFindLogGroupNoSuchGroup() throws Exception
     {
-        mock = new CloudWatchClientMock(Collections.emptyList(), Collections.emptyList());
+        mock = new CloudWatchClientMock();
 
         String result = facade.findLogGroup();
 
@@ -229,6 +231,8 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testCreateLogGroupHappyPath() throws Exception
     {
+        mock = new CloudWatchClientMock();
+
         facade.createLogGroup();
 
         assertEquals("group name passed to create",     config.getLogGroupName(),   mock.createLogGroupGroupName);
@@ -243,7 +247,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testCreateLogGroupAlreadyExists() throws Exception
     {
-        mock = new CloudWatchClientMock(Collections.emptyList(), Collections.emptyList())
+        mock = new CloudWatchClientMock()
         {
             @Override
             protected CreateLogGroupResult createLogGroup(CreateLogGroupRequest request)
@@ -264,7 +268,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testCreateLogGroupThrottled() throws Exception
     {
-        mock = new CloudWatchClientMock(Collections.emptyList(), Collections.emptyList())
+        mock = new CloudWatchClientMock()
         {
             @Override
             protected CreateLogGroupResult createLogGroup(CreateLogGroupRequest request)
@@ -299,7 +303,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testCreateLogGroupAborted() throws Exception
     {
-        mock = new CloudWatchClientMock(Collections.emptyList(), Collections.emptyList())
+        mock = new CloudWatchClientMock()
         {
             @Override
             protected CreateLogGroupResult createLogGroup(CreateLogGroupRequest request)
@@ -334,7 +338,7 @@ public class TestCloudWatchFacadeImpl
     public void testCreateLogGroupUnexpectedError() throws Exception
     {
         final RuntimeException cause = new RuntimeException("test");
-        mock = new CloudWatchClientMock(Collections.emptyList(), Collections.emptyList())
+        mock = new CloudWatchClientMock()
         {
             @Override
             protected CreateLogGroupResult createLogGroup(CreateLogGroupRequest request)
@@ -364,6 +368,7 @@ public class TestCloudWatchFacadeImpl
     public void testSetLogGroupRetentionHappyPath() throws Exception
     {
         config.setRetentionPeriod(Integer.valueOf(7));
+        mock = new CloudWatchClientMock(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS);
 
         facade.setLogGroupRetention();
 
@@ -377,6 +382,8 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testSetLogGroupRetentionNoValue() throws Exception
     {
+        mock = new CloudWatchClientMock(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS);
+
         facade.setLogGroupRetention();
 
         assertEquals("calls to putRetentionPolicy",     0,      mock.putRetentionPolicyInvocationCount);
@@ -390,6 +397,7 @@ public class TestCloudWatchFacadeImpl
         config.setLogGroupName("argle");
         config.setLogStreamName("bargle");
         config.setRetentionPeriod(Integer.valueOf(19));
+        mock = new CloudWatchClientMock(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS);
 
         try
         {
@@ -409,7 +417,7 @@ public class TestCloudWatchFacadeImpl
     public void testSetLogGroupRetentionUnexpectedError() throws Exception
     {
         final RuntimeException cause = new RuntimeException("test");
-        mock = new CloudWatchClientMock(Collections.emptyList(), Collections.emptyList())
+        mock = new CloudWatchClientMock()
         {
             @Override
             protected PutRetentionPolicyResult putRetentionPolicy(PutRetentionPolicyRequest request)
@@ -440,6 +448,8 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testCreateLogStreamHappyPath() throws Exception
     {
+        mock = new CloudWatchClientMock();
+
         facade.createLogStream();
 
         assertEquals("group name passed to create",     TEST_LOG_GROUP,     mock.createLogStreamGroupName);
@@ -455,7 +465,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testCreateLogStreamAlreadyExists() throws Exception
     {
-        mock = new CloudWatchClientMock(Collections.emptyList(), Collections.emptyList())
+        mock = new CloudWatchClientMock()
         {
             @Override
             protected CreateLogStreamResult createLogStream(CreateLogStreamRequest request)
@@ -476,7 +486,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testCreateLogStreamThrottled() throws Exception
     {
-        mock = new CloudWatchClientMock(Collections.emptyList(), Collections.emptyList())
+        mock = new CloudWatchClientMock()
         {
             @Override
             protected CreateLogStreamResult createLogStream(CreateLogStreamRequest request)
@@ -511,7 +521,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testCreateLogStreamAborted() throws Exception
     {
-        mock = new CloudWatchClientMock(Collections.emptyList(), Collections.emptyList())
+        mock = new CloudWatchClientMock()
         {
             @Override
             protected CreateLogStreamResult createLogStream(CreateLogStreamRequest request)
@@ -545,7 +555,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testCreateLogStreamMissingLogGroup() throws Exception
     {
-        mock = new CloudWatchClientMock(Collections.emptyList(), Collections.emptyList())
+        mock = new CloudWatchClientMock()
         {
             @Override
             protected CreateLogStreamResult createLogStream(CreateLogStreamRequest request)
@@ -575,7 +585,7 @@ public class TestCloudWatchFacadeImpl
     public void testCreateLogStreamUnexpectedError() throws Exception
     {
         final RuntimeException cause = new RuntimeException("test");
-        mock = new CloudWatchClientMock(Collections.emptyList(), Collections.emptyList())
+        mock = new CloudWatchClientMock()
         {
             @Override
             protected CreateLogStreamResult createLogStream(CreateLogStreamRequest request)
@@ -604,6 +614,8 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testRetrieveSequenceTokenHappyPath() throws Exception
     {
+        mock = new CloudWatchClientMock(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS);
+
         assertNotEmpty("returned sequence token", facade.retrieveSequenceToken());
 
         assertEquals("group name passed to create",     TEST_LOG_GROUP,     mock.describeLogStreamsGroupName);
@@ -691,7 +703,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testRetrieveSequenceTokenMissingLogGroup() throws Exception
     {
-        mock = new CloudWatchClientMock(Collections.emptyList(), Collections.emptyList());
+        mock = new CloudWatchClientMock();
 
         assertNull("call returned null", facade.retrieveSequenceToken());
 
@@ -735,6 +747,8 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testPutEventsHappyPath() throws Exception
     {
+        mock = new CloudWatchClientMock(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS);
+
         long now = System.currentTimeMillis();
 
         LogMessage msg1 = new LogMessage(now - 10, "message 1");
@@ -765,6 +779,8 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testPutEventsEmptyBatch() throws Exception
     {
+        mock = new CloudWatchClientMock(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS);
+
         String sequenceToken = mock.getCurrentSequenceToken();
         List<LogMessage> messages = Arrays.asList();
 
@@ -812,6 +828,8 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testPutEventsInvalidSequenceToken() throws Exception
     {
+        mock = new CloudWatchClientMock(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS);
+
         String sequenceToken = "9999";
         List<LogMessage> messages = Arrays.asList(new LogMessage(0, "doesn't matter"));
 
@@ -835,7 +853,7 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testPutEventsMissingLogGroup() throws Exception
     {
-        mock = new CloudWatchClientMock(Collections.emptyList(), Collections.emptyList());
+        mock = new CloudWatchClientMock();
 
         String sequenceToken = mock.getCurrentSequenceToken();
         List<LogMessage> messages = Arrays.asList(new LogMessage(0, "doesn't matter"));
@@ -925,6 +943,8 @@ public class TestCloudWatchFacadeImpl
     @Test
     public void testShutdown() throws Exception
     {
+        mock = new CloudWatchClientMock();
+
         facade.shutdown();
 
         assertEquals("calls to shutdown",                       1,                          mock.shutdownInvocationCount);

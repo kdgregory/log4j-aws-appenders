@@ -1,13 +1,57 @@
 # Implementation Notes
 
-These may be helpful if you dig into the code ... or when I go back to the code after
-six months away.
+This library is heavily object-oriented. I'm not going to say it's "good" OO, because Dunning-Kruger.
+However, the basic architecture has worked very well over the past several years, and was extensible
+to three different logging frameworks and two underlying AWS SDKs without pain, so I don't think it's
+"bad" OO.
+
+That said, there are a lot of classes, heavy use of inheritance, helpers and factories, and patterns
+galore. If you have a philosophical opposition to any of that, you should probably stop reading.
+
+This document exists as an introduction to the major parts of the library and implementation
+techniques. Its primary goal is to orient me when I return to the codebase after six months, so
+does not dive too deeply into any of the topics (ie, if you really want to know how things work,
+you'll need to read code).
+
+
+# Data Flow Diagram
+
+![architecture diagram](architecture.svg)
+
+
+## Abstract Classes
+
+Every logging framework does the same thing: it configures an appender and calls `append()`
+on it. Every log-writer does the same thing: it builds a batch of messages from the message
+queue and then sends it to the destination. This is, in my opinion, a perfect place for an
+abstract class or two:
+
+* `AbstractAppender`
+
+  Handles the common appender tasks: initialization, `append()`, and shutdown. It also handles
+  configuration that is supported by every appender: batch delay, client endpoints, and so on.
+  There isn't anything for the subclasses to handle other than destination-specific configuration.
+
+  Note that there's no abstraction across logging frameworks: the framework typically requires
+  that appenders subclass a framework-specific base class. It would be nice if Java supported
+  mixins, so that configuration could be extracted, but even in that case Log4J2 would throw
+  a wrench into the works.
+
+* `AbstractLogWriter`
+
+  This class handles the writer life-cycle and batch-building. It invokes subclass methods to
+  check message size, determine how large a batch should be, ensure that the destination exists,
+  and send a batch to that destination.
+
+There are several other uses of abstract classes, ranging from client configuration to integration
+tests. You'll find most of them in the `internal` packages.
+
 
 ## Facades
 
 This is the big change for the 3.0 release: to support old and new AWS SDKs (which changed
-class, package, and method names, but <em>not</em> the underlying API), the log-writers
-now interact with a facade class rather than the SDK.
+class, package, and method names, but _not_ the underlying API), the log-writers now interact
+with a facade class rather than the SDK.
 
 There are currently four facade classes: `CloudWatchFacade`, `KinesisFacade`, `SNSFacade`,
 and `InfoFacade`. The first three are thin wrappers around the corresponding service API;

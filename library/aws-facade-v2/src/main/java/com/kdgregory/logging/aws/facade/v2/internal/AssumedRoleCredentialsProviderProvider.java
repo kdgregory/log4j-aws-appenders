@@ -14,6 +14,8 @@
 
 package com.kdgregory.logging.aws.facade.v2.internal;
 
+import java.util.regex.Pattern;
+
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.iam.IamClient;
 import software.amazon.awssdk.services.iam.model.*;
@@ -71,6 +73,9 @@ public class AssumedRoleCredentialsProviderProvider
 
     public String retrieveArn(String nameOrArn)
     {
+        if (Pattern.matches("arn:.*:iam::\\d{12}:role/.*", nameOrArn))
+            return nameOrArn;
+
         for (Role role : iamClient().listRolesPaginator().roles())
         {
             if (role.roleName().equals(nameOrArn) || role.arn().equals(nameOrArn))

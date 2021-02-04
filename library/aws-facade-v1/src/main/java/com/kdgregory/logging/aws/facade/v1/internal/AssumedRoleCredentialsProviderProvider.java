@@ -14,6 +14,8 @@
 
 package com.kdgregory.logging.aws.facade.v1.internal;
 
+import java.util.regex.Pattern;
+
 import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder;
@@ -61,6 +63,9 @@ public class AssumedRoleCredentialsProviderProvider
 
     public String retrieveArn(String nameOrArn)
     {
+        if (Pattern.matches("arn:.*:iam::\\d{12}:role/.*", nameOrArn))
+            return nameOrArn;
+
         ListRolesRequest request = new ListRolesRequest();
         boolean isTruncated = false;
         do

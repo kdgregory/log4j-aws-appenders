@@ -61,7 +61,9 @@ public class TestAssumedRoleCredentialsProviderProvider
         iamMock = new IAMClientMock(TEST_ROLE_NAME);
         TestableAssumedRoleCredentialsProviderProvider cpp = new TestableAssumedRoleCredentialsProviderProvider();
 
-        assertEquals(TEST_ROLE_ARN, cpp.retrieveArn(TEST_ROLE_NAME));
+        assertEquals("retrieved ARN",               TEST_ROLE_ARN,  cpp.retrieveArn(TEST_ROLE_NAME));
+
+        assertEquals("listRoles invocation count",  1,              iamMock.listRolesInvocationCount);
     }
 
 
@@ -71,7 +73,9 @@ public class TestAssumedRoleCredentialsProviderProvider
         iamMock = new IAMClientMock(TEST_ROLE_NAME);
         TestableAssumedRoleCredentialsProviderProvider cpp = new TestableAssumedRoleCredentialsProviderProvider();
 
-        assertEquals(TEST_ROLE_ARN, cpp.retrieveArn(TEST_ROLE_ARN));
+        assertEquals("retrieved ARN",               TEST_ROLE_ARN,  cpp.retrieveArn(TEST_ROLE_ARN));
+
+        assertEquals("listRoles invocation count",  0,              iamMock.listRolesInvocationCount);
     }
 
 
@@ -81,7 +85,9 @@ public class TestAssumedRoleCredentialsProviderProvider
         iamMock = new IAMClientMock("foo", "bar", "baz");
         TestableAssumedRoleCredentialsProviderProvider cpp = new TestableAssumedRoleCredentialsProviderProvider();
 
-        assertNull(cpp.retrieveArn("biff"));
+        assertNull("returned null",                                 cpp.retrieveArn("biff"));
+
+        assertEquals("listRoles invocation count",  1,              iamMock.listRolesInvocationCount);
     }
 
 
@@ -91,7 +97,8 @@ public class TestAssumedRoleCredentialsProviderProvider
         iamMock = new IAMClientMock(1, "foo", "bar", TEST_ROLE_NAME, "baz");
         TestableAssumedRoleCredentialsProviderProvider cpp = new TestableAssumedRoleCredentialsProviderProvider();
 
-        assertEquals("retrieved ARN",               TEST_ROLE_ARN,  cpp.retrieveArn(TEST_ROLE_ARN));
+        assertEquals("retrieved ARN",               TEST_ROLE_ARN,  cpp.retrieveArn(TEST_ROLE_NAME));
+
         assertEquals("listRoles invocation count",  3,              iamMock.listRolesInvocationCount);
     }
 

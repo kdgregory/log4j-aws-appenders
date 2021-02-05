@@ -14,6 +14,7 @@
 
 package com.kdgregory.logging.aws.facade;
 
+import java.util.Map;
 
 /**
  *  A facade for various operations that retrieve information about the
@@ -63,6 +64,13 @@ public interface InfoFacade
      *  See {@link #retrieveRegion}, which uses the default region provider.
      */
     String retrieveEC2Region();
+    
+    
+    /**
+     *  Returns all tags for the specified EC2 instance. Returns an empty map if unable to
+     *  retrieve these tags for any reason (eg, invalid instance ID, permission denied).
+     */
+    Map<String,String> retrieveEC2Tags(String instanceId);
 
 
     /**

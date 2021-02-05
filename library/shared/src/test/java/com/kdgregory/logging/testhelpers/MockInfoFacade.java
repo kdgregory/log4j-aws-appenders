@@ -23,7 +23,8 @@ import com.kdgregory.logging.aws.facade.InfoFacade;
 /**
  *  Simple mock-object, used for testing Substitutions. Rather than go through any
  *  sort of proxy operation, or even much configuration, all of the returned values
- *  are configured as public member variables.
+ *  are configured as public member variables, which you can update as part of your
+ *  test setup.
  */
 public class MockInfoFacade
 implements InfoFacade
@@ -32,6 +33,7 @@ implements InfoFacade
     public String defaultRegion;
     public String ec2InstanceId;
     public String ec2Region;
+    public Map<String,String> ec2InstanceTags = new HashMap<>();
     public Map<String,String> parameterValues = new HashMap<>();
 
 
@@ -59,10 +61,16 @@ implements InfoFacade
         return ec2Region;
     }
 
+
+    @Override
+    public Map<String,String> retrieveEC2Tags(String instanceId)
+    {
+        return ec2InstanceTags;
+    }
+
     @Override
     public String retrieveParameter(String parameterName)
     {
         return parameterValues.get(parameterName);
     }
-
 }

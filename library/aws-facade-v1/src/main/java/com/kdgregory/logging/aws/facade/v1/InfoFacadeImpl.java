@@ -14,6 +14,8 @@
 
 package com.kdgregory.logging.aws.facade.v1;
 
+import java.util.Map;
+
 import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
@@ -67,6 +69,13 @@ implements InfoFacade
     public String retrieveEC2Region()
     {
         return EC2MetadataUtils.getEC2InstanceRegion();
+    }
+
+
+    @Override
+    public Map<String,String> retrieveEC2Tags(String instanceId)
+    {
+        throw new UnsupportedOperationException("FIXME - implement");
     }
 
 

@@ -22,6 +22,8 @@ import software.amazon.awssdk.services.ssm.model.*;
 import software.amazon.awssdk.services.sts.StsClient;
 import software.amazon.awssdk.services.sts.model.*;
 
+import java.util.Map;
+
 import com.kdgregory.logging.aws.facade.InfoFacade;
 import com.kdgregory.logging.common.util.RetryManager;
 
@@ -66,6 +68,13 @@ implements InfoFacade
     public String retrieveEC2Region()
     {
         return EC2MetadataUtils.getEC2InstanceRegion();
+    }
+
+
+    @Override
+    public Map<String,String> retrieveEC2Tags(String instanceId)
+    {
+        throw new UnsupportedOperationException("FIXME - implement");
     }
 
 

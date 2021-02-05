@@ -4,13 +4,15 @@
 
 * Support AWS SDK v2.
   ([#118](https://github.com/kdgregory/log4j-aws-appenders/issues/118))
-* Now requires a minimum AWS SDK version of 1.11.233 or 2.10.0, and a
-  minimum JDK version of 1.8.
+* Can now use a `{uuid}` substitution.
+  ([#128](https://github.com/kdgregory/log4j-aws-appenders/issues/128))
 * Now supports client endpoint configuration in all cases.
   ([#129](https://github.com/kdgregory/log4j-aws-appenders/issues/129))
 * Fixed bug in substitutions, in which a failed multi-part substitutions
   prevented subsequent substitutions from being applied.
   ([#130](https://github.com/kdgregory/log4j-aws-appenders/issues/130))
+* Now requires a minimum AWS SDK version of 1.11.233 or 2.10.0, and a
+  minimum JDK version of 1.8.
 * CloudWatch Logs appender no longer supports logstream rotation
   ([more info](docs/changes-3.0.md#cloudwatch-logs-no-longer-supports-logstream-rotation).
 * CloudWatch Logs appender `dedicatedWriter` property now defaults to `true`

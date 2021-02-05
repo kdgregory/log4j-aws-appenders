@@ -13,6 +13,7 @@ Variable            | Description
 `startupTimestamp`  | UTC timestamp of JVM startup as returned by `RuntimeMxBean`: `YYYYMMDDHHMMSS`
 `pid`               | Process ID (see below)
 `hostname`          | Hostname (see below)
+`uuid`              | A type 4 UUID (generated using the JDK's `Random.randomUUID()` method).
 `env:XXX`           | Environment variable `XXX`; see [below](#default-values) for complete syntax.
 `sysprop:XXX`       | System property `XXX`; see [below](#default-values) for complete syntax.
 `instanceId`        | _Deprecated_: use `ec2:instanceId`
@@ -20,6 +21,7 @@ Variable            | Description
 `ec2:instanceId`    | EC2 instance ID; see below.
 `ec2:region`        | Region where the current instance is running; see below.
 `ssm:XXX`           | Parameter Store value `XXX`; see [below](#default-values) for complete syntax.
+
 
 If unable to replace a substitution variable, the tag will be left in place. This could happen due
 to a incorrect or unclosed tag, or an unresolvable system property or environment variable.

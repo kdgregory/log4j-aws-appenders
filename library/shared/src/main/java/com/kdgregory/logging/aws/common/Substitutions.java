@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.UUID;
 
 import com.kdgregory.logging.aws.facade.FacadeFactory;
 import com.kdgregory.logging.aws.facade.InfoFacade;
@@ -52,6 +53,7 @@ public class Substitutions
     private StartupTimestampSubstitutor startupTimestampSubstitutor;
     private PidSubstitutor pidSubstitutor;
     private HostnameSubstitutor hostnameSubstitutor;
+    private UUIDSubstitutor uuidSubstitutor;
     private SyspropSubstitutor syspropSubstitutor;
     private EnvarSubstitutor envarSubstitutor;
     private AwsAccountIdSubstitutor awsAccountIdSubstitutor;
@@ -77,6 +79,7 @@ public class Substitutions
         startupTimestampSubstitutor = new StartupTimestampSubstitutor(runtimeMx);
         pidSubstitutor = new PidSubstitutor(runtimeMx);
         hostnameSubstitutor = new HostnameSubstitutor(runtimeMx);
+        uuidSubstitutor = new UUIDSubstitutor();
         syspropSubstitutor = new SyspropSubstitutor();
         envarSubstitutor = new EnvarSubstitutor();
         awsAccountIdSubstitutor = new AwsAccountIdSubstitutor();
@@ -121,13 +124,14 @@ public class Substitutions
                         startupTimestampSubstitutor.perform(
                         pidSubstitutor.perform(
                         hostnameSubstitutor.perform(
+                        uuidSubstitutor.perform(
                         syspropSubstitutor.perform(
                         envarSubstitutor.perform(
                         awsAccountIdSubstitutor.perform(
                         ec2InstanceIdSubstitutor.perform(
                         ec2RegionSubstitutor.perform(
                         ssmSubstitutor.perform(
-                        token))))))))))))));
+                        token)))))))))))))));
             }
             else
             {
@@ -363,6 +367,22 @@ public class Substitutions
                         ? vmName.substring(vmName.indexOf('@') + 1)
                         : "unknown";
             return cachedValue;
+        }
+    }
+
+
+    private class UUIDSubstitutor
+    extends AbstractSubstitutor
+    {
+        public UUIDSubstitutor()
+        {
+            super("{uuid}");
+        }
+
+        @Override
+        protected String retrieveValue(String ignored)
+        {
+            return UUID.randomUUID().toString();
         }
     }
 

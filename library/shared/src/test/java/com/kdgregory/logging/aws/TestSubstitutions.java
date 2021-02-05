@@ -25,6 +25,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.StringUtil;
+import static net.sf.kdgcommons.test.StringAsserts.*;
 
 import com.kdgregory.logging.aws.common.Substitutions;
 import com.kdgregory.logging.testhelpers.MockInfoFacade;
@@ -131,6 +132,16 @@ public class TestSubstitutions
         Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
 
         assertEquals(hostname, subs.perform("{hostname}"));
+    }
+
+
+    @Test
+    public void testUUID() throws Exception
+    {
+        Substitutions subs = new Substitutions(TEST_DATE, 0, mockInfoFacade);
+
+        assertRegex("\\p{XDigit}{8}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{12}",
+                    subs.perform("{uuid}"));
     }
 
 

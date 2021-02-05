@@ -20,6 +20,7 @@ Variable            | Description
 `aws:accountId`     | AWS account ID. Useful for cross-account logging (eg, as part of a CloudWatch log stream name)
 `ec2:instanceId`    | EC2 instance ID; see below.
 `ec2:region`        | Region where the current instance is running; see below.
+`ec2:tag:XXX`       | The EC2 instance tag named `XXX`; see below.
 `ssm:XXX`           | Parameter Store value `XXX`; see [below](#default-values) for complete syntax.
 
 
@@ -28,6 +29,9 @@ to a incorrect or unclosed tag, or an unresolvable system property or environmen
 
 Substitutions may not be nested: if you use an `env` substitution that returns the string `{date}`,
 that literal value will be the substitution result.
+
+
+## Notes
 
 The `pid` and `hostname` values are parsed from `RuntimeMxBean.getName()` and may not be available
 on all JVMs (in particular non-OpenJDK JVMs may use a different format). When running in a Docker
@@ -40,6 +44,11 @@ AWS SDK library in your classpath (see below).
 The `ec2` substitutions retrieve their information from the EC2 metadata service. Using these
 variables in any other environment will result in a (long) wait as the SDK tries to make an HTTP
 request to the (non-existent) metadata endpoint.
+
+The `ec2:tag` substution only applies when running on EC2. It retrieves the instance ID, and from
+that attempts to retrieve the named tag. If unable to retrieve the tag, returns "unknown". To use
+this substitution variable, you must include the EC2 client library and have the `ec2:DescribeTags`
+permission.
 
 The `ssm` substitutions retrieve their values from the [Systems Manager Parameter
 Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html).

@@ -18,6 +18,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 import java.util.TimeZone;
 
 import org.junit.BeforeClass;
@@ -222,6 +223,28 @@ public class TestSubstitutions
 
         Substitutions subs = new Substitutions(TEST_DATE, 123, mockInfoFacade);
         assertEquals("us-east-1", subs.perform("{ec2:region}"));
+    }
+
+
+    @Test
+    public void testEC2InstanceTag() throws Exception
+    {
+        mockInfoFacade = new MockInfoFacade()
+        {
+            @Override
+            public Map<String,String> retrieveEC2Tags(String instanceId)
+            {
+                assertEquals("passed correct instance ID", ec2InstanceId, instanceId);
+                return ec2InstanceTags;
+            }
+        };
+
+        mockInfoFacade.ec2InstanceId = "i-1234567890";
+        mockInfoFacade.ec2InstanceTags.put("FOO", "bar");
+        mockInfoFacade.ec2InstanceTags.put("ARGLE", "bargle");
+
+        Substitutions subs = new Substitutions(TEST_DATE, 123, mockInfoFacade);
+        assertEquals("bar unknown bargle", subs.perform("{ec2:tag:FOO} {ec2:tag:foo} {ec2:tag:ARGLE}"));
     }
 
 

@@ -19,9 +19,11 @@ import java.lang.management.RuntimeMXBean;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 
@@ -59,6 +61,7 @@ public class Substitutions
     private AwsAccountIdSubstitutor awsAccountIdSubstitutor;
     private EC2InstanceIdSubstitutor ec2InstanceIdSubstitutor;
     private EC2RegionSubstitutor ec2RegionSubstitutor;
+    private EC2TagSubstitutor ec2TagSubstitutor;
     private SSMSubstitutor ssmSubstitutor;
 
 
@@ -85,6 +88,7 @@ public class Substitutions
         awsAccountIdSubstitutor = new AwsAccountIdSubstitutor();
         ec2InstanceIdSubstitutor = new EC2InstanceIdSubstitutor();
         ec2RegionSubstitutor = new EC2RegionSubstitutor();
+        ec2TagSubstitutor = new EC2TagSubstitutor();
         ssmSubstitutor = new SSMSubstitutor();
     }
 
@@ -130,8 +134,9 @@ public class Substitutions
                         awsAccountIdSubstitutor.perform(
                         ec2InstanceIdSubstitutor.perform(
                         ec2RegionSubstitutor.perform(
+                        ec2TagSubstitutor.perform(
                         ssmSubstitutor.perform(
-                        token)))))))))))))));
+                        token))))))))))))))));
             }
             else
             {
@@ -472,6 +477,38 @@ public class Substitutions
         {
             cachedValue = infoFacade().retrieveEC2Region();
             return cachedValue;
+        }
+    }
+
+
+    private class EC2TagSubstitutor
+    extends AbstractSubstitutor
+    {
+        private Map<String,String> cachedTags;
+
+        public EC2TagSubstitutor()
+        {
+            super("{ec2:tag:");
+        }
+
+        @Override
+        protected String retrieveValue(String name)
+        {
+            if ((name == null) || name.isEmpty())
+                return null;
+
+            if (cachedTags == null)
+            {
+                cachedTags = Collections.emptyMap();
+                String instanceId = infoFacade().retrieveEC2InstanceId();
+                if (instanceId != null)
+                {
+                    cachedTags = infoFacade().retrieveEC2Tags(instanceId);
+                }
+            }
+
+            String value = cachedTags.get(name);
+            return (value != null) ? value : "unknown";
         }
     }
 

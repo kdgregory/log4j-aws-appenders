@@ -17,11 +17,16 @@ package com.kdgregory.logging.aws.facade.v2;
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.regions.internal.util.EC2MetadataUtils;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
+import software.amazon.awssdk.services.ec2.Ec2Client;
+import software.amazon.awssdk.services.ec2.model.*;
 import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.services.ssm.model.*;
 import software.amazon.awssdk.services.sts.StsClient;
 import software.amazon.awssdk.services.sts.model.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.kdgregory.logging.aws.facade.InfoFacade;
@@ -74,7 +79,35 @@ implements InfoFacade
     @Override
     public Map<String,String> retrieveEC2Tags(String instanceId)
     {
-        throw new UnsupportedOperationException("FIXME - implement");
+        return retryManager.invoke(() -> {
+            try
+            {
+                List<Filter> filters = new ArrayList<>();
+                filters.add(Filter.builder().name("resource-type").values("instance").build());
+                filters.add(Filter.builder().name("resource-id").values(instanceId).build());
+
+                DescribeTagsRequest request = DescribeTagsRequest.builder().filters(filters).build();
+                DescribeTagsResponse response = ec2Client().describeTags(request);
+
+                Map<String,String> result = new HashMap<>();
+                for (TagDescription desc : response.tags())
+                {
+                    result.put(desc.key(), desc.value());
+                }
+                return result;
+            }
+            catch (Ec2Exception ex)
+            {
+                // this code determined via experimentation
+                if ("RequestLimitExceeded".equals(ex.awsErrorDetails().errorCode()))
+                    return null;
+                return new HashMap<>();
+            }
+            catch (Exception ignored)
+            {
+                return new HashMap<>();
+            }
+        });
     }
 
 
@@ -112,11 +145,20 @@ implements InfoFacade
 //  Internals
 //----------------------------------------------------------------------------
 
+    private Ec2Client ec2Client;
     private StsClient stsClient;
     private SsmClient ssmClient;
 
     protected RetryManager retryManager = new RetryManager(50, 1000, true);
 
+    protected Ec2Client ec2Client()
+    {
+        if (ec2Client == null)
+        {
+            ec2Client = Ec2Client.builder().build();
+        }
+        return ec2Client;
+    }
 
     protected StsClient stsClient()
     {

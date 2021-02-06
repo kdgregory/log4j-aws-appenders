@@ -125,6 +125,20 @@ permissions that are not needed for normal use of an appender.
     "Version": "2012-10-17",
     "Statement": [
         {
+            "Sid": "AssumedRole",
+            "Effect": "Allow",
+            "Action": [
+                "iam:CreateRole",
+                "iam:DeleteRole",
+                "iam:ListAttachedRolePolicies",
+                "iam:AttachRolePolicy",
+                "iam:DetachRolePolicy",
+                "iam:ListRoles",
+                "sts:AssumeRole"
+            ],
+            "Resource": "*"
+        },
+        {
             "Sid": "CloudWatchLogs",
             "Effect": "Allow",
             "Action": [
@@ -137,6 +151,15 @@ permissions that are not needed for normal use of an appender.
                 "logs:GetLogEvents",
                 "logs:PutLogEvents",
                 "logs:PutRetentionPolicy"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "EC2Tags",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:CreateTags",
+                "ec2:DescribeTags"
             ],
             "Resource": "*"
         },
@@ -188,20 +211,6 @@ permissions that are not needed for normal use of an appender.
                 "ssm:DeleteParameter",
                 "ssm:GetParameter",
                 "ssm:PutParameter"
-            ],
-            "Resource": "*"
-        },
-        {
-            "Sid": "AssumedRole",
-            "Effect": "Allow",
-            "Action": [
-                "iam:CreateRole",
-                "iam:DeleteRole",
-                "iam:ListAttachedRolePolicies",
-                "iam:AttachRolePolicy",
-                "iam:DetachRolePolicy",
-                "iam:ListRoles",
-                "sts:AssumeRole"
             ],
             "Resource": "*"
         }

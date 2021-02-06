@@ -4,7 +4,7 @@
 
 * Support AWS SDK v2.
   ([#118](https://github.com/kdgregory/log4j-aws-appenders/issues/118))
-* Can now use an `{ec2:tag}` substitution when running on EC2.
+* Can now use an `{ec2:tag:XXX}` substitution when running on EC2.
   ([#36](https://github.com/kdgregory/log4j-aws-appenders/issues/36))
 * Can now use a `{uuid}` substitution.
   ([#128](https://github.com/kdgregory/log4j-aws-appenders/issues/128))

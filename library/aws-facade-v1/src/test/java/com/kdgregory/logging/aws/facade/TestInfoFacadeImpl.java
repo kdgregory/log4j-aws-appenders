@@ -20,12 +20,17 @@ import static org.junit.Assert.*;
 
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
+import java.util.Map;
+
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
 import com.amazonaws.services.securitytoken.model.*;
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagement;
 import com.amazonaws.services.simplesystemsmanagement.model.*;
 
 import com.kdgregory.logging.aws.facade.v1.InfoFacadeImpl;
+import com.kdgregory.logging.aws.testhelpers.EC2ClientMock;
 import com.kdgregory.logging.aws.testhelpers.SSMClientMock;
 import com.kdgregory.logging.aws.testhelpers.STSClientMock;
 import com.kdgregory.logging.common.util.RetryManager;
@@ -36,7 +41,8 @@ public class TestInfoFacadeImpl
     // used for tests that involve retries
     private final static long RETRY_TIMEOUT_MS = 200;
 
-    // update any of these mocks inside the test, before invoking facade methods
+    // update these mocks inside the test, before invoking facade methods
+    private EC2ClientMock ec2Mock;
     private STSClientMock stsMock;
     private SSMClientMock ssmMock;
 
@@ -46,6 +52,12 @@ public class TestInfoFacadeImpl
         {
             // don't waste time on retry timeouts!
             retryManager = new RetryManager(50, RETRY_TIMEOUT_MS, false);
+        }
+
+        @Override
+        protected AmazonEC2 ec2Client()
+        {
+            return ec2Mock.createClient();
         }
 
         @Override
@@ -119,6 +131,76 @@ public class TestInfoFacadeImpl
     public void testRetrieveEC2InstanceRegion() throws Exception
     {
         assertEquals("returned expected region", "us-east-1", facade.retrieveEC2Region());
+    }
+
+
+    @Test
+    public void testRetrieveEC2Tags() throws Exception
+    {
+        ec2Mock = new EC2ClientMock();
+        ec2Mock.describeTagsValues.put("foo", "bar");
+        ec2Mock.describeTagsValues.put("ARGLE", "BARGLE");
+
+        String testInstanceId = "i-12345678";
+
+        Map<String,String> result = facade.retrieveEC2Tags(testInstanceId);
+
+        assertEquals("returned tags",                   ec2Mock.describeTagsValues, result);
+        assertEquals("requested correct resource type", "instance",                 ec2Mock.describeTagsResourceType);
+        assertEquals("passed instance ID to client",    testInstanceId,             ec2Mock.describeTagsResourceId);
+    }
+
+
+    @Test
+    public void testRetrieveEC2TagsThrottled() throws Exception
+    {
+        ec2Mock = new EC2ClientMock()
+        {
+            @Override
+            public DescribeTagsResult describeTags(DescribeTagsRequest request)
+            {
+                if (describeTagsInvocationCount == 1)
+                {
+                    // these settings determined via experimentation
+                    AmazonEC2Exception ex = new AmazonEC2Exception("Request limit exceeded");
+                    ex.setErrorCode("RequestLimitExceeded");
+                    ex.setStatusCode(503);
+                    throw ex;
+                }
+                else
+                {
+                    return super.describeTags(request);
+                }
+            }
+        };
+        ec2Mock.describeTagsValues.put("foo", "bar");
+        ec2Mock.describeTagsValues.put("ARGLE", "BARGLE");
+
+        String testInstanceId = "i-12345678";
+
+        Map<String,String> result = facade.retrieveEC2Tags(testInstanceId);
+
+        assertEquals("returned tags",                   ec2Mock.describeTagsValues, result);
+        assertEquals("requested correct resource type", "instance",                 ec2Mock.describeTagsResourceType);
+        assertEquals("passed instance ID to client",    testInstanceId,             ec2Mock.describeTagsResourceId);
+    }
+
+
+    @Test
+    public void testRetrieveEC2TagsException() throws Exception
+    {
+        ec2Mock = new EC2ClientMock()
+        {
+            @Override
+            public DescribeTagsResult describeTags(DescribeTagsRequest request)
+            {
+                throw new RuntimeException("irrelevant");
+            }
+        };
+
+        Map<String,String> result = facade.retrieveEC2Tags("i-12345678");
+
+        assertTrue("returned empty map",                result.isEmpty());
     }
 
 

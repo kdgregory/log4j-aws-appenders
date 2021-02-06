@@ -6,7 +6,7 @@
         <groupId>com.kdgregory.logging</groupId>
         <artifactId>parent</artifactId>
         <version>3.0.0-SNAPSHOT</version>
-        <relativePath>../../library/parent</relativePath>
+        <relativePath>../../../library/parent</relativePath>
     </parent>
 
     <groupId>com.kdgregory.logging.integration-test</groupId>

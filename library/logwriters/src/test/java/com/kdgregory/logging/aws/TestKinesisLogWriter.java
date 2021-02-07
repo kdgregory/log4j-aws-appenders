@@ -17,6 +17,7 @@ package com.kdgregory.logging.aws;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.junit.After;
@@ -26,6 +27,7 @@ import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.lang.StringUtil;
 import static net.sf.kdgcommons.test.StringAsserts.*;
+import static net.sf.kdgcommons.test.NumericAsserts.*;
 
 import com.kdgregory.logging.aws.kinesis.KinesisConstants.StreamStatus;
 import com.kdgregory.logging.aws.facade.KinesisFacade;
@@ -36,6 +38,7 @@ import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterStatistics;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
+import com.kdgregory.logging.common.internal.Utils;
 import com.kdgregory.logging.common.util.InternalLogger;
 import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
 import com.kdgregory.logging.common.util.WriterFactory;
@@ -887,6 +890,70 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
                         "log writer initialization complete.*");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testShutdown() throws Exception
+    {
+        // we want a longish delay so that the main thread can do stuff while waiting,
+        // but not so long that the test takes forever
+        final int batchDelay = 500;
+        final int stopDelay = batchDelay / 2;
+        config.setBatchDelay(batchDelay);
+
+        mock = new MockKinesisFacade(config);
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+
+        // at this point the writer should be blocked by the semaphore; we can't just call
+        // stop() in the main thread and then waitForWriter(), because we couldn't tell the
+        // difference with normal batch processing; so we'll call stop() from a new thread
+
+        AtomicInteger messagesOnQueueAtStop = new AtomicInteger();
+        new Thread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                Utils.sleepQuietly(stopDelay);
+                messagesOnQueueAtStop.set(messageQueue.size());
+                writer.stop();
+            }
+        }).start();
+
+        assertEquals("messages on queue before writer release",     2,                                  messageQueue.size());
+
+        long writerReleasedAt = System.currentTimeMillis();
+        waitForWriterThread();
+        long mainReturnedAt = System.currentTimeMillis();
+
+        assertTrue("writer is still running",                                                           writer.isRunning());
+        assertEquals("messages on queue when stop() called",        0,                                  messagesOnQueueAtStop.get());
+
+        assertEquals("putRecords() invocationCount",                1,                                  mock.putRecordsInvocationCount);
+        assertEquals("putRecords: #/messages",                      2,                                  mock.putRecordsBatch.size());
+        assertInRange("time to process",                            stopDelay - 10, stopDelay + 100,    mainReturnedAt - writerReleasedAt);
+
+        // after the stop, writer should wait for batchDelay for any more messages, so let it run again
+        // ... if this never returns, we know that the shutdown processing was incorrect
+        waitForWriterThread();
+
+        // the writer thread should be fully done at this point; the join() won't return if not
+        ((TestableKinesisLogWriter)writer).writerThread.join();
+        long shutdownTime = System.currentTimeMillis();
+
+        assertEquals("facade shutdown called",                      1,                                  mock.shutdownInvocationCount);
+        assertFalse("writer has stopped",                           writer.isRunning());
+        assertInRange("time to process",                            batchDelay - 100, batchDelay + 100, shutdownTime - mainReturnedAt);
+
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "log writer initialization complete.*",
+                                              "log.writer shut down.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
     }

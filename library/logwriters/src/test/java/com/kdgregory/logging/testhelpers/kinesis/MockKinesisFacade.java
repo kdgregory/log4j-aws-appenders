@@ -139,6 +139,6 @@ implements InvocationHandler
 
     public void shutdown()
     {
-        throw new UnsupportedOperationException("FIXME - implement");
+        // nothing here
     }
 }

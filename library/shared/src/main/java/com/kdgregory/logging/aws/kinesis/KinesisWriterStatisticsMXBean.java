@@ -55,6 +55,13 @@ public interface KinesisWriterStatisticsMXBean
 
 
     /**
+     *  Returns the number of batches that were retried due to throttling. If this is
+     *  more than single digits, you should contact AWS to increase your quota.
+     */
+    int getThrottledWrites();
+
+
+    /**
      *  Returns the number of messages that were either dropped or truncated because
      *  they were too large for the service to accept.
      */

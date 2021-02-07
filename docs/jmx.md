@@ -79,6 +79,7 @@ All log writers support the following attributes:
 * `LastErrorStacktrace`  
   The stacktrace from the last writer error, if it involved an exception.
 
+
 `CloudWatchLogWriter` provides the following additional attributes, defined by
 [CloudWatchWriterStatisticsMXBean](../library/shared/src/main/java/com/kdgregory/logging/aws/cloudwatch/CloudWatchWriterStatisticsMXBean.java):
 
@@ -93,12 +94,22 @@ All log writers support the following attributes:
   The number of batches that were requeued due to repeated `InvalidSequenceTokenException` responses.
   This value should be zero; if it is a significant fraction of `WriterRaceRetries` this indicates
   that you have too many appenders writing to the same stream.
+* `throttledWrites`: the number of times that a batch had to be retried because it was throttled. This
+  should normally be 0. CloudWatch imposes a limit of 5 transactions per second per log stream, and an
+  overall limit of either 800 or 1500 (depending on region) transactions per second across streams. The
+  latter quota can be increased; the former quota cannot. If you have multiple writers to the same
+  stream, the only solutions are to increase batch delay or use different streams (the latter is a better
+  idea in general).
 
 `KinesisLogWriter` provides the following additional attributes, defined by
 [KinesisWriterStatisticsMXBean](../library/shared/src/main/java/com/kdgregory/logging/aws/kinesis/KinesisWriterStatisticsMXBean.java).
 
 * `ActualStreamName`  
   The actual destination stream name, after subsitutions have been applied to the configured name.
+* `throttledWrites`: the number of times that an entire batch had to be retried because it was throttled.
+  This value should be zero; if non-zero, you should increase the number of shards in the destination
+  stream. Note that individual records in a batch may be throttled and retried; this is not tracked. You
+  can identify individual shards that are at their limit via CloudWatch metrics.
 
 `SNSLogWriter` provides the following additional attributes, defined by
 [SNSWriterStatisticsMXBean](../library/shared/src/main/java/com/kdgregory/logging/aws/sns/SNSWriterStatisticsMXBean.java).

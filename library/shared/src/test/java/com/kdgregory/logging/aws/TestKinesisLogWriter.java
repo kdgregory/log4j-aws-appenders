@@ -605,7 +605,9 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords() second message",                 "message two",              mock.putRecordsBatch.get(1).getMessage());
 
         assertStatisticsTotalMessagesSent(2);
+
         assertEquals("statistics: last batch messages sent",        2,                          stats.getMessagesSentLastBatch());
+        assertEquals("statistics: number of throttles",             1,                          stats.getThrottledWrites());
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
@@ -641,6 +643,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         assertStatisticsTotalMessagesSent(0);
         assertEquals("statistics: last batch messages sent",        0,                          stats.getMessagesSentLastBatch());
+        assertEquals("statistics: number of throttles",             4,                          stats.getThrottledWrites());
 
         assertEquals("messages remain on message queuue",           2,                          messageQueue.size());
 

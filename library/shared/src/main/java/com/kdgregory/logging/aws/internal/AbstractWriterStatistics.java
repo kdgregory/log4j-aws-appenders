@@ -17,6 +17,7 @@ package com.kdgregory.logging.aws.internal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.kdgregory.logging.common.util.MessageQueue;
 
@@ -51,6 +52,8 @@ public abstract class AbstractWriterStatistics
     private volatile int messagesSent;
     private volatile int messagesSentLastBatch;
     private volatile int messagesRequeuedLastBatch;
+
+    private AtomicInteger throttledWrites = new AtomicInteger();
 
 
     /**
@@ -182,5 +185,23 @@ public abstract class AbstractWriterStatistics
     public int getMessagesDiscarded()
     {
         return messageQueue.getDroppedMessageCount();
+    }
+
+
+    /**
+     *  Returns the number of writes that have been retried due to throttling.
+     */
+    public int getThrottledWrites()
+    {
+        return throttledWrites.get();
+    }
+
+
+    /**
+     *  Increments the number of writes that have been throttled.
+     */
+    public void incrementThrottledWrites()
+    {
+        throttledWrites.incrementAndGet();
     }
 }

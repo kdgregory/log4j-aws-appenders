@@ -112,7 +112,6 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
             return batch;
 
         Collections.sort(batch);
-        // TODO - validate that all messages meet time constraints, discard those that don't
 
         List<LogMessage> result = sendRetry.invoke(() ->
         {

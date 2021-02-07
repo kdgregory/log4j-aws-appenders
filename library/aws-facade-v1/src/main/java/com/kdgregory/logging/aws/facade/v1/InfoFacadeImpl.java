@@ -14,7 +14,15 @@
 
 package com.kdgregory.logging.aws.facade.v1;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.amazonaws.regions.DefaultAwsRegionProviderChain;
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
+import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
 import com.amazonaws.services.securitytoken.model.*;
@@ -71,6 +79,41 @@ implements InfoFacade
 
 
     @Override
+    public Map<String,String> retrieveEC2Tags(String instanceId)
+    {
+        return retryManager.invoke(() -> {
+            try
+            {
+                List<Filter> filters = new ArrayList<>();
+                filters.add(new Filter().withName("resource-type").withValues("instance"));
+                filters.add(new Filter().withName("resource-id").withValues(instanceId));
+
+                DescribeTagsRequest request = new DescribeTagsRequest().withFilters(filters);
+                DescribeTagsResult response = ec2Client().describeTags(request);
+
+                Map<String,String> result = new HashMap<>();
+                for (TagDescription desc : response.getTags())
+                {
+                    result.put(desc.getKey(), desc.getValue());
+                }
+                return result;
+            }
+            catch (AmazonEC2Exception ex)
+            {
+                // this code determined via experimentation
+                if ("RequestLimitExceeded".equals(ex.getErrorCode()))
+                    return null;
+                return new HashMap<>();
+            }
+            catch (Exception ignored)
+            {
+                return new HashMap<>();
+            }
+        });
+    }
+
+
+    @Override
     public String retrieveParameter(String parameterName)
     {
         try
@@ -103,11 +146,21 @@ implements InfoFacade
 //  Internals
 //----------------------------------------------------------------------------
 
+    protected RetryManager retryManager = new RetryManager(50, 1000, true);
+
+    private AmazonEC2 ec2Client;
     private AWSSecurityTokenService stsClient;
     private AWSSimpleSystemsManagement ssmClient;
 
-    protected RetryManager retryManager = new RetryManager(50, 1000, true);
 
+    protected AmazonEC2 ec2Client()
+    {
+        if (ec2Client == null)
+        {
+            ec2Client = AmazonEC2ClientBuilder.defaultClient();
+        }
+        return ec2Client;
+    }
 
     protected AWSSecurityTokenService stsClient()
     {

@@ -14,10 +14,19 @@
 
 package com.kdgregory.logging.aws;
 
+import java.util.Map;
+import java.util.UUID;
+
 import org.junit.Ignore;
 import org.junit.Test;
+import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.test.StringAsserts;
+
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
+import com.amazonaws.services.ec2.model.CreateTagsRequest;
+import com.amazonaws.services.ec2.model.Tag;
 
 import com.kdgregory.logging.aws.facade.FacadeFactory;
 import com.kdgregory.logging.aws.facade.InfoFacade;
@@ -58,4 +67,28 @@ public class TestInfoFacadeEC2Environment
         StringAsserts.assertRegex("retrieved value (was: " + value + ")",
                                   "..-.*-\\d",
                                   value);
-    }}
+    }
+
+
+    @Test
+    @Ignore
+    public void testTags() throws Exception
+    {
+        InfoFacade facade = FacadeFactory.createFacade(InfoFacade.class);
+
+        String instanceId = facade.retrieveEC2InstanceId();
+
+        String tagName = UUID.randomUUID().toString();
+        String tagValue = UUID.randomUUID().toString();
+
+        AmazonEC2 client = AmazonEC2ClientBuilder.defaultClient();
+
+        CreateTagsRequest createRequest = new CreateTagsRequest()
+                                          .withResources(instanceId)
+                                          .withTags(new Tag(tagName, tagValue));
+        client.createTags(createRequest);
+
+        Map<String,String> retrievedTags = facade.retrieveEC2Tags(instanceId);
+        assertEquals("tag returned", tagValue, retrievedTags.get(tagName));
+    }
+}

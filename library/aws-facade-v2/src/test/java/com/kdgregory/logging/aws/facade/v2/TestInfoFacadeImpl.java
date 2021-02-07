@@ -20,21 +20,21 @@ import static org.junit.Assert.*;
 
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
+import java.util.Map;
+
 import com.kdgregory.logging.aws.facade.InfoFacade;
+import com.kdgregory.logging.aws.testhelpers.EC2ClientMock;
 import com.kdgregory.logging.aws.testhelpers.SSMClientMock;
 import com.kdgregory.logging.aws.testhelpers.STSClientMock;
 import com.kdgregory.logging.common.util.RetryManager;
 
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
+import software.amazon.awssdk.services.ec2.Ec2Client;
+import software.amazon.awssdk.services.ec2.model.*;
 import software.amazon.awssdk.services.ssm.SsmClient;
-import software.amazon.awssdk.services.ssm.model.GetParameterRequest;
-import software.amazon.awssdk.services.ssm.model.GetParameterResponse;
-import software.amazon.awssdk.services.ssm.model.Parameter;
-import software.amazon.awssdk.services.ssm.model.ParameterType;
-import software.amazon.awssdk.services.ssm.model.SsmException;
+import software.amazon.awssdk.services.ssm.model.*;
 import software.amazon.awssdk.services.sts.StsClient;
-import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
-import software.amazon.awssdk.services.sts.model.GetCallerIdentityResponse;
+import software.amazon.awssdk.services.sts.model.*;
 
 
 public class TestInfoFacadeImpl
@@ -43,6 +43,7 @@ public class TestInfoFacadeImpl
     private final static long RETRY_TIMEOUT_MS = 200;
 
     // update any of these mocks inside the test, before invoking facade methods
+    private EC2ClientMock ec2Mock;
     private STSClientMock stsMock;
     private SSMClientMock ssmMock;
 
@@ -52,6 +53,12 @@ public class TestInfoFacadeImpl
         {
             // don't waste time on retry timeouts!
             retryManager = new RetryManager(50, RETRY_TIMEOUT_MS, false);
+        }
+
+        @Override
+        protected Ec2Client ec2Client()
+        {
+            return ec2Mock.createClient();
         }
 
         @Override
@@ -125,6 +132,78 @@ public class TestInfoFacadeImpl
     public void testRetrieveEC2InstanceRegion() throws Exception
     {
         assertEquals("returned expected region", "us-east-1", facade.retrieveEC2Region());
+    }
+
+
+    @Test
+    public void testRetrieveEC2Tags() throws Exception
+    {
+        ec2Mock = new EC2ClientMock();
+        ec2Mock.describeTagsValues.put("foo", "bar");
+        ec2Mock.describeTagsValues.put("ARGLE", "BARGLE");
+
+        String testInstanceId = "i-12345678";
+
+        Map<String,String> result = facade.retrieveEC2Tags(testInstanceId);
+
+        assertEquals("returned tags",                   ec2Mock.describeTagsValues, result);
+        assertEquals("requested correct resource type", "instance",                 ec2Mock.describeTagsResourceType);
+        assertEquals("passed instance ID to client",    testInstanceId,             ec2Mock.describeTagsResourceId);
+    }
+
+
+    @Test
+    public void testRetrieveEC2TagsThrottled() throws Exception
+    {
+        ec2Mock = new EC2ClientMock()
+        {
+            @Override
+            public DescribeTagsResponse describeTags(DescribeTagsRequest request)
+            {
+                if (describeTagsInvocationCount == 1)
+                {
+                    // these settings determined via experimentation
+                    Ec2Exception ex = (Ec2Exception)Ec2Exception.builder()
+                                      .message("Request limit exceeded")
+                                      .awsErrorDetails(AwsErrorDetails.builder().errorCode("RequestLimitExceeded").build())
+                                      .statusCode(503)
+                                      .build();
+                    throw ex;
+                }
+                else
+                {
+                    return super.describeTags(request);
+                }
+            }
+        };
+        ec2Mock.describeTagsValues.put("foo", "bar");
+        ec2Mock.describeTagsValues.put("ARGLE", "BARGLE");
+
+        String testInstanceId = "i-12345678";
+
+        Map<String,String> result = facade.retrieveEC2Tags(testInstanceId);
+
+        assertEquals("returned tags",                   ec2Mock.describeTagsValues, result);
+        assertEquals("requested correct resource type", "instance",                 ec2Mock.describeTagsResourceType);
+        assertEquals("passed instance ID to client",    testInstanceId,             ec2Mock.describeTagsResourceId);
+    }
+
+
+    @Test
+    public void testRetrieveEC2TagsException() throws Exception
+    {
+        ec2Mock = new EC2ClientMock()
+        {
+            @Override
+            public DescribeTagsResponse describeTags(DescribeTagsRequest request)
+            {
+                throw new RuntimeException("irrelevant");
+            }
+        };
+
+        Map<String,String> result = facade.retrieveEC2Tags("i-12345678");
+
+        assertTrue("returned empty map",                result.isEmpty());
     }
 
 

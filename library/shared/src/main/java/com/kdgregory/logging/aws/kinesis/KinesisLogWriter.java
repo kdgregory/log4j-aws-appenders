@@ -19,6 +19,7 @@ import java.util.function.Consumer;
 
 import com.kdgregory.logging.aws.facade.KinesisFacade;
 import com.kdgregory.logging.aws.facade.KinesisFacadeException;
+import com.kdgregory.logging.aws.facade.KinesisFacadeException.ReasonCode;
 import com.kdgregory.logging.aws.internal.AbstractLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisConstants.StreamStatus;
 import com.kdgregory.logging.common.LogMessage;
@@ -125,9 +126,27 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics>
     {
         try
         {
-            List<LogMessage> result = sendRetry.invoke(
-                                            () -> facade.putRecords(currentBatch),
-                                            new DefaultExceptionHandler());
+            List<LogMessage> result = sendRetry.invoke(() ->
+            {
+                try
+                {
+                    return facade.putRecords(currentBatch);
+                }
+                catch (KinesisFacadeException ex)
+                {
+                    if (ex.getReason() == ReasonCode.THROTTLING)
+                    {
+                        stats.incrementThrottledWrites();
+                        return null;
+                    }
+                    if (! ex.isRetryable())
+                    {
+                        throw ex;
+                    }
+                    return null;
+                }
+            });
+
             if (result == null)
             {
                 logger.warn("timeout while sending batch");

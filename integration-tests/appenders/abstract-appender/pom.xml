@@ -27,7 +27,7 @@
     <dependencies>
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
-            <artifactId>shared</artifactId>
+            <artifactId>logwriters</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>

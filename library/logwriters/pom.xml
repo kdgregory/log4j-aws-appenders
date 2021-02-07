@@ -9,7 +9,7 @@
         <relativePath>../parent</relativePath>
     </parent>
 
-    <artifactId>shared</artifactId>
+    <artifactId>logwriters</artifactId>
     <packaging>jar</packaging>
 
     <name>Shared Components</name>

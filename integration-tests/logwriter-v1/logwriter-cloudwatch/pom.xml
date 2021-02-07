@@ -24,7 +24,7 @@
     <dependencies>
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
-            <artifactId>shared</artifactId>
+            <artifactId>logwriters</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -43,7 +43,7 @@
         </dependency>
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
-            <artifactId>shared</artifactId>
+            <artifactId>logwriters</artifactId>
             <classifier>tests</classifier>
             <type>test-jar</type>
             <version>${project.version}</version>

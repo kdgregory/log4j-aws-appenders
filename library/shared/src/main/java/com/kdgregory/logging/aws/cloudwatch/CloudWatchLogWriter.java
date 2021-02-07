@@ -126,6 +126,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
                 switch (ex.getReason())
                 {
                     case THROTTLING:
+                        stats.incrementThrottledWrites();
                         return null;
                     case INVALID_SEQUENCE_TOKEN:
                         // force the token to be fetched next time through

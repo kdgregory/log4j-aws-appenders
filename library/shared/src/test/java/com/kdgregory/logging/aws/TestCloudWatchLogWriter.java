@@ -888,6 +888,9 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         assertEquals("message has been removed from queue",         0,                      messageQueue.size());
 
+        assertEquals("statistics: last batch messages sent",        1,                      stats.getMessagesSentLastBatch());
+        assertEquals("stats: throttling has been recorded",         1,                      stats.getThrottledWrites());
+
         expectedToken = mock.nextSequenceToken;
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
         waitForWriterThread();
@@ -937,6 +940,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putEvents: last call message",                "message one",          mock.putEventsMessages.get(0).getMessage());
 
         assertEquals("message has been returned to queue",          1,                      messageQueue.size());
+
+        assertEquals("stats: throttling has been recorded",         4,                      stats.getThrottledWrites());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               "using existing CloudWatch log group: argle",

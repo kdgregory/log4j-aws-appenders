@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
@@ -98,7 +99,7 @@ implements InfoFacade
                 }
                 return result;
             }
-            catch (AmazonEC2Exception ex)
+            catch (AmazonServiceException ex)
             {
                 // this code determined via experimentation
                 if ("RequestLimitExceeded".equals(ex.getErrorCode()))

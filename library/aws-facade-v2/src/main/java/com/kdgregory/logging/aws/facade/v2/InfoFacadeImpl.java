@@ -15,6 +15,7 @@
 package com.kdgregory.logging.aws.facade.v2;
 
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.regions.internal.util.EC2MetadataUtils;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.ec2.Ec2Client;
@@ -96,7 +97,7 @@ implements InfoFacade
                 }
                 return result;
             }
-            catch (Ec2Exception ex)
+            catch (AwsServiceException ex)
             {
                 // this code determined via experimentation
                 if ("RequestLimitExceeded".equals(ex.awsErrorDetails().errorCode()))

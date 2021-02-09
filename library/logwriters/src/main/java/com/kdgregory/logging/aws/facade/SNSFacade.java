@@ -24,7 +24,7 @@ import com.kdgregory.logging.common.LogMessage;
  *  writer's configuration.
  *  <p>
  *  All operations may throw {@link SNSFacadeException}. Callers are expected to
- *  catch this exception (it's checked), and take action based on the reason code 
+ *  catch this exception (it's checked), and take action based on the reason code
  *  that it exposes.
  */
 public interface SNSFacade

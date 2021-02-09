@@ -140,7 +140,13 @@ import com.kdgregory.logging.common.util.InternalLogger;
  */
 @Plugin(name = "SNSAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class SNSAppender
-extends AbstractAppender<SNSWriterConfig,SNSAppenderConfig,SNSWriterStatistics,SNSWriterStatisticsMXBean>
+extends AbstractAppender
+    <
+    SNSWriterConfig,
+    SNSAppenderConfig,
+    SNSWriterStatistics,
+    SNSWriterStatisticsMXBean
+    >
 {
 
 //----------------------------------------------------------------------------

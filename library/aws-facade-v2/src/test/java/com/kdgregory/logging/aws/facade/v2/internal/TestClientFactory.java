@@ -96,8 +96,8 @@ public class TestClientFactory
         public URI endpointOverride;
         public AwsCredentialsProvider credentialsProvider;
         public Region region;
-        
-        
+
+
         public TestableAwsClientBuilder()
         {
 //            super(new ClientConfigurationFactory());

@@ -30,13 +30,13 @@ import com.kdgregory.logging.common.LogMessage;
 
 
 /**
- *  A mock object for testing <code>KinesisLogWriter</code>. 
+ *  A mock object for testing <code>KinesisLogWriter</code>.
  *  <p>
  *  The default implementation assumes that everything works; override methods
- *  to test failure behavior. 
+ *  to test failure behavior.
  *  <p>
- *  Since stream status is a big deal, you can construct  with a list of status values 
- *  that are returned in order. After that list is exhausted, <code>retrieveStreamStatus()</code> 
+ *  Since stream status is a big deal, you can construct  with a list of status values
+ *  that are returned in order. After that list is exhausted, <code>retrieveStreamStatus()</code>
  *  always returns the last item in the list.
  */
 public class MockKinesisFacade

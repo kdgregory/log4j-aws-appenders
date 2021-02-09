@@ -161,7 +161,12 @@ import com.kdgregory.logging.common.util.DefaultThreadFactory;
  *  @see <a href="https://github.com/kdgregory/log4j-aws-appenders/blob/master/docs/cloudwatch.md">Appender documentation</a>
  */
 public class CloudWatchAppender
-extends AbstractAppender<CloudWatchWriterConfig,CloudWatchWriterStatistics,CloudWatchWriterStatisticsMXBean>
+extends AbstractAppender
+    <
+    CloudWatchWriterConfig,
+    CloudWatchWriterStatistics,
+    CloudWatchWriterStatisticsMXBean
+    >
 {
     private String  logGroup;
     private String  logStream;

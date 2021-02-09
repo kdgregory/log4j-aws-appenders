@@ -52,7 +52,7 @@ implements InvocationHandler
 
     private List<Role> knownRoles = new ArrayList<>();
     private int pageSize;
-    
+
     // cached client for paginator
     private IamClient cachedClient;
 
@@ -99,7 +99,7 @@ implements InvocationHandler
         }
         return cachedClient;
     }
-    
+
 //----------------------------------------------------------------------------
 //  Invocation Handler
 //----------------------------------------------------------------------------

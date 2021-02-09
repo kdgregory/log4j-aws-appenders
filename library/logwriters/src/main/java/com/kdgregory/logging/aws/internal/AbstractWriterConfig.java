@@ -47,14 +47,14 @@ public class AbstractWriterConfig<T extends AbstractWriterConfig<T>>
     {
         truncateOversizeMessages = value;
         return (T)this;
-    }  
+    }
 
-    
+
     public boolean getSynchronousMode()
     {
         return isSynchronous;
     }
-    
+
     public T setSynchronousMode(boolean value)
     {
         isSynchronous = value;

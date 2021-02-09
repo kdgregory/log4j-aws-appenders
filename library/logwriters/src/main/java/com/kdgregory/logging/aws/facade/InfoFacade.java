@@ -16,12 +16,13 @@ package com.kdgregory.logging.aws.facade;
 
 import java.util.Map;
 
+
 /**
  *  A facade for various operations that retrieve information about the
- *  AWS environment. 
+ *  AWS environment.
  *  <p>
- *  Unlike the service-level facades, these operations are "best effort": if 
- *  unable to perform the operation, the implementation is permitted to return 
+ *  Unlike the service-level facades, these operations are "best effort": if
+ *  unable to perform the operation, the implementation is permitted to return
  *  a default value (typically null).
  *  <p>
  *  Also unlike service-level facades, implemtations are expected to retry if
@@ -64,8 +65,8 @@ public interface InfoFacade
      *  See {@link #retrieveRegion}, which uses the default region provider.
      */
     String retrieveEC2Region();
-    
-    
+
+
     /**
      *  Returns all tags for the specified EC2 instance. Returns an empty map if unable to
      *  retrieve these tags for any reason (eg, invalid instance ID, permission denied).

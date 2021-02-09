@@ -146,7 +146,12 @@ import com.kdgregory.logging.aws.kinesis.KinesisWriterFactory;
  *  @see <a href="https://github.com/kdgregory/log4j-aws-appenders/blob/master/docs/kinesis.md">Appender documentation</a>
  */
 public class KinesisAppender
-extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWriterStatisticsMXBean>
+extends AbstractAppender
+    <
+    KinesisWriterConfig,
+    KinesisWriterStatistics,
+    KinesisWriterStatisticsMXBean
+    >
 {
     // these are the only configuration vars specific to this appender
 

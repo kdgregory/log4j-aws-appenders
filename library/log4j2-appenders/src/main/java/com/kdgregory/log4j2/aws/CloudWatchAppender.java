@@ -172,7 +172,13 @@ import com.kdgregory.logging.common.util.InternalLogger;
  */
 @Plugin(name = "CloudWatchAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class CloudWatchAppender
-extends AbstractAppender<CloudWatchWriterConfig,CloudWatchAppenderConfig,CloudWatchWriterStatistics,CloudWatchWriterStatisticsMXBean>
+extends AbstractAppender
+    <
+    CloudWatchWriterConfig,
+    CloudWatchAppenderConfig,
+    CloudWatchWriterStatistics,
+    CloudWatchWriterStatisticsMXBean
+    >
 {
 
 //----------------------------------------------------------------------------

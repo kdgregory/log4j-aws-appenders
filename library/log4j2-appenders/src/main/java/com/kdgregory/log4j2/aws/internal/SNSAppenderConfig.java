@@ -22,10 +22,7 @@ public interface SNSAppenderConfig
 extends AbstractAppenderConfig
 {
     String getTopicName();
-
     String getTopicArn();
-
     String getSubject();
-
     boolean isAutoCreate();
 }

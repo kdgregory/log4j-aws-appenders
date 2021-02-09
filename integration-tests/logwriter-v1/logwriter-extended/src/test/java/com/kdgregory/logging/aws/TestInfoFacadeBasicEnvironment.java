@@ -54,4 +54,5 @@ public class TestInfoFacadeBasicEnvironment
         StringAsserts.assertRegex("retrieved value (was: " + value + ")",
                                   "..-.*-\\d",
                                   value);
-    }}
+    }
+}

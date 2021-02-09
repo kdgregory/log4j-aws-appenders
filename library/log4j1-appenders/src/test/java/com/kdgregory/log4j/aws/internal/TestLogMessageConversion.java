@@ -45,7 +45,6 @@ public class TestLogMessageConversion
         return new LoggingEvent(getClass().getName(), logger, timestamp, Priority.DEBUG, message, ex);
     }
 
-
 //----------------------------------------------------------------------------
 //  Testcases
 //----------------------------------------------------------------------------

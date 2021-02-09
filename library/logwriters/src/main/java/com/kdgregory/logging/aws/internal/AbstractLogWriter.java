@@ -30,10 +30,10 @@ import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
  *  Manages common LogWriter activities.
  */
 public abstract class AbstractLogWriter
-<
+    <
     ConfigType extends AbstractWriterConfig<ConfigType>,
     StatsType extends AbstractWriterStatistics
->
+    >
 implements LogWriter
 {
     // flag value for shutdownTime

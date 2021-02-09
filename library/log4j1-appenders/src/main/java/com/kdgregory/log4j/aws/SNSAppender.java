@@ -129,7 +129,12 @@ import com.kdgregory.logging.aws.sns.SNSWriterFactory;
  *  @see <a href="https://github.com/kdgregory/log4j-aws-appenders/blob/master/docs/sns.md">Appender documentation</a>
  */
 public class SNSAppender
-extends AbstractAppender<SNSWriterConfig,SNSWriterStatistics,SNSWriterStatisticsMXBean>
+extends AbstractAppender
+    <
+    SNSWriterConfig,
+    SNSWriterStatistics,
+    SNSWriterStatisticsMXBean
+    >
 {
     // configuration
 

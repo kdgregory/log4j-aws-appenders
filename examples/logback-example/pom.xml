@@ -23,7 +23,10 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <aws-sdk.version>1.11.495</aws-sdk.version>
-        <logback.version>1.2.0</logback.version>
+
+        <!-- these must be kept in sync -->
+        <logback.version>1.2.3</logback.version>
+        <slf4j.version>1.7.25</slf4j.version>
 
         <plugin.compiler.version>3.1</plugin.compiler.version>
         <plugin.shade.version>3.1.1</plugin.shade.version>
@@ -46,6 +49,26 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
+        </dependency>
+
+        <!-- use the SLF4J bridge for commons-logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <!-- don't let the SDK pull in commons-logging transitively -->
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-core</artifactId>
+            <version>${aws-sdk.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions> 
         </dependency>
 
         <dependency>

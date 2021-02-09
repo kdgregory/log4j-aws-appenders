@@ -23,12 +23,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <aws-sdk.version>1.11.495</aws-sdk.version>
+        <aws-sdk.version>1.11.950</aws-sdk.version>
+
         <log4j1.version>1.2.17</log4j1.version>
         <servlet-api.version>3.0.1</servlet-api.version>
 
         <plugin.compiler.version>3.1</plugin.compiler.version>
-        <plugin.jetty.version>9.4.31.v20200723</plugin.jetty.version>
+        <plugin.jetty.version>9.4.35.v20201120</plugin.jetty.version>
     </properties>
 
 

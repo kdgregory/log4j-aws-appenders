@@ -42,6 +42,17 @@ import com.kdgregory.logging.common.util.RetryManager;
 public class InfoFacadeImpl
 implements InfoFacade
 {
+
+    protected RetryManager retryManager = new RetryManager(50, 1000, true);
+
+    private AmazonEC2 ec2Client;
+    private AWSSecurityTokenService stsClient;
+    private AWSSimpleSystemsManagement ssmClient;
+
+//----------------------------------------------------------------------------
+//  InfoFacade implementation
+//----------------------------------------------------------------------------
+
     @Override
     public String retrieveAccountId()
     {
@@ -146,13 +157,6 @@ implements InfoFacade
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
-
-    protected RetryManager retryManager = new RetryManager(50, 1000, true);
-
-    private AmazonEC2 ec2Client;
-    private AWSSecurityTokenService stsClient;
-    private AWSSimpleSystemsManagement ssmClient;
-
 
     protected AmazonEC2 ec2Client()
     {

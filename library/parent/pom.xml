@@ -63,7 +63,7 @@
         <plugin.jar.version>3.1.0</plugin.jar.version>
         <plugin.javadoc.version>3.0.1</plugin.javadoc.version>
         <plugin.project-info-reports.version>2.7</plugin.project-info-reports.version>
-        <plugin.site.version>3.3</plugin.site.version>
+        <plugin.site.version>3.7.1</plugin.site.version>
     </properties>
 
 

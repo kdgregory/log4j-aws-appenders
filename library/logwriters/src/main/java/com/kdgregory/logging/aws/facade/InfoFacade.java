@@ -62,7 +62,7 @@ public interface InfoFacade
      *  This will only work valid when running on an EC2 instance, and may take a long time
      *  to return if running elsewhere.
      *  <p>
-     *  See {@link #retrieveRegion}, which uses the default region provider.
+     *  See also {@link #retrieveDefaultRegion}, which uses the default region provider.
      */
     String retrieveEC2Region();
 

@@ -468,9 +468,8 @@ implements LogWriter
 
     /**
      *  Verifies that the logging destination is available (which may involve
-     *  creating it). When called, {@link #client} will be initialized. Return
-     *  <code>true</code> if successful, <code>false</code> if not (which will
-     *  cause the appender to stop running).
+     *  creating it). Return <code>true</code> if successful, <code>false</code> 
+     *  if not (which will cause the appender to stop running).
      */
     protected abstract boolean ensureDestinationAvailable();
 

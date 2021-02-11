@@ -59,7 +59,7 @@
 
         <plugin.cobertura.version>2.7</plugin.cobertura.version>
         <plugin.compiler.version>3.1</plugin.compiler.version>
-        <plugin.findbugs.version>3.0.5</plugin.findbugs.version>
+        <plugin.spotbugs.version>4.2.0</plugin.spotbugs.version>
         <plugin.jar.version>3.1.0</plugin.jar.version>
         <plugin.javadoc.version>3.0.1</plugin.javadoc.version>
         <plugin.project-info-reports.version>2.7</plugin.project-info-reports.version>
@@ -99,6 +99,11 @@
                     <doclint>none</doclint>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>${plugin.spotbugs.version}</version>
+            </plugin>
         </plugins>
     </build>
 
@@ -116,9 +121,9 @@
                 <version>${plugin.project-info-reports.version}</version>
             </plugin>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <version>${plugin.findbugs.version}</version>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>${plugin.spotbugs.version}</version>
                 <configuration>
                     <excludeFilterFile>src/site/findbugs-filter.xml</excludeFilterFile>
                 </configuration>

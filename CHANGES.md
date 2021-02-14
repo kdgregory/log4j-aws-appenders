@@ -1,6 +1,6 @@
 # Change History
 
-## 3.0.0 (TBD)
+## 3.0.0 (2021-02-14)
 
 * Support AWS SDK v2.
   ([#118](https://github.com/kdgregory/log4j-aws-appenders/issues/118))

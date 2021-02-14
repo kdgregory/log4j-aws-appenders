@@ -68,8 +68,8 @@ public class RoleTestHelper
             localLogger.warn("failed to shutdown STS client", ex);
         }
     }
-    
-    
+
+
     /**
      *  Returns the account used to run these tests.
      */

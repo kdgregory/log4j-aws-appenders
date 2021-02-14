@@ -146,7 +146,13 @@ import com.kdgregory.logging.common.util.DefaultThreadFactory;
  *  @see <a href="https://github.com/kdgregory/log4j-aws-appenders/blob/master/docs/kinesis.md">Appender documentation</a>
  */
 public class KinesisAppender<LogbackEventType>
-extends AbstractAppender<KinesisWriterConfig,KinesisWriterStatistics,KinesisWriterStatisticsMXBean,LogbackEventType>
+extends AbstractAppender
+    <
+    KinesisWriterConfig,
+    KinesisWriterStatistics,
+    KinesisWriterStatisticsMXBean,
+    LogbackEventType
+    >
 {
     // appender-specific configuration variables
 

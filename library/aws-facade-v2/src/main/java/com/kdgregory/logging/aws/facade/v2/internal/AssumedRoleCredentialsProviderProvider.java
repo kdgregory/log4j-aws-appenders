@@ -25,7 +25,7 @@ import software.amazon.awssdk.services.sts.model.*;
 
 
 /**
- *  Used by {@link #ClientFactory} to create an <code>STSAssumeRoleSessionCredentialsProvider</code>.
+ *  Used by {@link ClientFactory} to create an <code>STSAssumeRoleSessionCredentialsProvider</code>.
  *  This is a separate class to (1) ensure that there isn't a hard reference to the STS SDK, and
  *  (2) to simplify testing.
  */

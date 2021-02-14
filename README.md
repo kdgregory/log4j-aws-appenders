@@ -1,21 +1,17 @@
 # log4j-aws-appenders
 
-:warning: **This page refers to work in progress**
-
-The most recent released version is [here](https://github.com/kdgregory/log4j-aws-appenders/tree/feb63240df2be418f87582434fc738ee1de6e64c).
-<hr/>
-
 Appenders for [Log4J 1.x](http://logging.apache.org/log4j/1.2/index.html),
-[Logback](https://logback.qos.ch/), and [Log4J 2.x](https://logging.apache.org/log4j/2.x/)
+[Log4J 2.x](https://logging.apache.org/log4j/2.x/)
+and [Logback](https://logback.qos.ch/)
 that write to various AWS destinations:
 
-* [CloudWatch Logs](docs/cloudwatch.md): basic centralized log management, providing keyword and time range search.
+* [CloudWatch Logs](docs/cloudwatch.md): AWS-native centralized log management, providing keyword and time range search.
 * [Kinesis Streams](docs/kinesis.md): the first step in a [logging pipeline](https://www.kdgregory.com/index.php?page=aws.loggingPipeline)
   that feeds [Elasticsearch](https://docs.aws.amazon.com/elasticsearch-service/latest/developerguide/what-is-amazon-elasticsearch-service.html)
   and other analytics destinations.
 * [SNS](docs/sns.md): useful for real-time error notifications.
 
-In addition, this library provides the following features:
+In addition to basic log output, this library also provides:
 
 * [JsonLayout](docs/jsonlayout.md), which lets you send data to an Elasticsearch/Kibana
   cluster without the need for parsing.
@@ -31,10 +27,11 @@ To use these appenders, you must add the following libraries to your build:
 * The AWS SDK libraries for whatever destinations and supporting code you need:
 
   * CloudWatch Logs
-  * Kinisis
+  * Kinesis
   * SNS
   * IAM (in order to use assumed roles)
   * STS (in order to use assumed roles or retrieve current account information)
+  * EC2 (in order to retrieve instance tags)
   * Systems Manager (in order to retrieve values from Parameter Store)
 
 * The facade library for whatever version of the AWs SDK you're using.
@@ -48,11 +45,13 @@ To use these appenders, you must add the following libraries to your build:
   * [Log4J 2.x](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.kdgregory.logging%22%20AND%20a%3A%22log4j2-aws-appenders%22)
   * [Logback](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.kdgregory.logging%22%20AND%20a%3A%22logback-aws-appenders%22)
 
-In addition, you must configure your appender(s), using the configuration mechanism
-provided by the logging framework. See the documentation for each appender for the
-configuration parameters that it supports.
+Then grant your program the [IAM permissions](docs/permissions.md) required by your
+chosen destination(s) and features.
 
-Look at the [example projects](examples) for typical configurations and Maven POMs.
+Lastly, configure your logging framework using its configuration mechanism. See the
+documentation for each appender for the configuration parameters that it uses.
+
+There are [example projects](examples) that provide typical configurations and Maven POMs.
 
 
 ## Versions
@@ -100,12 +99,9 @@ The minimum supported dependency versions are:
   This is the version that I have used to build and run the integration tests.
   Earlier versions may work, but I make no guarantees.
 
-I have made an intentional effort to limit dependencies to the bare minimum. This
-has in some cases meant that I write internal implementations for functions that
-are found in common libraries.
-
-To avoid dependency hell, this library does not specify any transitive dependencies.
-You must explicitly add all required dependencies into your build.
+To avoid dependency hell, **this library does not specify any transitive dependencies**.
+You must explicitly add all required dependencies into your build. I have made an
+intentional effort to limit dependencies to the bare minimum.
 
 
 ## Contributions
@@ -124,6 +120,6 @@ the file and line number where the error exists.
 
 [Frequently Asked Questions](FAQ.md)
 
-[Design Documentation](docs/design.md) and [Implementation Notes](docs/implementation.md)
+[Design](docs/design.md) and [Implementation](docs/implementation.md) docs
 
-If you want to build it yourself, [read this](docs/build.md)
+[How to build](docs/build.md)

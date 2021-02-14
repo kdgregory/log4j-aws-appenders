@@ -4,25 +4,28 @@
 
 * Support AWS SDK v2.
   ([#118](https://github.com/kdgregory/log4j-aws-appenders/issues/118))
-* Can now use an `{ec2:tag:XXX}` substitution when running on EC2.
+* Now requires a minimum AWS SDK version of 1.11.233 or 2.10.0, and a
+  minimum JDK version of 1.8.
+* Support for `{ec2:tag:XXX}` substitutions when running on EC2.
   ([#36](https://github.com/kdgregory/log4j-aws-appenders/issues/36))
 * CloudWatch and Kinesis log writers now expose the number of throttled
   batches via JMX.
   ([#127](https://github.com/kdgregory/log4j-aws-appenders/issues/127))
-* Can now use a `{uuid}` substitution.
+* Provide a `{uuid}` substitution, intended for log stream names.
   ([#128](https://github.com/kdgregory/log4j-aws-appenders/issues/128))
-* Now supports client endpoint configuration in all cases.
+* Fully support client endpoint configuration.
   ([#129](https://github.com/kdgregory/log4j-aws-appenders/issues/129))
-* Fixed bug in substitutions, in which a failed multi-part substitutions
+* Fixed bug in substitutions, in which a failed multi-part substitution
   prevented subsequent substitutions from being applied.
   ([#130](https://github.com/kdgregory/log4j-aws-appenders/issues/130))
-* Now requires a minimum AWS SDK version of 1.11.233 or 2.10.0, and a
-  minimum JDK version of 1.8.
 * CloudWatch Logs appender no longer supports logstream rotation
-  ([more info](docs/changes-3.0.md#cloudwatch-logs-no-longer-supports-logstream-rotation).
+  ([more info](docs/changes-3.0.md#cloudwatch-logs-appender-no-longer-supports-logstream-rotation)).
 * CloudWatch Logs appender `dedicatedWriter` property now defaults to `true`
-  ([more info](docs/changes-3.0.md#cloudwatch-logs-now-sets-dedicatedwriter-true-by-default).
+  ([more info](docs/changes-3.0.md#cloudwatch-logs-appender-now-sets-dedicatedwriter-true-by-default)).
 * Other minor breaking changes as described [here](docs/changes-3.0.md).
+
+
+
 
 ## 2.4.1 (2020-07-29)
 

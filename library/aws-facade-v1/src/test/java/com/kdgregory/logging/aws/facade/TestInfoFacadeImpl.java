@@ -39,7 +39,7 @@ import com.kdgregory.logging.common.util.RetryManager;
 public class TestInfoFacadeImpl
 {
     // used for tests that involve retries
-    private final static long RETRY_TIMEOUT_MS = 200;
+    private final static long RETRY_TIMEOUT_MS = 250;
 
     // update these mocks inside the test, before invoking facade methods
     private EC2ClientMock ec2Mock;

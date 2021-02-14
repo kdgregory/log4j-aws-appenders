@@ -89,8 +89,8 @@
             <groupId>com.kdgregory.logging</groupId>
             <artifactId>logwriters</artifactId>
             <classifier>tests</classifier>
-            <type>test-jar</type>
             <version>${project.version}</version>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
 

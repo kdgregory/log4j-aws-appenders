@@ -1411,8 +1411,6 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         internalLogger.assertInternalErrorLog();
     }
 
-    // note: the following two tests actually exercies AbstractLogWriter functionality; they're not
-    // replicated for other writers
 
     @Test
     public void testShutdown() throws Exception
@@ -1429,9 +1427,9 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
         writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
 
-        // at this point the writer should be blocked by the semaphore; the main thread will
-        // become blocked by waitForWriterThread(); we'll trigger the stop() from a new thread,
-        // and verify its behavior by the time taken to complete processing
+        // at this point the writer should be blocked by the semaphore; we can't just call
+        // stop() in the main thread and then waitForWriter(), because we couldn't tell the
+        // difference with normal batch processing; so we'll call stop() from a new thread
 
         AtomicInteger messagesOnQueueAtStop = new AtomicInteger();
         new Thread(new Runnable()
@@ -1465,6 +1463,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         ((TestableCloudWatchLogWriter)writer).writerThread.join();
         long shutdownTime = System.currentTimeMillis();
 
+        assertEquals("facade shutdown called",                      1,                                  mock.shutdownInvocationCount);
         assertFalse("writer has stopped",                           writer.isRunning());
         assertInRange("time to process",                            batchDelay - 100, batchDelay + 100, shutdownTime - mainReturnedAt);
 
@@ -1477,6 +1476,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         internalLogger.assertInternalErrorLog();
     }
 
+    // note: this is the only place we test the shutdown hook; it's implemented in AbstractLogWriter
 
     @Test
     public void testShutdownHook() throws Exception

@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
@@ -41,6 +42,17 @@ import com.kdgregory.logging.common.util.RetryManager;
 public class InfoFacadeImpl
 implements InfoFacade
 {
+
+    protected RetryManager retryManager = new RetryManager(50, 1000, true);
+
+    private AmazonEC2 ec2Client;
+    private AWSSecurityTokenService stsClient;
+    private AWSSimpleSystemsManagement ssmClient;
+
+//----------------------------------------------------------------------------
+//  InfoFacade implementation
+//----------------------------------------------------------------------------
+
     @Override
     public String retrieveAccountId()
     {
@@ -98,7 +110,7 @@ implements InfoFacade
                 }
                 return result;
             }
-            catch (AmazonEC2Exception ex)
+            catch (AmazonServiceException ex)
             {
                 // this code determined via experimentation
                 if ("RequestLimitExceeded".equals(ex.getErrorCode()))
@@ -145,13 +157,6 @@ implements InfoFacade
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
-
-    protected RetryManager retryManager = new RetryManager(50, 1000, true);
-
-    private AmazonEC2 ec2Client;
-    private AWSSecurityTokenService stsClient;
-    private AWSSimpleSystemsManagement ssmClient;
-
 
     protected AmazonEC2 ec2Client()
     {

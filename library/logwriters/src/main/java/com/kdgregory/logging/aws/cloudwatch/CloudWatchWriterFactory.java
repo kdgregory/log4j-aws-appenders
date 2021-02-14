@@ -26,7 +26,11 @@ import com.kdgregory.logging.common.util.WriterFactory;
  *  Factory to create {@link SNSLogWriter} instances.
  */
 public class CloudWatchWriterFactory
-implements WriterFactory<CloudWatchWriterConfig,CloudWatchWriterStatistics>
+implements WriterFactory
+    <
+    CloudWatchWriterConfig,
+    CloudWatchWriterStatistics
+    >
 {
     @Override
     public LogWriter newLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger logger)

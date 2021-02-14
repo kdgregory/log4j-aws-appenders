@@ -15,6 +15,7 @@
 package com.kdgregory.logging.aws.facade.v2;
 
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.regions.internal.util.EC2MetadataUtils;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.ec2.Ec2Client;
@@ -39,6 +40,17 @@ import com.kdgregory.logging.common.util.RetryManager;
 public class InfoFacadeImpl
 implements InfoFacade
 {
+
+    private Ec2Client ec2Client;
+    private StsClient stsClient;
+    private SsmClient ssmClient;
+
+    protected RetryManager retryManager = new RetryManager(50, 1000, true);
+    
+//----------------------------------------------------------------------------
+//  InfoFacade implementation
+//----------------------------------------------------------------------------
+
     @Override
     public String retrieveAccountId()
     {
@@ -96,7 +108,7 @@ implements InfoFacade
                 }
                 return result;
             }
-            catch (Ec2Exception ex)
+            catch (AwsServiceException ex)
             {
                 // this code determined via experimentation
                 if ("RequestLimitExceeded".equals(ex.awsErrorDetails().errorCode()))
@@ -144,12 +156,6 @@ implements InfoFacade
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
-
-    private Ec2Client ec2Client;
-    private StsClient stsClient;
-    private SsmClient ssmClient;
-
-    protected RetryManager retryManager = new RetryManager(50, 1000, true);
 
     protected Ec2Client ec2Client()
     {

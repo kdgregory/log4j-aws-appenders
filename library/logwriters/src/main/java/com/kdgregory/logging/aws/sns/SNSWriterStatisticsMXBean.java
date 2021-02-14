@@ -90,7 +90,7 @@ public interface SNSWriterStatisticsMXBean
     /**
      *  Returns the number of messages requeued because they could not be sent. This
      *  should be 0; non-zero values indicate throttling or an error condition (see
-     *  {@link #getLastErrorMessage} and {@link #getWriterRaceRetries} for more info).
+     *  {@link #getLastErrorMessage} for more info).
      */
     int getMessagesRequeuedLastBatch();
 

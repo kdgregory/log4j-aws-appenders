@@ -33,7 +33,6 @@ import software.amazon.awssdk.services.sns.SnsClientBuilder;
 
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
-
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
@@ -94,14 +93,8 @@ public class TestClientFactory
     {
         // exposed so that configuration calls can be verified
         public URI endpointOverride;
-        public AwsCredentialsProvider credentialsProvider;
         public Region region;
-        
-        
-        public TestableAwsClientBuilder()
-        {
-//            super(new ClientConfigurationFactory());
-        }
+
 
         @Override
         public Object build()
@@ -125,8 +118,7 @@ public class TestClientFactory
         @Override
         public TestableAwsClientBuilder credentialsProvider(AwsCredentialsProvider value)
         {
-            credentialsProvider = value;
-            return this;
+            throw new UnsupportedOperationException("we don't call this method during testing because AWS validates argument");
         }
 
         @Override

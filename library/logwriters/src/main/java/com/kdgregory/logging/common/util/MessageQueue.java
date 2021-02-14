@@ -42,23 +42,23 @@ public class MessageQueue
          *  Never discard; has potential to run out of memory.
          */
         none,
-    
+
         /**
          *  Discard oldest messages once threshold is reached.
          */
         oldest,
-    
+
         /**
          *  Discard newest messages once threshold is reached.
          */
         newest;
-    
-    
+
+
         public static DiscardAction lookup(String value)
         {
             if (value == null)
                 return null;
-    
+
             try
             {
                 return DiscardAction.valueOf(value.toLowerCase());
@@ -69,7 +69,7 @@ public class MessageQueue
             }
         }
     }
-    
+
 //----------------------------------------------------------------------------
 //  Instance variables and constructor
 //----------------------------------------------------------------------------

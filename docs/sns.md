@@ -5,6 +5,9 @@ with other logging outputs. You would configure the appender to only respond to 
 the ERROR level, and then configure the destination SNS topic to feed a messaging application
 such as PagerDuty.
 
+> While you could use this appender for all log levels, SNS is restricted to a single message
+  at a time, and may not be able to keep up with an application that logs lots of messages.
+
 The SNS appender provides the following features:
 
 * Configurable destination topic, with substitution variables to specify topic name.
@@ -19,15 +22,15 @@ This appender provides the following configuration properties, along with the co
 
 Name                        | Description
 ----------------------------|----------------------------------------------------------------
-`topicName`                 | The name of the SNS topic that will receive messages; may use [substitutions](substitutions.md). No default value. See below for more information.
-`topicArn`                  | The ARN of the SNS topic that will receive messages; may use [substitutions](substitutions.md). No default value. See below for more information.
+`topicName`                 | The name of the SNS topic that will receive messages; may use [substitutions](substitutions.md). No default value. See [below](#arn-versus-name) for more information.
+`topicArn`                  | The ARN of the SNS topic that will receive messages; may use [substitutions](substitutions.md). No default value. See [below](#arn-versus-name) for more information.
 `autoCreate`                | If present and "true", the topic will be created if it does not already exist. This may only be used when specifying topic by name, not ARN.
-`subject`                   | If used, attaches a subject to each message sent; no default value. See below for more information.
+`subject`                   | If used, attaches a subject to each message sent; no default value. See [below](#message-format) for more information.
 `synchronous`               | If `true`, the appender will operate in [synchronous mode](design.md#synchronous-mode), sending messages from the invoking thread on every call to `append()`.
 `truncateOversizeMessages`  | If `true` (the default), truncate any messages that are too large for SNS; if `false`, discard them. See [below](#oversize-messages) for more information.
-`discardThreshold`          | The threshold count for discarding messages; default is 10,000. See [design doc](design.md#message-discard) for more information.
+`discardThreshold`          | The maximum number of messages that can remain queued before they're discarded; default is 10,000. See the [design doc](design.md#message-discard) for more information.
 `discardAction`             | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
-`useShutdownHook`           | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default, set to `false` to disable. Ignored for Log4J2. See [docs](design.md#shutdown) for more information.
+`useShutdownHook`           | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default; set to `false` to disable. Ignored for Log4J2, which has its own shutdown hook. See [docs](design.md#shutdown) for more information.
 
 Note: the `batchDelay` parameter exists but is ignored; the SNS appender attempts to send messages immediately.
 
@@ -96,7 +99,7 @@ To auto-create a topic you must also have the following permission:
 * `sns:CreateTopic`
 
 
-## Operation
+## ARN versus Name
 
 You can specify the destination topic either by ARN or name. You would normally use ARN to reference
 a topic in a different account or region, name to reference a topic in the current account/region. If
@@ -106,14 +109,18 @@ does not already exist (this is only appropriate for development/test environmen
 > When constructing an ARN it's particularly useful to use the `{env:AWS_REGION}` or `{ec2:region}`
   substitutions, along with `{aws:accountId}`.
 
+
+## Message Format
+
 The SNS appender writes messages as simple text strings, formatted according to the layout manager;
 it does not support platform-specific payloads. Messages can have an optional subject, and this text
 may use [substitutions](substitutions.md). This is useful to identify the source of a message when
 sending to an email address.
 
-> Note that substitutions are applied when the appender starts, not on a per-message basis. While
-  you can programmatically change the subject in Log4J1 and Logback (and reconfigure the logger
-  for Log4J2), all messages will have the same subject.
+> Note that substitutions are applied when the appender starts, not on a per-message basis.
+
+
+## (Lack of) Batch Delay
 
 While the appender exposes the batch delay configuration parameter, it is ignored. Each message is
 sent as soon as possible after it's passed to the appender, because SNS does not support message

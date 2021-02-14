@@ -28,10 +28,10 @@ import com.kdgregory.logging.common.LogMessage;
 
 
 /**
- *  A mock object for testing <code>CloudWatchLogWriter</code>. 
+ *  A mock object for testing <code>CloudWatchLogWriter</code>.
  *  <p>
  *  The default implementation assumes that everything works; override methods
- *  to test failure behavior. 
+ *  to test failure behavior.
  */
 public class MockCloudWatchFacade
 implements InvocationHandler

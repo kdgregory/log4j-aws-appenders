@@ -16,7 +16,6 @@ Variable            | Description
 `uuid`              | A type 4 UUID (generated using the JDK's `Random.randomUUID()` method).
 `env:XXX`           | Environment variable `XXX`; see [below](#default-values) for complete syntax.
 `sysprop:XXX`       | System property `XXX`; see [below](#default-values) for complete syntax.
-`instanceId`        | _Deprecated_: use `ec2:instanceId`
 `aws:accountId`     | AWS account ID. Useful for cross-account logging (eg, as part of a CloudWatch log stream name)
 `ec2:instanceId`    | EC2 instance ID; see below.
 `ec2:region`        | Region where the current instance is running; see below.
@@ -41,9 +40,9 @@ The `aws` substitutions connect to AWS to retrieve information. If you do not ha
 connectivity or properly configured credentials these will fail. You must also have the relevant
 AWS SDK library in your classpath (see below).
 
-The `ec2` substitutions retrieve their information from the EC2 metadata service. Using these
-variables in any other environment will result in a (long) wait as the SDK tries to make an HTTP
-request to the (non-existent) metadata endpoint.
+The `ec2:instanceId` and `ec2:region` substitutions retrieve their information from the EC2 metadata
+service. Using these variables in any other environment will result in a (long) wait as the SDK tries
+to make an HTTP request to the (non-existent) metadata endpoint.
 
 The `ec2:tag` substution only applies when running on EC2. It retrieves the instance ID, and from
 that attempts to retrieve the named tag. If unable to retrieve the tag, returns "unknown". To use

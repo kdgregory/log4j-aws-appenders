@@ -149,7 +149,7 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *
  *  <tr VALIGN="top">
  *      <th> useShutdownHook
- *      <td> This exists for consistency with other appenders but ignored; Log4J2 provides 
+ *      <td> This exists for consistency with other appenders but ignored; Log4J2 provides
  *           its own shutdown hooks.
  *  </table>
  *
@@ -157,7 +157,13 @@ import com.kdgregory.logging.common.util.InternalLogger;
  */
 @Plugin(name = "KinesisAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class KinesisAppender
-extends AbstractAppender<KinesisWriterConfig,KinesisAppenderConfig,KinesisWriterStatistics,KinesisWriterStatisticsMXBean>
+extends AbstractAppender
+    <
+    KinesisWriterConfig,
+    KinesisAppenderConfig,
+    KinesisWriterStatistics,
+    KinesisWriterStatisticsMXBean
+    >
 {
 
 //----------------------------------------------------------------------------

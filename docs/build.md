@@ -3,7 +3,7 @@
 There are multiple projects in this repository:
 
 * [library](../library): the actual library, consisting of framework-specific appenders,
-  a shared layer that defines the log-writer interface, and facades to support different
+  the log-writer implementations and other shared code, and facades to support different
   AWS SDKs.
 * [examples](../examples): example programs that demonstrate the appenders in action.
 * [integration-tests](../integration-tests): integration tests that execute several
@@ -12,23 +12,11 @@ There are multiple projects in this repository:
 All projects are built with [Apache Maven](http://maven.apache.org/). The build commands
 differ depending on project:
 
-* library: `mvn clean install` from the project root.
-* examples: `mvn clean package` from a specific example root.
+* library: `mvn clean install` from the project root directory.
+* examples: `mvn clean package` from the root directory of a specific example (you can
+  also run from the root of the examples directory, to build all examples).
 * integration tests: `mvn clean test` from the integration test root directory. Note
   that the full suite of integration tests takes over half an hour to run.
-
-
-## Interface Stability
-
-Classes in top-level appender packages (eg, `com.kdgregory.log4j.aws`) are expected to remain
-backwards compatible; their interfaces are defined by the logging framework. Classes in the
-supporting library modules (shared and facade) are expected to remain backwards compatible
-within a major release, but may change between major release (and may be extended within a
-major release version).
-
-Any other classes, particularly those under packages named `internal`, may change arbitrarily
-and should not be relied upon by user code. This caveat also applies to all test classes and
-packages.
 
 
 ## Source Control
@@ -38,9 +26,9 @@ functional, but may not be "complete" (for some definition of that word). They m
 or release builds. Trunk will never be rebased: once a commit is made there it's part of history
 for better or worse.
 
-All development takes place on a branch. Branches are either feature branches, in which
-case they're named after an issue (eg: `dev-issue-21`), or release-prep branches, in which
-case they're named `dev-MAJOR.MINOR.PATCH`. Development branches may be rebased as I see fit:
+All development takes place on a branch. Branches are either feature branches, in which case
+they're named after an issue (eg: `dev-issue-21`), or release-prep branches, in which case
+they're named `dev-MAJOR.MINOR.PATCH`. Development branches may be rebased as I see fit:
 I often make "checkpoint" commits to save my work and then rebase them into a single commit.
 Once a development branch is merged it is deleted.
 
@@ -64,24 +52,35 @@ and version properties that are used by both the library and integration tests (
 intended to stand alone).
 
 
+## Dependency Versions
+
+The core library and integration tests should be built using the dependency versions specified
+by `library/parent/pom.xml`. These represent the minimum versions supported by the library.
+
+Examples should be built using a "recentish" version of the AWS SDK (recognizing that it's
+updated every day), and the most recent versions of all other dependencies.
+
+
 ## Automated Tests
 
 The "library" modules are heavily tested using mock objects. Since these mocks are only as good
 as my understanding of how the actual SDK works, there's also a full suite of integration tests
 that exercise the appenders using actual AWS resources.
 
-**BEWARE:** the integration tests incur AWS charges. These charges are small (under $1 per run),
-but test failures may leave resources that continue to incur charges. _If you choose to run
-the integration tests, you accept all charges that result._
+The library builds are configured to use the Jacoco code coverage tool. However, I do not run
+it as part of every build: its on-the-fly instrumentation was causing some timing-dependent
+unit tests to fail. Instead, I run manually with the following command:
 
-The library builds are configured to use the Cobertura code coverage tool. It appears to work
-successfully for the `aws-shared` directory, but generates a report indicating 0% coverage for
-the appenders libraries. It's unclear to me why this is happening: there aren't any errors in
-the build log, it shows Cobertura instrumenting classes before running tests, and then running
-again to generate the report. As a result, I don't pay attention to the coverage report.
+```
+mvn jacoco:prepare-agent test site
+```
 
 
 ### Structure of integration test directories
+
+**BEWARE:** the integration tests incur AWS charges. These charges are small (under $1 per run),
+but test failures may leave resources that continue to incur charges. _If you choose to run
+the integration tests, you accept all charges that result._
 
 Because both the target logging frameworks and the AWS SDKs are almost but not completely like
 each other, the integration tests risk becoming a maintenance nightmare. To avoid that, I've
@@ -113,9 +112,10 @@ split them into the following directories:
 ### AWS permissions needed for integration tests
 
 While the individual appender docs list the permissions needed to use those appenders, the
-integration tests require many more permissions: they have to create, examine, and delete
-resources. While I normally run using "Administrator" permissions, I also run a pre-release
-test on EC2 using an instance role with the following policy.
+integration tests require additional permissions: they have to create, examine, and delete
+resources outside of what the log-writers themselves do. While I normally run using
+"Administrator" permissions, I also run a pre-release test on EC2 using an instance role
+with the following policy.
 
 **Do not use this policy in production.** It is extremely over-powered, and includes
 permissions that are not needed for normal use of an appender.
@@ -170,6 +170,7 @@ permissions that are not needed for normal use of an appender.
                 "kinesis:CreateStream",
                 "kinesis:DeleteStream",
                 "kinesis:DescribeStream",
+                "kinesis:DescribeStreamSummary",
                 "kinesis:GetRecords",
                 "kinesis:GetShardIterator",
                 "kinesis:IncreaseStreamRetentionPeriod",

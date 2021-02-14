@@ -23,12 +23,15 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <aws-sdk.version>1.11.495</aws-sdk.version>
-        <logback.version>1.2.0</logback.version>
+        <aws-sdk.version>1.11.950</aws-sdk.version>
         <servlet-api.version>3.0.1</servlet-api.version>
 
+        <!-- these must be kept in sync -->
+        <logback.version>1.2.3</logback.version>
+        <slf4j.version>1.7.25</slf4j.version>
+
         <plugin.compiler.version>3.1</plugin.compiler.version>
-        <plugin.jetty.version>9.4.31.v20200723</plugin.jetty.version>
+        <plugin.jetty.version>9.4.35.v20201120</plugin.jetty.version>
     </properties>
 
 
@@ -50,13 +53,33 @@
             <version>${logback.version}</version>
         </dependency>
 
+        <!-- this is here to retrieve the dependency so that it can be manually copied into the app-server lib directory
+             it's not actually used by the example -->
         <dependency>
-            <!-- this is here to make it easy to copy dependencies into an app-server deployment
-                 it's not actually used by the example -->
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-access</artifactId>
             <version>${logback.version}</version>
             <scope>provided</scope>
+        </dependency>
+
+        <!-- use the SLF4J bridge for commons-logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <!-- don't let the SDK pull in commons-logging transitively -->
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-core</artifactId>
+            <version>${aws-sdk.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions> 
         </dependency>
 
         <dependency>

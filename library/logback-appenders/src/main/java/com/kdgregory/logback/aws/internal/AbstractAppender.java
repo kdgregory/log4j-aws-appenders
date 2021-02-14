@@ -48,12 +48,12 @@ import ch.qos.logback.core.UnsynchronizedAppenderBase;
  *  and these are protected by internal lock objects.
  */
 public abstract class AbstractAppender
-<
+     <
     WriterConfigType extends AbstractWriterConfig<WriterConfigType>,
     AppenderStatsType extends AbstractWriterStatistics,
     AppenderStatsMXBeanType,
     LogbackEventType
->
+    >
 extends UnsynchronizedAppenderBase<LogbackEventType>
 {
     // factories for creating writer and thread

@@ -1,5 +1,8 @@
 # Design
 
+This document covers the issues that informed the library's design. For information about its
+internals, look at the [implementation doc](implementation.md).
+
 ## Constraints
 
 These are the primary design constraints for this library:

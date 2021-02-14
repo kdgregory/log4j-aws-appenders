@@ -9,15 +9,15 @@ This library provides two ways to create an AWS service client:
 * Using the "client builder" objects provided by the SDK. This uses the default
   credentials provider, and allows limited configuration.
 
-Which is used depends on the `clientFactory` configuration parameter.
+The `clientFactory` configuration parameter controls which approach is used.
 
 
 ## Application-Provided Factory Method
 
 If the `clientFactory` parameter is set, it must contain a fully-qualified method name
-(`package.class.method`). The appender library uses reflection to identify and invoke
-this method. If unable to invoke (most likely, because it doesn't exist), then the
-appender aborts; it does not fall back to the SDK-provided client builder.
+(`package.class.method`). The appender library then uses reflection to identify and
+invoke this method. If unable to invoke (most likely, because it doesn't exist), then
+the appender aborts; it does not fall back to the SDK-provided client builder.
 
 There are two supported variants for this method. The first takes no parameters; it
 must retrieve any configuration from an external source. The second is passed the
@@ -94,8 +94,8 @@ If unable to configure a client with the desired endpoint, the appender will rep
 error using the logging framework's internal status logger. It will not create a client
 using a default endpoint.
 
-> Note: the version 1 SDK allows you to specify a client endpoint as either a hostname or
-  a URL. Version 2 requires a URL.
+> Note: the version 1 AWS SDK allows you to specify a client endpoint as either a hostname
+  or a URL. Version 2 requires a URL.
 
 Example:
 

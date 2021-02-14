@@ -30,10 +30,10 @@ import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
  *  Manages common LogWriter activities.
  */
 public abstract class AbstractLogWriter
-<
+    <
     ConfigType extends AbstractWriterConfig<ConfigType>,
     StatsType extends AbstractWriterStatistics
->
+    >
 implements LogWriter
 {
     // flag value for shutdownTime
@@ -468,9 +468,8 @@ implements LogWriter
 
     /**
      *  Verifies that the logging destination is available (which may involve
-     *  creating it). When called, {@link #client} will be initialized. Return
-     *  <code>true</code> if successful, <code>false</code> if not (which will
-     *  cause the appender to stop running).
+     *  creating it). Return <code>true</code> if successful, <code>false</code> 
+     *  if not (which will cause the appender to stop running).
      */
     protected abstract boolean ensureDestinationAvailable();
 

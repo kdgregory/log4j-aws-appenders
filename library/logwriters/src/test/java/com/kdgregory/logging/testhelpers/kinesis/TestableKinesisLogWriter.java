@@ -25,7 +25,7 @@ import com.kdgregory.logging.common.util.RetryManager;
 
 
 /**
- *  Used by appender tests. Provides semaphores to synchronize test (main) and 
+ *  Used by appender tests. Provides semaphores to synchronize test (main) and
  *  writer threads.
  */
 public class TestableKinesisLogWriter
@@ -33,6 +33,8 @@ extends KinesisLogWriter
 {
     private Semaphore allowMainThread   = new Semaphore(0);
     private Semaphore allowWriterThread = new Semaphore(0);
+
+    public Thread writerThread;
 
 
     public TestableKinesisLogWriter(KinesisWriterConfig config, KinesisWriterStatistics stats, InternalLogger logger, KinesisFacade facade)
@@ -45,6 +47,14 @@ extends KinesisLogWriter
         postCreateRetry = new RetryManager(50, 200, false);
         sendRetry = new RetryManager(50, 200, false);
     }
+
+    @Override
+    public void run()
+    {
+        writerThread = Thread.currentThread();
+        super.run();
+    }
+
 
 
     @Override

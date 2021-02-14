@@ -1,8 +1,9 @@
-## What's the difference between version 1 and version 2
+## What's the difference between major versions?
 
   Version 1 was a single JAR that supported only Log4J 1.2. Version 2 split the library
   into two parts: a "core" JAR contains all code that interacts with AWS, and "framework"
-  JARs that support different logging frameworks.
+  JARs that support different logging frameworks. Version 3 added support for the AWS
+  "version 2" SDK (but still supports version 1!). I don't foresee a version 4.
 
 
 ## Isn't Log4J 1.x at end of life?
@@ -12,8 +13,9 @@
   want from a logger. Since replacing a stable framework is pretty low on the priority
   list for most development organizations, I expect it to be around for many more years.
 
-  That said, if you're uncomfortable with using and end-of-lifed logging framework,
-  version 2.1.0 supports Logback and version 2.3.0 supports Log4J 2.x.
+  That said, if you're uncomfortable with usin and end-of-lifed logging framework, this
+  library also supports Logback (my preference) and Log4J 2.x (I didn't see a reason to
+  change its name when I added additional frameworks).
 
 
 ## What about java.util.logging?
@@ -23,22 +25,7 @@
   underlying framework.
 
 
-## What's with client builders vs contructors?
-
-  Starting with release 1.11.16, the AWS SDK introduced builders for service clients; with
-  the 1.11.84 release it started deprecating the client constructors. For more information
-  on the builders and why Amazon thinks they're a good thing, read
-  [this](https://aws.amazon.com/blogs/developer/client-constructors-now-deprecated/).
-  The main difference for the appenders library is that the constructors always use
-  region `us-east-1`, while the client builders use a region provider chain.
-
-  If you're using a version of the SDK that supports client builders, the appenders will
-  invoke them rather than the client constructor. If you're not, or want more control over
-  the client configuration (such as running in `us-east-2` but writing logs to `us-east-1`),
-  the appenders give you several options; read [this](docs/client.md).
-
-
-## What happens when the appender has an error?
+## What happens when an appender has an error?
 
   Each appender maintains an internal message queue, and will attempt to resend messages
   until that queue fills up. What happens after the queue fills depends on the [discard
@@ -67,16 +54,16 @@
   There are two solutions: the first is to use the appender only with your program's
   classes:
 
-```
-log4j.logger.com.myprogram=DEBUG, cloudwatch
-```
+  ```
+  log4j.logger.com.myprogram=DEBUG, cloudwatch
+  ```
 
   Or alternatively, shut off logging for those packages that you don't care about.
 
-```
-log4j.logger.org.apache.http=ERROR
-log4j.logger.com.amazonaws=ERROR
-```
+  ```
+  log4j.logger.org.apache.http=ERROR
+  log4j.logger.com.amazonaws=ERROR
+  ```
 
   My preference is to attach the CloudWatch appender only to classes I care about (which
   may include third-party libraries), and use the built-in `ConsoleAppender` as the root
@@ -104,6 +91,15 @@ log4j.logger.com.amazonaws=ERROR
    logs to Elasticsearch](https://blog.kdgregory.com/2019/09/streaming-cloudwatch-logs-to.html).
 
 
+## [Dependabot](https://dependabot.com/) says you have dependencies with critical vulnerabilities!
+
+   This project targets older versions of various libraries, and those versions are often the subject
+   of Dependabot vulnerability reports. However, since this project does not define any transitive
+   dependencies, _it will not introduce these vulnerabilities into your application._ You should, of
+   course, regularly update your dependencies; just because this library _can_ be used with the
+   1.11.233 AWS SDK doesn't mean that it should.
+
+
 ## Can I contribute?
 
   At this point I haven't thought through the issues with having other contributors (and,
@@ -114,10 +110,12 @@ log4j.logger.com.amazonaws=ERROR
 
 ## How can I get help with any problems?
 
-  Feel free to raise an issue here. I check in at least once a week, and will try to give
-  whatever help and advice I can. Issues that aren't bugs or feature requests will be
-  closed after I answer, but you can still comment.
+  First, check out the [troubleshooting doc](docs/troubleshooting.md). It has examples and
+  answers for most of the problems that have been seen "in the wild."
 
-  Alternatively you can post on [Stack Overflow](https://stackoverflow.com/), although I
-  don't often log in there. If you do this, flag the post with `@kdgregory` otherwise I'm
-  unlikely to see it.
+  If that doesn't help, free to raise an issue here. I check in at least once a week, and
+  will give whatever help and advice I can. Issues that aren't bugs or feature requests will
+  be closed after I answer.
+
+  Alternatively you can post on [Stack Overflow](https://stackoverflow.com/). However, I don't
+  often log in there, so flag the post with `@kdgregory` to increase the chance I'll see it.

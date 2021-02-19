@@ -11,7 +11,7 @@
             <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
         </layout>
         <logGroup>AppenderIntegrationTest-smoketest</logGroup>
-        <logStream>AppenderTest</logStream>
+        <logStream>AppenderTest-{aws:accountId}</logStream>
         <retentionPeriod>7</retentionPeriod>
         <batchDelay>500</batchDelay>
     </appender>

@@ -134,7 +134,7 @@ implements InfoFacade
                     GetParameterRequest request = GetParameterRequest.builder().name(parameterName).build();
                     return ssmClient().getParameter(request);
                 }
-                catch (SsmException ex)
+                catch (AwsServiceException ex)
                 {
                     AwsErrorDetails errorDetails = ex.awsErrorDetails();
                     if ((errorDetails != null) && "ThrottlingException".equals(errorDetails.errorCode()))

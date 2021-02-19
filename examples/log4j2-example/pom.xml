@@ -92,11 +92,6 @@
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
-            <artifactId>ssm</artifactId>
-            <version>${aws-sdk-v2.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
             <artifactId>sts</artifactId>
             <version>${aws-sdk-v2.version}</version>
         </dependency>

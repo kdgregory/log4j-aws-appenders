@@ -13,10 +13,8 @@
   want from a logger. Since replacing a stable framework is pretty low on the priority
   list for most development organizations, I expect it to be around for many more years.
 
-  That said, if you're uncomfortable with usin and end-of-lifed logging framework, this
-  library also supports Logback (my preference) and Log4J 2.x (I didn't see a reason to
-  change its name when I added additional frameworks).
-
+  That said, if you're uncomfortable with using an end-of-lifed logging framework, this
+  library also supports Logback (my preference) and Log4J 2.x
 
 ## What about java.util.logging?
 

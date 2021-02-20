@@ -136,7 +136,7 @@ implements InfoFacade
                     GetParameterRequest request = new GetParameterRequest().withName(parameterName);
                     return ssmClient().getParameter(request);
                 }
-                catch (AWSSimpleSystemsManagementException ex)
+                catch (AmazonServiceException ex)
                 {
                     if ("ThrottlingException".equals(ex.getErrorCode()))
                         return null;

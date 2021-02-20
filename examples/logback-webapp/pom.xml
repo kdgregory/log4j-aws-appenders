@@ -4,7 +4,7 @@
 
     <groupId>com.kdgregory.logging</groupId>
     <artifactId>logback-aws-appenders-webapp</artifactId>
-    <version>3.0.0</version>
+    <version>3.0.1</version>
     <packaging>war</packaging>
 
     <name>Logback Webapp Example</name>

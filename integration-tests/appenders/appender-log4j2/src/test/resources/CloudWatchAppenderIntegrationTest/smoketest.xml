@@ -8,7 +8,7 @@
         <CloudWatchAppender name="test">
             <PatternLayout pattern="[%t] %-5p %c - %m%n" />
             <logGroup>AppenderIntegrationTest-smoketest</logGroup>
-            <logStream>AppenderTest</logStream>
+            <logStream>AppenderTest-{aws:accountId}</logStream>
             <retentionPeriod>7</retentionPeriod>
             <batchDelay>500</batchDelay>
         </CloudWatchAppender>

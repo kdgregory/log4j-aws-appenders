@@ -1,5 +1,11 @@
 # Change History
 
+## 3.0.1 (2021-02-20)
+
+* Bugfix: `InfoFacade` had a hard dependency on SSM SDK library.
+  ([#142](https://github.com/kdgregory/log4j-aws-appenders/issues/142))
+
+
 ## 3.0.0 (2021-02-14)
 
 * Support AWS SDK v2.
@@ -25,14 +31,13 @@
 * Other minor breaking changes as described [here](docs/changes-3.0.md).
 
 
-
-
 ## 2.4.1 (2020-07-29)
 
 * Move handling of oversize/zero-length messages into log-writer. Fix
   incorrect oversize message test for CloudWatch.
   ([#121](https://github.com/kdgregory/log4j-aws-appenders/issues/121))
 * Update Log4J2 dependency versions in examples, per DependaBot warning.
+
 
 ## 2.4.0 (2020-06-13)
 
@@ -61,6 +66,7 @@
 * Log4J2 lookups now delegate to substitutions for all values (but still
   support the keys implemented in 2.3.0 for backwards compatibility).
 
+
 ## 2.3.0 (2020-03-21)
 
 * Support Log4J 2.x
@@ -73,12 +79,14 @@
   created the log group (was executing from every thread, causing spurious
   exceptions but otherwise succeeding).
 
+
 ## 2.2.2 (2019-10-20)
 
 * CloudWatch appender now provides `dedicatedWriter` configuration parameter,
   which tells the writer that it doesn't need to retain the latest sequence
   number for each writes, reducing the likelihood of throttling.
   ([#89](https://github.com/kdgregory/log4j-aws-appenders/issues/89))
+
 
 ## 2.2.1 (2019-05-05)
 
@@ -88,6 +96,7 @@
   random values (more useful for presentations).
 * Logging configuration for examples now requires AWS appenders to be explicitly
   enabled (to avoid accidental resource creation and unexpected charges).
+
 
 ## 2.2.0 (2019-02-10)
 
@@ -104,11 +113,13 @@
 * Remove internal retries from `KinesisLogWriter`.
   ([#77](https://github.com/kdgregory/log4j-aws-appenders/issues/77))
 
+
 ## 2.1.1 (2019-01-06)
 
 * Fixed service-client creation code so that it would not need SDK JARs for
   all supported destinations.
   ([#71](https://github.com/kdgregory/log4j-aws-appenders/issues/71))
+
 
 ## 2.1.0 (2018-12-26)
 
@@ -122,6 +133,7 @@
   start if invalid.
   ([#67](https://github.com/kdgregory/log4j-aws-appenders/issues/67))
 
+
 ## 2.0.2 (2018-12-08)
 
 * Bugfix: was not correctly handling `InvalidSequenceTokenException` retries,
@@ -129,6 +141,7 @@
   entries.
   ([#63](https://github.com/kdgregory/log4j-aws-appenders/issues/63), also
    [#59](https://github.com/kdgregory/log4j-aws-appenders/issues/59))
+
 
 ## 2.0.1 (2018-11-28)
 
@@ -146,6 +159,7 @@
   via `ContextListener` along with adding unique request IDs to the mapped
   diagnostic context.
 
+
 ## 2.0.0 (2018-10-29)
 
 * Split the library into front-end and back-end components, in preparation for
@@ -154,6 +168,7 @@
 * JMX integration now uses the "marker bean" name as a base name for statistics
   beans (was formerly tied to Log4J's naming convention).
   ([#53](https://github.com/kdgregory/log4j-aws-appenders/issues/53))
+
 
 ## 1.3.0 (2018-09-09)
 

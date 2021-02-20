@@ -16,6 +16,7 @@ package com.kdgregory.logging.test;
 
 import net.sf.kdgcommons.lang.ClassUtil;
 
+import static net.sf.kdgcommons.test.StringAsserts.*;
 import static org.junit.Assert.*;
 
 import org.slf4j.Logger;
@@ -164,7 +165,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
 
         assertEquals("stats: actual log group name",    "AppenderIntegrationTest-smoketest",    accessor.getStats().getActualLogGroupName());
-        assertEquals("stats: actual log stream name",   LOGSTREAM_BASE,                         accessor.getStats().getActualLogStreamName());
+        assertRegex("stats: actual log stream name",    LOGSTREAM_BASE + "-\\d{12}",            accessor.getStats().getActualLogStreamName());
         assertEquals("stats: messages written",         numMessages,                            accessor.getStats().getMessagesSent());
 
         // while we're here, verify some more of the plumbing

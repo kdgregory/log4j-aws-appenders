@@ -230,10 +230,9 @@ completes before the first message is logged from the application:
 ```
 
 
-## Missing SDK JARs on Classpath
+## NoClassDefFoundError
 
-This error is the same for all of the appenders, although its specifics may differ depending on the
-appender type. Here's an example of using the CloudWatch appender without the `aws-java-sdk-logs` JAR:
+The stack trace will be different depending on the appender, but all will look similar:
 
 ```
 Exception in thread "example-0" 2020-05-30 09:05:58,526 DEBUG [example-1] com.kdgregory.log4j.aws.example.Main - value is 52
@@ -258,10 +257,11 @@ Caused by: java.lang.ClassNotFoundException: com.amazonaws.services.logs.model.I
 	at java.lang.ClassLoader.loadClass(ClassLoader.java:357)
 ```
 
-The key to this errors is the `ClassNotFoundException`, referencing a class in the SDK JAR (in this
-case, `InvalidSequenceTokenException`). Another clue is that it's thrown by the writer factory, when
-calling `newLogWriter()`.
+This indicates that you do not have a needed JAR on the classpath. In this case, the program
+has configured the CloudWatch Logs appender, but has not included the correct SDK JAR. The
+dependencies for each appender or feature are listed [here](permissions.md).
 
-What's happening behind the scenes is that the log writer has hard references to objects within the
-SDK. When the JVM loads the log-writer class, it also tries to resolve the classes it references.
-If the SDK JAR isn't on the classpath, those references will fail.
+This can also happen if you use the incorrect facade JAR for your AWS SDK. AWS changed all of
+the package names in moving from V1 to V2, so if you use a V1 facade with a V2 SDK (or vice-versa)
+the facade will look for classes that don't exist. See the [README](../README.md#usage) for
+information about required dependencies.

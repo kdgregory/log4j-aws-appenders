@@ -16,6 +16,7 @@
   That said, if you're uncomfortable with using an end-of-lifed logging framework, this
   library also supports Logback (my preference) and Log4J 2.x
 
+
 ## What about java.util.logging?
 
   I have no plans to support java.util.logging. If you're using it, I recommend that you
@@ -31,7 +32,7 @@
   oldest messages.
 
   All misbehaviors get logged using the framework's internal logger. See the [troubleshooting
-  doc](docs/troubleshooting.md) for information on how to enable it.
+  guide](docs/troubleshooting.md) for information on how to enable it.
 
   You can also enable [JMX](docs/jmx.md), which will let you see the most recent error (if
   any) along with the time it happened and exception stack trace (if any) using a tool like
@@ -74,6 +75,14 @@
    will remain running until the Log4J framework is explicitly shut down. To make this
    happen, you will need to add a context listener to your web-app, as described
    [here](docs/tomcat.md).
+
+
+## Why am I getting java.lang.NoClassDefFoundError?
+
+   This indicates that you're missing a required JAR on your classpath. It could
+   also mean that you're using the wrong "facade" JAR for your AWS SDK. See the
+   [troubleshooting guide](docs/troubleshooting.md#noclassdeffounderror) for more
+   explanation and an example.
 
 
 ## I'm running on Lambda, why don't I see any log messages?

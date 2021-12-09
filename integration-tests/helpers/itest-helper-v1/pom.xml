@@ -23,7 +23,7 @@
 
     <properties>
         <!-- we reference ObjectMapper directly, but get it from AWS dependencies in use -->
-        <jackson.version>2.6.7.1</jackson.version>
+        <jackson.version>2.9.10.8</jackson.version>
     </properties>
 
 

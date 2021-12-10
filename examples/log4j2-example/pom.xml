@@ -24,7 +24,7 @@
 
         <aws-sdk-v2.version>2.15.75</aws-sdk-v2.version>
 
-        <log4j2.version>2.13.3</log4j2.version>
+        <log4j2.version>2.15.0</log4j2.version>
 
         <plugin.compiler.version>3.1</plugin.compiler.version>
         <plugin.shade.version>3.1.1</plugin.shade.version>

@@ -68,6 +68,10 @@ I follow the standard `MAJOR.MINOR.PATCH` versioning scheme:
 
 ## Dependencies
 
+To avoid dependency hell, **this library does not specify any transitive dependencies**.
+You must explicitly add all required dependencies into your build. I have made an
+intentional effort to limit dependencies to the bare minimum.
+
 The minimum supported dependency versions are:
 
 * **JDK**: 1.8
@@ -78,11 +82,13 @@ The minimum supported dependency versions are:
   is needed to order messages when sending to AWS. It's been around since 2010,
   so if you haven't upgraded already you should.
 
-* **Log4J 2.x**: 2.10.0   
+* **Log4J 2.x**: 2.10.0
 
   This is the first version that supports custom key/value pairs for `JsonLayout`.
   If that's not important to you, the library will work with version 2.8 (which
   introduced a breaking change in backwards compatibility).
+
+  *Note*: due to CVE-2021-44228, the recommended minimum version is 2.15.0.
 
 * **Logback**: 1.2.0  
 
@@ -98,10 +104,6 @@ The minimum supported dependency versions are:
 
   This is the version that I have used to build and run the integration tests.
   Earlier versions may work, but I make no guarantees.
-
-To avoid dependency hell, **this library does not specify any transitive dependencies**.
-You must explicitly add all required dependencies into your build. I have made an
-intentional effort to limit dependencies to the bare minimum.
 
 
 ## Contributions

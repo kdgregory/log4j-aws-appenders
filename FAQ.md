@@ -98,10 +98,29 @@
    logs to Elasticsearch](https://blog.kdgregory.com/2019/09/streaming-cloudwatch-logs-to.html).
 
 
+## How is this library affected by CVE-2021-44228?
+
+  [CVE-2021-44228](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-44228) is a vulnerability
+  in Log4J 2.x in which (1) layout plugins use the Log4J2 "lookup" facility to perform string
+  interpolation on log messages, and (2) the JNDI plugin allows execution of code from a remote
+  source. As a result, if you log unsanitized user input, your application is at risk. In my
+  experiments, the issue affected `PatternLayout` but not `JsonLayout`.
+
+  Since this is an issue with layout managers, this library is not directly affected. Unless, of
+  course, you use unsanitized user input to configure your logger (if you do, please stop).
+
+  The best solution is to upgrade to version 2.15.0 or later. You can also set the system property
+  `log4j2.formatMsgNoLookups` to true.
+
+  The Log4J2 examples have been updated to use version 2.15.0. The main library dependency remains
+  set at 2.10.0, _but this does not cause a transitive dependency relationship._ You must provide
+  your own Log4J2 dependency specification to use this library.
+
+
 ## [Dependabot](https://dependabot.com/) says you have dependencies with critical vulnerabilities!
 
    This project targets older versions of various libraries, and those versions are often the subject
-   of Dependabot vulnerability reports. However, since this project does not define any transitive
+   of Dependabot vulnerability reports. However, since this library does not specify _any_ transitive
    dependencies, _it will not introduce these vulnerabilities into your application._ You should, of
    course, regularly update your dependencies; just because this library _can_ be used with the
    1.11.233 AWS SDK doesn't mean that it should.

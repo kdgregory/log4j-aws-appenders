@@ -121,3 +121,17 @@ Example:
 ```
 log4j.appender.cloudwatch.clientRegion=us-east-2
 ```
+
+
+### `proxyUrl`
+
+Specifies the fully qualified URL of an HTTP(S) proxy server: `http://host:port`.
+All clients, including those used to retrieve information or assume roles, will
+use this proxy server to relay requests to AWS.
+
+This configuration setting exists because the AWS SDK changed how it manages
+proxies between v1 and v2. Version 1 supported the environment variable `HTTPS_PROXY`,
+as well as a series of system properties that start with `https`. Version 2
+does not support configuration by environment variable, and its system properties
+start with `http`.
+

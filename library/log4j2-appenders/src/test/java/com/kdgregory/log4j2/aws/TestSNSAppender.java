@@ -184,7 +184,7 @@ extends AbstractUnitTest<TestableSNSAppender>
         MockSNSWriter writer = appender.getMockWriter();
 
         assertRegex("writer topicName",                 "name-20\\d{6}-20\\d{6}",           writer.config.getTopicName());
-        assertRegex("writer topicArn",                  "arn-[0-9]{1,5}-[0-9]{1,5}",        writer.config.getTopicArn());
+        assertRegex("writer topicArn",                  "arn-[0-9]{1,6}-[0-9]{1,6}",        writer.config.getTopicArn());
         assertEquals("writer subect",                   "example",                          writer.config.getSubject());
     }
 

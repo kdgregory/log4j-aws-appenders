@@ -59,6 +59,7 @@ extends AbstractUnitTest<TestableSNSAppender>
         assertEquals("client factory",          "com.example.Foo.bar",          appender.getConfig().getClientFactory());
         assertEquals("client region",           "us-west-1",                    appender.getConfig().getClientRegion());
         assertEquals("client endpoint",         "sns.us-west-2.amazonaws.com",  appender.getConfig().getClientEndpoint());
+        assertEquals("proxy url",               "http://localhost:3128",        appender.getConfig().getProxyUrl());
     }
 
 
@@ -83,6 +84,7 @@ extends AbstractUnitTest<TestableSNSAppender>
         assertEquals("client factory",          null,                           appender.getConfig().getClientFactory());
         assertEquals("client region",           null,                           appender.getConfig().getClientRegion());
         assertEquals("client endpoint",         null,                           appender.getConfig().getClientEndpoint());
+        assertEquals("proxy url",           null,                               appender.getConfig().getProxyUrl());
     }
 
 

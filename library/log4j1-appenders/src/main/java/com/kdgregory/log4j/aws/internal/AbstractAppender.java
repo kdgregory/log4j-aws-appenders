@@ -99,6 +99,7 @@ extends AppenderSkeleton
     protected String                clientFactory;
     protected String                clientRegion;
     protected String                clientEndpoint;
+    private String                  proxyUrl;
     protected boolean               synchronous;
     protected boolean               useShutdownHook;
 
@@ -328,6 +329,18 @@ extends AppenderSkeleton
     {
         return clientEndpoint;
     }
+    
+
+    public String getProxyUrl()
+    {
+        return proxyUrl;
+    }
+
+    
+    public void setProxyUrl(String value)
+    {
+        proxyUrl = value;
+    }
 
 
     /**
@@ -492,6 +505,7 @@ extends AppenderSkeleton
                                   .setAssumedRole(assumedRole)
                                   .setClientRegion(clientRegion)
                                   .setClientEndpoint(clientEndpoint)
+                                  .setProxyUrl(proxyUrl)
                                   .setSynchronousMode(synchronous)
                                   .setUseShutdownHook(useShutdownHook);
 

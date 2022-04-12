@@ -56,6 +56,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("client factory",          "com.example.Foo.bar",          appender.getClientFactory());
         assertEquals("client region",           "us-west-1",                    appender.getClientRegion());
         assertEquals("client endpoint",         "logs.us-west-2.amazonaws.com", appender.getClientEndpoint());
+        assertEquals("proxy url",               "http://localhost:3128",        appender.getProxyUrl());
     }
 
 
@@ -80,6 +81,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("client factory",          null,                           appender.getClientFactory());
         assertEquals("client region",           null,                           appender.getClientRegion());
         assertEquals("client endpoint",         null,                           appender.getClientEndpoint());
+        assertEquals("proxy url",               null,                           appender.getProxyUrl());
     }
 
 

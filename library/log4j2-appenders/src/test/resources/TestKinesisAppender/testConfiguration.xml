@@ -18,6 +18,7 @@
             <clientRegion>us-west-1</clientRegion>
             <clientEndpoint>kinesis.us-west-2.amazonaws.com</clientEndpoint>
             <useShutdownHook>false</useShutdownHook>
+            <proxyUrl>http://localhost:3128</proxyUrl>
         </TestableKinesisAppender>
     </Appenders>
 

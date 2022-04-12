@@ -35,6 +35,7 @@ public class AbstractWriterConfig<T extends AbstractWriterConfig<T>>
     private String                  assumedRole;
     private String                  clientRegion;
     private String                  clientEndpoint;
+    private String                  proxyUrl;
     private boolean                 useShowdownHook;
 
 
@@ -142,6 +143,18 @@ public class AbstractWriterConfig<T extends AbstractWriterConfig<T>>
     public T setClientEndpoint(String value)
     {
         clientEndpoint = value;
+        return (T)this;
+    }
+
+
+    public String getProxyUrl()
+    {
+        return proxyUrl;
+    }
+
+    public T setProxyUrl(String value)
+    {
+        proxyUrl = value;
         return (T)this;
     }
 

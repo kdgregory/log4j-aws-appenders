@@ -257,7 +257,8 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
                 .setClientFactoryMethod(appenderConfig.getClientFactory())
                 .setAssumedRole(appenderConfig.getAssumedRole())
                 .setClientRegion(appenderConfig.getClientRegion())
-                .setClientEndpoint(appenderConfig.getClientEndpoint());
+                .setClientEndpoint(appenderConfig.getClientEndpoint())
+                .setProxyUrl(appenderConfig.getProxyUrl());
 
         synchronized (initializationLock)
         {

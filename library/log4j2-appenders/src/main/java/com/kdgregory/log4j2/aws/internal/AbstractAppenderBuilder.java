@@ -268,6 +268,28 @@ implements AbstractAppenderConfig
     {
         return clientEndpoint;
     }
+    
+    
+    @PluginBuilderAttribute("proxyUrl")
+    private String proxyUrl;
+
+    /**
+     *  Sets the <code>proxyUrl</code> configuration property.
+     */
+    public T setProxyUrl(String value)
+    {
+        this.proxyUrl = value;
+        return (T)this;
+    }
+
+    /**
+     *  Returns the <code>proxyUrl</code> configuration property.
+     */
+    @Override
+    public String getProxyUrl()
+    {
+        return proxyUrl;
+    }
 
 
     @PluginBuilderAttribute("useShutdownHook")

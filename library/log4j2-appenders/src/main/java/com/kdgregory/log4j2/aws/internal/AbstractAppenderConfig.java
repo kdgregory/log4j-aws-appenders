@@ -41,4 +41,5 @@ public interface AbstractAppenderConfig
     String getClientFactory();
     String getClientRegion();
     String getClientEndpoint();
+    String getProxyUrl();
 }

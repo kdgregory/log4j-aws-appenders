@@ -17,6 +17,7 @@
     <clientFactory>com.example.Foo.bar</clientFactory>
     <clientRegion>us-west-1</clientRegion>
     <clientEndpoint>sns.us-west-2.amazonaws.com</clientEndpoint>
+    <proxyUrl>http://localhost:3128</proxyUrl>
     <useShutdownHook>false</useShutdownHook>
   </appender>
 

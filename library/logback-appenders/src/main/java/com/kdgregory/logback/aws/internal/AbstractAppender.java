@@ -99,6 +99,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     protected String                    clientFactory;
     protected String                    clientRegion;
     protected String                    clientEndpoint;
+    private String                      proxyUrl;
     protected boolean                   useShutdownHook;
 
 
@@ -340,6 +341,24 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
     {
         return clientEndpoint;
     }
+    
+
+    /**
+     *  Sets the <code>proxyUrl</code> configuration property.
+     */
+    public void setProxyUrl(String value)
+    {
+        proxyUrl = value;
+    }
+    
+
+    /**
+     *  Returns the <code>proxyUrl</code> configuration property.
+     */
+    public String getProxyUrl()
+    {
+        return proxyUrl;
+    }
 
 
     /**
@@ -477,6 +496,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
                                   .setAssumedRole(assumedRole)
                                   .setClientRegion(clientRegion)
                                   .setClientEndpoint(clientEndpoint)
+                                  .setProxyUrl(proxyUrl)
                                   .setSynchronousMode(synchronous)
                                   .setUseShutdownHook(useShutdownHook);
 

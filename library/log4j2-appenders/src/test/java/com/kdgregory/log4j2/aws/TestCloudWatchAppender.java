@@ -203,7 +203,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         MockCloudWatchWriter writer = appender.getMockWriter();
 
         assertEquals("writer log group name",       "example",                  writer.config.getLogGroupName());
-        assertRegex("writer log stream name",       "[0-9]{1,5}-[0-9]{1,5}",    writer.config.getLogStreamName());
+        assertRegex("writer log stream name",       "[0-9]{1,6}-[0-9]{1,6}",    writer.config.getLogStreamName());
 
         // no reason to think that any of the other writer config will be different from prior test
     }

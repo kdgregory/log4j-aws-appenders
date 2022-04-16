@@ -88,17 +88,20 @@ The minimum supported dependency versions are:
   If that's not important to you, the library will work with version 2.8 (which
   introduced a breaking change in backwards compatibility).
 
-  *Note*: due to CVE-2021-44228, the recommended minimum version is 2.15.0.
+  *Note*: due to CVE-2021-44228 and related vulnerabilities, the recommended
+  minimum version is 2.17.1.
 
 * **Logback**: 1.2.0  
 
   This version is required to support `JsonAccessLayout`. If you don't use that,
   version 1.0.0 will work.
 
-* **AWS v1 SDK**: 1.11.233  
+* **AWS v1 SDK**: 1.11.394  
 
-  This is the minimum version needed to support all features. As-of this writing
-  it's more than three years old, so if you haven't updated yet you should.
+  This is the minimum version needed to support all features; if you just use
+  basic functionality, you can use whatever version supports the "builder" for
+  your appender's client. However, as-of this writing version 1.11.394 is more
+  than four years old, so this would be a good time to upgrade your dependency.
 
 * **AWS v2 SDK**: 2.10.0
 

@@ -44,7 +44,7 @@
 
         <!-- version properties for all "top-level" projects, whether or not they use the dependency -->
 
-        <aws-sdk-v1.version>1.11.233</aws-sdk-v1.version>
+        <aws-sdk-v1.version>1.11.394</aws-sdk-v1.version>
         <aws-sdk-v2.version>2.10.0</aws-sdk-v2.version>
 
         <junit.version>4.10</junit.version>

@@ -24,7 +24,9 @@ import static org.junit.Assert.*;
 
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.ClientConfigurationFactory;
+import com.amazonaws.Protocol;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
@@ -373,5 +375,28 @@ public class TestClientFactory
         assertTrue("client builder created",                                            factory.createClientBuilderCalled);
         assertTrue("assumed role setter was called",                                    setterWasCalled.get());
         assertEquals("create() returned expected value",            Boolean.TRUE,       value);
+    }
+
+
+    @Test
+    public void testCreateViaBuilderConfigureProxyUrl() throws Exception
+    {
+        TestWriterConfig config = new TestWriterConfig()
+                                  .setProxyUrl("https://proxy.example.com:3128");
+
+        TestableClientFactory factory = new TestableClientFactory(config);
+        Object value = factory.create();
+
+        assertEquals("returned expected value",                     Boolean.TRUE,           value);
+        assertTrue("tryInstantiateFactory called",                                          factory.tryInstantiateFactoryCalled);
+        assertFalse("factory method check variable",                                        factoryMethodCalled);
+        assertTrue("client builder created",                                                factory.createClientBuilderCalled);
+
+        ClientConfiguration clientConfig = factory.clientBuilder.getClientConfiguration();
+
+        assertNotNull("builder configured with ClientConfiguration",                        clientConfig);
+        assertEquals("proxy protocol",                              Protocol.HTTPS,         clientConfig.getProxyProtocol());
+        assertEquals("proxy host",                                  "proxy.example.com",    clientConfig.getProxyHost());
+        assertEquals("proxy port",                                  3128,                   clientConfig.getProxyPort());
     }
 }

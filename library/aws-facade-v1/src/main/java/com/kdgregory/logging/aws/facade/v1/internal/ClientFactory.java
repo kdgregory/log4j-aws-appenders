@@ -17,6 +17,7 @@ package com.kdgregory.logging.aws.facade.v1.internal;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
@@ -59,6 +60,7 @@ public class ClientFactory<T>
 
         AwsClientBuilder<?,?> builder = createClientBuilder();
         optSetRegionOrEndpoint(builder);
+        optSetProxy(builder);
 
         String roleToAssume = config.getAssumedRole();
         if ((roleToAssume != null) && !roleToAssume.isEmpty())
@@ -153,6 +155,19 @@ public class ClientFactory<T>
         else if ((region != null) && ! region.isEmpty())
         {
             builder.setRegion(region);
+        }
+    }
+
+
+    /**
+     *  If the configuration specifies a proxy URL, attempts to set it.
+     */
+    protected void optSetProxy(AwsClientBuilder<?,?> builder)
+    {
+        ClientConfiguration clientConfig = ClientUtils.parseProxyUrl(config.getProxyUrl());
+        if (clientConfig != null)
+        {
+            builder.setClientConfiguration(clientConfig);
         }
     }
 

@@ -24,6 +24,7 @@ import java.util.Set;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -325,6 +326,28 @@ public class SNSLogWriterIntegrationTest
 
         assertEquals("all messages should be truncated to same value",  1, messageBodies.size());
         assertEquals("message was truncated",                           expectedMessage, messageBodies.iterator().next());
+
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
+
+        testHelper.deleteTopicAndQueue();
+    }
+
+
+    @Test
+    @Ignore("proxy must be running or test will fail")
+    public void testProxyUrl() throws Exception
+    {
+        final int numMessages = 2;
+
+        init("testProxyUrl", helperSNSclient, helperSQSclient);
+
+        config.setProxyUrl("http://localhost:3128");
+        new MessageWriter(numMessages).run();
+
+        List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
+
+        assertEquals("number of messages", numMessages, messages.size());
+        testHelper.assertMessageContent(messages, DEFAULT_SUBJECT);
 
         assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
 

@@ -19,6 +19,8 @@ import java.lang.reflect.Method;
 import java.net.URI;
 
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
+import software.amazon.awssdk.core.client.builder.SdkSyncClientBuilder;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClientBuilder;
@@ -63,6 +65,7 @@ public class ClientFactory<T>
 
         AwsClientBuilder<?,?> builder = createClientBuilder();
         optSetRegionOrEndpoint(builder);
+        optSetProxy(builder);
 
         String roleToAssume = config.getAssumedRole();
         if ((roleToAssume != null) && !roleToAssume.isEmpty())
@@ -156,6 +159,28 @@ public class ClientFactory<T>
         if ((region != null) && ! region.isEmpty())
         {
             builder.region(Region.of(region));
+        }
+    }
+
+
+    /**
+     *  If the configuration specifies a proxy URL, attempts to set it.
+     */
+    protected void optSetProxy(AwsClientBuilder<?,?> builder)
+    {
+        String proxyUrl = config.getProxyUrl();
+        if ((proxyUrl == null) || (proxyUrl.length() == 0))
+            return;
+
+        try
+        {
+            ApacheHttpClient.Builder clientBuilder = ApacheHttpClient.builder().proxyConfiguration(
+                                                        ClientUtils.parseProxyUrl(proxyUrl));
+            ((SdkSyncClientBuilder<?,?>)builder).httpClientBuilder(clientBuilder);
+        }
+        catch (Exception ex)
+        {
+            throw new RuntimeException("failed to configure proxy", ex);
         }
     }
 

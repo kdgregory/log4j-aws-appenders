@@ -323,4 +323,26 @@ public class SNSLogWriterIntegrationTest
 
         testHelper.deleteTopicAndQueue();
     }
+
+
+    @Test
+//    @Ignore("proxy must be running or test will fail")
+    public void testProxyUrl() throws Exception
+    {
+        final int numMessages = 2;
+
+        init("testProxyUrl", helperSNSclient, helperSQSclient);
+
+        config.setProxyUrl("http://localhost:3128");
+        new MessageWriter(numMessages).run();
+
+        List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
+
+        assertEquals("number of messages", numMessages, messages.size());
+        testHelper.assertMessageContent(messages, DEFAULT_SUBJECT);
+
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
+
+        testHelper.deleteTopicAndQueue();
+    }
 }

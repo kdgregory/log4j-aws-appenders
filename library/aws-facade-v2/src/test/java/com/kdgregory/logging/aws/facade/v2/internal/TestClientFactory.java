@@ -23,9 +23,16 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import net.sf.kdgcommons.lang.ClassUtil;
+
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
+import software.amazon.awssdk.core.client.builder.SdkSyncClientBuilder;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.http.SdkHttpClient;
+import software.amazon.awssdk.http.SdkHttpClient.Builder;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.http.apache.ProxyConfiguration;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClientBuilder;
 import software.amazon.awssdk.services.kinesis.KinesisClientBuilder;
@@ -86,14 +93,20 @@ public class TestClientFactory
 
 //----------------------------------------------------------------------------
 //  Our own client builder, which doesn't actually build a client
+//  (this class tests that configuration is properly applied to a client
+//  builder, so yes, we're testing the mock; we rely on integration tests
+//  to verify that what we're doing is actually coorect)
 //----------------------------------------------------------------------------
 
+    @SuppressWarnings("unused")
     private static class TestableAwsClientBuilder
-    implements AwsClientBuilder<TestableAwsClientBuilder,Object>
+    implements AwsClientBuilder<TestableAwsClientBuilder,Object>, SdkSyncClientBuilder<TestableAwsClientBuilder,Object>
     {
         // exposed so that configuration calls can be verified
         public URI endpointOverride;
         public Region region;
+        public SdkHttpClient httpClient;
+        public Builder<?> httpClientBuilder;
 
 
         @Override
@@ -125,6 +138,21 @@ public class TestClientFactory
         public TestableAwsClientBuilder region(Region value)
         {
             this.region = value;
+            return this;
+        }
+
+        @Override
+        public TestableAwsClientBuilder httpClient(SdkHttpClient value)
+        {
+            this.httpClient = value;
+            return this;
+        }
+
+        @Override
+        @SuppressWarnings("rawtypes")
+        public TestableAwsClientBuilder httpClientBuilder(Builder value)
+        {
+            this.httpClientBuilder = value;
             return this;
         }
     }
@@ -380,5 +408,29 @@ public class TestClientFactory
         assertTrue("client builder created",                                            factory.createClientBuilderCalled);
         assertTrue("assumed role setter was called",                                    setterWasCalled.get());
         assertEquals("create() returned expected value",            Boolean.TRUE,       value);
+    }
+
+
+    @Test
+    public void testCreateViaBuilderConfigureProxyUrl() throws Exception
+    {
+        // note: providing a user in the proxy URL is not supported
+        TestWriterConfig config = new TestWriterConfig().setProxyUrl("https://argle:bargle@proxy.example.com:3128");
+        TestableClientFactory factory = new TestableClientFactory(config);
+        Object value = factory.create();
+
+        assertEquals("create() returned expected value",            Boolean.TRUE,       value);
+        assertTrue("tryInstantiateFactory called",                                      factory.tryInstantiateFactoryCalled);
+        assertFalse("factory method check variable",                                    factoryMethodCalled);
+        assertTrue("client builder created",                                            factory.createClientBuilderCalled);
+
+        // this may break if we change SDK versions
+        ApacheHttpClient.Builder httpClientBuilder = (ApacheHttpClient.Builder)factory.clientBuilder.httpClientBuilder;
+        ProxyConfiguration proxyConfiguration = ClassUtil.getFieldValue(httpClientBuilder, "proxyConfiguration", ProxyConfiguration.class);
+        assertEquals("proxy scheme",        "https",                proxyConfiguration.scheme());
+        assertEquals("proxy host",          "proxy.example.com",    proxyConfiguration.host());
+        assertEquals("proxy port",          3128,                   proxyConfiguration.port());
+        assertEquals("proxy username",      "argle",                proxyConfiguration.username());
+        assertEquals("proxy username",      "bargle",               proxyConfiguration.password());
     }
 }

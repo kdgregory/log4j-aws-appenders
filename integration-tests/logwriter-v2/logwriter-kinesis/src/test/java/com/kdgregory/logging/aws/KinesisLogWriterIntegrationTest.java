@@ -22,6 +22,7 @@ import java.util.Set;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -304,6 +305,26 @@ public class KinesisLogWriterIntegrationTest
 
         assertEquals("all messages should be truncated to same value", 1, messages.size());
         assertEquals("message actually written",                       expectedMessage, messages.iterator().next());
+
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
+
+        testHelper.deleteStreamIfExists();
+    }
+
+
+    @Test
+    @Ignore("proxy must be running or test will fail")
+    public void testProxyUrl() throws Exception
+    {
+        final int numMessages = 10;
+
+        init("testProxyUrl", helperClient);
+
+        config.setProxyUrl("http://localhost:3128");
+        new MessageWriter(numMessages).run();
+
+        List<RetrievedRecord> records = testHelper.retrieveAllMessages(numMessages);
+        testHelper.assertMessages(records, 1, numMessages);
 
         assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
 

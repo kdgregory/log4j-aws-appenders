@@ -25,6 +25,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -434,6 +435,29 @@ public class CloudWatchLogWriterIntegrationTest
 
         assertEquals("all messages should be truncated to same value", 1, messages.size());
         assertEquals("message actually written",                       expectedMessage, messages.iterator().next());
+
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
+
+        testHelper.deleteLogGroupIfExists();
+    }
+
+
+    @Test
+    @Ignore("proxy must be running or test will fail")
+    public void testProxyUrl() throws Exception
+    {
+        final int numMessages = 10;
+
+        init("testProxyUrl", helperClient);
+
+        CloudWatchWriterConfig config = defaultConfig();
+        config.setProxyUrl("http://localhost:3128");
+        CloudWatchLogWriter writer = createWriter(config);
+
+        new MessageWriter(writer, numMessages).run();
+
+        CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
+        testHelper.assertMessages(logStreamName, numMessages);
 
         assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
 

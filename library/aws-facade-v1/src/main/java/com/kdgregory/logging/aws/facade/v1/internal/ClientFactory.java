@@ -17,9 +17,7 @@ package com.kdgregory.logging.aws.facade.v1.internal;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
@@ -29,17 +27,22 @@ import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.common.internal.Utils;
+import com.kdgregory.logging.common.util.ProxyUrl;
 
 
 /**
  *  Creates and configures an AWS client based on the provided writer configuration.
  *  <P>
- *  Implementation note: all internal methods are protected to enable testing.
+ *  Implementation note: the methods that configure a client builder are public and
+ *  static, so that they can be used to create clients elsewhere in the facade.
  */
 public class ClientFactory<T>
 {
     private Class<T> clientType;
     private AbstractWriterConfig<?> config;
+
+    // this field exists (and is exposed) to allow testing
+    protected ProxyUrl proxy = new ProxyUrl();
 
     public ClientFactory(Class<T> clientType, AbstractWriterConfig<?> config)
     {
@@ -51,6 +54,9 @@ public class ClientFactory<T>
 //  Public methods
 //----------------------------------------------------------------------------
 
+    /**
+     *  Creates a client based on provided configuration.
+     */
     public T create()
     {
         T client = tryInstantiateFromFactory();
@@ -58,14 +64,9 @@ public class ClientFactory<T>
             return client;
 
         AwsClientBuilder<?,?> builder = createClientBuilder();
-        optSetRegionOrEndpoint(builder);
-
-        String roleToAssume = config.getAssumedRole();
-        if ((roleToAssume != null) && !roleToAssume.isEmpty())
-        {
-            setAssumedRoleCredentialsProvider(builder, roleToAssume);
-        }
-
+        ClientBuilderUtils.optSetRegionOrEndpoint(builder, config.getClientRegion(), config.getClientEndpoint());
+        ClientBuilderUtils.optSetProxy(builder, proxy);
+        ClientBuilderUtils.optSetAssumedRoleCredentialsProvider(builder, config.getAssumedRole(), proxy);
         return clientType.cast(builder.build());
     }
 
@@ -134,39 +135,6 @@ public class ClientFactory<T>
             return new AmazonSNSClientBuilderBuilder().buildBuilder();
 
         throw new RuntimeException("unsupported configuration type: " + config.getClass());
-    }
-
-
-    /**
-     *  If the configuration specifies region, attempts to set it.
-     */
-    protected void optSetRegionOrEndpoint(AwsClientBuilder<?,?> builder)
-    {
-        String region = config.getClientRegion();
-        String endpoint = config.getClientEndpoint();
-
-        if ((endpoint != null) && ! endpoint.isEmpty())
-        {
-            builder.setEndpointConfiguration(
-                new EndpointConfiguration(endpoint, region));
-        }
-        else if ((region != null) && ! region.isEmpty())
-        {
-            builder.setRegion(region);
-        }
-    }
-
-
-    /**
-     *  Configures the builder with an assumed-role credentials provider. The
-     *  test for this is in the caller, so that we can override this method for
-     *  testing.
-     */
-    protected void setAssumedRoleCredentialsProvider(AwsClientBuilder<?,?> builder, String roleToAssume)
-    {
-        AWSCredentialsProvider credentialsProvider = new AssumedRoleCredentialsProviderProvider()
-                                                     .provideProvider(roleToAssume);
-        builder.setCredentials(credentialsProvider);
     }
 
 //----------------------------------------------------------------------------

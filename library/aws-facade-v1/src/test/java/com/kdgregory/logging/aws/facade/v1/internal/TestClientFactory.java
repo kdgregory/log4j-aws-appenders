@@ -16,7 +16,6 @@ package com.kdgregory.logging.aws.facade.v1.internal;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -24,7 +23,9 @@ import static org.junit.Assert.*;
 
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.ClientConfigurationFactory;
+import com.amazonaws.Protocol;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
@@ -34,8 +35,13 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
+import com.kdgregory.logging.common.util.ProxyUrl;
 
 
+/**
+ *  Tests as much of ClientFactory as we can without actually creating an
+ *  AWS client. The real testing happes in integration tests.
+ */
 public class TestClientFactory
 {
 //----------------------------------------------------------------------------
@@ -118,6 +124,12 @@ public class TestClientFactory
             clientBuilder = new TestableAwsClientBuilder();
         }
 
+        // this allows us to inject an explicit proxy URL
+        public void setProxyUrl(String value)
+        {
+            this.proxy = new ProxyUrl(value);
+        }
+
         @Override
         protected Object tryInstantiateFromFactory()
         {
@@ -130,12 +142,6 @@ public class TestClientFactory
         {
             createClientBuilderCalled = true;
             return clientBuilder;
-        }
-
-        @Override
-        protected void setAssumedRoleCredentialsProvider(AwsClientBuilder<?,?> builder, String roleToAssume)
-        {
-            fail("this method should not be called unless role configured");
         }
     }
 
@@ -195,12 +201,12 @@ public class TestClientFactory
 
         TestableClientFactory factory = new TestableClientFactory(config);
         Object value = factory.create();
+        assertEquals("returned expected value",         Boolean.TRUE,       value);
 
         assertTrue("tryInstantiateFactory called",                          factory.tryInstantiateFactoryCalled);
         assertTrue("factory method check variable",                         factoryMethodCalled);
         assertFalse("client builder not created",                           factory.createClientBuilderCalled);
 
-        assertEquals("returned expected value",         Boolean.TRUE,       value);
     }
 
 
@@ -277,12 +283,11 @@ public class TestClientFactory
 
         TestableClientFactory factory = new TestableClientFactory(config);
         Object value = factory.create();
+        assertEquals("returned expected value",             Boolean.TRUE,   value);
 
         assertTrue("tryInstantiateFactory called",                          factory.tryInstantiateFactoryCalled);
         assertFalse("factory method check variable",                        factoryMethodCalled);
         assertTrue("client builder created",                                factory.createClientBuilderCalled);
-
-        assertEquals("returned expected value",             Boolean.TRUE,   value);
     }
 
 
@@ -294,13 +299,12 @@ public class TestClientFactory
 
         TestableClientFactory factory = new TestableClientFactory(config);
         Object value = factory.create();
+        assertEquals("returned expected value",             Boolean.TRUE,       value);
 
         assertTrue("tryInstantiateFactory called",                              factory.tryInstantiateFactoryCalled);
         assertFalse("factory method check variable",                            factoryMethodCalled);
         assertTrue("client builder created",                                    factory.createClientBuilderCalled);
         assertEquals("builder configured with region",      "ca-central-1",     factory.clientBuilder.getRegion());
-
-        assertEquals("returned expected value",             Boolean.TRUE,       value);
     }
 
 
@@ -313,6 +317,7 @@ public class TestClientFactory
 
         TestableClientFactory factory = new TestableClientFactory(config);
         Object value = factory.create();
+        assertEquals("returned expected value",                 Boolean.TRUE,       value);
 
         assertTrue("tryInstantiateFactory called",                                  factory.tryInstantiateFactoryCalled);
         assertFalse("factory method check variable",                                factoryMethodCalled);
@@ -320,8 +325,6 @@ public class TestClientFactory
         assertEquals("builder configured with endpoint",        "www.example.com",  factory.clientBuilder.getEndpoint().getServiceEndpoint());
         assertEquals("builder configured with signing region",  "ca-central-1",     factory.clientBuilder.getEndpoint().getSigningRegion());
         assertEquals("builder not configured with region",      null,               factory.clientBuilder.getRegion());
-
-        assertEquals("returned expected value",                 Boolean.TRUE,       value);
     }
 
 
@@ -336,6 +339,7 @@ public class TestClientFactory
 
         TestableClientFactory factory = new TestableClientFactory(config);
         Object value = factory.create();
+        assertEquals("create() returned expected value",            Boolean.TRUE,       value);
 
         assertTrue("tryInstantiateFactory called",                                      factory.tryInstantiateFactoryCalled);
         assertFalse("factory method check variable",                                    factoryMethodCalled);
@@ -343,35 +347,40 @@ public class TestClientFactory
         assertEquals("builder configured with endpoint",            "www.example.com",  factory.clientBuilder.getEndpoint().getServiceEndpoint());
         assertEquals("builder not configured with signing region",  null,               factory.clientBuilder.getEndpoint().getSigningRegion());
         assertEquals("builder not configured with region",          null,               factory.clientBuilder.getRegion());
-
-        assertEquals("create() returned expected value",            Boolean.TRUE,       value);
     }
 
 
     @Test
-    public void testCreateViaBuilderConfigureAssumedRole() throws Exception
+    public void testCreateViaBuilderConfigureProxyUrl() throws Exception
     {
-        // it doesn't matter whether we use a name or ARN, because we're mocking out the code that uses it
-        String testRoleArn = "arn:aws:iam::123456789012:role/AssumableRole";
+        TestableClientFactory factory = new TestableClientFactory(new TestWriterConfig());
+        factory.setProxyUrl("https://proxy.example.com:3128");
 
-        final AtomicBoolean setterWasCalled = new AtomicBoolean(false);
-
-        TestWriterConfig config = new TestWriterConfig().setAssumedRole(testRoleArn);
-        TestableClientFactory factory = new TestableClientFactory(config)
-        {
-            @Override
-            protected void setAssumedRoleCredentialsProvider(AwsClientBuilder<?,?> builder, String roleToAssume)
-            {
-                setterWasCalled.set(true);
-                assertEquals("roleToAssume passed to provider provider", testRoleArn, roleToAssume);
-            }
-        };
         Object value = factory.create();
+        assertEquals("factory created expected object",             Boolean.TRUE,           value);
 
-        assertTrue("tryInstantiateFactory called",                                      factory.tryInstantiateFactoryCalled);
-        assertFalse("factory method check variable",                                    factoryMethodCalled);
-        assertTrue("client builder created",                                            factory.createClientBuilderCalled);
-        assertTrue("assumed role setter was called",                                    setterWasCalled.get());
-        assertEquals("create() returned expected value",            Boolean.TRUE,       value);
+        assertTrue("tryInstantiateFactory called",                                          factory.tryInstantiateFactoryCalled);
+        assertFalse("factory method check variable",                                        factoryMethodCalled);
+        assertTrue("client builder created",                                                factory.createClientBuilderCalled);
+
+        ClientConfiguration clientConfig = factory.clientBuilder.getClientConfiguration();
+
+        assertNotNull("builder configured with ClientConfiguration",                        clientConfig);
+        assertEquals("proxy protocol",                              Protocol.HTTPS,         clientConfig.getProxyProtocol());
+        assertEquals("proxy host",                                  "proxy.example.com",    clientConfig.getProxyHost());
+        assertEquals("proxy port",                                  3128,                   clientConfig.getProxyPort());
+    }
+
+
+    @Test
+    public void testCreateViaBuilderNoProxy() throws Exception
+    {
+        TestableClientFactory factory = new TestableClientFactory(new TestWriterConfig());
+
+        Object value = factory.create();
+        assertEquals("returned expected value",                     Boolean.TRUE,           value);
+
+        ClientConfiguration clientConfig = factory.clientBuilder.getClientConfiguration();
+        assertNull("ClientConfiguration", clientConfig);
     }
 }

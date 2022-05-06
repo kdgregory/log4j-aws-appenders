@@ -16,23 +16,21 @@ package com.kdgregory.logging.aws.facade.v2.internal;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URI;
-
-import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
-import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClientBuilder;
-import software.amazon.awssdk.services.kinesis.KinesisClient;
-import software.amazon.awssdk.services.kinesis.KinesisClientBuilder;
-import software.amazon.awssdk.services.sns.SnsClient;
-import software.amazon.awssdk.services.sns.SnsClientBuilder;
-import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 import com.kdgregory.logging.aws.kinesis.KinesisWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.common.internal.Utils;
+import com.kdgregory.logging.common.util.ProxyUrl;
+
+import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClientBuilder;
+import software.amazon.awssdk.services.kinesis.KinesisClient;
+import software.amazon.awssdk.services.kinesis.KinesisClientBuilder;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.SnsClientBuilder;
 
 
 /**
@@ -44,6 +42,10 @@ public class ClientFactory<T>
 {
     private Class<T> clientType;
     private AbstractWriterConfig<?> config;
+
+    // this field exists (and is exposed) to allow testing
+    protected ProxyUrl proxy = new ProxyUrl();
+
 
     public ClientFactory(Class<T> clientType, AbstractWriterConfig<?> config)
     {
@@ -62,13 +64,9 @@ public class ClientFactory<T>
             return client;
 
         AwsClientBuilder<?,?> builder = createClientBuilder();
-        optSetRegionOrEndpoint(builder);
-
-        String roleToAssume = config.getAssumedRole();
-        if ((roleToAssume != null) && !roleToAssume.isEmpty())
-        {
-            setAssumedRoleCredentialsProvider(builder, roleToAssume);
-        }
+        ClientBuilderUtils.optSetRegionOrEndpoint(builder, config.getClientRegion(), config.getClientEndpoint());
+        ClientBuilderUtils.optSetProxy(builder, proxy);
+        ClientBuilderUtils.optSetAssumedRoleCredentialsProvider(builder, config.getAssumedRole(), proxy);
 
         return clientType.cast(builder.build());
     }
@@ -138,38 +136,6 @@ public class ClientFactory<T>
             return new SnsClientBuilderBuilder().buildBuilder();
 
         throw new RuntimeException("unsupported configuration type: " + config.getClass());
-    }
-
-
-    /**
-     *  If the configuration specifies region, attempts to set it.
-     */
-    protected void optSetRegionOrEndpoint(AwsClientBuilder<?,?> builder)
-    {
-        String region = config.getClientRegion();
-        String endpoint = config.getClientEndpoint();
-
-        if ((endpoint != null) && ! endpoint.isEmpty())
-        {
-            builder.endpointOverride(URI.create(endpoint));
-        }
-        if ((region != null) && ! region.isEmpty())
-        {
-            builder.region(Region.of(region));
-        }
-    }
-
-
-    /**
-     *  Configures the builder with an assumed-role credentials provider. The
-     *  test for this is in the caller, so that we can override this method for
-     *  testing.
-     */
-    protected void setAssumedRoleCredentialsProvider(AwsClientBuilder<?,?> builder, String roleToAssume)
-    {
-        StsAssumeRoleCredentialsProvider credentialsProvider = new AssumedRoleCredentialsProviderProvider()
-                                                               .provideProvider(roleToAssume);
-        builder.credentialsProvider(credentialsProvider);
     }
 
 //----------------------------------------------------------------------------

@@ -22,6 +22,10 @@ import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientB
 import com.amazonaws.services.identitymanagement.model.ListRolesRequest;
 import com.amazonaws.services.identitymanagement.model.ListRolesResult;
 import com.amazonaws.services.identitymanagement.model.Role;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
+
+import com.kdgregory.logging.common.util.ProxyUrl;
 
 
 /**
@@ -31,19 +35,23 @@ import com.amazonaws.services.identitymanagement.model.Role;
  */
 public class AssumedRoleCredentialsProviderProvider
 {
+    private ProxyUrl proxy;
     private AmazonIdentityManagement iamClient;
+    private AWSSecurityTokenService stsClient;
 
 //----------------------------------------------------------------------------
 //  Public methods
 //----------------------------------------------------------------------------
 
-    public STSAssumeRoleSessionCredentialsProvider provideProvider(String roleNameOrArn)
+    public STSAssumeRoleSessionCredentialsProvider provideProvider(String roleNameOrArn, ProxyUrl proxyUrl)
     {
+        this.proxy = proxyUrl;
         String roleArn = retrieveArn(roleNameOrArn);
         if (roleArn == null)
             throw new RuntimeException("no such role: " + roleNameOrArn);
 
         return new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, "com.kdgregory.logging.aws")
+               .withStsClient(stsClient())
                .build();
     }
 
@@ -55,9 +63,23 @@ public class AssumedRoleCredentialsProviderProvider
     {
         if (iamClient == null)
         {
-            iamClient = AmazonIdentityManagementClientBuilder.defaultClient();
+            AmazonIdentityManagementClientBuilder clientBuilder = AmazonIdentityManagementClientBuilder.standard();
+            ClientBuilderUtils.optSetProxy(clientBuilder, proxy);
+            iamClient = clientBuilder.build();
         }
         return iamClient;
+    }
+
+
+    protected AWSSecurityTokenService stsClient()
+    {
+        if (stsClient == null)
+        {
+            AWSSecurityTokenServiceClientBuilder clientBuilder = AWSSecurityTokenServiceClientBuilder.standard();
+            ClientBuilderUtils.optSetProxy(clientBuilder, proxy);
+            stsClient = clientBuilder.build();
+        }
+        return stsClient;
     }
 
 

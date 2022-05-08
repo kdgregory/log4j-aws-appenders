@@ -73,12 +73,12 @@ public class ClientBuilderUtils
      *  No-op if the provided role ARN is null or empty. The provider will use the
      *  specified proxy if it is valid.
      */
-    public static void optSetAssumedRoleCredentialsProvider(AwsClientBuilder<?,?> builder, String roleNameOrArn, ProxyUrl proxyUrl)
+    public static void optSetAssumedRoleCredentialsProvider(AwsClientBuilder<?,?> builder, String roleNameOrArn, ProxyUrl proxy)
     {
         if ((roleNameOrArn != null) && !roleNameOrArn.isEmpty())
         {
             AWSCredentialsProvider credentialsProvider = new AssumedRoleCredentialsProviderProvider()
-                                                         .provideProvider(roleNameOrArn);
+                                                         .provideProvider(roleNameOrArn, proxy);
             builder.setCredentials(credentialsProvider);
         }
     }

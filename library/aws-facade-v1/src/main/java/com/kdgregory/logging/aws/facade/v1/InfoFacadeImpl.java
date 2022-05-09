@@ -33,6 +33,8 @@ import com.amazonaws.services.simplesystemsmanagement.model.*;
 import com.amazonaws.util.EC2MetadataUtils;
 
 import com.kdgregory.logging.aws.facade.InfoFacade;
+import com.kdgregory.logging.aws.facade.v1.internal.ClientBuilderUtils;
+import com.kdgregory.logging.common.util.ProxyUrl;
 import com.kdgregory.logging.common.util.RetryManager;
 
 
@@ -162,7 +164,9 @@ implements InfoFacade
     {
         if (ec2Client == null)
         {
-            ec2Client = AmazonEC2ClientBuilder.defaultClient();
+            AmazonEC2ClientBuilder clientBuilder = AmazonEC2ClientBuilder.standard();
+            ClientBuilderUtils.optSetProxy(clientBuilder, new ProxyUrl());
+            ec2Client = clientBuilder.build();
         }
         return ec2Client;
     }
@@ -171,7 +175,9 @@ implements InfoFacade
     {
         if (stsClient == null)
         {
-            stsClient = AWSSecurityTokenServiceClientBuilder.defaultClient();
+            AWSSecurityTokenServiceClientBuilder clientBuilder = AWSSecurityTokenServiceClientBuilder.standard();
+            ClientBuilderUtils.optSetProxy(clientBuilder, new ProxyUrl());
+            stsClient = clientBuilder.build();
         }
         return stsClient;
     }
@@ -181,7 +187,9 @@ implements InfoFacade
     {
         if (ssmClient == null)
         {
-            ssmClient = AWSSimpleSystemsManagementClientBuilder.defaultClient();
+            AWSSimpleSystemsManagementClientBuilder clientBuilder = AWSSimpleSystemsManagementClientBuilder.standard();
+            ClientBuilderUtils.optSetProxy(clientBuilder, new ProxyUrl());
+            ssmClient = clientBuilder.build();
         }
         return ssmClient;
     }

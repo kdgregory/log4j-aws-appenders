@@ -19,10 +19,13 @@ import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.regions.internal.util.EC2MetadataUtils;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.ec2.Ec2Client;
+import software.amazon.awssdk.services.ec2.Ec2ClientBuilder;
 import software.amazon.awssdk.services.ec2.model.*;
 import software.amazon.awssdk.services.ssm.SsmClient;
+import software.amazon.awssdk.services.ssm.SsmClientBuilder;
 import software.amazon.awssdk.services.ssm.model.*;
 import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.StsClientBuilder;
 import software.amazon.awssdk.services.sts.model.*;
 
 import java.util.ArrayList;
@@ -31,6 +34,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.kdgregory.logging.aws.facade.InfoFacade;
+import com.kdgregory.logging.aws.facade.v2.internal.ClientBuilderUtils;
+import com.kdgregory.logging.common.util.ProxyUrl;
 import com.kdgregory.logging.common.util.RetryManager;
 
 
@@ -46,7 +51,7 @@ implements InfoFacade
     private SsmClient ssmClient;
 
     protected RetryManager retryManager = new RetryManager(50, 1000, true);
-    
+
 //----------------------------------------------------------------------------
 //  InfoFacade implementation
 //----------------------------------------------------------------------------
@@ -161,7 +166,9 @@ implements InfoFacade
     {
         if (ec2Client == null)
         {
-            ec2Client = Ec2Client.builder().build();
+            Ec2ClientBuilder clientBuilder = Ec2Client.builder();
+            ClientBuilderUtils.optSetProxy(clientBuilder, new ProxyUrl());
+            ec2Client = clientBuilder.build();
         }
         return ec2Client;
     }
@@ -170,7 +177,9 @@ implements InfoFacade
     {
         if (stsClient == null)
         {
-            stsClient = StsClient.builder().build();
+            StsClientBuilder clientBuilder = StsClient.builder();
+            ClientBuilderUtils.optSetProxy(clientBuilder, new ProxyUrl());
+            stsClient = clientBuilder.build();
         }
         return stsClient;
     }
@@ -180,7 +189,9 @@ implements InfoFacade
     {
         if (ssmClient == null)
         {
-            ssmClient = SsmClient.builder().build();
+            SsmClientBuilder clientBuilder = SsmClient.builder();
+            ClientBuilderUtils.optSetProxy(clientBuilder, new ProxyUrl());
+            ssmClient = clientBuilder.build();
         }
         return ssmClient;
     }

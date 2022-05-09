@@ -16,10 +16,14 @@ package com.kdgregory.logging.aws.facade.v2.internal;
 
 import java.util.regex.Pattern;
 
+import com.kdgregory.logging.common.util.ProxyUrl;
+
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.iam.IamClient;
+import software.amazon.awssdk.services.iam.IamClientBuilder;
 import software.amazon.awssdk.services.iam.model.*;
 import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.StsClientBuilder;
 import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
 import software.amazon.awssdk.services.sts.model.*;
 
@@ -31,20 +35,20 @@ import software.amazon.awssdk.services.sts.model.*;
  */
 public class AssumedRoleCredentialsProviderProvider
 {
+    private ProxyUrl proxy;
     private IamClient iamClient;
+    private StsClient stsClient;
 
 //----------------------------------------------------------------------------
 //  Public methods
 //----------------------------------------------------------------------------
 
-    public StsAssumeRoleCredentialsProvider provideProvider(String roleNameOrArn)
+    public StsAssumeRoleCredentialsProvider provideProvider(String roleNameOrArn, ProxyUrl proxyUrl)
     {
+        this.proxy = proxyUrl;
         String roleArn = retrieveArn(roleNameOrArn);
         if (roleArn == null)
             throw new RuntimeException("no such role: " + roleNameOrArn);
-
-        // setting the client on the provider builder is not documented for v2 but is required
-        StsClient stsClient = StsClient.builder().build();
 
         AssumeRoleRequest request = AssumeRoleRequest.builder()
                                     .roleArn(roleArn)
@@ -52,7 +56,7 @@ public class AssumedRoleCredentialsProviderProvider
                                     .build();
 
         return StsAssumeRoleCredentialsProvider.builder()
-               .stsClient(stsClient)
+               .stsClient(stsClient())
                .refreshRequest(request)
                .build();
     }
@@ -65,9 +69,23 @@ public class AssumedRoleCredentialsProviderProvider
     {
         if (iamClient == null)
         {
-            iamClient = IamClient.builder().region(Region.AWS_GLOBAL).build();
+            IamClientBuilder clientBuilder = IamClient.builder().region(Region.AWS_GLOBAL);
+            ClientBuilderUtils.optSetProxy(clientBuilder, proxy);
+            iamClient = clientBuilder.build();
         }
         return iamClient;
+    }
+    
+
+    protected StsClient stsClient()
+    {
+        if (stsClient == null)
+        {
+            StsClientBuilder clientBuilder = StsClient.builder();
+            ClientBuilderUtils.optSetProxy(clientBuilder, proxy);
+            stsClient = clientBuilder.build();
+        }
+        return stsClient;
     }
 
 

@@ -22,10 +22,13 @@ import static org.junit.Assert.*;
 import net.sf.kdgcommons.lang.ClassUtil;
 
 import software.amazon.awssdk.services.iam.IamClient;
+import software.amazon.awssdk.services.sts.StsClient;
 import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
 import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
 
 import com.kdgregory.logging.aws.testhelpers.IAMClientMock;
+import com.kdgregory.logging.aws.testhelpers.STSClientMock;
+import com.kdgregory.logging.common.util.ProxyUrl;
 
 
 public class TestAssumedRoleCredentialsProviderProvider
@@ -33,8 +36,19 @@ public class TestAssumedRoleCredentialsProviderProvider
     private final static String TEST_ROLE_NAME = "test";
     private final static String TEST_ROLE_ARN = IAMClientMock.ROLE_ARN_BASE + "test";
 
-    // each test must creat this prior to creating the testable provider
+    // the IAM mock will be created by the the client, to validate interaction
     private IAMClientMock iamMock;
+
+    // we count the number of times the provider requested a client and cache what it got
+    public int iamClientRequestedInvocationCount;
+    public IamClient iamClient;
+
+    // there's no test-specific configuration here, so we'll preset
+    private STSClientMock stsMock = new STSClientMock();
+
+    // again, count the number of times the client asked for it, and cache the actual client
+    public int stsClientRequestedInvocationCount;
+    public StsClient stsClient;
 
 
     private class TestableAssumedRoleCredentialsProviderProvider
@@ -43,8 +57,23 @@ public class TestAssumedRoleCredentialsProviderProvider
         @Override
         protected IamClient iamClient()
         {
-            // all created clients refer to the same invocation handler, so no need to cache
-            return iamMock.createClient();
+            iamClientRequestedInvocationCount++;
+            if (iamClient == null)
+            {
+                iamClient = iamMock.createClient();
+            }
+            return iamClient;
+        }
+
+        @Override
+        protected StsClient stsClient()
+        {
+            stsClientRequestedInvocationCount++;
+            if (stsClient == null)
+            {
+                stsClient = stsMock.createClient();
+            }
+            return stsClient;
         }
 
         @Override
@@ -59,49 +88,57 @@ public class TestAssumedRoleCredentialsProviderProvider
 //----------------------------------------------------------------------------
 
     @Test
-    public void testLookupByName() throws Exception
+    public void testRoleLookupByName() throws Exception
     {
         iamMock = new IAMClientMock(TEST_ROLE_NAME);
         TestableAssumedRoleCredentialsProviderProvider cpp = new TestableAssumedRoleCredentialsProviderProvider();
 
-        assertEquals("retrieved ARN",               TEST_ROLE_ARN,  cpp.retrieveArn(TEST_ROLE_NAME));
+        String roleArn = cpp.retrieveArn(TEST_ROLE_NAME);
 
-        assertEquals("listRoles invocation count",  1,              iamMock.listRolesInvocationCount);
+        assertEquals("retrieved ARN",                       TEST_ROLE_ARN,  roleArn);
+        assertEquals("number of IAM clients requested",     1,              iamClientRequestedInvocationCount);
+        assertEquals("number of IAM clients requested",     0,              stsClientRequestedInvocationCount);
+        assertEquals("listRoles invocation count",          1,              iamMock.listRolesInvocationCount);
     }
 
 
     @Test
-    public void testLookupByArn() throws Exception
+    public void testRoleLookupByArn() throws Exception
     {
         iamMock = new IAMClientMock(TEST_ROLE_NAME);
         TestableAssumedRoleCredentialsProviderProvider cpp = new TestableAssumedRoleCredentialsProviderProvider();
 
-        assertEquals("retrieved ARN",               TEST_ROLE_ARN,  cpp.retrieveArn(TEST_ROLE_ARN));
+        String roleArn = cpp.retrieveArn(TEST_ROLE_NAME);
 
-        assertEquals("listRoles invocation count",  0,              iamMock.listRolesInvocationCount);
+        assertEquals("retrieved ARN",                       TEST_ROLE_ARN,  roleArn);
+        assertEquals("number of IAM clients requested",     1,              iamClientRequestedInvocationCount);
+        assertEquals("number of IAM clients requested",     0,              stsClientRequestedInvocationCount);
+        assertEquals("listRoles invocation count",          1,              iamMock.listRolesInvocationCount);
     }
 
 
     @Test
-    public void testLookupNoSuchRole() throws Exception
+    public void testRoleLookupNoSuchRole() throws Exception
     {
         iamMock = new IAMClientMock("foo", "bar", "baz");
         TestableAssumedRoleCredentialsProviderProvider cpp = new TestableAssumedRoleCredentialsProviderProvider();
 
-        assertNull("returned null",                                 cpp.retrieveArn("biff"));
+        String roleArn = cpp.retrieveArn("biff");
 
+        assertNull("returned null",                                 roleArn);
         assertEquals("listRoles invocation count",  1,              iamMock.listRolesInvocationCount);
     }
 
 
     @Test
-    public void testLookupPaginated() throws Exception
+    public void testRoleLookupPaginated() throws Exception
     {
         iamMock = new IAMClientMock(1, "foo", "bar", TEST_ROLE_NAME, "baz");
         TestableAssumedRoleCredentialsProviderProvider cpp = new TestableAssumedRoleCredentialsProviderProvider();
 
-        assertEquals("retrieved ARN",               TEST_ROLE_ARN,  cpp.retrieveArn(TEST_ROLE_NAME));
+        String roleArn = cpp.retrieveArn(TEST_ROLE_NAME);
 
+        assertEquals("retrieved ARN",               TEST_ROLE_ARN,  roleArn);
         assertEquals("listRoles invocation count",  3,              iamMock.listRolesInvocationCount);
     }
 
@@ -119,7 +156,7 @@ public class TestAssumedRoleCredentialsProviderProvider
             }
         };
 
-        StsAssumeRoleCredentialsProvider provider = cpp.provideProvider(TEST_ROLE_NAME);
+        StsAssumeRoleCredentialsProvider provider = cpp.provideProvider(TEST_ROLE_NAME, new ProxyUrl());
 
         // digging into the internals ... this will fail if they ever change implementation
 
@@ -128,6 +165,7 @@ public class TestAssumedRoleCredentialsProviderProvider
 
         assertEquals("provider configured with role",       TEST_ROLE_ARN,                  request.roleArn());
         assertEquals("provider configured with session",    "com.kdgregory.logging.aws",    request.roleSessionName());
+        assertSame("provider configured with STS client",   stsClient,                      ClassUtil.getFieldValue(provider, "stsClient", StsClient.class));
     }
 
 
@@ -145,7 +183,7 @@ public class TestAssumedRoleCredentialsProviderProvider
 
         try
         {
-            cpp.provideProvider(TEST_ROLE_NAME);
+            cpp.provideProvider(TEST_ROLE_NAME, new ProxyUrl());
             fail("should have thrown");
         }
         catch (Exception ex)

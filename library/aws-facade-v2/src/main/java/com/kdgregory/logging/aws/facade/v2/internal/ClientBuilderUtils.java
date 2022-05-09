@@ -95,7 +95,7 @@ public class ClientBuilderUtils
         if ((roleNameOrArn != null) && !roleNameOrArn.isEmpty())
         {
             StsAssumeRoleCredentialsProvider credentialsProvider = new AssumedRoleCredentialsProviderProvider()
-                                                                   .provideProvider(roleNameOrArn);
+                                                                   .provideProvider(roleNameOrArn, proxyUrl);
             builder.credentialsProvider(credentialsProvider);
         }
     }

@@ -30,12 +30,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
-import software.amazon.awssdk.services.cloudwatchlogs.model.*;
-import software.amazon.awssdk.services.iam.model.Role;
-import software.amazon.awssdk.services.kinesis.KinesisClient;
-import software.amazon.awssdk.services.sns.SnsClient;
-import software.amazon.awssdk.services.sqs.SqsClient;
+import net.sf.kdgcommons.lang.ClassUtil;
+
+import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
+import com.amazonaws.services.identitymanagement.model.Role;
+import com.amazonaws.services.kinesis.AmazonKinesis;
+import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
+import com.amazonaws.services.logs.AWSLogs;
+import com.amazonaws.services.logs.AWSLogsClientBuilder;
+import com.amazonaws.services.sns.AmazonSNS;
+import com.amazonaws.services.sns.AmazonSNSClientBuilder;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 
 import com.kdgregory.logging.aws.cloudwatch.*;
 import com.kdgregory.logging.aws.kinesis.*;
@@ -50,11 +56,10 @@ import com.kdgregory.logging.testhelpers.*;
 //       however, that information isn't for roughly 15 minutes and I don't want to wait that long
 //       in the test (it would also require a lot of inference based on the available events)
 //
-//       and, unlike the v1 version of this test, it's not that easy to dig the credentials provider
-//       out of the test; so this test acts to exercise the functionality, and then I look at the
-//       available information after the test has completed
+//       as a work-around, I dig into the service client to verify that it's using an assumed-role
+//       credentials provider ... not a foolproof test, but it backs up post-test observation
 
-public class TestLogWriterAssumedRole
+public class LogWriterAssumedRoleIntegrationTest
 {
     // one assumable role that is used for all tests
     private static String roleName = "TestLogWriterAssumedRole";
@@ -62,7 +67,7 @@ public class TestLogWriterAssumedRole
     private static Role role;
 
     // this is for external logging within the tests
-    private static Logger localLogger = LoggerFactory.getLogger(TestLogWriterAssumedRole.class);
+    private static Logger localLogger = LoggerFactory.getLogger(LogWriterAssumedRoleIntegrationTest.class);
 
     // this is for capturing logging within the writer
     private TestableInternalLogger internalLogger;
@@ -111,7 +116,7 @@ public class TestLogWriterAssumedRole
         role = roleHelper.createRole(roleName, "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess",
                                                "arn:aws:iam::aws:policy/AmazonKinesisFullAccess",
                                                "arn:aws:iam::aws:policy/AmazonSNSFullAccess");
-        roleHelper.waitUntilRoleAssumable(role.arn(), 60);
+        roleHelper.waitUntilRoleAssumable(role.getArn(), 60);
     }
 
 
@@ -136,12 +141,12 @@ public class TestLogWriterAssumedRole
 
         final int numMessages = 1001;
 
-        CloudWatchLogsClient helperClient = null;
+        AWSLogs helperClient = null;
         CloudWatchTestHelper testHelper = null;
         CloudWatchLogWriter writer = null;
         try
         {
-            helperClient = CloudWatchLogsClient.builder().build();
+            helperClient = AWSLogsClientBuilder.defaultClient();
             testHelper = new CloudWatchTestHelper(helperClient, "TestLogWriterAssumedRole", testName);
             testHelper.deleteLogGroupIfExists();
 
@@ -158,16 +163,16 @@ public class TestLogWriterAssumedRole
             writer = (CloudWatchLogWriter)new CloudWatchWriterFactory().newLogWriter(config, stats, internalLogger);
             new DefaultThreadFactory(testName).startWriterThread(writer, exceptionHandler);
 
-            for (int ii = 0 ; ii < numMessages ; ii++)
-            {
-                writer.addMessage(new LogMessage(System.currentTimeMillis(), "message " + ii));
-            }
-
+            new LogWriterMessageWriter(writer, numMessages).run();
             CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
+            testHelper.assertMessages(testName, numMessages);
 
-            // we don't care about message content, just that we actually wrote something
-            List<OutputLogEvent> messages = testHelper.retrieveAllMessages(testName, numMessages);
-            assertTrue("wrote messages", messages.size() > 0);
+            // what we really care about is how the writer was configured
+            Object facade = ClassUtil.getFieldValue(writer, "facade", Object.class);
+            Object client = ClassUtil.getFieldValue(facade, "client", Object.class);
+            Object credentialsProvider = ClassUtil.getFieldValue(client, "awsCredentialsProvider", Object.class);
+
+            assertEquals("credentials provider class", STSAssumeRoleSessionCredentialsProvider.class, credentialsProvider.getClass());
 
             assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
         }
@@ -183,7 +188,7 @@ public class TestLogWriterAssumedRole
             }
             if (helperClient != null)
             {
-                helperClient.close();
+                helperClient.shutdown();
             }
         }
     }
@@ -196,12 +201,12 @@ public class TestLogWriterAssumedRole
 
         final int numMessages = 1001;
 
-        KinesisClient helperClient = null;
+        AmazonKinesis helperClient = null;
         KinesisTestHelper testHelper = null;
         KinesisLogWriter writer = null;
         try
         {
-            helperClient = KinesisClient.builder().build();
+            helperClient = AmazonKinesisClientBuilder.defaultClient();
             testHelper = new KinesisTestHelper(helperClient, testName);
             testHelper.deleteStreamIfExists();
 
@@ -231,6 +236,13 @@ public class TestLogWriterAssumedRole
             List<KinesisTestHelper.RetrievedRecord> messages = testHelper.retrieveAllMessages(numMessages);
             assertTrue("wrote messages", messages.size() > 0);
 
+            // what we really care about is how the writer was configured
+            Object facade = ClassUtil.getFieldValue(writer, "facade", Object.class);
+            Object client = ClassUtil.getFieldValue(facade, "client", Object.class);
+            Object credentialsProvider = ClassUtil.getFieldValue(client, "awsCredentialsProvider", Object.class);
+
+            assertEquals("credentials provider class", STSAssumeRoleSessionCredentialsProvider.class, credentialsProvider.getClass());
+
             assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
         }
         finally
@@ -245,7 +257,7 @@ public class TestLogWriterAssumedRole
             }
             if (helperClient != null)
             {
-                helperClient.close();
+                helperClient.shutdown();
             }
         }
     }
@@ -258,14 +270,14 @@ public class TestLogWriterAssumedRole
 
         final int numMessages = 11;
 
-        SnsClient helperSNSclient = null;
-        SqsClient helperSQSclient = null;
+        AmazonSNS helperSNSclient = null;
+        AmazonSQS helperSQSclient = null;
         SNSTestHelper testHelper = null;
         SNSLogWriter writer = null;
         try
         {
-            helperSNSclient = SnsClient.builder().build();
-            helperSQSclient = SqsClient.builder().build();
+            helperSNSclient = AmazonSNSClientBuilder.defaultClient();
+            helperSQSclient = AmazonSQSClientBuilder.defaultClient();
             testHelper = new SNSTestHelper(helperSNSclient, helperSQSclient);
 
             testHelper.deleteTopicAndQueue();   // out with the old (if it exists)
@@ -295,6 +307,13 @@ public class TestLogWriterAssumedRole
             List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
             assertTrue("wrote messages", messages.size() > 0);
 
+            // what we really care about is how the writer was configured
+            Object facade = ClassUtil.getFieldValue(writer, "facade", Object.class);
+            Object client = ClassUtil.getFieldValue(facade, "client", Object.class);
+            Object credentialsProvider = ClassUtil.getFieldValue(client, "awsCredentialsProvider", Object.class);
+
+            assertEquals("credentials provider class", STSAssumeRoleSessionCredentialsProvider.class, credentialsProvider.getClass());
+
             assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
         }
         finally
@@ -309,11 +328,11 @@ public class TestLogWriterAssumedRole
             }
             if (helperSNSclient != null)
             {
-                helperSNSclient.close();
+                helperSNSclient.shutdown();
             }
             if (helperSQSclient != null)
             {
-                helperSQSclient.close();
+                helperSQSclient.shutdown();
             }
         }
     }

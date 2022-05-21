@@ -51,12 +51,16 @@ import com.kdgregory.logging.common.util.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
 import com.kdgregory.logging.testhelpers.CloudWatchTestHelper;
 import com.kdgregory.logging.testhelpers.CommonTestHelper;
+import com.kdgregory.logging.testhelpers.LogWriterMessageWriter;
 import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 
 
+/**
+ *  Tests CloudWatch log-writer function in isolation.
+ */
 public class CloudWatchLogWriterIntegrationTest
 {
-    private final static String BASE_LOGGROUP_NAME = "CloudWatchLogWriterIntegrationTest";
+    private final static String BASE_LOGGROUP_NAME = "CloudWatchLogWriterV2IntegrationTest";
 
     // single "helper" client that's shared by all tests
     private static CloudWatchLogsClient helperClient;
@@ -70,12 +74,12 @@ public class CloudWatchLogWriterIntegrationTest
     // this is for logging within the test
     private Logger localLogger = LoggerFactory.getLogger(getClass());
 
+    // this is for logging by the log-writer
+    private TestableInternalLogger internalLogger = new TestableInternalLogger();
+
     // these are all assigned by init()
-    private String logGroupName;
-    private String logStreamName; // default, tests may ignore
     private CloudWatchTestHelper testHelper;
     private CloudWatchWriterStatistics stats;
-    private TestableInternalLogger internalLogger;
     private CloudWatchWriterFactory writerFactory;
     private DefaultThreadFactory threadFactory;
 
@@ -89,9 +93,10 @@ public class CloudWatchLogWriterIntegrationTest
 
     /**
      *  Called at the beginning of most tests to create the test helper and
-     *  writer, and delete any previous log group.
+     *  writer, delete the log group from any previous run, and return a
+     *  default config.
      */
-    private void init(String testName, CloudWatchLogsClient client)
+    private CloudWatchWriterConfig init(String testName, CloudWatchLogsClient client)
     throws Exception
     {
         MDC.put("testName", testName);
@@ -100,11 +105,7 @@ public class CloudWatchLogWriterIntegrationTest
         testHelper = new CloudWatchTestHelper(client, BASE_LOGGROUP_NAME, testName);
         testHelper.deleteLogGroupIfExists();
 
-        logGroupName = testHelper.getLogGroupName();
-        logStreamName = testName;
-
         stats = new CloudWatchWriterStatistics();
-        internalLogger = new TestableInternalLogger();
         writerFactory = new CloudWatchWriterFactory();
 
         threadFactory = new DefaultThreadFactory("test")
@@ -117,17 +118,10 @@ public class CloudWatchLogWriterIntegrationTest
                 return thread;
             }
         };
-    }
 
-
-    /**
-     *  Returns a default writer config, which the test can then modify.
-     */
-    private CloudWatchWriterConfig defaultConfig()
-    {
         return new CloudWatchWriterConfig()
-               .setLogGroupName(logGroupName)
-               .setLogStreamName(logStreamName)
+               .setLogGroupName(testHelper.getLogGroupName())
+               .setLogStreamName(testName)
                .setBatchDelay(250)
                .setDiscardThreshold(10000)
                .setDiscardAction(DiscardAction.oldest);
@@ -135,7 +129,7 @@ public class CloudWatchLogWriterIntegrationTest
 
 
     /**
-     *  Creates the log writer and its execution thread, and starts it running.
+     *  Creates a log writer with the provided config, and starts it running.
      */
     private CloudWatchLogWriter createWriter(CloudWatchWriterConfig config)
     throws Exception
@@ -147,25 +141,9 @@ public class CloudWatchLogWriterIntegrationTest
     }
 
 
-    private class MessageWriter
-    extends com.kdgregory.logging.testhelpers.MessageWriter
-    {
-        private CloudWatchLogWriter writer;
-
-        public MessageWriter(CloudWatchLogWriter writer, int numMessages)
-        {
-            super(numMessages);
-            this.writer = writer;
-        }
-
-        @Override
-        protected void writeLogMessage(String message)
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), message));
-        }
-    }
-
-
+    /**
+     *  Used only by {@link #testFactoryMethod()}.
+     */
     public static CloudWatchLogsClient staticClientFactory()
     {
         factoryClient = CloudWatchLogsClient.builder().build();
@@ -229,15 +207,13 @@ public class CloudWatchLogWriterIntegrationTest
     {
         final int numMessages = 1001;
 
-        init("smoketest", helperClient);
-
-        CloudWatchWriterConfig config = defaultConfig();
+        CloudWatchWriterConfig config = init("smoketest", helperClient);
         CloudWatchLogWriter writer = createWriter(config);
 
-        new MessageWriter(writer, numMessages).run();
+        new LogWriterMessageWriter(writer, numMessages).run();
 
         CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
-        testHelper.assertMessages(logStreamName, numMessages);
+        testHelper.assertMessages(config.getLogStreamName(), numMessages);
 
         assertNull("static factory method not called", factoryClient);
 
@@ -254,16 +230,14 @@ public class CloudWatchLogWriterIntegrationTest
     {
         final int numMessages = 1001;
 
-        init("testFactoryMethod", helperClient);
-
-        CloudWatchWriterConfig config = defaultConfig();
+        CloudWatchWriterConfig config = init("testFactoryMethod", helperClient);
         config.setClientFactoryMethod(getClass().getName() + ".staticClientFactory");
         CloudWatchLogWriter writer = createWriter(config);
 
-        new MessageWriter(writer, numMessages).run();
+        new LogWriterMessageWriter(writer, numMessages).run();
 
         CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
-        testHelper.assertMessages(logStreamName, numMessages);
+        testHelper.assertMessages(config.getLogStreamName(), numMessages);
 
         assertNotNull("factory method was called", factoryClient);
 
@@ -285,20 +259,18 @@ public class CloudWatchLogWriterIntegrationTest
 
         altClient = CloudWatchLogsClient.builder().region(Region.US_WEST_1).build();
 
-        init("testAlternateRegion", altClient);
-
-        CloudWatchWriterConfig config = defaultConfig();
+        CloudWatchWriterConfig config = init("testAlternateRegion", altClient);
         config.setClientRegion("us-west-1");
         CloudWatchLogWriter writer = createWriter(config);
 
-        new MessageWriter(writer, numMessages).run();
+        new LogWriterMessageWriter(writer, numMessages).run();
 
         CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
-        testHelper.assertMessages(logStreamName, numMessages);
+        testHelper.assertMessages(config.getLogStreamName(), numMessages);
 
         assertFalse("stream does not exist in default region",
                     new CloudWatchTestHelper(helperClient, BASE_LOGGROUP_NAME, "testAlternateRegion")
-                        .isLogStreamAvailable(logStreamName));
+                        .isLogStreamAvailable(config.getLogStreamName()));
 
         assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
 
@@ -315,21 +287,19 @@ public class CloudWatchLogWriterIntegrationTest
                     .region(Region.US_EAST_2)
                     .build();
 
-        init("testAlternateEndpoint", altClient);
-
-        CloudWatchWriterConfig config = defaultConfig();
-        config.setClientEndpoint("https://logs.us-east-2.amazonaws.com")
-              .setClientRegion("us-east-2");
+        CloudWatchWriterConfig config = init("testAlternateEndpoint", altClient);
+        config.setClientEndpoint("https://logs.us-east-2.amazonaws.com");
+        config.setClientRegion("us-east-2");
         CloudWatchLogWriter writer = createWriter(config);
 
-        new MessageWriter(writer, numMessages).run();
+        new LogWriterMessageWriter(writer, numMessages).run();
 
         CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
-        testHelper.assertMessages(logStreamName, numMessages);
+        testHelper.assertMessages(config.getLogStreamName(), numMessages);
 
         assertFalse("stream does not exist in default region",
                     new CloudWatchTestHelper(helperClient, BASE_LOGGROUP_NAME, "testAlternateEndpoint")
-                        .isLogStreamAvailable(logStreamName));
+                        .isLogStreamAvailable(config.getLogStreamName()));
 
         assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
 
@@ -340,14 +310,12 @@ public class CloudWatchLogWriterIntegrationTest
     @Test
     public void testRetentionPeriod() throws Exception
     {
-        init("testRetentionPeriod", helperClient);
-
-        CloudWatchWriterConfig config = defaultConfig();
+        CloudWatchWriterConfig config = init("testRetentionPeriod", helperClient);
         config.setRetentionPeriod(3);
         CloudWatchLogWriter writer = createWriter(config);
 
         // will write a single message so that we have something to wait for
-        new MessageWriter(writer, 1).run();
+        new LogWriterMessageWriter(writer, 1).run();
         CommonTestHelper.waitUntilMessagesSent(stats, 1, 30000);
 
         assertEquals("retention period", 3, testHelper.describeLogGroup().retentionInDays().intValue());
@@ -364,12 +332,12 @@ public class CloudWatchLogWriterIntegrationTest
         final int numWriters = 10;
         final int numReps = 50;
 
-        init("testDedicatedWriter", helperClient);
+        CloudWatchWriterConfig baseConfig = init("testDedicatedWriter", helperClient);
 
         for (int ii = 0 ; ii < numWriters ; ii++)
         {
             localLogger.debug("creating writer {}", ii);
-            CloudWatchWriterConfig config = defaultConfig();
+            CloudWatchWriterConfig config = new CloudWatchWriterConfig(baseConfig);
             config.setLogStreamName("testDedicatedWriter-" + ii);
             config.setDedicatedWriter(true);
             createWriter(config);
@@ -408,13 +376,11 @@ public class CloudWatchLogWriterIntegrationTest
         final String expectedMessage = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
         final String messageToWrite = expectedMessage + "Z";
 
-        init("testOversizeMessageTruncation", helperClient);
-
-        CloudWatchWriterConfig config = defaultConfig();
+        CloudWatchWriterConfig config = init("testOversizeMessageTruncation", helperClient);
         config.setTruncateOversizeMessages(true);
         CloudWatchLogWriter writer = createWriter(config);
 
-        new MessageWriter(writer, numMessages)
+        new LogWriterMessageWriter(writer, numMessages)
         {
             @Override
             protected void writeLogMessage(String ignored)
@@ -424,7 +390,7 @@ public class CloudWatchLogWriterIntegrationTest
         }.run();
 
         CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
-        List<OutputLogEvent> logEvents = testHelper.retrieveAllMessages(logStreamName, numMessages);
+        List<OutputLogEvent> logEvents = testHelper.retrieveAllMessages(config.getLogStreamName(), numMessages);
 
         Set<String> messages = new HashSet<>();
         for (OutputLogEvent event : logEvents)

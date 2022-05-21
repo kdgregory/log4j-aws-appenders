@@ -17,26 +17,46 @@ package com.kdgregory.logging.aws;
 import java.util.Map;
 import java.util.UUID;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.test.StringAsserts;
 
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
+
 import com.kdgregory.logging.aws.facade.FacadeFactory;
 import com.kdgregory.logging.aws.facade.InfoFacade;
-
-import software.amazon.awssdk.services.ec2.Ec2Client;
-import software.amazon.awssdk.services.ec2.model.CreateTagsRequest;
-import software.amazon.awssdk.services.ec2.model.Tag;
+import com.kdgregory.logging.testhelpers.EC2TestHelper;
 
 
 /**
  *  Tests retriever operations that require running on EC2. These are normally
  *  disabled.
  */
-public class TestInfoFacadeEC2Environment
+public class InfoFacadeEC2IntegrationTest
 {
+    private static AmazonEC2 ec2Client;
+
+//----------------------------------------------------------------------------
+//  JUnit Scaffolding
+//----------------------------------------------------------------------------
+
+    @BeforeClass
+    public static void beforeClass()
+    {
+        ec2Client = AmazonEC2ClientBuilder.defaultClient();
+    }
+
+
+    @AfterClass
+    public static void afterClass()
+    {
+        ec2Client.shutdown();
+    }
 
 //----------------------------------------------------------------------------
 //  Testcases
@@ -73,23 +93,16 @@ public class TestInfoFacadeEC2Environment
     @Ignore
     public void testTags() throws Exception
     {
+        final String tagName = UUID.randomUUID().toString();
+        final String tagValue = UUID.randomUUID().toString();
+
+        EC2TestHelper testHelper = new EC2TestHelper(ec2Client);
+        String instanceId = testHelper.retrieveCurrentInstanceID();
+        testHelper.tagInstance(instanceId, tagName, tagValue);
+
         InfoFacade facade = FacadeFactory.createFacade(InfoFacade.class);
-
-        String instanceId = facade.retrieveEC2InstanceId();
-
-        String tagName = UUID.randomUUID().toString();
-        String tagValue = UUID.randomUUID().toString();
-
-        Ec2Client client = Ec2Client.builder().build();
-
-        CreateTagsRequest createRequest = CreateTagsRequest.builder()
-                                          .resources(instanceId)
-                                          .tags(Tag.builder().key(tagName).value(tagValue).build())
-                                          .build();
-        client.createTags(createRequest);
 
         Map<String,String> retrievedTags = facade.retrieveEC2Tags(instanceId);
         assertEquals("tag returned", tagValue, retrievedTags.get(tagName));
     }
-
 }

@@ -57,7 +57,7 @@ public class KinesisTestHelper
     public KinesisTestHelper(AmazonKinesis client, String testName)
     {
         this.client = client;
-        this.streamName = "AppenderIntegrationTest-" + testName;
+        this.streamName = "KinesisAppenderIntegrationTest-" + testName;
     }
 
 

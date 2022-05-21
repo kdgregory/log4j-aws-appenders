@@ -36,6 +36,30 @@ extends AbstractWriterConfig<KinesisWriterConfig>
     // this is set by setPartitionKey()
     private PartitionKeyHelper partitionKeyHelper;
 
+
+    /**
+     *  Default constructor. This is used almost everywhere.
+     */
+    public KinesisWriterConfig()
+    {
+        super();
+    }
+
+
+    /**
+     *  Copy constructor. This is used for some tests.
+     */
+    public KinesisWriterConfig(KinesisWriterConfig source)
+    {
+        super(source);
+        this.streamName = source.streamName;
+        this.partitionKey = source.partitionKey;
+        this.autoCreate = source.autoCreate;
+        this.shardCount = source.shardCount;
+        this.retentionPeriod = source.retentionPeriod;
+        this.partitionKeyHelper = source.partitionKeyHelper;
+    }
+
 //----------------------------------------------------------------------------
 //  Accessors
 //----------------------------------------------------------------------------

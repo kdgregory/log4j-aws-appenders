@@ -23,10 +23,9 @@ import static org.junit.Assert.*;
 
 import net.sf.kdgcommons.test.StringAsserts;
 
-import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagement;
-import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementClientBuilder;
-import com.amazonaws.services.simplesystemsmanagement.model.ParameterType;
-import com.amazonaws.util.EC2MetadataUtils;
+import software.amazon.awssdk.regions.internal.util.EC2MetadataUtils;
+import software.amazon.awssdk.services.ssm.SsmClient;
+import software.amazon.awssdk.services.ssm.model.*;
 
 import com.kdgregory.logging.aws.common.Substitutions;
 import com.kdgregory.logging.testhelpers.ParameterStoreTestHelper;
@@ -38,7 +37,7 @@ import com.kdgregory.logging.testhelpers.ParameterStoreTestHelper;
  *  <p>
  *  Note: remove the @Ignore annotations when running on EC2.
  */
-public class TestSubstitutions
+public class SubstitutionsIntegrationTest
 {
     // most tests create a Substitutions instance with this date
     private static Date TEST_DATE = new Date(1496082062000L);    // Mon May 29 14:21:02 EDT 2017
@@ -86,12 +85,12 @@ public class TestSubstitutions
         final String secureName = "TestSubstitutions-testParameterStore-secure";
         final String secureValue = "you shouldn't see this";
 
-        AWSSimpleSystemsManagement ssmClient = AWSSimpleSystemsManagementClientBuilder.defaultClient();
+        SsmClient ssmClient = SsmClient.builder().build();
         try
         {
-            ParameterStoreTestHelper.createParameter(ssmClient, basicName, ParameterType.String, basicValue);
-            ParameterStoreTestHelper.createParameter(ssmClient, listName, ParameterType.StringList, listValue);
-            ParameterStoreTestHelper.createParameter(ssmClient, secureName, ParameterType.SecureString, secureValue);
+            ParameterStoreTestHelper.createParameter(ssmClient, basicName, ParameterType.STRING, basicValue);
+            ParameterStoreTestHelper.createParameter(ssmClient, listName, ParameterType.STRING_LIST, listValue);
+            ParameterStoreTestHelper.createParameter(ssmClient, secureName, ParameterType.SECURE_STRING, secureValue);
             Substitutions subs = new Substitutions(TEST_DATE, 0);
 
             assertEquals("string" ,         basicValue,                     subs.perform("{ssm:" + basicName + "}"));

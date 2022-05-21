@@ -25,7 +25,7 @@ import com.kdgregory.logging.aws.facade.InfoFacade;
 /**
  *  Tests retriever operations that require AWS configuration.
  */
-public class TestInfoFacadeBasicEnvironment
+public class InfoFacadeBasicIntegrationTest
 {
 
 //----------------------------------------------------------------------------

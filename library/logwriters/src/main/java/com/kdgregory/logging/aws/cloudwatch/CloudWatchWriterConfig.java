@@ -33,6 +33,28 @@ extends AbstractWriterConfig<CloudWatchWriterConfig>
     private boolean dedicatedWriter;
 
 
+    /**
+     *  Default constructor. This is used almost everywhere.
+     */
+    public CloudWatchWriterConfig()
+    {
+        super();
+    }
+
+
+    /**
+     *  Copy constructor. This is used for some tests.
+     */
+    public CloudWatchWriterConfig(CloudWatchWriterConfig source)
+    {
+        super(source);
+        this.logGroupName = source.logGroupName;
+        this.logStreamName = source.logStreamName;
+        this.retentionPeriod = source.retentionPeriod;
+        this.dedicatedWriter = source.dedicatedWriter;
+    }
+
+
     public String getLogGroupName()
     {
         return logGroupName;

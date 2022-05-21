@@ -44,13 +44,19 @@
 
         <dependency>
             <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-logs</artifactId>
+            <artifactId>aws-java-sdk-ec2</artifactId>
             <version>${aws-sdk-v1.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-iam</artifactId>
+            <version>${aws-sdk-v1.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-logs</artifactId>
             <version>${aws-sdk-v1.version}</version>
             <scope>provided</scope>
         </dependency>

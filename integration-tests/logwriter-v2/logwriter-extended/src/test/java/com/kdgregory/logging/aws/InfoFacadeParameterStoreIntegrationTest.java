@@ -33,7 +33,7 @@ import com.kdgregory.logging.testhelpers.ParameterStoreTestHelper;
  * Tests the retriever by creating Parameter Store entries. All needed entries
  * are created in a @BeforeClass, and torn down in the @AfterClass
  */
-public class TestInfoFacadeParameterStore
+public class InfoFacadeParameterStoreIntegrationTest
 {
     private final static String               BASIC_NAME   = "/TestParameterStoreRetriever/"
     + UUID.randomUUID().toString();

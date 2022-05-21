@@ -36,10 +36,26 @@ extends AbstractWriterConfig<SNSWriterConfig>
     private boolean autoCreate;
 
 
+    /**
+     *  Default constructor. This is used almost everywhere.
+     */
     public SNSWriterConfig()
     {
         super();
         super.setBatchDelay(1);
+    }
+
+
+    /**
+     *  Copy constructor. This is used for some tests.
+     */
+    public SNSWriterConfig(SNSWriterConfig source)
+    {
+        super(source);
+        this.topicName = source.topicName;
+        this.topicArn = source.topicArn;
+        this.subject = source.subject;
+        this.autoCreate = source.autoCreate;
     }
 
 //----------------------------------------------------------------------------

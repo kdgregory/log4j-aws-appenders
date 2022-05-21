@@ -48,9 +48,9 @@ import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterFactory;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
-import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.util.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
+import com.kdgregory.logging.testhelpers.LogWriterMessageWriter;
 import com.kdgregory.logging.testhelpers.SNSTestHelper;
 import com.kdgregory.logging.testhelpers.TestableInternalLogger;
 
@@ -71,18 +71,15 @@ public class SNSLogWriterIntegrationTest
     // this is for logging within the test
     private Logger localLogger = LoggerFactory.getLogger(getClass());
 
-    // this can be modified before calling init()
-    private SNSWriterConfig config = new SNSWriterConfig()
-                                     .setSubject(DEFAULT_SUBJECT)
-                                     .setAutoCreate(true)
-                                     .setDiscardThreshold(10000)
-                                     .setDiscardAction(DiscardAction.oldest);
+    // this is for logging by the log-writer
+    private TestableInternalLogger internalLogger = new TestableInternalLogger();
 
     // these are all assigned by init()
     private SNSTestHelper testHelper;
-    private TestableInternalLogger internalLogger;
     private SNSWriterStatistics stats;
     private SNSWriterFactory factory;
+
+    // created by test, closed in tearDown()
     private SNSLogWriter writer;
 
 //----------------------------------------------------------------------------
@@ -92,43 +89,38 @@ public class SNSLogWriterIntegrationTest
     private final static String DEFAULT_SUBJECT = "integration test";
 
 
-    private void init(String testName, AmazonSNS snsClient, AmazonSQS sqsClient)
+    private SNSWriterConfig init(String testName, AmazonSNS snsClient, AmazonSQS sqsClient)
     throws Exception
     {
         MDC.put("testName", testName);
         localLogger.info("starting");
 
         testHelper = new SNSTestHelper(snsClient, sqsClient);
-
         testHelper.createTopicAndQueue();
-
-        config.setTopicName(testHelper.getTopicName());
 
         stats = new SNSWriterStatistics();
         internalLogger = new TestableInternalLogger();
         factory = new SNSWriterFactory();
-        writer = (SNSLogWriter)factory.newLogWriter(config, stats, internalLogger);
 
+        return new SNSWriterConfig()
+                   .setTopicName(testHelper.getTopicName())
+                   .setSubject(DEFAULT_SUBJECT)
+                   .setAutoCreate(true)
+                   .setDiscardThreshold(10000)
+                   .setDiscardAction(DiscardAction.oldest);
+    }
+
+
+    private void createWriter(SNSWriterConfig config)
+    {
+        writer = (SNSLogWriter)factory.newLogWriter(config, stats, internalLogger);
         new DefaultThreadFactory("test").startWriterThread(writer, null);
     }
 
 
-    private class MessageWriter
-    extends com.kdgregory.logging.testhelpers.MessageWriter
-    {
-        public MessageWriter(int numMessages)
-        {
-            super(numMessages);
-        }
-
-        @Override
-        protected void writeLogMessage(String message)
-        {
-            writer.addMessage(new LogMessage(System.currentTimeMillis(), message));
-        }
-    }
-
-
+    /**
+     *  Used only by {@link #testFactoryMethod()}.
+     */
     public static AmazonSNS staticClientFactory()
     {
         factoryClient = AmazonSNSClientBuilder.defaultClient();
@@ -193,9 +185,10 @@ public class SNSLogWriterIntegrationTest
     {
         final int numMessages = 11;
 
-        init("smoketest", helperSNSclient, helperSQSclient);
+        SNSWriterConfig config = init("smoketest", helperSNSclient, helperSQSclient);
+        createWriter(config);
 
-        new MessageWriter(numMessages).run();
+        new LogWriterMessageWriter(writer, numMessages).run();
 
         List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
 
@@ -213,10 +206,11 @@ public class SNSLogWriterIntegrationTest
     {
         final int numMessages = 11;
 
+        SNSWriterConfig config = init("testFactoryMethod", helperSNSclient, helperSQSclient);
         config.setClientFactoryMethod(getClass().getName() + ".staticClientFactory");
-        init("testFactoryMethod", helperSNSclient, helperSQSclient);
+        createWriter(config);
 
-        new MessageWriter(numMessages).run();
+        new LogWriterMessageWriter(writer, numMessages).run();
 
         List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
 
@@ -244,10 +238,11 @@ public class SNSLogWriterIntegrationTest
         altSNSclient = AmazonSNSClientBuilder.standard().withRegion(Regions.US_WEST_1).build();
         altSQSclient = AmazonSQSClientBuilder.standard().withRegion(Regions.US_WEST_1).build();
 
+        SNSWriterConfig config = init("testAlternateRegion", altSNSclient, altSQSclient);
         config.setClientRegion("us-west-1");
-        init("testAlternateRegion", altSNSclient, altSQSclient);
+        createWriter(config);
 
-        new MessageWriter(numMessages).run();
+        new LogWriterMessageWriter(writer, numMessages).run();
 
         List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
 
@@ -274,10 +269,11 @@ public class SNSLogWriterIntegrationTest
         altSNSclient = AmazonSNSClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
         altSQSclient = AmazonSQSClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
 
+        SNSWriterConfig config = init("testAlternateEndpoint", altSNSclient, altSQSclient);
         config.setClientEndpoint("sns.us-east-2.amazonaws.com");
-        init("testAlternateEndpoint", altSNSclient, altSQSclient);
+        createWriter(config);
 
-        new MessageWriter(numMessages).run();
+        new LogWriterMessageWriter(writer, numMessages).run();
 
         List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);
 
@@ -304,10 +300,11 @@ public class SNSLogWriterIntegrationTest
         final String expectedMessage = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
         final String messageToWrite = expectedMessage + "Z";
 
+        SNSWriterConfig config = init("testOversizeMessageTruncation", helperSNSclient, helperSQSclient);
         config.setTruncateOversizeMessages(true);
-        init("testOversizeMessageTruncation", helperSNSclient, helperSQSclient);
+        createWriter(config);
 
-        new MessageWriter(numMessages)
+        new LogWriterMessageWriter(writer, numMessages)
         {
             @Override
             protected void writeLogMessage(String ignored)

@@ -38,6 +38,27 @@ public class AbstractWriterConfig<T extends AbstractWriterConfig<T>>
     private boolean                 useShowdownHook;
 
 
+    public AbstractWriterConfig()
+    {
+        // nothing here
+    }
+
+
+    public AbstractWriterConfig(AbstractWriterConfig<T> source)
+    {
+        this.truncateOversizeMessages   = source.truncateOversizeMessages;
+        this.isSynchronous              = source.isSynchronous;
+        this.batchDelay                 = source.batchDelay;
+        this.discardThreshold           = source.discardThreshold;
+        this.discardAction              = source.discardAction;
+        this.clientFactoryMethod        = source.clientFactoryMethod;
+        this.assumedRole                = source.assumedRole;
+        this.clientRegion               = source.clientRegion;
+        this.clientEndpoint             = source.clientEndpoint;
+        this.useShowdownHook            = source.useShowdownHook;
+    }
+
+
     public boolean getTruncateOversizeMessages()
     {
         return truncateOversizeMessages;

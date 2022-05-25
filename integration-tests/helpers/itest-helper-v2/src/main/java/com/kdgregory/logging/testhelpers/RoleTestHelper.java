@@ -36,10 +36,16 @@ public class RoleTestHelper
     private Logger localLogger = LoggerFactory.getLogger(getClass());
 
 
+    public RoleTestHelper(IamClient iamClient, StsClient stsClient)
+    {
+        this.iamClient = iamClient;
+        this.stsClient = stsClient;
+    }
+
+
     public RoleTestHelper()
     {
-        iamClient = IamClient.builder().region(Region.AWS_GLOBAL).build();
-        stsClient = StsClient.create();
+        this(IamClient.builder().region(Region.AWS_GLOBAL).build(), StsClient.create());
     }
 
 

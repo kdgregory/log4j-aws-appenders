@@ -26,7 +26,7 @@ import com.amazonaws.services.securitytoken.model.*;
 
 
 /**
- *  A helper for the assumed-role tests. Instantated per-test.
+ *  A helper for the assumed-role tests. Instantated per test, as needed.
  */
 public class RoleTestHelper
 {
@@ -36,10 +36,17 @@ public class RoleTestHelper
     private Logger localLogger = LoggerFactory.getLogger(getClass());
 
 
+    public RoleTestHelper(AmazonIdentityManagement iamClient, AWSSecurityTokenService stsClient)
+    {
+        this.iamClient = iamClient;
+        this.stsClient = stsClient;
+    }
+
+
     public RoleTestHelper()
     {
-        iamClient = AmazonIdentityManagementClientBuilder.defaultClient();
-        stsClient = AWSSecurityTokenServiceClientBuilder.defaultClient();
+        this(AmazonIdentityManagementClientBuilder.defaultClient(),
+             AWSSecurityTokenServiceClientBuilder.defaultClient());
     }
 
 

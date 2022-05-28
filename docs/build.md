@@ -187,6 +187,7 @@ permissions that are not needed for normal use of an appender.
                 "sns:DeleteTopic",
                 "sns:GetTopicAttributes",
                 "sns:ListSubscriptions",
+                "sns:ListSubscriptionsByTopic",
                 "sns:ListTopics",
                 "sns:Publish",
                 "sns:Subscribe",
@@ -218,6 +219,26 @@ permissions that are not needed for normal use of an appender.
     ]
 }
 ```
+
+
+### Testing with a proxy
+
+Since proxy configuration is controlled with using an environment variable, it's
+tested via integration tests. The integration tests directory includes a [Docker
+configuration](../integration-tests/helpers/proxy/README.md) to set up a Squid
+proxy. Run it, configure the proxy environment variable, and run integration
+tests; you should see output like the following for each test:
+
+```
+1650370313.309  16084 172.17.0.1 TCP_TUNNEL/200 13653 CONNECT logs.us-east-1.amazonaws.com:443 - HIER_DIRECT/3.236.94.218 -
+```
+
+To properly test (ie, to fail if the proxy isn't available) you need to run in a
+confined network, such as a private subnet, with the proxy running in a public
+subnet. Assuming that you want to go to this effort (I already have), you can
+upload the proxy image to ECR and run as a Fargate service. I've included a
+[CloudFormation template](../integration-tests/helpers/proxy/cloudformation.yml)
+that will create the ECR repository and service. See the README linked above.
 
 
 ### Cleaning up after integration tests

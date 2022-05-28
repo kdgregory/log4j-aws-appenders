@@ -121,3 +121,52 @@ Example:
 ```
 log4j.appender.cloudwatch.clientRegion=us-east-2
 ```
+
+
+## Using a Proxy
+
+Proxy configuration for the AWS SDK is, bluntly, a hot mess:
+
+* Version 1 can be configured using environment variables or system properties;
+  the latter takes precedence over the former.
+
+  The environment variables are named `HTTP_PROXY` and `HTTPS_PROXY`, and hold
+  the URL of your proxy server. The system property names start with `http.proxy`
+  or `https.proxy`, and define each component of the proxy URL (ie, `http.proxyHost`,
+  `http.proxyPort`, `http.proxyUser`, and `http.proxyPassword`).
+
+  The specific environment variable or set of sytem properties depends on the
+  protocol used for _client connections_: if you use HTTPS (the default), the
+  proxy is configured from the `HTTPS_PROXY` environment variable or `https.proxyXXX`
+  system properties. If you use an HTTP connection your client uses the other
+  variable/properties.
+
+* Version 2 does not, at this writing, support environment variables. It does support
+  system properties, all named starting with `http.proxy`, but otherwise equivalent
+  to those supported by v1 (ie,  `http.proxyHost`,`http.proxyPort`, `http.proxyUser`,
+  and `http.proxyPassword`).
+
+* You can also configure the clients manually. The way that you do this differs by
+  SDK. For v1 you configure a `ClientConfiguration` object and attach it to your
+  client-builder. For v2, you create a `ProxyConfiguration` object, attach it to
+  your _HTTP_ client-builder (eg, `ApacheHttpClient.Builder`), then attach that
+  to your AWS client-builder.
+
+If you use the SDK-defined environment variables or system properties, the appender
+clients will be configured to match your other AWS clients. This is probably the
+best (if painful) way to use the appenders with a proxy.
+
+To configure _just_ the logging library, set the `COM_KDGREGORY_LOGGING_PROXY_URL`
+environment variable:
+
+```
+export COM_KDGREGORY_LOGGING_PROXY_URL=http://squidproxy.internal:3128
+```
+
+This variable takes a URL of the form `SCHEME://USERNAME:PASSWORD@HOSTNAME:PORT`,
+where `SCHEME` is either `http` or `https`, and `USERNAME:PASSWORD` is optional.
+
+With all that out of the way, and the hindsight of having implemented proxies for
+the library, I believe that avoiding proxies entirely is the best course of action.
+If your goal is to control egress from your VPC, I believe it's better to use VPC
+endpoints or a NAT with Network Firewall.

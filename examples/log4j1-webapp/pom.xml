@@ -23,7 +23,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <aws-sdk.version>1.11.950</aws-sdk.version>
+        <aws-sdk.version>1.12.230</aws-sdk.version>
 
         <log4j1.version>1.2.17</log4j1.version>
         <servlet-api.version>3.0.1</servlet-api.version>

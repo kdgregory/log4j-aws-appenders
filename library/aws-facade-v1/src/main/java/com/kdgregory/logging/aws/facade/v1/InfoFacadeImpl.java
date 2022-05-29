@@ -47,9 +47,9 @@ implements InfoFacade
 
     protected RetryManager retryManager = new RetryManager(50, 1000, true);
 
-    private AmazonEC2 ec2Client;
-    private AWSSecurityTokenService stsClient;
-    private AWSSimpleSystemsManagement ssmClient;
+    private EC2ClientWrapper ec2ClientWrapper;
+    private STSClientWrapper stsClientWrapper;
+    private SSMClientWrapper ssmClientWrapper;
 
 //----------------------------------------------------------------------------
 //  InfoFacade implementation
@@ -60,8 +60,12 @@ implements InfoFacade
     {
         try
         {
+            if (stsClientWrapper == null)
+            {
+                stsClientWrapper = new STSClientWrapper();
+            }
             GetCallerIdentityRequest request = new GetCallerIdentityRequest();
-            GetCallerIdentityResult response = stsClient().getCallerIdentity(request);
+            GetCallerIdentityResult response = stsClientWrapper.client().getCallerIdentity(request);
             return response.getAccount();
         }
         catch (Exception ignored)
@@ -95,6 +99,18 @@ implements InfoFacade
     @Override
     public Map<String,String> retrieveEC2Tags(String instanceId)
     {
+        try
+        {
+            if (ec2ClientWrapper == null)
+            {
+                ec2ClientWrapper = new EC2ClientWrapper();
+            }
+        }
+        catch (Exception ignored)
+        {
+            return new HashMap<>();
+        }
+
         return retryManager.invoke(() -> {
             try
             {
@@ -103,7 +119,7 @@ implements InfoFacade
                 filters.add(new Filter().withName("resource-id").withValues(instanceId));
 
                 DescribeTagsRequest request = new DescribeTagsRequest().withFilters(filters);
-                DescribeTagsResult response = ec2Client().describeTags(request);
+                DescribeTagsResult response = ec2ClientWrapper.client().describeTags(request);
 
                 Map<String,String> result = new HashMap<>();
                 for (TagDescription desc : response.getTags())
@@ -132,11 +148,16 @@ implements InfoFacade
     {
         try
         {
+            if (ssmClientWrapper == null)
+            {
+                ssmClientWrapper = new SSMClientWrapper();
+            }
+
             GetParameterResult result = retryManager.invoke(() -> {
                 try
                 {
                     GetParameterRequest request = new GetParameterRequest().withName(parameterName);
-                    return ssmClient().getParameter(request);
+                    return ssmClientWrapper.client().getParameter(request);
                 }
                 catch (AmazonServiceException ex)
                 {
@@ -157,40 +178,60 @@ implements InfoFacade
     }
 
 //----------------------------------------------------------------------------
-//  Internals
+//  Wrappers for AWS clients. These exist to avoid creating hard dependencies
+//  to libraries that a user might not care about.
 //----------------------------------------------------------------------------
 
-    protected AmazonEC2 ec2Client()
+    private static class EC2ClientWrapper
     {
-        if (ec2Client == null)
+        private AmazonEC2 client;
+
+        public EC2ClientWrapper()
         {
             AmazonEC2ClientBuilder clientBuilder = AmazonEC2ClientBuilder.standard();
             ClientBuilderUtils.optSetProxy(clientBuilder, new ProxyUrl());
-            ec2Client = clientBuilder.build();
+            client = clientBuilder.build();
         }
-        return ec2Client;
+
+        public AmazonEC2 client()
+        {
+            return client;
+        }
     }
 
-    protected AWSSecurityTokenService stsClient()
+
+    private static class STSClientWrapper
     {
-        if (stsClient == null)
+        private AWSSecurityTokenService client;
+
+        public STSClientWrapper()
         {
             AWSSecurityTokenServiceClientBuilder clientBuilder = AWSSecurityTokenServiceClientBuilder.standard();
             ClientBuilderUtils.optSetProxy(clientBuilder, new ProxyUrl());
-            stsClient = clientBuilder.build();
+            client = clientBuilder.build();
         }
-        return stsClient;
+
+        public AWSSecurityTokenService client()
+        {
+            return client;
+        }
     }
 
 
-    protected AWSSimpleSystemsManagement ssmClient()
+    private static class SSMClientWrapper
     {
-        if (ssmClient == null)
+        private AWSSimpleSystemsManagement client;
+
+        public SSMClientWrapper()
         {
             AWSSimpleSystemsManagementClientBuilder clientBuilder = AWSSimpleSystemsManagementClientBuilder.standard();
             ClientBuilderUtils.optSetProxy(clientBuilder, new ProxyUrl());
-            ssmClient = clientBuilder.build();
+            client = clientBuilder.build();
         }
-        return ssmClient;
+
+        public AWSSimpleSystemsManagement client()
+        {
+            return client;
+        }
     }
 }

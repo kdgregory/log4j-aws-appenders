@@ -121,3 +121,75 @@ Example:
 ```
 log4j.appender.cloudwatch.clientRegion=us-east-2
 ```
+
+
+## Using a proxy
+
+You can configure the appenders to use a proxy host via the standard application-wide
+mechanisms used by your SDK of choice. Unfortunately, doing so is an undocumented hot
+mess (so here's some documentation).
+
+
+### If you're using SDK version 1:
+
+You can configure a proxy using environment variables or system properties. If you use
+both, system properties override environment variables.
+
+There are two environment variables: `HTTP_PROXY` and `HTTPS_PROXY`:
+
+* The SDK picks one or the other based on the way the client connects to AWS: clients
+  that connect via HTTPS (the default) use `HTTPS_PROXY`, while clients that connect
+  via HTTP use `HTTP_PROXY`.
+
+* The URLs have the form `http://HOST:PORT` or `http://USERNAME:PASSWORD@HOST:PORT`
+  (eg: `http://squidproxy.internal:3128`, `http://me:pass-123@squidproxy.internal:3128`).
+  The first form is for proxies that don't require authentication, the second for those
+  that do.
+
+There are eight system properties: `http.proxyHost`, `http.proxyPort`, `http.proxyUser`,
+`http.proxyPassword`, `https.proxyHost`, `https.proxyPort`, `https.proxyUser`, and
+`https.proxyPassword`:
+
+* Similar to environment variables, the properties starting with `http` are used for
+  unsecured client connections, while those starting with `https` are used for
+  secured connections.
+
+
+### If you're using SDK version 2:
+
+There is currently no support for environment variables. I submitted an
+[issue](https://github.com/aws/aws-sdk-java-v2/issues/2958) to the SDK project
+to rectify this, but as-of this writing it hasn't been implemented.
+
+There are _five_ system properties: `http.proxyHost`, `http.proxyPort`, `http.proxyUser`,
+`http.proxyPassword`, and `http.nonProxyHosts`:
+
+* Unlike the v1 SDK, these apply to all connections (I don't believe that v2 supports
+  non-HTTPS client connections, so that may be a moot point).
+
+* The property `http.nonProxyHosts` contains a vertical-bar-separated (`|`) list of
+  IP addresses that should not be proxied.
+
+
+### Security
+
+Whether you use either environment variables or system properties, the connection between
+your client application and the proxy server happens over HTTP. In order to have a secure
+connection to the proxy server, you will need to manually configure your clients.
+
+I do not believe this is an issue: the appenders library use default AWS client-builders,
+which make a HTTPS connections to AWS. This means that the connection to the proxy is
+irrelevant, as communication is end-to-end encrypted.
+
+
+### Manual proxy configuration
+
+If you do want to manually configure your clients, you will need to implement a
+[client factory](#application-provided-factory-method). This gives you far more
+options for proxy configuration, such as support for Windows NTLM authentication.
+I've created  an [example](https://gist.github.com/kdgregory/d6bed8c245ce326d461aeb65825358d2)
+of how to configure a proxy for both versions of the SDK.
+
+**One important caveat**: factory methods are only supported for the "core" clients
+(CloudWatch Logs, Kinesis Streams, and SNS). They cannot be used with "auxilliary"
+clients, such as the one used to retrieve SSM Parameter Store values for substitutions.

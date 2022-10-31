@@ -35,7 +35,7 @@ public class AbstractWriterConfig<T extends AbstractWriterConfig<T>>
     private String                  assumedRole;
     private String                  clientRegion;
     private String                  clientEndpoint;
-    private boolean                 useShowdownHook;
+    private boolean                 useShutdownHook;
 
 
     public boolean getTruncateOversizeMessages()
@@ -148,12 +148,12 @@ public class AbstractWriterConfig<T extends AbstractWriterConfig<T>>
 
     public boolean getUseShutdownHook()
     {
-        return useShowdownHook;
+        return useShutdownHook;
     }
 
     public T setUseShutdownHook(boolean value)
     {
-        useShowdownHook = value;
+        useShutdownHook = value;
         return (T)this;
     }
 }

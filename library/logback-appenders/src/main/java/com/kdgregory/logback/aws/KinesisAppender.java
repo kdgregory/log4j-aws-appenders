@@ -154,14 +154,6 @@ extends AbstractAppender
     LogbackEventType
     >
 {
-    // appender-specific configuration variables
-
-    private String          streamName;
-    private String          partitionKey;
-    private boolean         autoCreate;
-    private int             shardCount;
-    private Integer         retentionPeriod;    // we only set if not null
-
     // these variables are assigned when the writer is initialized, are used
     // to prevent attempts at reconfiguration
 
@@ -171,13 +163,11 @@ extends AbstractAppender
 
     public KinesisAppender()
     {
-        super(new DefaultThreadFactory("logback-kinesis"),
+        super(new KinesisWriterConfig(),
+              new DefaultThreadFactory("logback-kinesis"),
               new KinesisWriterFactory(),
               new KinesisWriterStatistics(),
               KinesisWriterStatisticsMXBean.class);
-
-        partitionKey = "{startupTimestamp}";
-        shardCount = 1;
     }
 
 //----------------------------------------------------------------------------
@@ -194,7 +184,7 @@ extends AbstractAppender
             throw new IllegalArgumentException("appender cannot be reconfigured after processing messages");
         }
 
-        streamName = value;
+        appenderConfig.setStreamName(value);
     }
 
 
@@ -203,7 +193,7 @@ extends AbstractAppender
      */
     public String getStreamName()
     {
-        return streamName;
+        return appenderConfig.getStreamName();
     }
 
 
@@ -217,7 +207,7 @@ extends AbstractAppender
             throw new IllegalArgumentException("appender cannot be reconfigured after processing messages");
         }
 
-        partitionKey = value;
+        appenderConfig.setPartitionKey(value);
     }
 
 
@@ -226,16 +216,16 @@ extends AbstractAppender
      */
     public String getPartitionKey()
     {
-        return partitionKey;
+        return appenderConfig.getPartitionKey();
     }
 
 
     /**
      *  Sets the <code>autoCreate</code> configuration property.
      */
-    public void setAutoCreate(boolean autoCreate)
+    public void setAutoCreate(boolean value)
     {
-        this.autoCreate = autoCreate;
+        appenderConfig.setAutoCreate(value);
     }
 
 
@@ -244,7 +234,7 @@ extends AbstractAppender
      */
     public boolean isAutoCreate()
     {
-        return autoCreate;
+        return appenderConfig.getAutoCreate();
     }
 
 
@@ -252,9 +242,9 @@ extends AbstractAppender
     /**
      *  Sets the <code>shardCount</code> configuration property.
      */
-    public void setShardCount(int shardCount)
+    public void setShardCount(int value)
     {
-        this.shardCount = shardCount;
+        appenderConfig.setShardCount(value);
     }
 
 
@@ -264,7 +254,7 @@ extends AbstractAppender
      */
     public int getShardCount()
     {
-        return shardCount;
+        return appenderConfig.getShardCount();
     }
 
 
@@ -279,7 +269,7 @@ extends AbstractAppender
                 "retentionPeriod must be between " + (KinesisConstants.MINIMUM_RETENTION_PERIOD + 1)
                 + " and " + KinesisConstants.MAXIMUM_RETENTION_PERIOD);
         }
-        retentionPeriod = Integer.valueOf(value);
+        appenderConfig.setRetentionPeriod(Integer.valueOf(value));
     }
 
 
@@ -288,8 +278,8 @@ extends AbstractAppender
      */
     public int getRetentionPeriod()
     {
-        return (retentionPeriod != null)
-             ? retentionPeriod.intValue()
+        return (appenderConfig.getRetentionPeriod() != null)
+             ? appenderConfig.getRetentionPeriod().intValue()
              : KinesisConstants.MINIMUM_RETENTION_PERIOD;
     }
 
@@ -301,14 +291,11 @@ extends AbstractAppender
     protected KinesisWriterConfig generateWriterConfig()
     {
         Substitutions subs = new Substitutions(new Date(), 0);
-        actualStreamName   = subs.perform(streamName);
-        actualPartitionKey = subs.perform(partitionKey);
+        actualStreamName   = subs.perform(appenderConfig.getStreamName());
+        actualPartitionKey = subs.perform(appenderConfig.getPartitionKey());
 
-        return new KinesisWriterConfig()
+        return ((KinesisWriterConfig)appenderConfig.clone())
                .setStreamName(actualStreamName)
-               .setPartitionKey(actualPartitionKey)
-               .setAutoCreate(autoCreate)
-               .setShardCount(shardCount)
-               .setRetentionPeriod(retentionPeriod);
+               .setPartitionKey(actualPartitionKey);
     }
 }

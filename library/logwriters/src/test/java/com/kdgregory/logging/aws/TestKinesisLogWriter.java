@@ -175,7 +175,6 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
                             "configuration error: missing stream name",
-                            "configuration error: missing partition key",
                             "log writer failed to initialize.*");
     }
 
@@ -728,6 +727,8 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         final String bigMessage                 = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
         final String biggerMessage              = bigMessage + "X";
 
+        config.setTruncateOversizeMessages(false);
+        
         mock = new MockKinesisFacade(config);
         createWriter();
 
@@ -755,7 +756,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         final String bigMessage                 = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
         final String biggerMessage              = bigMessage + "X";
 
-        config.setTruncateOversizeMessages(true);
+        // this is the default case, no need to set config
 
         mock = new MockKinesisFacade(config);
         createWriter();

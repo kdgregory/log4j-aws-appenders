@@ -234,7 +234,7 @@ extends AbstractAppender
 
 
         @PluginBuilderAttribute("logStream")
-        private String logStream = "{startupTimestamp}";
+        private String logStream = CloudWatchWriterConfig.DEFAULT_LOG_STREAM_NAME;
 
         /**
          *  Sets the <code>logStream</code> configuration property.
@@ -256,7 +256,7 @@ extends AbstractAppender
 
 
         @PluginBuilderAttribute("retentionPeriod")
-        private Integer retentionPeriod;
+        private Integer retentionPeriod = CloudWatchWriterConfig.DEFAULT_RETENTION_PERIOD;
 
         /**
          *  Sets the <code>retentionPeriod</code> configuration property.
@@ -281,7 +281,7 @@ extends AbstractAppender
 
 
         @PluginBuilderAttribute("dedicatedWriter")
-        private boolean dedicatedWriter = true;
+        private boolean dedicatedWriter = CloudWatchWriterConfig.DEFAULT_DEDICATED_WRITER;
 
         /**
          *  Sets the <code>dedicatedWriter</code> configuration property.
@@ -345,8 +345,11 @@ extends AbstractAppender
     @Override
     protected CloudWatchWriterConfig generateWriterConfig()
     {
+        // note to future me: Log4J2 does its own thing with configuration
+
         StrSubstitutor l4jsubs = appenderConfig.getConfiguration().getStrSubstitutor();
         Substitutions subs     = new Substitutions(new Date(), 0);
+
         String actualLogGroup  = subs.perform(l4jsubs.replace(appenderConfig.getLogGroup()));
         String actualLogStream = subs.perform(l4jsubs.replace(appenderConfig.getLogStream()));
 

@@ -197,6 +197,6 @@ extends AbstractUnitTest<TestableSNSAppender>
         MockSNSWriter writer = appender.getMockWriter();
 
         assertTrue("synchronous mode",                                                      writer.config.getSynchronousMode());
-        assertEquals("batch delay",                     1L,                                 writer.config.getBatchDelay());
+        assertEquals("batch delay",                     0L,                                 writer.config.getBatchDelay());
     }
 }

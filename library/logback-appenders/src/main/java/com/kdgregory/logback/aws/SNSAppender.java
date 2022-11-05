@@ -137,17 +137,10 @@ extends AbstractAppender
     LogbackEventType
     >
 {
-    // configuration
-
-    private String topicName;
-    private String topicArn;
-    private String subject;
-    private boolean autoCreate;
-
-
     public SNSAppender()
     {
-        super(new DefaultThreadFactory("logback-sns"),
+        super(new SNSWriterConfig(),
+              new DefaultThreadFactory("log4j-sns"),
               new SNSWriterFactory(),
               new SNSWriterStatistics(),
               SNSWriterStatisticsMXBean.class);
@@ -166,7 +159,7 @@ extends AbstractAppender
      */
     public void setTopicName(String value)
     {
-        this.topicName = value;
+        appenderConfig.setTopicName(value);
     }
 
 
@@ -176,7 +169,7 @@ extends AbstractAppender
      */
     public String getTopicName()
     {
-        return this.topicName;
+        return appenderConfig.getTopicName();
     }
 
 
@@ -185,7 +178,7 @@ extends AbstractAppender
      */
     public void setTopicArn(String value)
     {
-        this.topicArn = value;
+        appenderConfig.setTopicArn(value);
     }
 
 
@@ -195,7 +188,7 @@ extends AbstractAppender
      */
     public String getTopicArn()
     {
-        return this.topicArn;
+        return appenderConfig.getTopicArn();
     }
 
 
@@ -204,7 +197,7 @@ extends AbstractAppender
      */
     public void setAutoCreate(boolean value)
     {
-        autoCreate = value;
+        appenderConfig.setAutoCreate(value);
     }
 
 
@@ -213,7 +206,7 @@ extends AbstractAppender
      */
     public boolean getAutoCreate()
     {
-        return autoCreate;
+        return appenderConfig.getAutoCreate();
     }
 
 
@@ -222,7 +215,7 @@ extends AbstractAppender
      */
     public void setSubject(String value)
     {
-        this.subject = value;
+        appenderConfig.setSubject(value);
     }
 
 
@@ -231,7 +224,7 @@ extends AbstractAppender
      */
     public String getSubject()
     {
-        return this.subject;
+        return appenderConfig.getSubject();
     }
 
 
@@ -254,14 +247,13 @@ extends AbstractAppender
     {
         Substitutions subs = new Substitutions(new Date(), 0);
 
-        String actualTopicName  = subs.perform(topicName);
-        String actualTopicArn   = subs.perform(topicArn);
-        String actualSubject    = subs.perform(subject);
+        String actualTopicName  = subs.perform(appenderConfig.getTopicName());
+        String actualTopicArn   = subs.perform(appenderConfig.getTopicArn());
+        String actualSubject    = subs.perform(appenderConfig.getSubject());
 
-        return new SNSWriterConfig()
+        return ((SNSWriterConfig)appenderConfig.clone())
                .setTopicName(actualTopicName)
                .setTopicArn(actualTopicArn)
-               .setSubject(actualSubject)
-               .setAutoCreate(autoCreate);
+               .setSubject(actualSubject);
     }
 }

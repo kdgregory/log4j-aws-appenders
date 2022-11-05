@@ -168,23 +168,16 @@ extends AbstractAppender
     CloudWatchWriterStatisticsMXBean
     >
 {
-    private String  logGroup;
-    private String  logStream;
-    private Integer retentionPeriod;
-    private boolean dedicatedWriter = true;
-
-
     /**
      *  Base constructor: assigns default values to configuration properties.
      */
     public CloudWatchAppender()
     {
-        super(new DefaultThreadFactory("log4j-cloudwatch"),
+        super(new CloudWatchWriterConfig(),
+              new DefaultThreadFactory("log4j-cloudwatch"),
               new CloudWatchWriterFactory(),
               new CloudWatchWriterStatistics(),
               CloudWatchWriterStatisticsMXBean.class);
-
-        logStream = "{startupTimestamp}";
     }
 
 //----------------------------------------------------------------------------
@@ -196,7 +189,7 @@ extends AbstractAppender
      */
     public void setLogGroup(String value)
     {
-        logGroup = value;
+        appenderConfig.setLogGroupName(value);
     }
 
 
@@ -205,7 +198,7 @@ extends AbstractAppender
      */
     public String getLogGroup()
     {
-        return logGroup;
+        return appenderConfig.getLogGroupName();
     }
 
 
@@ -214,7 +207,7 @@ extends AbstractAppender
      */
     public void setLogStream(String value)
     {
-        logStream = value;
+        appenderConfig.setLogStreamName(value);
     }
 
 
@@ -223,7 +216,7 @@ extends AbstractAppender
      */
     public String getLogStream()
     {
-        return logStream;
+        return appenderConfig.getLogStreamName();
     }
 
 
@@ -232,7 +225,7 @@ extends AbstractAppender
      */
     public void setRetentionPeriod(int value)
     {
-        this.retentionPeriod = CloudWatchConstants.validateRetentionPeriod(value);
+        appenderConfig.setRetentionPeriod(CloudWatchConstants.validateRetentionPeriod(value));
     }
 
 
@@ -242,7 +235,7 @@ extends AbstractAppender
      */
     public int getRetentionPeriod()
     {
-        return (retentionPeriod == null) ? 0 : retentionPeriod.intValue();
+        return (appenderConfig.getRetentionPeriod() == null) ? 0 : appenderConfig.getRetentionPeriod().intValue();
     }
 
 
@@ -251,7 +244,7 @@ extends AbstractAppender
      */
     public void setDedicatedWriter(boolean value)
     {
-        dedicatedWriter = value;
+        appenderConfig.setDedicatedWriter(value);
     }
 
 
@@ -260,7 +253,7 @@ extends AbstractAppender
      */
     public boolean getDedicatedWriter()
     {
-        return dedicatedWriter;
+        return appenderConfig.getDedicatedWriter();
     }
 
 //----------------------------------------------------------------------------
@@ -271,13 +264,11 @@ extends AbstractAppender
     protected CloudWatchWriterConfig generateWriterConfig()
     {
         Substitutions subs      = new Substitutions(new Date(), 0);
-        String actualLogGroup   = subs.perform(logGroup);
-        String actualLogStream  = subs.perform(logStream);
+        String actualLogGroup   = subs.perform(getLogGroup());
+        String actualLogStream  = subs.perform(getLogStream());
 
-        return new CloudWatchWriterConfig()
+        return ((CloudWatchWriterConfig)appenderConfig.clone())
                .setLogGroupName(actualLogGroup)
-               .setLogStreamName(actualLogStream)
-               .setRetentionPeriod(retentionPeriod)
-               .setDedicatedWriter(dedicatedWriter);
+               .setLogStreamName(actualLogStream);
     }
 }

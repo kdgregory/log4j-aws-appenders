@@ -89,41 +89,28 @@ extends AppenderSkeleton
 
     private Object initializationLock = new Object();
 
-    // all member vars below this point are shared configuration
+    // appender configuration; subclass passes instance to constructor, clones for writer
 
-    protected long                  batchDelay;
-    protected boolean               truncateOversizeMessages;
-    protected int                   discardThreshold;
-    protected DiscardAction         discardAction;
-    protected String                assumedRole;
-    protected String                clientFactory;
-    protected String                clientRegion;
-    protected String                clientEndpoint;
-    protected boolean               synchronous;
-    protected boolean               useShutdownHook;
+    protected WriterConfigType appenderConfig;
 
 //----------------------------------------------------------------------------
 //  Constructor
 //----------------------------------------------------------------------------
 
     public AbstractAppender(
+        WriterConfigType appenderConfig,
         ThreadFactory threadFactory,
         WriterFactory<WriterConfigType,AppenderStatsType> writerFactory,
         AppenderStatsType appenderStats,
         Class<AppenderStatsMXBeanType> appenderStatsMXBeanClass)
     {
+        this.appenderConfig = appenderConfig;
         this.threadFactory = threadFactory;
         this.writerFactory = writerFactory;
         this.appenderStats = appenderStats;
         this.appenderStatsMXBeanClass = appenderStatsMXBeanClass;
 
         this.internalLogger = new Log4JInternalLogger(getClass().getSimpleName());
-
-        batchDelay = 2000;
-        truncateOversizeMessages = true;
-        discardThreshold = 10000;
-        discardAction = DiscardAction.oldest;
-        useShutdownHook = true;
     }
 
 //----------------------------------------------------------------------------
@@ -139,12 +126,7 @@ extends AppenderSkeleton
         if (writer != null)
             throw new IllegalStateException("can not set synchronous mode once writer created");
 
-        this.synchronous = value;
-
-        if (this.synchronous)
-        {
-            this.batchDelay = 0;
-        }
+        appenderConfig.setSynchronousMode(value);
     }
 
 
@@ -153,19 +135,17 @@ extends AppenderSkeleton
      */
     public boolean getSynchronous()
     {
-        return this.synchronous;
+        return appenderConfig.getSynchronousMode();
     }
 
 
     /**
-     *  Sets the <code>batchDelay</code> configuration property.
+     *  Sets the <code>batchDelay</code> configuration property. This can be called
+     *  to change the delay of a running writer.
      */
     public void setBatchDelay(long value)
     {
-        if (this.synchronous)
-            return;
-
-        this.batchDelay = value;
+        appenderConfig.setBatchDelay(value);
         if (writer != null)
         {
             writer.setBatchDelay(value);
@@ -178,7 +158,7 @@ extends AppenderSkeleton
      */
     public long getBatchDelay()
     {
-        return batchDelay;
+        return appenderConfig.getBatchDelay();
     }
 
 
@@ -187,7 +167,7 @@ extends AppenderSkeleton
      */
     public void setTruncateOversizeMessages(boolean value)
     {
-        this.truncateOversizeMessages = value;
+        appenderConfig.setTruncateOversizeMessages(value);
     }
 
 
@@ -196,16 +176,17 @@ extends AppenderSkeleton
      */
     public boolean getTruncateOversizeMessages()
     {
-        return this.truncateOversizeMessages;
+        return appenderConfig.getTruncateOversizeMessages();
     }
 
 
     /**
-     *  Sets the <code>discardThreshold</code> configuration property.
+     *  Sets the <code>discardThreshold</code> configuration property. This can be set
+     *  while the writer is running, to change writer operation.
      */
     public void setDiscardThreshold(int value)
     {
-        this.discardThreshold = value;
+        appenderConfig.setDiscardThreshold(value);
         if (writer != null)
         {
             writer.setDiscardThreshold(value);
@@ -218,12 +199,13 @@ extends AppenderSkeleton
      */
     public int getDiscardThreshold()
     {
-        return discardThreshold;
+        return appenderConfig.getDiscardThreshold();
     }
 
 
     /**
-     *  Sets the <code>discardAction</code> configuration property.
+     *  Sets the <code>discardAction</code> configuration property. This can be set
+     *  while the writer is running.
      */
     public void setDiscardAction(String value)
     {
@@ -234,12 +216,11 @@ extends AppenderSkeleton
             return;
         }
 
+        appenderConfig.setDiscardAction(tmpDiscardAction);
         if (writer != null)
         {
             writer.setDiscardAction(tmpDiscardAction);
         }
-
-        discardAction = tmpDiscardAction;
     }
 
 
@@ -248,19 +229,16 @@ extends AppenderSkeleton
      */
     public String getDiscardAction()
     {
-        return discardAction.toString();
+        return appenderConfig.getDiscardAction().toString();
     }
 
 
     /**
      *  Sets the <code>assumedRole</code> configuration property.
-     *  <p>
-     *  Calling this method after the writer has been initialized will have no
-     *  effect until the next log rotation.
      */
     public void setAssumedRole(String value)
     {
-        assumedRole = value;
+        appenderConfig.setAssumedRole(value);
     }
 
 
@@ -269,19 +247,16 @@ extends AppenderSkeleton
      */
     public String getAssumedRole()
     {
-        return assumedRole;
+        return appenderConfig.getAssumedRole();
     }
 
 
     /**
      *  Sets the <code>clientFactory</code> configuration property.
-     *  <p>
-     *  Calling this method after the writer has been initialized will have no
-     *  effect until the next log rotation.
      */
     public void setClientFactory(String value)
     {
-        clientFactory = value;
+        appenderConfig.setClientFactoryMethod(value);
     }
 
 
@@ -290,7 +265,7 @@ extends AppenderSkeleton
      */
     public String getClientFactory()
     {
-        return clientFactory;
+        return appenderConfig.getClientFactoryMethod();
     }
 
 
@@ -299,7 +274,7 @@ extends AppenderSkeleton
      */
     public void setClientRegion(String value)
     {
-        this.clientRegion = value;
+        appenderConfig.setClientRegion(value);
     }
 
 
@@ -308,7 +283,7 @@ extends AppenderSkeleton
      */
     public String getClientRegion()
     {
-        return clientRegion;
+        return appenderConfig.getClientRegion();
     }
 
 
@@ -317,7 +292,7 @@ extends AppenderSkeleton
      */
     public void setClientEndpoint(String value)
     {
-        this.clientEndpoint = value;
+        appenderConfig.setClientEndpoint(value);
     }
 
 
@@ -326,7 +301,7 @@ extends AppenderSkeleton
      */
     public String getClientEndpoint()
     {
-        return clientEndpoint;
+        return appenderConfig.getClientEndpoint();
     }
 
 
@@ -335,7 +310,7 @@ extends AppenderSkeleton
      */
     public void setUseShutdownHook(boolean value)
     {
-        this.useShutdownHook = value;
+        appenderConfig.setUseShutdownHook(value);
     }
 
 
@@ -344,7 +319,7 @@ extends AppenderSkeleton
      */
     public boolean getUseShutdownHook()
     {
-        return this.useShutdownHook;
+        return appenderConfig.getUseShutdownHook();
     }
 
 //----------------------------------------------------------------------------
@@ -446,10 +421,9 @@ extends AppenderSkeleton
 //----------------------------------------------------------------------------
 
     /**
-     *  Called as part of initialization. Subclass should provide a config
-     *  object that is populated with everything the subclass controls, and
-     *  with all substitutions applied. The abstract class will populate
-     *  with everything that it controls (eg, connection info).
+     *  Called as part of initialization. Subclass is expected to apply any
+     *  substitutions to configuration values and return a new configuration
+     *  object that's provided to the writer.
      */
     protected abstract WriterConfigType generateWriterConfig();
 
@@ -478,28 +452,18 @@ extends AppenderSkeleton
 
 
     /**
-     *  Called by {@link #initialize} and also {@link #rotate}, to switch to a new
-     *  writer. Does not close the old writer, if any.
+     *  Called by {@link #initialize} to start to a new writer. Does not
+     *  shut down the old writer, if any.
      */
     private void startWriter()
     {
-        WriterConfigType config = generateWriterConfig()
-                                  .setTruncateOversizeMessages(truncateOversizeMessages)
-                                  .setBatchDelay(batchDelay)
-                                  .setDiscardThreshold(discardThreshold)
-                                  .setDiscardAction(discardAction)
-                                  .setClientFactoryMethod(clientFactory)
-                                  .setAssumedRole(assumedRole)
-                                  .setClientRegion(clientRegion)
-                                  .setClientEndpoint(clientEndpoint)
-                                  .setSynchronousMode(synchronous)
-                                  .setUseShutdownHook(useShutdownHook);
+        WriterConfigType actualConfig = generateWriterConfig();
 
         synchronized (initializationLock)
         {
             try
             {
-                writer = writerFactory.newLogWriter(config, appenderStats, internalLogger);
+                writer = writerFactory.newLogWriter(actualConfig, appenderStats, internalLogger);
                 threadFactory.startWriterThread(writer, new UncaughtExceptionHandler()
                 {
                     @Override
@@ -548,7 +512,7 @@ extends AppenderSkeleton
                 }
 
                 writer.stop();
-                writer.waitUntilStopped(batchDelay * 2);
+                writer.waitUntilStopped(appenderConfig.getBatchDelay() * 2);
             }
             catch (Exception ex)
             {

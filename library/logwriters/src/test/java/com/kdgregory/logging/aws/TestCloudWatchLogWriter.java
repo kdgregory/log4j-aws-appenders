@@ -1240,6 +1240,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         // using different characters at the end of the message makes JUnit output easer to read
         final String bigMessage                 = StringUtil.repeat('X', cloudwatchMaximumMessageSize - 1) + "Y";
         final String biggerMessage              = bigMessage + "X";
+        
+        config.setTruncateOversizeMessages(false);
 
         mock = new MockCloudWatchFacade(config);
         createWriter();
@@ -1273,7 +1275,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         final String bigMessage                 = StringUtil.repeat('X', cloudwatchMaximumMessageSize - 1) + "Y";
         final String biggerMessage              = bigMessage + "X";
 
-        config.setTruncateOversizeMessages(true);
+        // this is the default case; no need to set config
         mock = new MockCloudWatchFacade(config);
         createWriter();
 

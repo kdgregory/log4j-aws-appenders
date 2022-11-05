@@ -27,13 +27,18 @@ import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 public class KinesisWriterConfig
 extends AbstractWriterConfig<KinesisWriterConfig>
 {
-    private String  streamName;
-    private String  partitionKey;   // isn't used in practice
-    private boolean autoCreate;
-    private int     shardCount;
-    private Integer retentionPeriod;
+    public final static String          DEFAULT_PARTITION_KEY   = "{startupTimestamp}";
+    public final static boolean         DEFAULT_AUTO_CREATE     = false;
+    public final static int             DEFAULT_SHARD_COUNT     = 1;
 
-    // this is set by setPartitionKey()
+
+    private String                      streamName;
+    private String                      partitionKey            = DEFAULT_PARTITION_KEY;
+    private boolean                     autoCreate              = DEFAULT_AUTO_CREATE;
+    private int                         shardCount              = DEFAULT_SHARD_COUNT;
+    private Integer                     retentionPeriod;
+
+    // this is assigned by setPartitionKey()
     private PartitionKeyHelper partitionKeyHelper;
 
 //----------------------------------------------------------------------------

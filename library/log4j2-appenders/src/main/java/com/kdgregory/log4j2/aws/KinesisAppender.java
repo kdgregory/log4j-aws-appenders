@@ -219,7 +219,7 @@ extends AbstractAppender
 
 
         @PluginBuilderAttribute("partitionKey")
-        private String partitionKey = "{startupTimestamp}";
+        private String partitionKey = KinesisWriterConfig.DEFAULT_PARTITION_KEY;
 
         /**
          *  Sets the <code>partitionKey</code> configuration property.
@@ -241,7 +241,7 @@ extends AbstractAppender
 
 
         @PluginBuilderAttribute("autoCreate")
-        private boolean autoCreate;
+        private boolean autoCreate = KinesisWriterConfig.DEFAULT_AUTO_CREATE;
 
         /**
          *  Sets the <code>autoCreate</code> configuration property.
@@ -263,7 +263,7 @@ extends AbstractAppender
 
 
         @PluginBuilderAttribute("shardCount")
-        private int shardCount = 1;
+        private int shardCount = KinesisWriterConfig.DEFAULT_SHARD_COUNT;
 
         /**
          *  Sets the <code>shardCount</code> configuration property.
@@ -343,6 +343,8 @@ extends AbstractAppender
     @Override
     protected KinesisWriterConfig generateWriterConfig()
     {
+        // note to future me: Log4J2 does its own thing with configuration
+
         StrSubstitutor l4jsubs    = appenderConfig.getConfiguration().getStrSubstitutor();
         Substitutions subs        = new Substitutions(new Date(), 0);
 

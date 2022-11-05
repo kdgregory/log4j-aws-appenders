@@ -458,6 +458,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
     @Test
     public void testDiscardOversizedMessage() throws Exception
     {
+        config.setTruncateOversizeMessages(false);
+        
         mock = new MockSNSFacade(config, TEST_TOPIC_NAME);
 
         createWriter();
@@ -484,7 +486,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
     @Test
     public void testTruncateOversizedMessage() throws Exception
     {
-        config.setTruncateOversizeMessages(true);
+        // this is the default case; no need to set config
+        
         mock = new MockSNSFacade(config, TEST_TOPIC_NAME);
 
         createWriter();

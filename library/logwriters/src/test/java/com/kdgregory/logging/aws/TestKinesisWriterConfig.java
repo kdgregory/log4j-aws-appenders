@@ -48,9 +48,8 @@ public class TestKinesisWriterConfig
         KinesisWriterConfig config = new KinesisWriterConfig();
 
         List<String> result = config.validate();
-        assertEquals("number of messages",  2,                          result.size());
+        assertEquals("number of messages",  1,                          result.size());
         assertEquals("message 0",           "missing stream name",      result.get(0));
-        assertEquals("message 1",           "missing partition key",    result.get(1));
     }
 
 

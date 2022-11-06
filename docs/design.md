@@ -97,6 +97,39 @@ is still the possibility of an exception during the send, which will requeue the
 deliver (which might never happen).
 
 
+## Initialization
+
+When the logwriter starts up, it has to perform several actions. For example, the Kinesis writer
+must list streams to determine whether its stream exists, and optionally creates the stream if
+it doesn't. This can take several seconds in the best of cases, and may take much more if there
+is heavy contention (requiring client retries). If the writer is unable to connect to the service
+(for example, because it's in a private subnet without a NAT), it will take minutes to timeout.
+
+Pre-3.1, the appenders would wait up to 60 seconds for the logwriter to report that it was 
+initialized. This would delay initialization of the entire logging framework, and as a result,
+application startup. And since none of the logging frameworks have a way for the appender to report
+failed initialization, this wait was pointless.
+
+With 3.1, the appender returns as soon as it starts the logwriter thread, and the writer performs
+its initialization asynchronously. Meanwhile, the application can send messages to the appender,
+and they will be buffered in the queue between appender and writer.
+
+> If there's a lot of logging at application startup and the writer takes a long time to
+  initialize, messages may be dropped from the queue. If you are concerned about that,
+  increase the discard threshold.
+
+The `initializationTimeout` configuration property controls how long the logwriter waits for all
+initialization tasks to complete. The defaults give more than enough time for a writer to start
+in normal conditions. If you expect a lot of contention (for example, because you're running many
+concurrent Batch jobs), you might need to increase this value.
+
+If the timeout expires, then the writer will write an error message on the framework logger and
+disable itself: it sets the queue's discard threshold to 0 and stops its thread. There is no way
+to restart the writer without restarting the application (in practice, the only reason for a writer
+to timeout is if it can't connect to AWS, which requires infrastructure changes, so there's no
+reason to retry once the timeout expires).
+
+
 ## Shutdown
 
 When the logging framework is shut down (or an indivudal appender is explicitly stopped), the

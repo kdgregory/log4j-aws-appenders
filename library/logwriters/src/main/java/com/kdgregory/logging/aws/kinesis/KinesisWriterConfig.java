@@ -27,6 +27,8 @@ import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 public class KinesisWriterConfig
 extends AbstractWriterConfig<KinesisWriterConfig>
 {
+    public final static long            DEFAULT_INITIALIZATION_TIMEOUT  = 120000;
+
     public final static String          DEFAULT_PARTITION_KEY   = "{startupTimestamp}";
     public final static boolean         DEFAULT_AUTO_CREATE     = false;
     public final static int             DEFAULT_SHARD_COUNT     = 1;
@@ -40,6 +42,12 @@ extends AbstractWriterConfig<KinesisWriterConfig>
 
     // this is assigned by setPartitionKey()
     private PartitionKeyHelper partitionKeyHelper;
+
+
+    public KinesisWriterConfig()
+    {
+        super(DEFAULT_INITIALIZATION_TIMEOUT);
+    }
 
 //----------------------------------------------------------------------------
 //  Accessors

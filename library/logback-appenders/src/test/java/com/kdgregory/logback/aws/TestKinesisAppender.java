@@ -43,21 +43,22 @@ extends AbstractUnitTest<TestableKinesisAppender>
     {
         initialize("testConfiguration");
 
-        assertEquals("stream name",         "argle-{bargle}",                   appender.getStreamName());
-        assertEquals("partition key",       "foo-{date}",                       appender.getPartitionKey());
-        assertTrue("autoCreate",                                                appender.isAutoCreate());
-        assertEquals("shard count",         7,                                  appender.getShardCount());
-        assertEquals("retention period",    48,                                 appender.getRetentionPeriod());
-        assertEquals("max delay",           1234L,                              appender.getBatchDelay());
-        assertFalse("truncate oversize messages",                               appender.getTruncateOversizeMessages());
-        assertEquals("discard threshold",   54321,                              appender.getDiscardThreshold());
-        assertEquals("discard action",      "newest",                           appender.getDiscardAction());
-        assertFalse("synchronous mode",                                         appender.getSynchronous());
-        assertFalse("use shutdown hook",                                        appender.getUseShutdownHook());
-        assertEquals("assumed role",        "AssumableRole",                    appender.getAssumedRole());
-        assertEquals("client factory",      "com.example.Foo.bar",              appender.getClientFactory());
-        assertEquals("client region",       "us-west-1",                        appender.getClientRegion());
-        assertEquals("client endpoint",     "kinesis.us-west-2.amazonaws.com",  appender.getClientEndpoint());
+        assertEquals("stream name",             "argle-{bargle}",                   appender.getStreamName());
+        assertEquals("partition key",           "foo-{date}",                       appender.getPartitionKey());
+        assertTrue("autoCreate",                                                    appender.isAutoCreate());
+        assertEquals("shard count",             7,                                  appender.getShardCount());
+        assertEquals("retention period",        48,                                 appender.getRetentionPeriod());
+        assertEquals("max delay",               1234L,                              appender.getBatchDelay());
+        assertFalse("truncate oversize messages",                                   appender.getTruncateOversizeMessages());
+        assertEquals("discard threshold",       54321,                              appender.getDiscardThreshold());
+        assertEquals("discard action",          "newest",                           appender.getDiscardAction());
+        assertFalse("synchronous mode",                                             appender.getSynchronous());
+        assertFalse("use shutdown hook",                                            appender.getUseShutdownHook());
+        assertEquals("assumed role",            "AssumableRole",                    appender.getAssumedRole());
+        assertEquals("client factory",          "com.example.Foo.bar",              appender.getClientFactory());
+        assertEquals("client region",           "us-west-1",                        appender.getClientRegion());
+        assertEquals("client endpoint",         "kinesis.us-west-2.amazonaws.com",  appender.getClientEndpoint());
+        assertEquals("initialization timeout",  30000,                              appender.getInitializationTimeout());
     }
 
 
@@ -67,20 +68,21 @@ extends AbstractUnitTest<TestableKinesisAppender>
         initialize("testDefaultConfiguration");
 
         // can't test stream name because there's no default
-        assertEquals("partition key",       "{startupTimestamp}",               appender.getPartitionKey());
-        assertFalse("autoCreate",                                               appender.isAutoCreate());
-        assertEquals("shard count",         1,                                  appender.getShardCount());
-        assertEquals("retention period",    24,                                 appender.getRetentionPeriod());
-        assertEquals("max delay",           2000L,                              appender.getBatchDelay());
-        assertTrue("truncate oversize messages",                                appender.getTruncateOversizeMessages());
-        assertEquals("discard threshold",   10000,                              appender.getDiscardThreshold());
-        assertEquals("discard action",      "oldest",                           appender.getDiscardAction());
-        assertFalse("synchronous mode",                                         appender.getSynchronous());
-        assertTrue("use shutdown hook",                                         appender.getUseShutdownHook());
-        assertEquals("assumed role",        null,                               appender.getAssumedRole());
-        assertEquals("client factory",      null,                               appender.getClientFactory());
-        assertEquals("client region",       null,                               appender.getClientRegion());
-        assertEquals("client endpoint",     null,                               appender.getClientEndpoint());
+        assertEquals("partition key",           "{startupTimestamp}",               appender.getPartitionKey());
+        assertFalse("autoCreate",                                                   appender.isAutoCreate());
+        assertEquals("shard count",             1,                                  appender.getShardCount());
+        assertEquals("retention period",        24,                                 appender.getRetentionPeriod());
+        assertEquals("max delay",               2000L,                              appender.getBatchDelay());
+        assertTrue("truncate oversize messages",                                    appender.getTruncateOversizeMessages());
+        assertEquals("discard threshold",       10000,                              appender.getDiscardThreshold());
+        assertEquals("discard action",          "oldest",                           appender.getDiscardAction());
+        assertFalse("synchronous mode",                                             appender.getSynchronous());
+        assertTrue("use shutdown hook",                                             appender.getUseShutdownHook());
+        assertEquals("assumed role",            null,                               appender.getAssumedRole());
+        assertEquals("client factory",          null,                               appender.getClientFactory());
+        assertEquals("client region",           null,                               appender.getClientRegion());
+        assertEquals("client endpoint",         null,                               appender.getClientEndpoint());
+        assertEquals("initialization timeout",  120000,                             appender.getInitializationTimeout());
     }
 
 

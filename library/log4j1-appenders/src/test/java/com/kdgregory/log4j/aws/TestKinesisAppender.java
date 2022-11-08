@@ -82,6 +82,7 @@ extends AbstractUnitTest<TestableKinesisAppender>
         assertEquals("client factory",          "com.example.Foo.bar",              appender.getClientFactory());
         assertEquals("client region",           "us-west-1",                        appender.getClientRegion());
         assertEquals("client endpoint",         "kinesis.us-west-2.amazonaws.com",  appender.getClientEndpoint());
+        assertEquals("initialization timeout",  30000,                              appender.getInitializationTimeout());
     }
 
 
@@ -105,6 +106,7 @@ extends AbstractUnitTest<TestableKinesisAppender>
         assertEquals("client factory",          null,                               appender.getClientFactory());
         assertEquals("client region",           null,                               appender.getClientRegion());
         assertEquals("client endpoint",         null,                               appender.getClientEndpoint());
+        assertEquals("initialization timeout",  120000,                             appender.getInitializationTimeout());
     }
 
 

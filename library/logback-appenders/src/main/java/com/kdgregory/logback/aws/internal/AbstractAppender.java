@@ -337,6 +337,24 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
         return appenderConfig.getUseShutdownHook();
     }
 
+
+    /**
+     *  Sets the <code>initializationTimeout</code> configuration property.
+     */
+    public void setInitializationTimeout(long value)
+    {
+        appenderConfig.setInitializationTimeout(value);
+    }
+
+
+    /**
+     *  Returns the <code>initializationTimeout</code> configuration property.
+     */
+    public long getInitializationTimeout()
+    {
+        return appenderConfig.getInitializationTimeout();
+    }
+
 //----------------------------------------------------------------------------
 //  Other accessors
 //----------------------------------------------------------------------------

@@ -17,6 +17,7 @@
             <clientRegion>us-west-1</clientRegion>
             <clientEndpoint>logs.us-west-2.amazonaws.com</clientEndpoint>
             <useShutdownHook>false</useShutdownHook>
+            <initializationTimeout>20000</initializationTimeout>
         </TestableCloudWatchAppender>
     </Appenders>
 

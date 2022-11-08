@@ -163,6 +163,14 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *           a VPC, when the normal endpoint is not available.
  *
  *  <tr VALIGN="top">
+ *      <th> initializationTimeout
+ *      <td> Milliseconds to wait for appender to initialize. If this timeout expires,
+ *           the appender will shut down its writer thread and discard any future log
+ *           events. The only reason to change this is if you're deploying to a high-
+ *           contention environment (and even then, the default of 60 seconds should be
+ *           more than enough).
+ *
+ *  <tr VALIGN="top">
  *      <th> useShutdownHook
  *      <td> This exists for consistency with other appenders but ignored; Log4J2 provides
  *           its own shutdown hooks.
@@ -194,6 +202,12 @@ extends AbstractAppender
     extends AbstractAppenderBuilder<CloudWatchAppenderBuilder>
     implements CloudWatchAppenderConfig, org.apache.logging.log4j.core.util.Builder<CloudWatchAppender>
     {
+        public CloudWatchAppenderBuilder()
+        {
+            setInitializationTimeout(CloudWatchWriterConfig.DEFAULT_INITIALIZATION_TIMEOUT);
+        }
+
+
         @PluginBuilderAttribute("name")
         @Required(message = "CloudWatchAppender: no name provided")
         private String name;

@@ -137,6 +137,14 @@ import com.kdgregory.logging.common.util.DefaultThreadFactory;
  *           a VPC, when the normal endpoint is not available.
  *
  *  <tr VALIGN="top">
+ *      <th> initializationTimeout
+ *      <td> Milliseconds to wait for appender to initialize. If this timeout expires,
+ *           the appender will shut down its writer thread and discard any future log
+ *           events. The only reason to change this is if you're deploying to a high-
+ *           contention environment (and even then, the default of 60 seconds should be
+ *           more than enough).
+ *
+ *  <tr VALIGN="top">
  *      <th> useShutdownHook
  *      <td> Controls whether the appender uses a shutdown hook to attempt to process
  *           outstanding messages when the JVM exits. This is true by default; set to

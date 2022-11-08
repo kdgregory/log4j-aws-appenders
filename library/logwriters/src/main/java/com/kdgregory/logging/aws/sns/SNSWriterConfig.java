@@ -30,6 +30,8 @@ import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 public class SNSWriterConfig
 extends AbstractWriterConfig<SNSWriterConfig>
 {
+    public final static long            DEFAULT_INITIALIZATION_TIMEOUT  = 30000;
+
     private String  topicName;
     private String  topicArn;
     private String  subject;
@@ -38,7 +40,7 @@ extends AbstractWriterConfig<SNSWriterConfig>
 
     public SNSWriterConfig()
     {
-        super();
+        super(DEFAULT_INITIALIZATION_TIMEOUT);
         super.setBatchDelay(1);
     }
 

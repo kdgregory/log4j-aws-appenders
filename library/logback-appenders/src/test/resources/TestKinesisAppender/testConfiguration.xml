@@ -21,6 +21,7 @@
     <clientRegion>us-west-1</clientRegion>
     <clientEndpoint>kinesis.us-west-2.amazonaws.com</clientEndpoint>
     <useShutdownHook>false</useShutdownHook>
+    <initializationTimeout>30000</initializationTimeout>
   </appender>
 
   <logger name="com.kdgregory.logback.aws.TestKinesisAppender" level="debug">

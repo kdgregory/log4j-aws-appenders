@@ -15,6 +15,7 @@
             <clientRegion>us-west-1</clientRegion>
             <clientEndpoint>sns.us-west-2.amazonaws.com</clientEndpoint>
             <useShutdownHook>false</useShutdownHook>
+            <initializationTimeout>40000</initializationTimeout>
         </TestableSNSAppender>
     </Appenders>
 

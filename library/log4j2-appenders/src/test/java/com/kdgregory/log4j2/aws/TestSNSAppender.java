@@ -50,7 +50,7 @@ extends AbstractUnitTest<TestableSNSAppender>
         assertEquals("subject",                 "This is a test",               appender.getConfig().getSubject());
         assertTrue("autoCreate",                                                appender.getConfig().isAutoCreate());
         assertEquals("batch delay",             1L,                             appender.getConfig().getBatchDelay());
-        assertFalse("truncate oversize messages",                                appender.getConfig().getTruncateOversizeMessages());
+        assertFalse("truncate oversize messages",                               appender.getConfig().getTruncateOversizeMessages());
         assertEquals("discard threshold",       123,                            appender.getConfig().getDiscardThreshold());
         assertEquals("discard action",          "newest",                       appender.getConfig().getDiscardAction());
         assertFalse("use shutdown hook",                                        appender.getConfig().isUseShutdownHook());
@@ -59,6 +59,7 @@ extends AbstractUnitTest<TestableSNSAppender>
         assertEquals("client factory",          "com.example.Foo.bar",          appender.getConfig().getClientFactory());
         assertEquals("client region",           "us-west-1",                    appender.getConfig().getClientRegion());
         assertEquals("client endpoint",         "sns.us-west-2.amazonaws.com",  appender.getConfig().getClientEndpoint());
+        assertEquals("initialization timeout",  40000,                          appender.getConfig().getInitializationTimeout());
     }
 
 
@@ -83,6 +84,7 @@ extends AbstractUnitTest<TestableSNSAppender>
         assertEquals("client factory",          null,                           appender.getConfig().getClientFactory());
         assertEquals("client region",           null,                           appender.getConfig().getClientRegion());
         assertEquals("client endpoint",         null,                           appender.getConfig().getClientEndpoint());
+        assertEquals("initialization timeout",  30000,                          appender.getConfig().getInitializationTimeout());
     }
 
 

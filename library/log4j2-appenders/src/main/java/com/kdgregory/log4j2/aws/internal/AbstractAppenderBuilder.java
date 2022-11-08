@@ -139,7 +139,7 @@ implements AbstractAppenderConfig
 
 
     @PluginBuilderAttribute("discardThreshold")
-    private int discardThreshold = AbstractWriterConfig.DEFAULT_DSICARD_THRESHOLD;
+    private int discardThreshold = AbstractWriterConfig.DEFAULT_DISCARD_THRESHOLD;
 
     /**
      *  Sets the <code>discardThreshold</code> configuration property.
@@ -289,5 +289,27 @@ implements AbstractAppenderConfig
     public boolean isUseShutdownHook()
     {
         return useShutdownHook;
+    }
+
+
+    @PluginBuilderAttribute("initializationTimeout")
+    private long initializationTimeout = 60000; // will be overridden by subclasses
+
+    /**
+     *  Sets the <code>initializationTimeout</code> configuration property.
+     */
+    public T setInitializationTimeout(long value)
+    {
+        this.initializationTimeout = value;
+        return (T)this;
+    }
+
+    /**
+     *  Returns the <code>initializationTimeout</code> configuration property.
+     */
+    @Override
+    public long getInitializationTimeout()
+    {
+        return initializationTimeout;
     }
 }

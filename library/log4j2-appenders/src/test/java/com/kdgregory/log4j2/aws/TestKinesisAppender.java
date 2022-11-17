@@ -185,7 +185,7 @@ extends AbstractUnitTest<TestableKinesisAppender>
         MockKinesisWriter writer = appender.getMockWriter();
 
         assertEquals("writer log group name",       "example",                  writer.config.getStreamName());
-        assertRegex("writer log stream name",       "[0-9]{1,5}-[0-9]{1,5}",    writer.config.getPartitionKey());
+        assertRegex("writer log stream name",       "[0-9]{1,6}-[0-9]{1,6}",    writer.config.getPartitionKey());
 
         // we'll assume everything else was set as in above test
     }

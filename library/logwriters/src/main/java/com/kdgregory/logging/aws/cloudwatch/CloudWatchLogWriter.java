@@ -14,6 +14,7 @@
 
 package com.kdgregory.logging.aws.cloudwatch;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -23,7 +24,7 @@ import com.kdgregory.logging.aws.facade.CloudWatchFacadeException;
 import com.kdgregory.logging.aws.internal.AbstractLogWriter;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.util.InternalLogger;
-import com.kdgregory.logging.common.util.RetryManager;
+import com.kdgregory.logging.common.util.RetryManager2;
 
 
 /**
@@ -36,14 +37,17 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
     // passed into constructor
     private CloudWatchFacade facade;
 
-    // controls retries for describing stream and group
-    protected RetryManager describeRetry = new RetryManager(50, 5000, true);
+    // these control the retries for DescribeLogGroup and DescribeLogStream; exposed for testing
+    protected Duration describeTimeout = Duration.ofMillis(5000);
+    protected RetryManager2 describeRetry = new RetryManager2("describe", Duration.ofMillis(50));
 
-    // controls retries for group and stream creation
-    protected RetryManager createRetry = new RetryManager(200, 5000, true);
+    // these control the retries for CreateLogGroup and CreateLogStream; exposed for testing
+    protected Duration createTimeout = Duration.ofMillis(5000);
+    protected RetryManager2 createRetry = new RetryManager2("create", Duration.ofMillis(200));
 
-    // controls retries for sending messages to CloudWatch
-    protected RetryManager sendRetry = new RetryManager(200, 2000, true);
+    // these control the retries for PutEvents; exposed for testing
+    protected Duration sendTimeout = Duration.ofMillis(2000);
+    protected RetryManager2 sendRetry = new RetryManager2("send", Duration.ofMillis(200));
 
     // cache for sequence tokens when using a dedicated writer
     private String sequenceToken;
@@ -113,7 +117,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
 
         Collections.sort(batch);
 
-        List<LogMessage> result = sendRetry.invoke(() ->
+        List<LogMessage> result = sendRetry.invoke(sendTimeout, () ->
         {
             try
             {
@@ -203,11 +207,11 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
     {
         logger.debug("creating CloudWatch log group: " + config.getLogGroupName());
 
-        createRetry.invoke(() -> { facade.createLogGroup(); return Boolean.TRUE; },
+        createRetry.invoke(createTimeout, () -> { facade.createLogGroup(); return Boolean.TRUE; },
                            new DefaultExceptionHandler());
 
         // the group isn't immediately ready for use after creation, so wait until it is
-        String logGroupArn = describeRetry.invoke(() -> facade.findLogGroup());
+        String logGroupArn = describeRetry.invoke(describeTimeout, () -> facade.findLogGroup());
         if (logGroupArn == null)
         {
             throw new RuntimeException("timed out while waiting for CloudWatch log group");
@@ -234,7 +238,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
     {
         logger.debug("creating CloudWatch log stream: " + config.getLogStreamName());
 
-        createRetry.invoke(() -> { facade.createLogStream(); return Boolean.TRUE; },
+        createRetry.invoke(createTimeout, () -> { facade.createLogStream(); return Boolean.TRUE; },
                            new DefaultExceptionHandler());
 
         // force a retrieve, and wait until it returns something
@@ -247,7 +251,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
     {
         if ((! config.getDedicatedWriter()) || (sequenceToken == null))
         {
-            sequenceToken = describeRetry.invoke(() -> facade.retrieveSequenceToken());
+            sequenceToken = describeRetry.invoke(describeTimeout, () -> facade.retrieveSequenceToken());
         }
 
         return sequenceToken;

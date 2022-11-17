@@ -728,7 +728,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         final String biggerMessage              = bigMessage + "X";
 
         config.setTruncateOversizeMessages(false);
-        
+
         mock = new MockKinesisFacade(config);
         createWriter();
 

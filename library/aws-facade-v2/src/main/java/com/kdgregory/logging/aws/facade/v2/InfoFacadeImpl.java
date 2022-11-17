@@ -25,13 +25,14 @@ import software.amazon.awssdk.services.ssm.model.*;
 import software.amazon.awssdk.services.sts.StsClient;
 import software.amazon.awssdk.services.sts.model.*;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.kdgregory.logging.aws.facade.InfoFacade;
-import com.kdgregory.logging.common.util.RetryManager;
+import com.kdgregory.logging.common.util.RetryManager2;
 
 
 /**
@@ -40,13 +41,18 @@ import com.kdgregory.logging.common.util.RetryManager;
 public class InfoFacadeImpl
 implements InfoFacade
 {
-
     private Ec2Client ec2Client;
     private StsClient stsClient;
     private SsmClient ssmClient;
 
-    protected RetryManager retryManager = new RetryManager(50, 1000, true);
-    
+    // these control retries for retrieving EC2 instance tags
+    protected Duration retrieveTagsTimeout = Duration.ofMillis(1000);
+    protected RetryManager2 retrieveTagsRetry = new RetryManager2("describeTags", Duration.ofMillis(50));
+
+    // these control retries for retrieving from Parameter Store
+    protected Duration getParameterTimeout = Duration.ofMillis(1000);
+    protected RetryManager2 getParameterRetry = new RetryManager2("getParameter", Duration.ofMillis(50));
+
 //----------------------------------------------------------------------------
 //  InfoFacade implementation
 //----------------------------------------------------------------------------
@@ -91,7 +97,7 @@ implements InfoFacade
     @Override
     public Map<String,String> retrieveEC2Tags(String instanceId)
     {
-        return retryManager.invoke(() -> {
+        return retrieveTagsRetry.invoke(retrieveTagsTimeout, () -> {
             try
             {
                 List<Filter> filters = new ArrayList<>();
@@ -128,7 +134,7 @@ implements InfoFacade
     {
         try
         {
-            GetParameterResponse result = retryManager.invoke(() -> {
+            GetParameterResponse result = getParameterRetry.invoke(getParameterTimeout, () -> {
                 try
                 {
                     GetParameterRequest request = GetParameterRequest.builder().name(parameterName).build();

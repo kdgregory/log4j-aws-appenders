@@ -14,6 +14,7 @@
 
 package com.kdgregory.logging.testhelpers.cloudwatch;
 
+import java.time.Duration;
 import java.util.concurrent.Semaphore;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchLogWriter;
@@ -21,7 +22,7 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.aws.facade.CloudWatchFacade;
 import com.kdgregory.logging.common.util.InternalLogger;
-import com.kdgregory.logging.common.util.RetryManager;
+import com.kdgregory.logging.common.util.RetryManager2;
 
 
 /**
@@ -41,10 +42,13 @@ extends CloudWatchLogWriter
     {
         super(config, stats, logger, facade);
 
-        // replace the stndard retry logic with something that operates much more quickly
-        describeRetry = new RetryManager(50, 200, false);
-        createRetry = new RetryManager(50, 200, false);
-        sendRetry = new RetryManager(50, 200, false);
+        // replace the stndard retry timeouts with something that operates much more quickly
+        describeTimeout = Duration.ofMillis(200);
+        describeRetry = new RetryManager2("describe", Duration.ofMillis(50), false, false);
+        createTimeout = Duration.ofMillis(200);
+        createRetry = new RetryManager2("create", Duration.ofMillis(50), false, false);
+        sendTimeout = Duration.ofMillis(200);
+        sendRetry = new RetryManager2("send", Duration.ofMillis(50), false, false);
     }
 
 

@@ -14,6 +14,7 @@
 
 package com.kdgregory.logging.aws.facade.v1;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,7 +34,7 @@ import com.amazonaws.services.simplesystemsmanagement.model.*;
 import com.amazonaws.util.EC2MetadataUtils;
 
 import com.kdgregory.logging.aws.facade.InfoFacade;
-import com.kdgregory.logging.common.util.RetryManager;
+import com.kdgregory.logging.common.util.RetryManager2;
 
 
 /**
@@ -42,8 +43,13 @@ import com.kdgregory.logging.common.util.RetryManager;
 public class InfoFacadeImpl
 implements InfoFacade
 {
+    // these control retries for retrieving EC2 instance tags
+    protected Duration retrieveTagsTimeout = Duration.ofMillis(1000);
+    protected RetryManager2 retrieveTagsRetry = new RetryManager2("describeTags", Duration.ofMillis(50));
 
-    protected RetryManager retryManager = new RetryManager(50, 1000, true);
+    // these control retries for retrieving from Parameter Store
+    protected Duration getParameterTimeout = Duration.ofMillis(1000);
+    protected RetryManager2 getParameterRetry = new RetryManager2("getParameter", Duration.ofMillis(50));
 
     private AmazonEC2 ec2Client;
     private AWSSecurityTokenService stsClient;
@@ -93,7 +99,7 @@ implements InfoFacade
     @Override
     public Map<String,String> retrieveEC2Tags(String instanceId)
     {
-        return retryManager.invoke(() -> {
+        return retrieveTagsRetry.invoke(retrieveTagsTimeout, () -> {
             try
             {
                 List<Filter> filters = new ArrayList<>();
@@ -130,7 +136,7 @@ implements InfoFacade
     {
         try
         {
-            GetParameterResult result = retryManager.invoke(() -> {
+            GetParameterResult result = getParameterRetry.invoke(getParameterTimeout, () -> {
                 try
                 {
                     GetParameterRequest request = new GetParameterRequest().withName(parameterName);

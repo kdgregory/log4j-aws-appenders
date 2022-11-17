@@ -20,13 +20,14 @@ import static org.junit.Assert.*;
 
 import static net.sf.kdgcommons.test.StringAsserts.*;
 
+import java.time.Duration;
 import java.util.Map;
 
 import com.kdgregory.logging.aws.facade.InfoFacade;
 import com.kdgregory.logging.aws.testhelpers.EC2ClientMock;
 import com.kdgregory.logging.aws.testhelpers.SSMClientMock;
 import com.kdgregory.logging.aws.testhelpers.STSClientMock;
-import com.kdgregory.logging.common.util.RetryManager;
+import com.kdgregory.logging.common.util.RetryManager2;
 
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.services.ec2.Ec2Client;
@@ -40,7 +41,7 @@ import software.amazon.awssdk.services.sts.model.*;
 public class TestInfoFacadeImpl
 {
     // used for tests that involve retries
-    private final static long RETRY_TIMEOUT_MS = 150;
+    private final static long RETRY_TIMEOUT_MS = 200;
 
     // update any of these mocks inside the test, before invoking facade methods
     private EC2ClientMock ec2Mock;
@@ -52,7 +53,10 @@ public class TestInfoFacadeImpl
     {
         {
             // don't waste time on retry timeouts!
-            retryManager = new RetryManager(50, RETRY_TIMEOUT_MS, false);
+            retrieveTagsTimeout = Duration.ofMillis(RETRY_TIMEOUT_MS);
+            retrieveTagsRetry = new RetryManager2("retrieve_tags", Duration.ofMillis(50), false, false);
+            getParameterTimeout = Duration.ofMillis(RETRY_TIMEOUT_MS);
+            getParameterRetry = new RetryManager2("getParameter", Duration.ofMillis(50), false, false);
         }
 
         @Override

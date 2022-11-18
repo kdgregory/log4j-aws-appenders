@@ -55,7 +55,7 @@ implements LogWriter
     // can remove it as part of cleanup
     private volatile Thread shutdownHook;
 
-    // intended for testing; will be set to true on either success or failure
+    // intended for testing; set to true on either success or failure
     private volatile boolean initializationComplete;
 
     // exposed for testing
@@ -124,7 +124,7 @@ implements LogWriter
         isRunning = true;
         logger.debug("log writer initialization complete (thread: " + Thread.currentThread().getName() + ")");
 
-        // to avoid any mid-initialization interrupts, we don't set the thread until done
+        // to avoid any mid-initialization interrupts, we don't set the thread until ready to run
         // (was affecting integration tests, shouldn't be an issue in real-world use)
 
         dispatchThread = Thread.currentThread();
@@ -468,7 +468,7 @@ implements LogWriter
 
     /**
      *  Verifies that the logging destination is available (which may involve
-     *  creating it). Return <code>true</code> if successful, <code>false</code> 
+     *  creating it). Return <code>true</code> if successful, <code>false</code>
      *  if not (which will cause the appender to stop running).
      */
     protected abstract boolean ensureDestinationAvailable();

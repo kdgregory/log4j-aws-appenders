@@ -110,7 +110,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
                  .setDedicatedWriter(true)
                  .setBatchDelay(100)
                  .setDiscardThreshold(10000)
-                 .setDiscardAction(DiscardAction.oldest);
+                 .setDiscardAction(DiscardAction.oldest)
+                 .setInitializationTimeout(250);
 
         stats = new CloudWatchWriterStatistics();
     }
@@ -195,6 +196,36 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
 
     @Test
+    public void testInitialLookupException() throws Exception
+    {
+        mock = new MockCloudWatchFacade(config)
+        {
+            @Override
+            public String findLogGroup() throws CloudWatchFacadeException
+            {
+                // for network timeout this will be a vesion-specific SdkClientException
+                throw new RuntimeException("example");
+            }
+        };
+
+        createWriter();
+
+        assertEquals("findLogGroup: invocation count",              1,                      mock.findLogGroupInvocationCount);
+        assertEquals("retrieveSequenceToken: invocation count",     0,                      mock.retrieveSequenceTokenInvocationCount);
+        assertEquals("createLogGroup: invocation count",            0,                      mock.createLogGroupInvocationCount);
+        assertEquals("createLogStream: invocation count",           0,                      mock.createLogStreamInvocationCount);
+
+        assertEquals("message queue discard threshold reduced",     0,                      messageQueue.getDiscardThreshold());
+
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog("exception during initialization",
+                                              "log writer failed to initialize.*");
+    }
+
+
+    @Test
     public void testCreateGroupAndStream() throws Exception
     {
         mock = new MockCloudWatchFacade(config)
@@ -232,6 +263,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("createLogStream: invocation count",           1,                      mock.createLogStreamInvocationCount);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "creating CloudWatch log group: argle",
                                               "creating CloudWatch log stream: bargle",
                                               "log writer initialization complete.*");
@@ -278,6 +310,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("createLogStream: invocation count",           0,                      mock.createLogStreamInvocationCount);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "creating CloudWatch log group: argle",
                                               "using existing CloudWatch log stream: bargle",   // because mock said it doesn't need to be created
                                               "log writer initialization complete.*");
@@ -327,6 +360,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("createLogStream: invocation count",           0,                      mock.createLogStreamInvocationCount);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "creating CloudWatch log group: argle",
                                               "using existing CloudWatch log stream: bargle",   // because mock said it doesn't need to be created
                                               "log writer initialization complete.*");
@@ -371,13 +405,16 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("createLogGroup: invocation count",            1,                      mock.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",           0,                      mock.createLogStreamInvocationCount);
 
+        assertEquals("message queue discard threshold reduced",     0,                      messageQueue.getDiscardThreshold());
+
         internalLogger.assertInternalDebugLog(
                             "log writer starting.*",
+                            "checking for existance of CloudWatch log group: argle",
                             "creating CloudWatch log group: argle");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
-                            "unable to configure log group/stream",
-                        "log writer failed to initialize.*");
+                            "exception during initialization",
+                            "log writer failed to initialize.*");
 
         assertUltimateCause("original exception reported", cause, internalLogger.errorExceptions.get(0));
     }
@@ -416,10 +453,11 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking for existance of CloudWatch log group: argle",
                         "creating CloudWatch log group: argle");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
-                        "unable to configure log group/stream",
+                        "exception during initialization",
                         "log writer failed to initialize.*");
 
         assertUltimateCause("original exception reported", cause, internalLogger.errorExceptions.get(0));
@@ -445,19 +483,20 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         assertFalse("writer is running", writer.isRunning());
 
-        // an initial findLogGroup(), followed by 4 attempts while waiting
+        // an initial findLogGroup(), followed by multiple attempts while waiting
 
-        assertEquals("findLogGroup: invocation count",              5,                      mock.findLogGroupInvocationCount);
+        assertEquals("findLogGroup: invocation count",              6,                      mock.findLogGroupInvocationCount);
         assertEquals("retrieveSequenceToken: invocation count",     0,                      mock.retrieveSequenceTokenInvocationCount);
         assertEquals("createLogGroup: invocation count",            1,                      mock.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",           0,                      mock.createLogStreamInvocationCount);
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking for existance of CloudWatch log group: argle",
                         "creating CloudWatch log group: argle");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
-                        "unable to configure log group/stream",
+                        "exception during initialization",
                         "log writer failed to initialize.*");
 
         assertEquals("timeout exception recorded",
@@ -495,6 +534,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("setLogGroupRetention: invocation count",      1,                      mock.setLogGroupRetentionInvocationCount);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "creating CloudWatch log group: argle",
                                               "setting retention period to: 3",
                                               "using existing CloudWatch log stream: bargle",   // because mock said it doesn't need to be created
@@ -550,6 +590,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("setLogGroupRetention: invocation count",      1,                      mock.setLogGroupRetentionInvocationCount);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "creating CloudWatch log group: argle",
                                               "setting retention period to: 3",
                                               "creating CloudWatch log stream: bargle",
@@ -589,6 +630,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("createLogStream: invocation count",           1,                      mock.createLogStreamInvocationCount);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "using existing CloudWatch log group: argle",
                                               "creating CloudWatch log stream: bargle",
                                               "log writer initialization complete.*");
@@ -635,6 +677,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("createLogStream: invocation count",           2,                      mock.createLogStreamInvocationCount);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "using existing CloudWatch log group: argle",
                                               "creating CloudWatch log stream: bargle",
                                               "log writer initialization complete.*");
@@ -682,13 +725,16 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("createLogGroup: invocation count",            0,                      mock.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",           1,                      mock.createLogStreamInvocationCount);
 
+        assertEquals("message queue discard threshold reduced",     0,                      messageQueue.getDiscardThreshold());
+
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking for existance of CloudWatch log group: argle",
                         "using existing CloudWatch log group: argle",
                         "creating CloudWatch log stream: bargle");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
-                        "unable to configure log group/stream",
+                        "exception during initialization",
                         "log writer failed to initialize.*");
 
         assertUltimateCause("original exception reported", cause, internalLogger.errorExceptions.get(0));
@@ -728,11 +774,12 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking for existance of CloudWatch log group: argle",
                         "using existing CloudWatch log group: argle",
                         "creating CloudWatch log stream: bargle");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
-                        "unable to configure log group/stream",
+                        "exception during initialization",
                         "log writer failed to initialize.*");
 
         assertUltimateCause("original exception reported", cause, internalLogger.errorExceptions.get(0));
@@ -791,6 +838,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("all messages processed", Arrays.asList("message one", "message two", "message three"), mock.allMessagesSent);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "using existing CloudWatch log group: argle",
                                               "using existing CloudWatch log stream: bargle",
                                               "log writer initialization complete.*");
@@ -851,6 +899,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("all messages processed", Arrays.asList("message one", "message two", "message three"), mock.allMessagesSent);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "using existing CloudWatch log group: argle",
                                               "using existing CloudWatch log stream: bargle",
                                               "log writer initialization complete.*");
@@ -905,6 +954,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("all messages processed", Arrays.asList("message one", "message two"), mock.allMessagesSent);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "using existing CloudWatch log group: argle",
                                               "using existing CloudWatch log stream: bargle",
                                               "log writer initialization complete.*");
@@ -944,6 +994,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("stats: throttling has been recorded",         4,                      stats.getThrottledWrites());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "using existing CloudWatch log group: argle",
                                               "using existing CloudWatch log stream: bargle",
                                               "log writer initialization complete.*");
@@ -988,6 +1039,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("statistics: last batch messages sent",        1,                      stats.getMessagesSentLastBatch());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "using existing CloudWatch log group: argle",
                                               "using existing CloudWatch log stream: bargle",
                                               "log writer initialization complete.*");
@@ -1028,6 +1080,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("stats: reported sequence token race failure", 1,                      stats.getUnrecoveredWriterRaceRetries());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "using existing CloudWatch log group: argle",
                                               "using existing CloudWatch log stream: bargle",
                                               "log writer initialization complete.*");
@@ -1081,6 +1134,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("all messages processed", Arrays.asList("message two"), mock.allMessagesSent);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "using existing CloudWatch log group: argle",
                                               "using existing CloudWatch log stream: bargle",
                                               "log writer initialization complete.*");
@@ -1130,6 +1184,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         // we could keep doing this all day ... in the real world, messages would eventually drop from queue
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "using existing CloudWatch log group: argle",
                                               "using existing CloudWatch log stream: bargle",
                                               "log writer initialization complete.*");
@@ -1193,9 +1248,11 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("message has been returned to queue",          1,                      messageQueue.size());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "using existing CloudWatch log group: argle",
                                               "using existing CloudWatch log stream: bargle",
                                               "log writer initialization complete.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "using existing CloudWatch log group: argle",
                                               "creating CloudWatch log stream: bargle");
         internalLogger.assertInternalWarningLog();
@@ -1240,7 +1297,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         // using different characters at the end of the message makes JUnit output easer to read
         final String bigMessage                 = StringUtil.repeat('X', cloudwatchMaximumMessageSize - 1) + "Y";
         final String biggerMessage              = bigMessage + "X";
-        
+
         config.setTruncateOversizeMessages(false);
 
         mock = new MockCloudWatchFacade(config);
@@ -1406,6 +1463,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("message has been removed from queue",         0,                      messageQueue.size());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "using existing CloudWatch log group: argle",
                                               "using existing CloudWatch log stream: bargle",
                                               "log writer initialization complete.*");
@@ -1470,6 +1528,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertInRange("time to process",                            batchDelay - 100, batchDelay + 100, shutdownTime - mainReturnedAt);
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "using existing CloudWatch log group: argle",
                                               "using existing CloudWatch log stream: bargle",
                                               "log writer initialization complete.*",
@@ -1506,6 +1565,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         // this will never return if the shutdown hook hasn't run
         shutdownHook.join();
         internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existance of CloudWatch log group: argle",
                                               "using existing CloudWatch log group: argle",
                                               "using existing CloudWatch log stream: bargle",
                                               "log writer initialization complete.*",

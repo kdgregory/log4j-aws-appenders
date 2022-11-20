@@ -109,7 +109,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
                  .setTopicName(TEST_TOPIC_NAME)
                  .setSubject(TEST_SUBJECT)
                  .setDiscardThreshold(10000)
-                 .setDiscardAction(DiscardAction.oldest);
+                 .setDiscardAction(DiscardAction.oldest)
+                 .setInitializationTimeout(250);
 
         stats = new SNSWriterStatistics();
     }
@@ -164,6 +165,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking for existance of SNS topic: " + TEST_TOPIC_NAME,
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
@@ -206,6 +208,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking for existance of SNS topic: " + TEST_TOPIC_ARN,
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
@@ -257,19 +260,22 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
         createWriter();
         assertFalse("writer is running", writer.isRunning());
 
-        assertEquals("mock: lookupTopicInvocationCount",        1,                          mock.lookupTopicInvocationCount);
-        assertEquals("mock: createTopicInvocationCount",        0,                          mock.createTopicInvocationCount);
-        assertEquals("mock: publishInvocationCount",            0,                          mock.publishInvocationCount);
-        assertEquals("mock: shutdownInvocationCount",           0,                          mock.shutdownInvocationCount);
+        assertEquals("mock: lookupTopicInvocationCount",        1,                                      mock.lookupTopicInvocationCount);
+        assertEquals("mock: createTopicInvocationCount",        0,                                      mock.createTopicInvocationCount);
+        assertEquals("mock: publishInvocationCount",            0,                                      mock.publishInvocationCount);
+        assertEquals("mock: shutdownInvocationCount",           0,                                      mock.shutdownInvocationCount);
 
-        assertRegex("stats: reported message",                  "unable to configure",      stats.getLastErrorMessage());
-        assertSame("stats reported exception",                  cause,                      stats.getLastError());
+        assertEquals("message queue discard threshold reduced", 0,                                      messageQueue.getDiscardThreshold());
+
+        assertRegex("stats: reported message",                  "exception during initialization.*",    stats.getLastErrorMessage());
+        assertSame("stats reported exception",                  cause,                                  stats.getLastError());
 
         internalLogger.assertInternalDebugLog(
-                        "log writer starting.*");
+                        "log writer starting.*",
+                        "checking for existance of SNS topic.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
-                        "unable to configure",
+                        "exception during initialization",
                         "log writer failed to initialize.*");
 
         assertSame("exception logged",          cause,                  internalLogger.errorExceptions.get(0));
@@ -277,31 +283,38 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 
 
     @Test
-    public void testInitializationMissingTopic() throws Exception
+    public void testInitializationMissingTopicNoAutoCreate() throws Exception
     {
         // have to set either name or ARN to proceed to lookup, but this test doesn't care which is set
         config = new SNSWriterConfig()
                  .setTopicName("TEST_TOPIC_NAME")
-                 .setTopicArn(null);
+                 .setTopicArn(null)
+                 .setAutoCreate(false);
 
         mock = new MockSNSFacade(config);
 
         createWriter();
         assertFalse("writer is running", writer.isRunning());
 
-        assertEquals("mock: lookupTopicInvocationCount",        1,                          mock.lookupTopicInvocationCount);
+        // we call lookupTopic twice: one quick check and one with retries (which in this case are limited)
+
+        assertEquals("mock: lookupTopicInvocationCount",        2,                          mock.lookupTopicInvocationCount);
         assertEquals("mock: createTopicInvocationCount",        0,                          mock.createTopicInvocationCount);
         assertEquals("mock: publishInvocationCount",            0,                          mock.publishInvocationCount);
         assertEquals("mock: shutdownInvocationCount",           0,                          mock.shutdownInvocationCount);
 
-        assertRegex("stats: reported message",                  "topic does not exist.*",   stats.getLastErrorMessage());
+        assertEquals("message queue discard threshold reduced", 0,                          messageQueue.getDiscardThreshold());
+
+        assertRegex("stats: reported message",                  "topic .* does not exist.*", stats.getLastErrorMessage());
         assertNull("stats: no exception",                                                   stats.getLastError());
 
         internalLogger.assertInternalDebugLog(
-                        "log writer starting.*");
+                        "log writer starting.*",
+                        "checking for existance of SNS topic.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
-                        "topic does not exist.*",
+                        "topic .* does not exist and auto-create not enabled",
+                        "failed to create SNS topic",
                         "log writer failed to initialize.*");
     }
 
@@ -318,7 +331,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
         createWriter();
         assertTrue("writer is running", writer.isRunning());
 
-        assertEquals("mock: lookupTopicInvocationCount",        1,                      mock.lookupTopicInvocationCount);
+        assertEquals("mock: lookupTopicInvocationCount",        2,                      mock.lookupTopicInvocationCount);
         assertEquals("mock: createTopicInvocationCount",        1,                      mock.createTopicInvocationCount);
         assertEquals("mock: publishInvocationCount",            0,                      mock.publishInvocationCount);
         assertEquals("mock: shutdownInvocationCount",           0,                      mock.shutdownInvocationCount);
@@ -328,7 +341,8 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
-                        "creating SNS topic: " + TEST_TOPIC_NAME,
+                        "checking for existance of SNS topic.*",
+                        "creating topic: " + TEST_TOPIC_NAME,
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
@@ -355,20 +369,23 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
         createWriter();
         assertFalse("writer is running", writer.isRunning());
 
-        assertEquals("mock: lookupTopicInvocationCount",        1,                      mock.lookupTopicInvocationCount);
-        assertEquals("mock: createTopicInvocationCount",        1,                      mock.createTopicInvocationCount);
-        assertEquals("mock: publishInvocationCount",            0,                      mock.publishInvocationCount);
-        assertEquals("mock: shutdownInvocationCount",           0,                      mock.shutdownInvocationCount);
+        assertEquals("mock: lookupTopicInvocationCount",        2,                                  mock.lookupTopicInvocationCount);
+        assertEquals("mock: createTopicInvocationCount",        1,                                  mock.createTopicInvocationCount);
+        assertEquals("mock: publishInvocationCount",            0,                                  mock.publishInvocationCount);
+        assertEquals("mock: shutdownInvocationCount",           0,                                  mock.shutdownInvocationCount);
 
-        assertEquals("stats: error message",                    "unable to configure",  stats.getLastErrorMessage());
-        assertSame("stats: exception",                          cause,                  stats.getLastError());
+        assertEquals("message queue discard threshold reduced", 0,                                  messageQueue.getDiscardThreshold());
+
+        assertEquals("stats: error message",                    "exception during initialization",  stats.getLastErrorMessage());
+        assertSame("stats: exception",                          cause,                              stats.getLastError());
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
-                        "creating SNS topic: " + TEST_TOPIC_NAME);
+                        "checking for existance of SNS topic.*",
+                        "creating topic: " + TEST_TOPIC_NAME);
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
-                        "unable to configure",
+                        "exception during initialization",
                         "log writer failed to initialize.*");
     }
 
@@ -459,7 +476,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
     public void testDiscardOversizedMessage() throws Exception
     {
         config.setTruncateOversizeMessages(false);
-        
+
         mock = new MockSNSFacade(config, TEST_TOPIC_NAME);
 
         createWriter();
@@ -487,7 +504,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
     public void testTruncateOversizedMessage() throws Exception
     {
         // this is the default case; no need to set config
-        
+
         mock = new MockSNSFacade(config, TEST_TOPIC_NAME);
 
         createWriter();

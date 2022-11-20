@@ -14,6 +14,7 @@
 
 package com.kdgregory.logging.testhelpers.sns;
 
+import java.time.Duration;
 import java.util.concurrent.Semaphore;
 
 import com.kdgregory.logging.aws.facade.SNSFacade;
@@ -21,6 +22,7 @@ import com.kdgregory.logging.aws.sns.SNSLogWriter;
 import com.kdgregory.logging.aws.sns.SNSWriterConfig;
 import com.kdgregory.logging.aws.sns.SNSWriterStatistics;
 import com.kdgregory.logging.common.util.InternalLogger;
+import com.kdgregory.logging.common.util.RetryManager2;
 
 
 /**
@@ -38,6 +40,11 @@ extends SNSLogWriter
     public TestableSNSLogWriter(SNSWriterConfig config, SNSWriterStatistics stats, InternalLogger logger, SNSFacade facade)
     {
         super(config, stats, logger, facade);
+
+        // replace the stndard retry timeouts with something that operates much more quickly
+        describeTimeout = Duration.ofMillis(50);
+        describeRetry = new RetryManager2("describe", Duration.ofMillis(50), false, false);
+        createRetry = new RetryManager2("create", Duration.ofMillis(50), false, false);
     }
 
 

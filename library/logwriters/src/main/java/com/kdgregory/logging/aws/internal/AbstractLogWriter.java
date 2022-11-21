@@ -294,7 +294,6 @@ implements LogWriter
         try
         {
             success = ensureDestinationAvailable();
-            optAddShutdownHook();
         }
         catch (Exception ex)
         {
@@ -302,7 +301,11 @@ implements LogWriter
             success = false;
         }
 
-        if (! success)
+        if (success)
+        {
+            optAddShutdownHook();
+        }
+        else
         {
             messageQueue.setDiscardThreshold(0);
             messageQueue.setDiscardAction(DiscardAction.oldest);

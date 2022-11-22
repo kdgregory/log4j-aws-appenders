@@ -482,12 +482,6 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
                     }
                 });
 
-                if (! writer.waitUntilInitialized(60000))
-                {
-                    internalLogger.error("writer initialization timed out", null);
-                    return;
-                }
-
                 if (layout.getFileHeader() != null)
                 {
                     internalAppend(new LogMessage(System.currentTimeMillis(), layout.getFileHeader()));

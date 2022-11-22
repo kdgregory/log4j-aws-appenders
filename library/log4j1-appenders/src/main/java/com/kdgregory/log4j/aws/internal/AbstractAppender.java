@@ -492,12 +492,6 @@ extends AppenderSkeleton
                     }
                 });
 
-                if (! writer.waitUntilInitialized(60000))
-                {
-                    internalLogger.error("writer initialization timed out", null);
-                    return;
-                }
-
                 if (layout.getHeader() != null)
                 {
                     internalAppend(new LogMessage(System.currentTimeMillis(), layout.getHeader()));

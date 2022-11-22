@@ -149,7 +149,6 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
 //  Appender implementation
 //----------------------------------------------------------------------------
 
-
     @Override
     public void start()
     {
@@ -274,12 +273,6 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
                         writer = null;
                     }
                 });
-
-                if (! writer.waitUntilInitialized(60000))
-                {
-                    internalLogger.error("writer initialization timed out", null);
-                    return;
-                }
 
                 if (getLayout().getHeader() != null)
                 {

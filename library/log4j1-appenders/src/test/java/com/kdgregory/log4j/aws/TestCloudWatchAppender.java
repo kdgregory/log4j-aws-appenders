@@ -78,7 +78,8 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("client region",           "us-west-1",                    appender.getClientRegion());
         assertEquals("writer client endpoint",  "mylogs.example.com",           appender.getClientEndpoint());
         assertEquals("synchronous mode",        false,                          appender.getSynchronous());
-        assertEquals("use shutdown hook",       false,                          appender.getUseShutdownHook());
+        assertEquals("use shutdown hook",       true,                           appender.getUseShutdownHook());
+        assertEquals("initialization timeout",  20000,                          appender.getInitializationTimeout());
     }
 
 
@@ -103,6 +104,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("client factory",          null,                           appender.getClientFactory());
         assertEquals("client region",           null,                           appender.getClientRegion());
         assertEquals("client endpoint",         null,                           appender.getClientEndpoint());
+        assertEquals("initialization timeout",  60000,                          appender.getInitializationTimeout());
     }
 
 

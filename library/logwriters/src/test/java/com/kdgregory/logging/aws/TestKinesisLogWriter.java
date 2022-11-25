@@ -110,7 +110,8 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
                  .setPartitionKey(DEFAULT_PARTITION_KEY)
                  .setBatchDelay(100)
                  .setDiscardThreshold(10000)
-                 .setDiscardAction(DiscardAction.oldest);
+                 .setDiscardAction(DiscardAction.oldest)
+                 .setInitializationTimeout(250);
 
         stats = new KinesisWriterStatistics();
     }
@@ -151,6 +152,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
@@ -175,7 +177,6 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
                             "configuration error: missing stream name",
-                            "configuration error: missing partition key",
                             "log writer failed to initialize.*");
     }
 
@@ -215,6 +216,8 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
+                        "waiting for stream " + DEFAULT_STREAM_NAME + " to become active",
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
@@ -229,18 +232,52 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         assertFalse("writer is running", writer.isRunning());
 
-        // initial status check, plus 4 until timeout
+        // initial status check, plus 5 until timeout
 
-        assertEquals("retrieveStreamStatus() invocationCount",      5,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("retrieveStreamStatus() invocationCount",      6,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
         assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
         internalLogger.assertInternalDebugLog(
-                        "log writer starting.*");
+                        "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
+                        "waiting for stream " + DEFAULT_STREAM_NAME + " to become active");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
                         "timeout waiting for stream " + DEFAULT_STREAM_NAME + " to become active",
+                        "log writer failed to initialize.*");
+    }
+
+
+    @Test
+    public void testWaitForStreamReadyException() throws Exception
+    {
+        mock = new MockKinesisFacade(config)
+        {
+            @Override
+            public StreamStatus retrieveStreamStatus()
+            {
+                throw new RuntimeException("standin for network timeout SDK exception");
+            }
+        };
+        createWriter();
+
+        assertFalse("writer is running", writer.isRunning());
+
+        assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
+
+        assertEquals("message queue discard threshold reduced",     0,                          messageQueue.getDiscardThreshold());
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME);
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog(
+                        "exception during initialization.*",
                         "log writer failed to initialize.*");
     }
 
@@ -267,7 +304,9 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
                         "creating kinesis stream: " + DEFAULT_STREAM_NAME,
+                        "waiting for stream " + DEFAULT_STREAM_NAME + " to become active",
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
@@ -284,16 +323,18 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         assertFalse("writer is running", writer.isRunning());
 
-        // initial status check, plus 4 until timeout
+        // initial status check, plus 5 until timeout
 
-        assertEquals("retrieveStreamStatus() invocationCount",      5,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("retrieveStreamStatus() invocationCount",      6,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              1,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
         assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
-                        "creating kinesis stream: " + DEFAULT_STREAM_NAME);
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
+                        "creating kinesis stream: " + DEFAULT_STREAM_NAME,
+                        "waiting for stream " + DEFAULT_STREAM_NAME + " to become active");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
                         "timeout waiting for stream " + DEFAULT_STREAM_NAME + " to become active",
@@ -326,12 +367,15 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
         assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
+        assertEquals("message queue discard threshold reduced",     0,                          messageQueue.getDiscardThreshold());
+
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
                         "creating kinesis stream: " + DEFAULT_STREAM_NAME);
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
-                        "unable to configure stream: " + DEFAULT_STREAM_NAME,
+                        "exception during initialization",
                         "log writer failed to initialize.*");
 
         assertUltimateCause("reported underlying exception", cause, internalLogger.errorExceptions.get(0));
@@ -358,8 +402,11 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
                         "creating kinesis stream: " + DEFAULT_STREAM_NAME,
+                        "waiting for stream " + DEFAULT_STREAM_NAME + " to become active",
                         "setting retention period on stream \"" + DEFAULT_STREAM_NAME + "\" to 48 hours",
+                        "waiting for stream " + DEFAULT_STREAM_NAME + " to become active",
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
@@ -386,8 +433,11 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
                         "creating kinesis stream: " + DEFAULT_STREAM_NAME,
-                        "setting retention period on stream \"" + DEFAULT_STREAM_NAME + "\" to 48 hours");
+                        "waiting for stream " + DEFAULT_STREAM_NAME + " to become active",
+                        "setting retention period on stream \"" + DEFAULT_STREAM_NAME + "\" to 48 hours",
+                        "waiting for stream " + DEFAULT_STREAM_NAME + " to become active");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
                         "timeout waiting for stream " + DEFAULT_STREAM_NAME + " to become active",
@@ -421,13 +471,17 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("setRetentionPeriod() invocationCount",        1,                          mock.setRetentionPeriodInvocationCount);
         assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
+        assertEquals("message queue discard threshold reduced",     0,                          messageQueue.getDiscardThreshold());
+
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
                         "creating kinesis stream: " + DEFAULT_STREAM_NAME,
+                        "waiting for stream " + DEFAULT_STREAM_NAME + " to become active",
                         "setting retention period on stream \"" + DEFAULT_STREAM_NAME + "\" to 48 hours");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
-                        "unable to configure stream: " + DEFAULT_STREAM_NAME,
+                        "exception during initialization",
                         "log writer failed to initialize.*");
 
         assertUltimateCause("reported underlying exception", cause, internalLogger.errorExceptions.get(0));
@@ -447,16 +501,18 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         assertFalse("writer is running", writer.isRunning());
 
-        // retrieveStreamStatus(): one to discover it doesn't exist, four after creation, then timeout
+        // retrieveStreamStatus(): one to discover it doesn't exist, five after creation, then timeout
 
-        assertEquals("retrieveStreamStatus() invocationCount",      5,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("retrieveStreamStatus() invocationCount",      6,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              1,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
         assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
-                        "creating kinesis stream: " + DEFAULT_STREAM_NAME);
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
+                        "creating kinesis stream: " + DEFAULT_STREAM_NAME,
+                        "waiting for stream " + DEFAULT_STREAM_NAME + " to become active");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
                         "timeout waiting for stream " + DEFAULT_STREAM_NAME + " to become active",
@@ -481,7 +537,8 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
         internalLogger.assertInternalDebugLog(
-                        "log writer starting.*");
+                        "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME);
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
                         "stream \"" + DEFAULT_STREAM_NAME + "\" does not exist and auto-create not enabled",
@@ -516,6 +573,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
@@ -572,6 +630,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
@@ -614,6 +673,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
@@ -652,6 +712,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog(
                         "timeout while sending batch");
@@ -689,6 +750,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
@@ -728,6 +790,8 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         final String bigMessage                 = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
         final String biggerMessage              = bigMessage + "X";
 
+        config.setTruncateOversizeMessages(false);
+
         mock = new MockKinesisFacade(config);
         createWriter();
 
@@ -755,7 +819,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         final String bigMessage                 = StringUtil.repeat('X', maxMessageSize - 1) + "Y";
         final String biggerMessage              = bigMessage + "X";
 
-        config.setTruncateOversizeMessages(true);
+        // this is the default case, no need to set config
 
         mock = new MockKinesisFacade(config);
         createWriter();
@@ -889,6 +953,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
@@ -951,9 +1016,11 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertFalse("writer has stopped",                           writer.isRunning());
         assertInRange("time to process",                            batchDelay - 100, batchDelay + 100, shutdownTime - mainReturnedAt);
 
-        internalLogger.assertInternalDebugLog("log writer starting.*",
-                                              "log writer initialization complete.*",
-                                              "log.writer shut down.*");
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
+                        "log writer initialization complete.*",
+                        "log.writer shut down.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
     }

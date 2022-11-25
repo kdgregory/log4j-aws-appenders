@@ -163,6 +163,14 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *           a VPC, when the normal endpoint is not available.
  *
  *  <tr VALIGN="top">
+ *      <th> initializationTimeout
+ *      <td> Milliseconds to wait for appender to initialize. If this timeout expires,
+ *           the appender will shut down its writer thread and discard any future log
+ *           events. The only reason to change this is if you're deploying to a high-
+ *           contention environment (and even then, the default of 60 seconds should be
+ *           more than enough).
+ *
+ *  <tr VALIGN="top">
  *      <th> useShutdownHook
  *      <td> This exists for consistency with other appenders but ignored; Log4J2 provides
  *           its own shutdown hooks.
@@ -194,6 +202,12 @@ extends AbstractAppender
     extends AbstractAppenderBuilder<CloudWatchAppenderBuilder>
     implements CloudWatchAppenderConfig, org.apache.logging.log4j.core.util.Builder<CloudWatchAppender>
     {
+        public CloudWatchAppenderBuilder()
+        {
+            setInitializationTimeout(CloudWatchWriterConfig.DEFAULT_INITIALIZATION_TIMEOUT);
+        }
+
+
         @PluginBuilderAttribute("name")
         @Required(message = "CloudWatchAppender: no name provided")
         private String name;
@@ -234,7 +248,7 @@ extends AbstractAppender
 
 
         @PluginBuilderAttribute("logStream")
-        private String logStream = "{startupTimestamp}";
+        private String logStream = CloudWatchWriterConfig.DEFAULT_LOG_STREAM_NAME;
 
         /**
          *  Sets the <code>logStream</code> configuration property.
@@ -256,7 +270,7 @@ extends AbstractAppender
 
 
         @PluginBuilderAttribute("retentionPeriod")
-        private Integer retentionPeriod;
+        private Integer retentionPeriod = CloudWatchWriterConfig.DEFAULT_RETENTION_PERIOD;
 
         /**
          *  Sets the <code>retentionPeriod</code> configuration property.
@@ -281,7 +295,7 @@ extends AbstractAppender
 
 
         @PluginBuilderAttribute("dedicatedWriter")
-        private boolean dedicatedWriter = true;
+        private boolean dedicatedWriter = CloudWatchWriterConfig.DEFAULT_DEDICATED_WRITER;
 
         /**
          *  Sets the <code>dedicatedWriter</code> configuration property.
@@ -345,8 +359,11 @@ extends AbstractAppender
     @Override
     protected CloudWatchWriterConfig generateWriterConfig()
     {
+        // note to future me: Log4J2 does its own thing with configuration
+
         StrSubstitutor l4jsubs = appenderConfig.getConfiguration().getStrSubstitutor();
         Substitutions subs     = new Substitutions(new Date(), 0);
+
         String actualLogGroup  = subs.perform(l4jsubs.replace(appenderConfig.getLogGroup()));
         String actualLogStream = subs.perform(l4jsubs.replace(appenderConfig.getLogStream()));
 

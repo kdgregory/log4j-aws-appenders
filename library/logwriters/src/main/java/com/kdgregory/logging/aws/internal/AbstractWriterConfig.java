@@ -25,17 +25,48 @@ import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
  *  runtime.
  */
 public class AbstractWriterConfig<T extends AbstractWriterConfig<T>>
+implements Cloneable
 {
-    private boolean                 truncateOversizeMessages;
-    private boolean                 isSynchronous;
-    private volatile long           batchDelay;
-    private volatile int            discardThreshold;
-    private volatile DiscardAction  discardAction;
-    private String                  clientFactoryMethod;
-    private String                  assumedRole;
-    private String                  clientRegion;
-    private String                  clientEndpoint;
-    private boolean                 useShowdownHook;
+    public final static boolean         DEFAULT_TRUNCATE_OVERSIZE       = true;
+    public final static boolean         DEFAULT_IS_SYNCHRONOUS          = false;    // making this explicit
+    public final static long            DEFAULT_BATCH_DELAY             = 2000;
+    public final static int             DEFAULT_DISCARD_THRESHOLD       = 10000;
+    public final static DiscardAction   DEFAULT_DISCARD_ACTION          = DiscardAction.oldest;
+    public final static boolean         DEFAULT_USE_SHUTDOWN_HOOK       = true;
+
+
+    private boolean                     truncateOversizeMessages        = DEFAULT_TRUNCATE_OVERSIZE;
+    private boolean                     isSynchronous                   = DEFAULT_IS_SYNCHRONOUS;
+    private volatile long               batchDelay                      = DEFAULT_BATCH_DELAY;
+    private volatile int                discardThreshold                = DEFAULT_DISCARD_THRESHOLD;
+    private volatile DiscardAction      discardAction                   = DEFAULT_DISCARD_ACTION;
+    private String                      clientFactoryMethod;
+    private String                      assumedRole;
+    private String                      clientRegion;
+    private String                      clientEndpoint;
+    private boolean                     useShutdownHook                 = DEFAULT_USE_SHUTDOWN_HOOK;
+    private long                        initializationTimeout;
+
+
+    protected AbstractWriterConfig(long initializationTimeout)
+    {
+        // subclasses will specify their own default timeout
+        this.initializationTimeout = initializationTimeout;
+    }
+
+
+    @Override
+    public AbstractWriterConfig<T> clone()
+    {
+        try
+        {
+            return (AbstractWriterConfig<T>)super.clone();
+        }
+        catch (CloneNotSupportedException e)
+        {
+            throw new RuntimeException("failed to expose Object.clone(); should never happen", e);
+        }
+    }
 
 
     public boolean getTruncateOversizeMessages()
@@ -58,6 +89,16 @@ public class AbstractWriterConfig<T extends AbstractWriterConfig<T>>
     public T setSynchronousMode(boolean value)
     {
         isSynchronous = value;
+
+        if (isSynchronous)
+        {
+            batchDelay = 0;
+        }
+        else if (batchDelay == 0)
+        {
+            batchDelay = DEFAULT_BATCH_DELAY;
+        }
+
         return (T)this;
     }
 
@@ -69,6 +110,10 @@ public class AbstractWriterConfig<T extends AbstractWriterConfig<T>>
 
     public T setBatchDelay(long value)
     {
+        if (isSynchronous)
+        {
+            value = 0;
+        }
         batchDelay = value;
         return (T)this;
     }
@@ -148,12 +193,24 @@ public class AbstractWriterConfig<T extends AbstractWriterConfig<T>>
 
     public boolean getUseShutdownHook()
     {
-        return useShowdownHook;
+        return useShutdownHook;
     }
 
     public T setUseShutdownHook(boolean value)
     {
-        useShowdownHook = value;
+        useShutdownHook = value;
+        return (T)this;
+    }
+
+
+    public long getInitializationTimeout()
+    {
+        return initializationTimeout;
+    }
+
+    public T setInitializationTimeout(long value)
+    {
+        initializationTimeout = value;
         return (T)this;
     }
 }

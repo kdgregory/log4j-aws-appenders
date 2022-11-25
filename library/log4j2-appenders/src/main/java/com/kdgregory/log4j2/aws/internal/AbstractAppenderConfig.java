@@ -36,6 +36,7 @@ public interface AbstractAppenderConfig
     String getDiscardAction();
     boolean isSynchronous();
     boolean isUseShutdownHook();    // yeah, I hate that name too
+    long getInitializationTimeout();
 
     String getAssumedRole();
     String getClientFactory();

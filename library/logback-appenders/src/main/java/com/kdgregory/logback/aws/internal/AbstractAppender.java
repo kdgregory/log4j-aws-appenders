@@ -88,38 +88,25 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
 
     private Object initializationLock = new Object();
 
-    // all member vars below this point are shared configuration
+    // appender configuration; subclass passes instance to constructor, clones for writer
 
-    protected boolean                   synchronous;
-    protected long                      batchDelay;
-    protected boolean                   truncateOversizeMessages;
-    protected int                       discardThreshold;
-    protected DiscardAction             discardAction;
-    protected String                    assumedRole;
-    protected String                    clientFactory;
-    protected String                    clientRegion;
-    protected String                    clientEndpoint;
-    protected boolean                   useShutdownHook;
+    protected WriterConfigType appenderConfig;
 
 
     public AbstractAppender(
+        WriterConfigType appenderConfig,
         ThreadFactory threadFactory,
         WriterFactory<WriterConfigType,AppenderStatsType> writerFactory,
         AppenderStatsType appenderStats,
         Class<AppenderStatsMXBeanType> appenderStatsMXBeanClass)
     {
+        this.appenderConfig = appenderConfig;
         this.threadFactory = threadFactory;
         this.writerFactory = writerFactory;
         this.appenderStats = appenderStats;
         this.appenderStatsMXBeanClass = appenderStatsMXBeanClass;
 
         this.internalLogger = new LogbackInternalLogger(this);
-
-        batchDelay = 2000;
-        truncateOversizeMessages = true;
-        discardThreshold = 10000;
-        discardAction = DiscardAction.oldest;
-        useShutdownHook = true;
     }
 
 //----------------------------------------------------------------------------
@@ -152,12 +139,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
         if (writer != null)
             throw new IllegalStateException("can not set synchronous mode once writer created");
 
-        this.synchronous = value;
-
-        if (this.synchronous)
-        {
-            this.batchDelay = 0;
-        }
+        appenderConfig.setSynchronousMode(value);
     }
 
 
@@ -166,7 +148,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public boolean getSynchronous()
     {
-        return this.synchronous;
+        return appenderConfig.getSynchronousMode();
     }
 
 
@@ -175,10 +157,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public void setBatchDelay(long value)
     {
-        if (this.synchronous)
-            return;
-
-        this.batchDelay = value;
+        appenderConfig.setBatchDelay(value);
         if (writer != null)
         {
             writer.setBatchDelay(value);
@@ -191,7 +170,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public long getBatchDelay()
     {
-        return batchDelay;
+        return appenderConfig.getBatchDelay();
     }
 
 
@@ -200,7 +179,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public void setTruncateOversizeMessages(boolean value)
     {
-        this.truncateOversizeMessages = value;
+        appenderConfig.setTruncateOversizeMessages(value);
     }
 
 
@@ -209,7 +188,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public boolean getTruncateOversizeMessages()
     {
-        return this.truncateOversizeMessages;
+        return appenderConfig.getTruncateOversizeMessages();
     }
 
 
@@ -218,7 +197,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public void setDiscardThreshold(int value)
     {
-        this.discardThreshold = value;
+        appenderConfig.setDiscardThreshold(value);
         if (writer != null)
         {
             writer.setDiscardThreshold(value);
@@ -231,7 +210,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public int getDiscardThreshold()
     {
-        return discardThreshold;
+        return appenderConfig.getDiscardThreshold();
     }
 
 
@@ -247,12 +226,11 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
             return;
         }
 
+        appenderConfig.setDiscardAction(tmpDiscardAction);
         if (writer != null)
         {
             writer.setDiscardAction(tmpDiscardAction);
         }
-
-        discardAction = tmpDiscardAction;
     }
 
 
@@ -261,7 +239,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public String getDiscardAction()
     {
-        return discardAction.toString();
+        return appenderConfig.getDiscardAction().toString();
     }
 
 
@@ -273,7 +251,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public void setAssumedRole(String value)
     {
-        assumedRole = value;
+        appenderConfig.setAssumedRole(value);
     }
 
     /**
@@ -281,7 +259,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public String getAssumedRole()
     {
-        return assumedRole;
+        return appenderConfig.getAssumedRole();
     }
 
 
@@ -293,7 +271,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public void setClientFactory(String value)
     {
-        clientFactory = value;
+        appenderConfig.setClientFactoryMethod(value);
     }
 
 
@@ -302,7 +280,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public String getClientFactory()
     {
-        return clientFactory;
+        return appenderConfig.getClientFactoryMethod();
     }
 
 
@@ -311,7 +289,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public void setClientRegion(String value)
     {
-        this.clientRegion = value;
+        appenderConfig.setClientRegion(value);
     }
 
 
@@ -320,7 +298,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public String getClientRegion()
     {
-        return clientRegion;
+        return appenderConfig.getClientRegion();
     }
 
 
@@ -329,7 +307,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public void setClientEndpoint(String value)
     {
-        this.clientEndpoint = value;
+        appenderConfig.setClientEndpoint(value);
     }
 
 
@@ -338,7 +316,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public String getClientEndpoint()
     {
-        return clientEndpoint;
+        return appenderConfig.getClientEndpoint();
     }
 
 
@@ -347,7 +325,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public void setUseShutdownHook(boolean value)
     {
-        this.useShutdownHook = value;
+        appenderConfig.setUseShutdownHook(value);
     }
 
 
@@ -356,7 +334,25 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     public boolean getUseShutdownHook()
     {
-        return this.useShutdownHook;
+        return appenderConfig.getUseShutdownHook();
+    }
+
+
+    /**
+     *  Sets the <code>initializationTimeout</code> configuration property.
+     */
+    public void setInitializationTimeout(long value)
+    {
+        appenderConfig.setInitializationTimeout(value);
+    }
+
+
+    /**
+     *  Returns the <code>initializationTimeout</code> configuration property.
+     */
+    public long getInitializationTimeout()
+    {
+        return appenderConfig.getInitializationTimeout();
     }
 
 //----------------------------------------------------------------------------
@@ -468,23 +464,13 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
      */
     private void startWriter()
     {
-        WriterConfigType config = generateWriterConfig()
-                                  .setTruncateOversizeMessages(truncateOversizeMessages)
-                                  .setBatchDelay(batchDelay)
-                                  .setDiscardThreshold(discardThreshold)
-                                  .setDiscardAction(discardAction)
-                                  .setClientFactoryMethod(clientFactory)
-                                  .setAssumedRole(assumedRole)
-                                  .setClientRegion(clientRegion)
-                                  .setClientEndpoint(clientEndpoint)
-                                  .setSynchronousMode(synchronous)
-                                  .setUseShutdownHook(useShutdownHook);
+        WriterConfigType actualConfig = generateWriterConfig();
 
         synchronized (initializationLock)
         {
             try
             {
-                writer = writerFactory.newLogWriter(config, appenderStats, internalLogger);
+                writer = writerFactory.newLogWriter(actualConfig, appenderStats, internalLogger);
                 threadFactory.startWriterThread(writer, new UncaughtExceptionHandler()
                 {
                     @Override
@@ -495,12 +481,6 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
                         writer = null;
                     }
                 });
-
-                if (! writer.waitUntilInitialized(60000))
-                {
-                    internalLogger.error("writer initialization timed out", null);
-                    return;
-                }
 
                 if (layout.getFileHeader() != null)
                 {
@@ -533,7 +513,7 @@ extends UnsynchronizedAppenderBase<LogbackEventType>
                 }
 
                 writer.stop();
-                writer.waitUntilStopped(batchDelay * 2);
+                writer.waitUntilStopped(appenderConfig.getBatchDelay() * 2);
             }
             catch (Exception ex)
             {

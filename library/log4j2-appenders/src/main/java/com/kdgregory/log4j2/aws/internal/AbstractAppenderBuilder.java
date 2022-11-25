@@ -21,7 +21,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 
-import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
+import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 
 
 /**
@@ -78,7 +78,7 @@ implements AbstractAppenderConfig
 
 
     @PluginBuilderAttribute("synchronous")
-    private boolean synchronous;
+    private boolean synchronous = AbstractWriterConfig.DEFAULT_IS_SYNCHRONOUS;
 
     @Override
     public boolean isSynchronous()
@@ -94,7 +94,7 @@ implements AbstractAppenderConfig
 
 
     @PluginBuilderAttribute("batchDelay")
-    private long batchDelay = 2000;
+    private long batchDelay = AbstractWriterConfig.DEFAULT_BATCH_DELAY;
 
     /**
      *  Sets the <code>batchDelay</code> configuration property.
@@ -116,7 +116,7 @@ implements AbstractAppenderConfig
 
 
     @PluginBuilderAttribute("truncateOversizeMessages")
-    private boolean truncateOversizeMessages = true;
+    private boolean truncateOversizeMessages = AbstractWriterConfig.DEFAULT_TRUNCATE_OVERSIZE;
 
 
     /**
@@ -139,7 +139,7 @@ implements AbstractAppenderConfig
 
 
     @PluginBuilderAttribute("discardThreshold")
-    private int discardThreshold = 10000;
+    private int discardThreshold = AbstractWriterConfig.DEFAULT_DISCARD_THRESHOLD;
 
     /**
      *  Sets the <code>discardThreshold</code> configuration property.
@@ -161,7 +161,7 @@ implements AbstractAppenderConfig
 
 
     @PluginBuilderAttribute("discardAction")
-    private String discardAction = DiscardAction.oldest.name();
+    private String discardAction = AbstractWriterConfig.DEFAULT_DISCARD_ACTION.name();
 
     /**
      *  Sets the <code>discardAction</code> configuration property.
@@ -271,7 +271,7 @@ implements AbstractAppenderConfig
 
 
     @PluginBuilderAttribute("useShutdownHook")
-    private boolean useShutdownHook = true;
+    private boolean useShutdownHook = AbstractWriterConfig.DEFAULT_USE_SHUTDOWN_HOOK;
 
     /**
      *  Sets the <code>useShutdownHook</code> configuration property.
@@ -289,5 +289,27 @@ implements AbstractAppenderConfig
     public boolean isUseShutdownHook()
     {
         return useShutdownHook;
+    }
+
+
+    @PluginBuilderAttribute("initializationTimeout")
+    private long initializationTimeout = 60000; // will be overridden by subclasses
+
+    /**
+     *  Sets the <code>initializationTimeout</code> configuration property.
+     */
+    public T setInitializationTimeout(long value)
+    {
+        this.initializationTimeout = value;
+        return (T)this;
+    }
+
+    /**
+     *  Returns the <code>initializationTimeout</code> configuration property.
+     */
+    @Override
+    public long getInitializationTimeout()
+    {
+        return initializationTimeout;
     }
 }

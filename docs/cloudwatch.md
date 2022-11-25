@@ -24,6 +24,7 @@ Name                        | Description
 `discardThreshold`          | The maximum number of messages that can remain queued before they're discarded; default is 10,000. See the [design doc](design.md#message-discard) for more information.
 `discardAction`             | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
 `useShutdownHook`           | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default; set to `false` to disable. Ignored for Log4J2, which has its own shutdown hook. See [docs](design.md#shutdown) for more information.
+`initializationTimeout`     | The number of milliseconds to wait for initialization; default is 60000 (60 seconds). See [docs](design.md#initialization) for more information.
 
 
 ### Example: Log4J 1.x

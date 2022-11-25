@@ -14,6 +14,8 @@
 
 package com.kdgregory.logging.aws.cloudwatch;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -23,30 +25,38 @@ import com.kdgregory.logging.aws.facade.CloudWatchFacadeException;
 import com.kdgregory.logging.aws.internal.AbstractLogWriter;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.util.InternalLogger;
-import com.kdgregory.logging.common.util.RetryManager;
+import com.kdgregory.logging.common.util.RetryManager2;
 
 
 /**
  *  Writes messages to a CloudWatch log stream. Auto-create both group and stream
  *  if they do not exist, and re-creates them if they're deleted during operation.
+ *  <p>
+ *  Implementation note: the various retry managers are exposed so that tests can
+ *  replace them with shorter delays.
  */
 public class CloudWatchLogWriter
 extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
 {
+    // setting the sequence token to this value triggers retrieval
+    private final static String SEQUENCE_TOKEN_FLAG_VALUE = "";
+
     // passed into constructor
     private CloudWatchFacade facade;
 
-    // controls retries for describing stream and group
-    protected RetryManager describeRetry = new RetryManager(50, 5000, true);
+    // this controls the retries for DescribeLogGroup and DescribeLogStream
+    protected RetryManager2 describeRetry = new RetryManager2("describe", Duration.ofMillis(50), true, true);
 
-    // controls retries for group and stream creation
-    protected RetryManager createRetry = new RetryManager(200, 5000, true);
+    // this controls the retries for creating and configuring groups and streams
+    protected RetryManager2 createRetry = new RetryManager2("create", Duration.ofMillis(200), true, true);
 
-    // controls retries for sending messages to CloudWatch
-    protected RetryManager sendRetry = new RetryManager(200, 2000, true);
+    // these control the retries for PutEvents; note that sends use a duration-based timeout
+    protected Duration sendTimeout = Duration.ofMillis(2000);
+    protected RetryManager2 sendRetry = new RetryManager2("send", Duration.ofMillis(200), true, false);
+    
+    // cache for sequence tokens when using a dedicated writer; also used as a flag to trigger retrieve
+    private String sequenceToken = SEQUENCE_TOKEN_FLAG_VALUE;
 
-    // cache for sequence tokens when using a dedicated writer
-    private String sequenceToken;
 
     public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger logger, CloudWatchFacade facade)
     {
@@ -83,15 +93,19 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
             return false;
         }
 
+        Instant timeoutAt = Instant.now().plusMillis(config.getInitializationTimeout());
+
         try
         {
-            if (facade.findLogGroup() == null)
-                createLogGroup();
+            logger.debug("checking for existence of CloudWatch log group: " + config.getLogGroupName());
+            if (facade.findLogGroup() == null)  // will throw if no network connection
+                createLogGroup(timeoutAt);
             else
                 logger.debug("using existing CloudWatch log group: " + config.getLogGroupName());
 
-            if (facade.retrieveSequenceToken() == null)
-                createLogStream();
+            logger.debug("checking for existence of CloudWatch log stream: " + config.getLogStreamName());
+            if (facade.findLogStream() == null)
+                createLogStream(timeoutAt);
             else
                 logger.debug("using existing CloudWatch log stream: " + config.getLogStreamName());
 
@@ -99,7 +113,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
         }
         catch (Throwable ex)
         {
-            reportError("unable to configure log group/stream", ex);
+            reportError("exception during initialization", ex);
             return false;
         }
     }
@@ -113,11 +127,12 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
 
         Collections.sort(batch);
 
-        List<LogMessage> result = sendRetry.invoke(() ->
+        Instant timeoutAt = Instant.now().plus(sendTimeout);
+        List<LogMessage> result = sendRetry.invoke(timeoutAt, () ->
         {
             try
             {
-                sequenceToken = facade.putEvents(nextSequenceToken(), batch);
+                sequenceToken = facade.putEvents(retrieveSequenceToken(timeoutAt), batch);
                 return Collections.emptyList();
             }
             catch (CloudWatchFacadeException ex)
@@ -129,7 +144,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
                         return null;
                     case INVALID_SEQUENCE_TOKEN:
                         // force the token to be fetched next time through
-                        sequenceToken = null;
+                        sequenceToken = SEQUENCE_TOKEN_FLAG_VALUE;
                         stats.updateWriterRaceRetries();
                         return null;
                     case ALREADY_PROCESSED:
@@ -152,7 +167,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
             return result;
 
         // if we get here we timed-out, need to figure out cause
-        if (sequenceToken == null)
+        if (sequenceToken == SEQUENCE_TOKEN_FLAG_VALUE)
         {
             logger.warn("batch failed: unrecovered sequence token race");
             stats.updateUnrecoveredWriterRaceRetries();
@@ -199,15 +214,17 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
 //  Internals
 //----------------------------------------------------------------------------
 
-    private void createLogGroup()
+    private void createLogGroup(Instant timeoutAt)
     {
         logger.debug("creating CloudWatch log group: " + config.getLogGroupName());
 
-        createRetry.invoke(() -> { facade.createLogGroup(); return Boolean.TRUE; },
+        createRetry.invoke(timeoutAt,
+                           () -> { facade.createLogGroup(); return Boolean.TRUE; },
                            new DefaultExceptionHandler());
 
-        // the group isn't immediately ready for use after creation, so wait until it is
-        String logGroupArn = describeRetry.invoke(() -> facade.findLogGroup());
+        // wait for the log group to be created, throw if it never is
+        String logGroupArn = describeRetry.invoke(timeoutAt, () -> facade.findLogGroup());
+        
         if (logGroupArn == null)
         {
             throw new RuntimeException("timed out while waiting for CloudWatch log group");
@@ -230,24 +247,27 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
     }
 
 
-    private void createLogStream()
+    private void createLogStream(Instant timeoutAt)
     {
         logger.debug("creating CloudWatch log stream: " + config.getLogStreamName());
 
-        createRetry.invoke(() -> { facade.createLogStream(); return Boolean.TRUE; },
+        createRetry.invoke(timeoutAt,
+                           () -> { facade.createLogStream(); return Boolean.TRUE; },
                            new DefaultExceptionHandler());
+        
+        // wait for the log stream to be created, throw if it never happens
+        describeRetry.invoke(timeoutAt, () -> facade.findLogStream());
 
-        // force a retrieve, and wait until it returns something
+        // new log streams return a null sequence token
         sequenceToken = null;
-        nextSequenceToken();
     }
 
 
-    private String nextSequenceToken()
+    private String retrieveSequenceToken(Instant timeoutAt)
     {
-        if ((! config.getDedicatedWriter()) || (sequenceToken == null))
+        if ((! config.getDedicatedWriter()) || (sequenceToken == SEQUENCE_TOKEN_FLAG_VALUE))
         {
-            sequenceToken = describeRetry.invoke(() -> facade.retrieveSequenceToken());
+            sequenceToken = describeRetry.invoke(timeoutAt, () -> facade.retrieveSequenceToken());
         }
 
         return sequenceToken;

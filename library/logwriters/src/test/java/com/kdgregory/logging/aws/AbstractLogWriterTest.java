@@ -47,6 +47,13 @@ public abstract class AbstractLogWriterTest
     protected TestableInternalLogger internalLogger = new TestableInternalLogger();
 
     /**
+     *  The millis that createWriter() will wait for the writer to be initialized.
+     *  This should be used to set the initializationTimeout config property, may
+     *  be changed if the test needs more time.
+     */
+    protected long startupWaitTime = 5000;
+
+    /**
      *  Default configuration is set in setUp(), potentially overridden by tests.
      */
     protected ConfigType config;
@@ -99,7 +106,7 @@ public abstract class AbstractLogWriterTest
 
         new DefaultThreadFactory("test").startWriterThread(writer, defaultUncaughtExceptionHandler);
 
-        assertTrue("writer running", writer.waitUntilInitialized(5000));
+        assertTrue("writer running", writer.waitUntilInitialized(startupWaitTime));
     }
 
 

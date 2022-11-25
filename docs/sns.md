@@ -31,6 +31,7 @@ Name                        | Description
 `discardThreshold`          | The maximum number of messages that can remain queued before they're discarded; default is 10,000. See the [design doc](design.md#message-discard) for more information.
 `discardAction`             | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
 `useShutdownHook`           | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default; set to `false` to disable. Ignored for Log4J2, which has its own shutdown hook. See [docs](design.md#shutdown) for more information.
+`initializationTimeout`     | The number of milliseconds to wait for initialization; default is 30000 (30 seconds). See [docs](design.md#initialization) for more information.
 
 Note: the `batchDelay` parameter exists but is ignored; the SNS appender attempts to send messages immediately.
 
@@ -52,7 +53,7 @@ log4j.appender.sns.layout.ConversionPattern=%d %c - %m%n
 
 ### Example: Log4J2
 
-Note: the `ThresholdFilter` ensures that this appender only receives ERROR-level messages.
+Note: the `ThresholdFilter` element ensures that this appender only receives ERROR-level messages.
 
 Note also that this example uses a Log4J [lookup](https://logging.apache.org/log4j/2.x/manual/lookups.html#EnvironmentLookup)
 for the application name rather than the library-provided substitutions.

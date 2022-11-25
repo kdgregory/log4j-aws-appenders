@@ -57,6 +57,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("client factory",          "com.example.Foo.bar",          appender.getConfig().getClientFactory());
         assertEquals("client region",           "us-west-1",                    appender.getConfig().getClientRegion());
         assertEquals("client endpoint",         "logs.us-west-2.amazonaws.com", appender.getConfig().getClientEndpoint());
+        assertEquals("initialization timeout",  20000,                          appender.getConfig().getInitializationTimeout());
 
         // this appender holds retention period separate from configuration, so check it separately
 
@@ -84,6 +85,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("client factory",          null,                           appender.getConfig().getClientFactory());
         assertEquals("client region",           null,                           appender.getConfig().getClientRegion());
         assertEquals("client endpoint",         null,                           appender.getConfig().getClientEndpoint());
+        assertEquals("initialization timeout",  60000,                          appender.getConfig().getInitializationTimeout());
 
         // the appender holds retention period separate from configuration, so check it separately
 
@@ -203,7 +205,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         MockCloudWatchWriter writer = appender.getMockWriter();
 
         assertEquals("writer log group name",       "example",                  writer.config.getLogGroupName());
-        assertRegex("writer log stream name",       "[0-9]{1,5}-[0-9]{1,5}",    writer.config.getLogStreamName());
+        assertRegex("writer log stream name",       "[0-9]{1,6}-[0-9]{1,6}",    writer.config.getLogStreamName());
 
         // no reason to think that any of the other writer config will be different from prior test
     }

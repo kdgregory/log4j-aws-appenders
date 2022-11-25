@@ -47,21 +47,22 @@ extends AbstractUnitTest<TestableKinesisAppender>
     {
         initialize("testConfiguration");
 
-        assertEquals("stream name",         "argle-{bargle}",                   appender.getConfig().getStreamName());
-        assertEquals("partition key",       "foo-{date}",                       appender.getConfig().getPartitionKey());
-        assertTrue("autoCreate",                                                appender.getConfig().getAutoCreate());
-        assertEquals("shard count",         7,                                  appender.getConfig().getShardCount());
-        assertEquals("retention period",    Integer.valueOf(48),                appender.getConfig().getRetentionPeriod());
-        assertEquals("max delay",           1234L,                              appender.getConfig().getBatchDelay());
-        assertFalse("truncate oversize messages",                               appender.getConfig().getTruncateOversizeMessages());
-        assertEquals("discard threshold",   54321,                              appender.getConfig().getDiscardThreshold());
-        assertEquals("discard action",      "newest",                           appender.getConfig().getDiscardAction());
-        assertFalse("synchronous mode",                                         appender.getConfig().isSynchronous());
-        assertFalse("use shutdown hook",                                        appender.getConfig().isUseShutdownHook());
-        assertEquals("assumed role",        "AssumableRole",                    appender.getConfig().getAssumedRole());
-        assertEquals("client factory",      "com.example.Foo.bar",              appender.getConfig().getClientFactory());
-        assertEquals("client region",       "us-west-1",                        appender.getConfig().getClientRegion());
-        assertEquals("client endpoint",     "kinesis.us-west-2.amazonaws.com",  appender.getConfig().getClientEndpoint());
+        assertEquals("stream name",             "argle-{bargle}",                   appender.getConfig().getStreamName());
+        assertEquals("partition key",           "foo-{date}",                       appender.getConfig().getPartitionKey());
+        assertTrue("autoCreate",                                                    appender.getConfig().getAutoCreate());
+        assertEquals("shard count",             7,                                  appender.getConfig().getShardCount());
+        assertEquals("retention period",        Integer.valueOf(48),                appender.getConfig().getRetentionPeriod());
+        assertEquals("max delay",               1234L,                              appender.getConfig().getBatchDelay());
+        assertFalse("truncate oversize messages",                                   appender.getConfig().getTruncateOversizeMessages());
+        assertEquals("discard threshold",       54321,                              appender.getConfig().getDiscardThreshold());
+        assertEquals("discard action",          "newest",                           appender.getConfig().getDiscardAction());
+        assertFalse("synchronous mode",                                             appender.getConfig().isSynchronous());
+        assertFalse("use shutdown hook",                                            appender.getConfig().isUseShutdownHook());
+        assertEquals("assumed role",            "AssumableRole",                    appender.getConfig().getAssumedRole());
+        assertEquals("client factory",          "com.example.Foo.bar",              appender.getConfig().getClientFactory());
+        assertEquals("client region",           "us-west-1",                        appender.getConfig().getClientRegion());
+        assertEquals("client endpoint",         "kinesis.us-west-2.amazonaws.com",  appender.getConfig().getClientEndpoint());
+        assertEquals("initialization timeout",  30000,                              appender.getConfig().getInitializationTimeout());
     }
 
 
@@ -71,20 +72,21 @@ extends AbstractUnitTest<TestableKinesisAppender>
         initialize("testDefaultConfiguration");
 
         // can't test stream name because there's no default
-        assertEquals("partition key",       "{startupTimestamp}",               appender.getConfig().getPartitionKey());
-        assertFalse("autoCreate",                                               appender.getConfig().getAutoCreate());
-        assertEquals("shard count",         1,                                  appender.getConfig().getShardCount());
-        assertEquals("retention period",    Integer.valueOf(24),                appender.getConfig().getRetentionPeriod());
-        assertEquals("max delay",           2000L,                              appender.getConfig().getBatchDelay());
-        assertTrue("truncate oversize messages",                                appender.getConfig().getTruncateOversizeMessages());
-        assertEquals("discard threshold",   10000,                              appender.getConfig().getDiscardThreshold());
-        assertEquals("discard action",      "oldest",                           appender.getConfig().getDiscardAction());
-        assertFalse("synchronous mode",                                         appender.getConfig().isSynchronous());
-        assertTrue("use shutdown hook",                                         appender.getConfig().isUseShutdownHook());
-        assertEquals("assumed role",        null,                               appender.getConfig().getAssumedRole());
-        assertEquals("client factory",      null,                               appender.getConfig().getClientFactory());
-        assertEquals("client region",       null,                               appender.getConfig().getClientRegion());
-        assertEquals("client endpoint",     null,                               appender.getConfig().getClientEndpoint());
+        assertEquals("partition key",       "{startupTimestamp}",                   appender.getConfig().getPartitionKey());
+        assertFalse("autoCreate",                                                   appender.getConfig().getAutoCreate());
+        assertEquals("shard count",             1,                                  appender.getConfig().getShardCount());
+        assertEquals("retention period",        Integer.valueOf(24),                appender.getConfig().getRetentionPeriod());
+        assertEquals("max delay",               2000L,                              appender.getConfig().getBatchDelay());
+        assertTrue("truncate oversize messages",                                    appender.getConfig().getTruncateOversizeMessages());
+        assertEquals("discard threshold",       10000,                              appender.getConfig().getDiscardThreshold());
+        assertEquals("discard action",          "oldest",                           appender.getConfig().getDiscardAction());
+        assertFalse("synchronous mode",                                             appender.getConfig().isSynchronous());
+        assertTrue("use shutdown hook",                                             appender.getConfig().isUseShutdownHook());
+        assertEquals("assumed role",            null,                               appender.getConfig().getAssumedRole());
+        assertEquals("client factory",          null,                               appender.getConfig().getClientFactory());
+        assertEquals("client region",           null,                               appender.getConfig().getClientRegion());
+        assertEquals("client endpoint",         null,                               appender.getConfig().getClientEndpoint());
+        assertEquals("initialization timeout",  120000,                             appender.getConfig().getInitializationTimeout());
     }
 
 
@@ -183,7 +185,7 @@ extends AbstractUnitTest<TestableKinesisAppender>
         MockKinesisWriter writer = appender.getMockWriter();
 
         assertEquals("writer log group name",       "example",                  writer.config.getStreamName());
-        assertRegex("writer log stream name",       "[0-9]{1,5}-[0-9]{1,5}",    writer.config.getPartitionKey());
+        assertRegex("writer log stream name",       "[0-9]{1,6}-[0-9]{1,6}",    writer.config.getPartitionKey());
 
         // we'll assume everything else was set as in above test
     }

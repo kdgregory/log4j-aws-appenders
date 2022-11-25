@@ -45,7 +45,10 @@ public class TestClientFactory
     private static class TestWriterConfig
     extends AbstractWriterConfig<TestWriterConfig>
     {
-        // nothing here
+        public TestWriterConfig()
+        {
+            super(60000);   // an arbitrary initialization timeout
+        }
     }
 
 //----------------------------------------------------------------------------

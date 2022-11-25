@@ -131,6 +131,14 @@ import com.kdgregory.logging.common.util.InternalLogger;
  *           a VPC, when the normal endpoint is not available.
  *
  *  <tr VALIGN="top">
+ *      <th> initializationTimeout
+ *      <td> Milliseconds to wait for appender to initialize. If this timeout expires,
+ *           the appender will shut down its writer thread and discard any future log
+ *           events. The only reason to change this is if you're deploying to a high-
+ *           contention environment (and even then, the default of 60 seconds should be
+ *           more than enough).
+ *
+ *  <tr VALIGN="top">
  *      <th> useShutdownHook
  *      <td> This exists for consistency with other appenders but ignored; Log4J2 provides
  *           its own shutdown hooks.
@@ -162,12 +170,10 @@ extends AbstractAppender
     extends AbstractAppenderBuilder<SNSAppenderBuilder>
     implements SNSAppenderConfig, org.apache.logging.log4j.core.util.Builder<SNSAppender>
     {
-        // this appender has different defaults than others, and while I could
-        // have created an arg-taking constructor for AbstractAppenderBuilder,
-        // I'm a little worred that Log4J might try to do something bizarre
         public SNSAppenderBuilder()
         {
             setDiscardThreshold(1000);
+            setInitializationTimeout(SNSWriterConfig.DEFAULT_INITIALIZATION_TIMEOUT);
         }
 
         @PluginBuilderAttribute("name")
@@ -322,6 +328,8 @@ extends AbstractAppender
     @Override
     protected SNSWriterConfig generateWriterConfig()
     {
+        // note to future me: Log4J2 does its own thing with configuration
+
         StrSubstitutor l4jsubs  = appenderConfig.getConfiguration().getStrSubstitutor();
         Substitutions subs      = new Substitutions(new Date(), 0);
 

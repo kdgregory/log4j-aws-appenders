@@ -27,10 +27,23 @@ import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 public class CloudWatchWriterConfig
 extends AbstractWriterConfig<CloudWatchWriterConfig>
 {
-    private String  logGroupName;
-    private String  logStreamName;
-    private Integer retentionPeriod;
-    private boolean dedicatedWriter;
+    public final static long            DEFAULT_INITIALIZATION_TIMEOUT  = 60000;
+
+    public final static String          DEFAULT_LOG_STREAM_NAME     = "{startupTimestamp}";
+    public final static Integer         DEFAULT_RETENTION_PERIOD    = null; // unlimited
+    public final static boolean         DEFAULT_DEDICATED_WRITER    = true;
+
+
+    private String                      logGroupName;
+    private String                      logStreamName               = DEFAULT_LOG_STREAM_NAME;
+    private Integer                     retentionPeriod             = DEFAULT_RETENTION_PERIOD;
+    private boolean                     dedicatedWriter             = DEFAULT_DEDICATED_WRITER;
+
+
+    public CloudWatchWriterConfig()
+    {
+        super(DEFAULT_INITIALIZATION_TIMEOUT);
+    }
 
 
     public String getLogGroupName()

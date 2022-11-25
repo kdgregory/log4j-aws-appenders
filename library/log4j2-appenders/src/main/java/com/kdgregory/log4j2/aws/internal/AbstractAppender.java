@@ -124,7 +124,6 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
         }
     }
 
-
 //----------------------------------------------------------------------------
 //  Other accessors
 //----------------------------------------------------------------------------
@@ -149,7 +148,6 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
 //----------------------------------------------------------------------------
 //  Appender implementation
 //----------------------------------------------------------------------------
-
 
     @Override
     public void start()
@@ -257,7 +255,8 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
                 .setClientFactoryMethod(appenderConfig.getClientFactory())
                 .setAssumedRole(appenderConfig.getAssumedRole())
                 .setClientRegion(appenderConfig.getClientRegion())
-                .setClientEndpoint(appenderConfig.getClientEndpoint());
+                .setClientEndpoint(appenderConfig.getClientEndpoint())
+                .setInitializationTimeout(appenderConfig.getInitializationTimeout());
 
         synchronized (initializationLock)
         {
@@ -274,12 +273,6 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
                         writer = null;
                     }
                 });
-
-                if (! writer.waitUntilInitialized(60000))
-                {
-                    internalLogger.error("writer initialization timed out", null);
-                    return;
-                }
 
                 if (getLayout().getHeader() != null)
                 {

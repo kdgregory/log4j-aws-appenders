@@ -47,9 +47,8 @@ public class TestCloudWatchWriterConfig
         CloudWatchWriterConfig config = new CloudWatchWriterConfig();
 
         List<String> result = config.validate();
-        assertEquals("number of messages",  2,                          result.size());
+        assertEquals("number of messages",  1,                          result.size());
         assertEquals("message 0",           "missing log group name",   result.get(0));
-        assertEquals("message 1",           "missing log stream name",  result.get(1));
     }
 
 

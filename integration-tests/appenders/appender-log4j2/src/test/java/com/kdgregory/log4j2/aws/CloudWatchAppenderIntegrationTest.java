@@ -41,6 +41,7 @@ import com.kdgregory.log4j2.aws.testhelpers.MessageWriter;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -287,6 +288,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
 //----------------------------------------------------------------------------
 
     @Test
+    @Ignore("FIXME - disabled until #170")
     public void testSynchronousModeSingleThread() throws Exception
     {
         init("testSynchronousModeSingleThread");
@@ -295,6 +297,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
 
 
     @Test
+    @Ignore("FIXME - disabled until #170")
     public void testSynchronousModeMultiThread() throws Exception
     {
         init("testSynchronousModeMultiThread");

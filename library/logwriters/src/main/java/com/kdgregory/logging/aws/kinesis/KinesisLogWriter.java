@@ -14,6 +14,8 @@
 
 package com.kdgregory.logging.aws.kinesis;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -24,12 +26,14 @@ import com.kdgregory.logging.aws.internal.AbstractLogWriter;
 import com.kdgregory.logging.aws.kinesis.KinesisConstants.StreamStatus;
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.util.InternalLogger;
-import com.kdgregory.logging.common.util.RetryManager;
+import com.kdgregory.logging.common.util.RetryManager2;
 
 
 /**
  *  Writes log messages to a Kinesis stream. Optionally creates the stream at
  *  startup, but will fail if the stream is deleted during operation.
+ *  <p>
+ *  Implementation note: protected instance variables are replaced by tests.
  */
 public class KinesisLogWriter
 extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics>
@@ -42,17 +46,19 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics>
     // passed into constructor
     private KinesisFacade facade;
 
-    // controls retries for initial stream describe; may be throttled
-    protected RetryManager describeRetry = new RetryManager(50, 1000, true);
+    // this controls retries for an initial DescribeStream, which should be fast
+    protected RetryManager2 describeRetry = new RetryManager2("describe", Duration.ofMillis(50));
 
-    // controls retries for stream creation; may be throttled
-    protected RetryManager createRetry = new RetryManager(200, 5000, true);
+    // this controls retries for CreateStream and SetRetentionPeriod, which return quickly but are eventually consistent
+    protected RetryManager2 createRetry = new RetryManager2("create", Duration.ofMillis(200));
 
-    // controls retries for describing stream after; may take a long time
-    protected RetryManager postCreateRetry = new RetryManager(200, 120000, true);
+    // this controls retries for a DescribeStream after creation
+    // this can take a long time, so we use a relatively long sleep duration with no backoff
+    protected RetryManager2 postCreateRetry = new RetryManager2("describe", Duration.ofMillis(200), false, true);
 
-    // controls retries for sending messages; may be thottled
-    protected RetryManager sendRetry = new RetryManager(200, 2000, true);
+    // these control retries for PutRecords; note that we use a duration-based timeout
+    protected Duration sendTimeout = Duration.ofMillis(2000);
+    protected RetryManager2 sendRetry = new RetryManager2("send", Duration.ofMillis(200));
 
 
     public KinesisLogWriter(KinesisWriterConfig config, KinesisWriterStatistics stats, InternalLogger logger, KinesisFacade facade)
@@ -89,10 +95,13 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics>
             return false;
         }
 
+        Instant timeoutAt = Instant.now().plusMillis(config.getInitializationTimeout());
+
         try
         {
-            // short-circuit if stream exists and is active; retry in case of throttling
-            StreamStatus status = describeRetry.invoke(() -> facade.retrieveStreamStatus());
+            // see if the stream already exists and short-circuit if yes
+            logger.debug("checking status of stream: " + config.getStreamName());
+            StreamStatus status = describeRetry.invoke(timeoutAt, () -> facade.retrieveStreamStatus());
             if (status == StreamStatus.ACTIVE)
                 return true;
 
@@ -100,7 +109,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics>
             {
                 if (config.getAutoCreate())
                 {
-                    return createStream() && setRetentionPeriod();
+                    return createStream(timeoutAt) && setRetentionPeriod(timeoutAt);
                 }
                 else
                 {
@@ -109,13 +118,12 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics>
                 }
             }
 
-            // if we got here, then the stream was being created/updated by someone
-            // else; wait until that's done
-            return waitForStreamToBeActive();
+            // this is here to catch the case where somebody else created the stream
+            return waitForStreamToBeActive(timeoutAt);
         }
         catch (Exception ex)
         {
-            reportError("unable to configure stream: " + config.getStreamName(), ex);
+            reportError("exception during initialization", ex);
             return false;
         }
     }
@@ -126,7 +134,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics>
     {
         try
         {
-            List<LogMessage> result = sendRetry.invoke(() ->
+            List<LogMessage> result = sendRetry.invoke(sendTimeout, () ->
             {
                 try
                 {
@@ -191,14 +199,15 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics>
      *  Attempts to create the stream and waits for it to become ready, returning
      *  <code>true</code> if successful, <code>false</code> on timeout.
      */
-    private boolean createStream()
+    private boolean createStream(Instant timeoutAt)
     {
         logger.debug("creating kinesis stream: " + config.getStreamName());
 
-        createRetry.invoke(() -> { facade.createStream() ; return Boolean.TRUE; },
+        createRetry.invoke(timeoutAt,
+                           () -> { facade.createStream() ; return Boolean.TRUE; },
                            new DefaultExceptionHandler());
 
-        return waitForStreamToBeActive();
+        return waitForStreamToBeActive(timeoutAt);
     }
 
 
@@ -207,7 +216,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics>
      *  for it to become ready. Returns <code>true</code> if successful or no need
      *  to act, <code>false</code> on timeout.
      */
-    private boolean setRetentionPeriod()
+    private boolean setRetentionPeriod(Instant timeoutAt)
     {
         if (config.getRetentionPeriod() == null)
             return true;
@@ -215,19 +224,21 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics>
         logger.debug("setting retention period on stream \"" + config.getStreamName()
                      + "\" to " + config.getRetentionPeriod() + " hours");
 
-        createRetry.invoke(() -> { facade.setRetentionPeriod() ; return Boolean.TRUE; },
+        createRetry.invoke(timeoutAt,
+                           () -> { facade.setRetentionPeriod() ; return Boolean.TRUE; },
                            new DefaultExceptionHandler());
 
-        return waitForStreamToBeActive();
+        return waitForStreamToBeActive(timeoutAt);
     }
 
 
     /**
      *  Waits for stream to become active, logging a message if it doesn't.
      */
-    private boolean waitForStreamToBeActive()
+    private boolean waitForStreamToBeActive(Instant timeoutAt)
     {
-        StreamStatus status = postCreateRetry.invoke( () ->
+        logger.debug("waiting for stream " + config.getStreamName() + " to become active");
+        StreamStatus status = postCreateRetry.invoke(timeoutAt, () ->
         {
             StreamStatus check = facade.retrieveStreamStatus();
             return (check == StreamStatus.ACTIVE) ? check : null;

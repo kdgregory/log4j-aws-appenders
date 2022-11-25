@@ -152,6 +152,14 @@ import com.kdgregory.logging.common.util.DefaultThreadFactory;
  *           a VPC, when the normal endpoint is not available.
  *
  *  <tr VALIGN="top">
+ *      <th> initializationTimeout
+ *      <td> Milliseconds to wait for appender to initialize. If this timeout expires,
+ *           the appender will shut down its writer thread and discard any future log
+ *           events. The only reason to change this is if you're deploying to a high-
+ *           contention environment (and even then, the default of 60 seconds should be
+ *           more than enough).
+ *
+ *  <tr VALIGN="top">
  *      <th> useShutdownHook
  *      <td> Controls whether the appender uses a shutdown hook to attempt to process
  *           outstanding messages when the JVM exits. This is true by default; set to
@@ -169,20 +177,13 @@ extends AbstractAppender
     LogbackEventType
     >
 {
-    private String  logGroup;
-    private String  logStream;
-    private Integer retentionPeriod;
-    private boolean dedicatedWriter = true;
-
-
     public CloudWatchAppender()
     {
-        super(new DefaultThreadFactory("logback-cloudwatch"),
+        super(new CloudWatchWriterConfig(),
+              new DefaultThreadFactory("logback-cloudwatch"),
               new CloudWatchWriterFactory(),
               new CloudWatchWriterStatistics(),
               CloudWatchWriterStatisticsMXBean.class);
-
-        logStream = "{startupTimestamp}";
     }
 
 //----------------------------------------------------------------------------
@@ -194,7 +195,7 @@ extends AbstractAppender
      */
     public void setLogGroup(String value)
     {
-        logGroup = value;
+        appenderConfig.setLogGroupName(value);
     }
 
 
@@ -203,7 +204,7 @@ extends AbstractAppender
      */
     public String getLogGroup()
     {
-        return logGroup;
+        return appenderConfig.getLogGroupName();
     }
 
 
@@ -212,7 +213,7 @@ extends AbstractAppender
      */
     public void setLogStream(String value)
     {
-        logStream = value;
+        appenderConfig.setLogStreamName(value);
     }
 
 
@@ -221,7 +222,7 @@ extends AbstractAppender
      */
     public String getLogStream()
     {
-        return logStream;
+        return appenderConfig.getLogStreamName();
     }
 
 
@@ -230,7 +231,7 @@ extends AbstractAppender
      */
     public void setRetentionPeriod(int value)
     {
-        retentionPeriod = CloudWatchConstants.validateRetentionPeriod(value);
+        appenderConfig.setRetentionPeriod(CloudWatchConstants.validateRetentionPeriod(value));
     }
 
 
@@ -240,7 +241,7 @@ extends AbstractAppender
      */
     public Integer getRetentionPeriod()
     {
-        return retentionPeriod;
+        return appenderConfig.getRetentionPeriod();
     }
 
 
@@ -249,7 +250,7 @@ extends AbstractAppender
      */
     public void setDedicatedWriter(boolean value)
     {
-        dedicatedWriter = value;
+        appenderConfig.setDedicatedWriter(value);
     }
 
 
@@ -258,7 +259,7 @@ extends AbstractAppender
      */
     public boolean getDedicatedWriter()
     {
-        return dedicatedWriter;
+        return appenderConfig.getDedicatedWriter();
     }
 
 //----------------------------------------------------------------------------
@@ -269,13 +270,11 @@ extends AbstractAppender
     protected CloudWatchWriterConfig generateWriterConfig()
     {
         Substitutions subs     = new Substitutions(new Date(), 0);
-        String actualLogGroup  = subs.perform(logGroup);
-        String actualLogStream = subs.perform(logStream);
+        String actualLogGroup   = subs.perform(getLogGroup());
+        String actualLogStream  = subs.perform(getLogStream());
 
-        return new CloudWatchWriterConfig()
+        return ((CloudWatchWriterConfig)appenderConfig.clone())
                .setLogGroupName(actualLogGroup)
-               .setLogStreamName(actualLogStream)
-               .setRetentionPeriod(retentionPeriod)
-               .setDedicatedWriter(dedicatedWriter);
+               .setLogStreamName(actualLogStream);
     }
 }

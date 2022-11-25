@@ -51,6 +51,9 @@ import software.amazon.awssdk.services.cloudwatchlogs.paginators.*;
 public class CloudWatchClientMock
 implements InvocationHandler
 {
+    /** This sequence token should never be reached. */
+    public final static String  INVALID_SEQUENCE_TOKEN = String.valueOf(Integer.MAX_VALUE);
+
     // the actual list of names used by this instance
     public List<String> logGroupNames;
     public List<String> logStreamNames;
@@ -295,6 +298,7 @@ implements InvocationHandler
             {
                 LogStream stream = LogStream.builder()
                                    .logStreamName(name)
+                                   .arn("arn:aws:logs:us-east-1:123456789012:log-group:" + request.logGroupName() + ":log-stream:" + name)
                                    .uploadSequenceToken(String.valueOf(nextSequenceToken))
                                    .build();
                 logStreams.add(stream);

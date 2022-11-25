@@ -134,6 +134,14 @@ implements CloudWatchFacade
 
 
     @Override
+    public String findLogStream()
+    {
+        LogStream stream = internalFindLogStream("findLogStream()");
+        return (stream != null) ? stream.arn() : null;
+    }
+
+
+    @Override
     public void createLogStream()
     {
         String logGroupName = config.getLogGroupName();
@@ -172,38 +180,8 @@ implements CloudWatchFacade
     @Override
     public String retrieveSequenceToken()
     {
-        String logGroupName = config.getLogGroupName();
-        String logStreamName = config.getLogStreamName();
-
-        DescribeLogStreamsRequest request = DescribeLogStreamsRequest.builder()
-                                            .logGroupName(logGroupName)
-                                            .logStreamNamePrefix(logStreamName)
-                                            .build();
-
-        try
-        {
-            DescribeLogStreamsIterable itx = client().describeLogStreamsPaginator(request);
-            for (LogStream stream : itx.logStreams())
-            {
-                if (stream.logStreamName().equals(config.getLogStreamName()))
-                    return stream.uploadSequenceToken();
-            }
-        }
-        catch (ResourceNotFoundException ex)
-        {
-            return null;
-        }
-        catch (Exception ex)
-        {
-            CloudWatchFacadeException ex2 = transformException("retrieveSequenceToken()", ex);
-            if (ex2.isRetryable())
-                return null;
-            else
-                throw ex2;
-        }
-
-        // hit end of the list without finding the stream
-        return null;
+        LogStream stream = internalFindLogStream("retrieveSequenceToken()");
+        return (stream != null) ? stream.uploadSequenceToken() : null;
     }
 
 
@@ -337,5 +315,44 @@ implements CloudWatchFacade
         return new CloudWatchFacadeException(
                 message, cause, reason, isRetryable,
                 functionName, config.getLogGroupName(), config.getLogStreamName());
+    }
+
+
+    /**
+     *  Common implementation for <code>findLogStream()</code> and
+     *  <code>retrieveSequenceToken()</code>.
+     */
+    private LogStream internalFindLogStream(String invokedAs)
+    {
+        String logGroupName = config.getLogGroupName();
+        String logStreamName = config.getLogStreamName();
+
+        DescribeLogStreamsRequest request = DescribeLogStreamsRequest.builder()
+                                            .logGroupName(logGroupName)
+                                            .logStreamNamePrefix(logStreamName)
+                                            .build();
+
+        try
+        {
+            DescribeLogStreamsIterable itx = client().describeLogStreamsPaginator(request);
+            for (LogStream stream : itx.logStreams())
+            {
+                if (stream.logStreamName().equals(config.getLogStreamName()))
+                    return stream;
+            }
+            return null;
+        }
+        catch (ResourceNotFoundException ex)
+        {
+            return null;
+        }
+        catch (Exception ex)
+        {
+            CloudWatchFacadeException ex2 = transformException(invokedAs, ex);
+            if (ex2.isRetryable())
+                return null;
+            else
+                throw ex2;
+        }
     }
 }

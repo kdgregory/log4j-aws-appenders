@@ -43,7 +43,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
         // these assertions just use regexes, rely on the underlying subtitutions tests for correctness
         assertRegex("\\d{14}",          strsub.replace("${awslogs:startupTimestamp}"));
-        assertRegex("\\d{1,5}",         strsub.replace("${awslogs:pid}"));
+        assertRegex("\\d{1,6}",         strsub.replace("${awslogs:pid}"));
         assertRegex("[A-Za-z0-9-.]+",   strsub.replace("${awslogs:hostname}"));
     }
 

@@ -1,5 +1,11 @@
 # Change History
 
+## 3.1.0 (TBD)
+
+* Appenders no longer wait for writer to finish initialization.
+  ([#167](https://github.com/kdgregory/log4j-aws-appenders/issues/167))
+
+
 ## 3.0.1 (2021-02-20)
 
 * Bugfix: `InfoFacade` had a hard dependency on SSM SDK library.

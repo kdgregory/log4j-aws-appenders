@@ -57,6 +57,14 @@ public interface CloudWatchFacade
 
 
     /**
+     *  Determines whether the configured log stream exists, returning its ARN
+     *  if it does. Returns <code>null</code> if the log group doesn't exist or
+     *  the call is throttled.
+     */
+    String findLogStream();
+
+
+    /**
      *  Attempts to create the configured log stream.
      *  <p>
      *  Stream creation is an asynchronous operation: the stream may not be available for

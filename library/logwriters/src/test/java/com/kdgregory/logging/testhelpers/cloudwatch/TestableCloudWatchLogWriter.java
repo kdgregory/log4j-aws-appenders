@@ -43,7 +43,7 @@ extends CloudWatchLogWriter
         super(config, stats, logger, facade);
 
         // replace the stndard retry timeouts with something that operates much more quickly
-        describeRetry = new RetryManager2("describe", Duration.ofMillis(50), false, false);
+        describeRetry = new RetryManager2("describe", Duration.ofMillis(50), false, true);
         createRetry = new RetryManager2("create", Duration.ofMillis(50), false, false);
         sendTimeout = Duration.ofMillis(200);
         sendRetry = new RetryManager2("send", Duration.ofMillis(50), false, false);

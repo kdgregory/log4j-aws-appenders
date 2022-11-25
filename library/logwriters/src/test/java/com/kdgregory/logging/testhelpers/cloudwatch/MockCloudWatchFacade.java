@@ -40,14 +40,15 @@ implements InvocationHandler
     public CloudWatchWriterConfig config;
 
     // invocation counters
-    public int validateConfigInvocationCount = 0;
-    public int findLogGroupInvocationCount = 0;
-    public int createLogGroupInvocationCount = 0;
-    public int setLogGroupRetentionInvocationCount = 0;
-    public int createLogStreamInvocationCount = 0;
-    public int retrieveSequenceTokenInvocationCount = 0;
-    public int putEventsInvocationCount = 0;
-    public int shutdownInvocationCount = 0;
+    public int validateConfigInvocationCount;
+    public int findLogGroupInvocationCount;
+    public int findLogStreamInvocationCount;
+    public int createLogGroupInvocationCount;
+    public int setLogGroupRetentionInvocationCount;
+    public int createLogStreamInvocationCount;
+    public int retrieveSequenceTokenInvocationCount;
+    public int putEventsInvocationCount;
+    public int shutdownInvocationCount;
 
     // recorded arguments for methods that have them
     public String putEventsSequenceToken;
@@ -86,6 +87,9 @@ implements InvocationHandler
             case "findLogGroup":
                 findLogGroupInvocationCount++;
                 return findLogGroup();
+            case "findLogStream":
+                findLogStreamInvocationCount++;
+                return findLogStream();
             case "createLogGroup":
                 createLogGroupInvocationCount++;
                 createLogGroup();
@@ -123,6 +127,12 @@ implements InvocationHandler
     public String findLogGroup() throws CloudWatchFacadeException
     {
         return "arn:aws:logs:us-east-1:123456789012:log-group:" + config.getLogGroupName();
+    }
+
+
+    public String findLogStream() throws CloudWatchFacadeException
+    {
+        return "arn:aws:logs:us-east-1:123456789012:log-group:" + config.getLogGroupName() + ":logstream:" + config.getLogStreamName();
     }
 
 

@@ -82,15 +82,35 @@ public class TestDefaultThreadFactory
         }
     }
 
+
+    // a log-writer that doesn't use a config
+    private static class MyMockLogWriter
+    extends MockLogWriter<AbstractWriterConfig<?>>
+    {
+        private boolean isSynchronous;
+
+        public MyMockLogWriter(boolean isSynchronous)
+        {
+            super(null);
+            this.isSynchronous = isSynchronous;
+        }
+
+        @Override
+        public boolean isSynchronous()
+        {
+            return isSynchronous;
+        }
+    }
+
 //----------------------------------------------------------------------------
 //  Testcases
 //----------------------------------------------------------------------------
 
     @Test
-    public void testBasicOperation() throws Exception
+    public void testNormalOperation() throws Exception
     {
         TestableDefaultThreadFactory factory = new TestableDefaultThreadFactory("test");
-        MockLogWriter<AbstractWriterConfig<?>> writer = new MockLogWriter<>(null);
+        MyMockLogWriter writer = new MyMockLogWriter(false);
 
         factory.startLoggingThread(writer);
         assertTrue("writer was started", writer.waitUntilInitialized(1000));
@@ -101,6 +121,22 @@ public class TestDefaultThreadFactory
 
         assertRegex("thread name", ".*logwriter-test-\\d+", threads.get(0).getName());
         assertSame("writer was started on thread", threads.get(0), writer.writerThread);
+    }
+
+
+    @Test
+    public void testSynchronousOperation() throws Exception
+    {
+        TestableDefaultThreadFactory factory = new TestableDefaultThreadFactory("test");
+        MyMockLogWriter writer = new MyMockLogWriter(true);
+
+        factory.startLoggingThread(writer);
+        assertTrue("writer was started", writer.waitUntilInitialized(1000));
+        assertTrue("no uncaught exceptions", factory.uncaughtExceptions.isEmpty());
+
+        ArrayList<Thread> threads = new ArrayList<>(factory.threads);
+        assertEquals("number of threads created",           0,                      threads.size());
+        assertSame("writer was started on current thread",  Thread.currentThread(), writer.writerThread);
     }
 
 

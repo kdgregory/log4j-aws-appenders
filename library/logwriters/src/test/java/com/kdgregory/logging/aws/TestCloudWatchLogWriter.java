@@ -212,6 +212,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         createWriter();
 
         assertEquals("findLogGroup: invocation count",              1,                      mock.findLogGroupInvocationCount);
+        assertEquals("findLogStream: invocation count",             0,                      mock.findLogStreamInvocationCount);
         assertEquals("retrieveSequenceToken: invocation count",     0,                      mock.retrieveSequenceTokenInvocationCount);
         assertEquals("createLogGroup: invocation count",            0,                      mock.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",           0,                      mock.createLogStreamInvocationCount);
@@ -1589,19 +1590,33 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         mock = new MockCloudWatchFacade(config);
 
         createWriter();
+
+        assertTrue("writer is running",                             writer.isRunning());
+        assertTrue("writer is in synchronous mode",                 writer.isSynchronous());
+        assertSame("writer initialized on main thread",             Thread.currentThread(),     writerThread);
+
+        assertEquals("findLogGroup: invocation count",              1,                          mock.findLogGroupInvocationCount);
+        assertEquals("findLogStream: invocation count",             1,                          mock.findLogStreamInvocationCount);
+        assertEquals("retrieveSequenceToken: invocation count",     0,                          mock.retrieveSequenceTokenInvocationCount);
+        assertEquals("createLogGroup: invocation count",            0,                          mock.createLogGroupInvocationCount);
+        assertEquals("createLogStream: invocation count",           0,                          mock.createLogStreamInvocationCount);
+
         ((TestableCloudWatchLogWriter)writer).disableThreadSynchronization();
 
-        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
-        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+        writer.addMessage(new LogMessage(0, "message one"));
+        assertEquals("message has been removed from queue",     0,                      messageQueue.size());
 
-        // no need to wait for thread, it should be sent by the call to addMessage();
+        writer.addMessage(new LogMessage(0, "message two"));
+        assertEquals("message has been removed from queue",     0,                      messageQueue.size());
 
-        assertEquals("putEvents: invocation count",                 2,                      mock.putEventsInvocationCount);
-        assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
-        assertEquals("putEvents: last call message",                "message two",          mock.putEventsMessages.get(0).getMessage());
-        assertSame("putEvents: invocation thread",                  Thread.currentThread(), mock.putEventsThread);
+        assertEquals("messages have been removed from queue",       0,                          messageQueue.size());
+        assertEquals("retrieveSequenceToken: invocation count",     1,                          mock.retrieveSequenceTokenInvocationCount);
+        assertEquals("putEvents: invocation count",                 2,                          mock.putEventsInvocationCount);
+        assertEquals("putEvents: last call #/messages",             1,                          mock.putEventsMessages.size());
+        assertEquals("putEvents: last call message",                "message two",              mock.putEventsMessages.get(0).getMessage());
+        assertSame("putEvents: invocation thread",                  Thread.currentThread(),     mock.putEventsThread);
 
-        assertEquals("message has been removed from queue",         0,                      messageQueue.size());
+        assertEquals("messages have been removed from queue",       0,                          messageQueue.size());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               "checking for existence of CloudWatch log group: argle",

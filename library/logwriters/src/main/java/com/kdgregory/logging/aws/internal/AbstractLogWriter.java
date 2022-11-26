@@ -20,7 +20,6 @@ import java.util.List;
 
 import com.kdgregory.logging.common.LogMessage;
 import com.kdgregory.logging.common.LogWriter;
-import com.kdgregory.logging.common.internal.Utils;
 import com.kdgregory.logging.common.util.InternalLogger;
 import com.kdgregory.logging.common.util.MessageQueue;
 import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
@@ -129,6 +128,9 @@ implements LogWriter
 
         dispatchThread = Thread.currentThread();
 
+        if (config.getSynchronousMode())
+            return;
+
         // the do-while loop ensures that we attempt to process at least one batch, even if
         // the writer is started and immediately stopped; that's not likely to happen in the
         // real world, but was causing problems with the integration tests (which quickly
@@ -136,16 +138,11 @@ implements LogWriter
 
         do
         {
-            if (config.getSynchronousMode())
-            {
-                long timeToShutdown = shutdownTime - System.currentTimeMillis();
-                Utils.sleepQuietly(timeToShutdown);
-            }
-            else
-            {
-                processBatch(shutdownTime);
-            }
-        } while (keepRunning());
+            processBatch(shutdownTime);
+        }
+        while (keepRunning());
+
+        // note that these won't be called in synchronous mode
 
         cleanup();
         isRunning = false;
@@ -245,7 +242,7 @@ implements LogWriter
             return;
 
         shutdownTime = System.currentTimeMillis() + config.getBatchDelay();
-        if (dispatchThread != null)
+        if ((dispatchThread != null) && (dispatchThread != Thread.currentThread()))
         {
             dispatchThread.interrupt();
         }
@@ -320,6 +317,9 @@ implements LogWriter
      *  Called from the main loop to build a batch of messages and send them.
      *  Waits until the specified timestamp for the first message, then waits
      *  for the batch delay before passing the messages to {@link #sendBatch}.
+     *  <p>
+     *  It's necessary to synchronize this method to support synchronous mode.
+     *  In normal threaded mode it the lock will always be uncontended.
      */
     protected synchronized void processBatch(long waitUntil)
     {

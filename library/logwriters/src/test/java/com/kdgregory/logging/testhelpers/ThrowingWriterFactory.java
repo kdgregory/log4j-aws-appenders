@@ -54,6 +54,12 @@ public class ThrowingWriterFactory<C extends AbstractWriterConfig<?>,S> implemen
                     catch (InterruptedException ex)
                     { /* nothing to do */ }
                 }
+
+                @Override
+                public boolean isSynchronous()
+                {
+                    return false;
+                }
             };
         }
 }

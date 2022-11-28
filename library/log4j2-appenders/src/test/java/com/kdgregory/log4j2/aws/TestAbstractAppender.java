@@ -53,12 +53,10 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
         MockCloudWatchWriter writer = appender.getMockWriter();
 
-        assertEquals("post-initialization: calls to writer factory",                1,              writerFactory.invocationCount);
-        assertNotNull("post-initialization: writer created",                                        writer);
-        assertNotNull("post-initialization: writer running on background thread",                   writer.writerThread);
-        assertTrue("post-initialization: writer told to use shutdown hook",                         writer.config.getUseShutdownHook());
-        assertEquals("post-initialization: actual log-group name",                  "argle",        writer.config.getLogGroupName());
-        assertRegex("post-initialization: actual log-stream name",                  "20\\d{12}",    writer.config.getLogStreamName());
+        assertEquals("post-initialization: calls to writer factory",                1,                      writerFactory.invocationCount);
+        assertNotNull("post-initialization: writer created",                                                writer);
+        assertNotSame("post-initialization: writer running on background thread",   Thread.currentThread(), writer.writerThread);
+        assertTrue("post-initialization: writer told to use shutdown hook",                                 writer.config.getUseShutdownHook());
 
         long initialTimestamp = System.currentTimeMillis();
         logger.debug("first message");
@@ -100,6 +98,23 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
         assertFalse("appender closed after shutdown", appender.isStarted());
         assertTrue("writer stopped after shutdown", writer.stopped);
+    }
+
+
+    @Test
+    public void testSynchronousMode() throws Exception
+    {
+        initialize("testSynchronousMode");
+
+        MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
+        MockCloudWatchWriter writer = appender.getMockWriter();
+
+        assertEquals("post-initialization: calls to writer factory",                1,                      writerFactory.invocationCount);
+        assertNotNull("post-initialization: writer created",                                                writer);
+        assertSame("post-initialization: writer running on main thread",            Thread.currentThread(), writer.writerThread);
+        assertTrue("post-initialization: writer told to use shutdown hook",                                 writer.config.getUseShutdownHook());
+
+        // after this point it would be identical to testLifeCycle
     }
 
 

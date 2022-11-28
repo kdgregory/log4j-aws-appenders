@@ -25,7 +25,6 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.util.ThreadFactory;
 import com.kdgregory.logging.common.util.WriterFactory;
-import com.kdgregory.logging.testhelpers.InlineThreadFactory;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriterFactory;
 
@@ -44,7 +43,6 @@ extends CloudWatchAppender
     public TestableCloudWatchAppender()
     {
         super();
-        setThreadFactory(new InlineThreadFactory());
         setWriterFactory(new MockCloudWatchWriterFactory());
         internalLogger = new TestableLog4JInternalLogger("");
     }

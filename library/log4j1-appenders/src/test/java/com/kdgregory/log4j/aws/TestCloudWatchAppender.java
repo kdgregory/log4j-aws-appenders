@@ -30,8 +30,8 @@ import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
 
 
 /**
- *  These tests exercise appender logic specific to CloudWatchAppender, using a
- *  mock log-writer.
+ *  These tests exercise functionality speicfic to the CloudWatch appender.
+ *  They do not attempt to verify message operations.
  */
 public class TestCloudWatchAppender
 extends AbstractUnitTest<TestableCloudWatchAppender>
@@ -171,19 +171,6 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("writer client region",            "us-west-2",                        writer.config.getClientRegion());
         assertEquals("writer client endpoint",          "mylogs.example.com",               writer.config.getClientEndpoint());
         assertFalse("synchronous mode",                                                     writer.config.getSynchronousMode());
-    }
-
-
-    @Test
-    public void testWriterInitializationSynchronousMode() throws Exception
-    {
-        initialize("testWriterInitializationSynchronousMode");
-
-        logger.debug("this triggers writer creation");
-
-        MockCloudWatchWriter writer = appender.getMockWriter();
-
-        assertTrue("synchronous mode",                                                      writer.config.getSynchronousMode());
-        assertEquals("batch delay",                     0L,                                 writer.config.getBatchDelay());
+        assertNotSame("writer running on dedicated thread", Thread.currentThread(),         writer.writerThread);
     }
 }

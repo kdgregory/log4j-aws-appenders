@@ -106,7 +106,7 @@ implements LogWriter
     }
 
 //----------------------------------------------------------------------------
-//  Implementation of Runnable
+//  Implementation of LogWriter
 //----------------------------------------------------------------------------
 
     @Override
@@ -149,10 +149,6 @@ implements LogWriter
         logger.debug("log-writer shut down (thread: " + Thread.currentThread().getName()
                      + " (#" + Thread.currentThread().getId() + ")");
     }
-
-//----------------------------------------------------------------------------
-//  Implementation of LogWriter
-//----------------------------------------------------------------------------
 
     @Override
     public void setBatchDelay(long value)

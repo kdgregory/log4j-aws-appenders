@@ -17,6 +17,10 @@ package com.kdgregory.logging.test;
 import net.sf.kdgcommons.lang.ClassUtil;
 
 import static net.sf.kdgcommons.test.StringAsserts.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.Assert.*;
 
 import org.slf4j.Logger;
@@ -212,8 +216,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
     protected void testMultipleThreadsMultipleAppendersDifferentDestinations(LoggerAccessor... accessors)
     throws Exception
     {
-        // configured values; should be the same for all frameworks
-        final int messagesPerThread = 1000;
+        final int messagesPerThread = 1000;     // configured value; must be the same for all frameworks
 
         MessageWriter.runOnThreads(
             accessors[0].newMessageWriter(messagesPerThread),
@@ -237,42 +240,30 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
     protected void testMultipleThreadsMultipleAppendersSameDestination(LoggerAccessor... accessors)
     throws Exception
     {
-        // configured values; should be the same for all frameworks
-        final int messagesPerThread = 1000;
-
-        MessageWriter.runOnThreads(
-            accessors[0].newMessageWriter(messagesPerThread),
-            accessors[1].newMessageWriter(messagesPerThread),
-            accessors[2].newMessageWriter(messagesPerThread),
-            accessors[3].newMessageWriter(messagesPerThread),
-            accessors[4].newMessageWriter(messagesPerThread),
-            accessors[0].newMessageWriter(messagesPerThread),
-            accessors[1].newMessageWriter(messagesPerThread),
-            accessors[2].newMessageWriter(messagesPerThread),
-            accessors[3].newMessageWriter(messagesPerThread),
-            accessors[4].newMessageWriter(messagesPerThread),
-            accessors[0].newMessageWriter(messagesPerThread),
-            accessors[1].newMessageWriter(messagesPerThread),
-            accessors[2].newMessageWriter(messagesPerThread),
-            accessors[3].newMessageWriter(messagesPerThread),
-            accessors[4].newMessageWriter(messagesPerThread),
-            accessors[0].newMessageWriter(messagesPerThread),
-            accessors[1].newMessageWriter(messagesPerThread),
-            accessors[2].newMessageWriter(messagesPerThread),
-            accessors[3].newMessageWriter(messagesPerThread),
-            accessors[4].newMessageWriter(messagesPerThread));
+        final int messagesPerThread = 1000;     // configured value; must be the same for all frameworks
+        final int threadsPerAccessor = 4;
+        
+        List<MessageWriter> messageWriters = new ArrayList<>();
+        for (int ii = 0 ; ii < threadsPerAccessor ; ii++)
+        {
+            for (int jj = 0 ; jj < accessors.length ; jj++)
+            {
+                messageWriters.add(accessors[jj].newMessageWriter(messagesPerThread));
+            }
+        }
+        MessageWriter.runOnThreads(messageWriters);
 
         localLogger.info("waiting for loggers");
         for (LoggerAccessor accessor : accessors)
         {
-            CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), messagesPerThread * 4, 30000);
+            CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), messagesPerThread * threadsPerAccessor, 30000);
         }
 
         // even after waiting until the stats say we've written everything, the read won't succeed
         // if we try it immediately ... so we sleep, while CloudWatch puts everything in its place
-        Thread.sleep(10000);
+        Thread.sleep(15000);
 
-        testHelper.assertMessages(LOGSTREAM_BASE, messagesPerThread * 20);
+        testHelper.assertMessages(LOGSTREAM_BASE, messagesPerThread * accessors.length * threadsPerAccessor);
 
         int messageCountFromStats = 0;
         int messagesDiscardedFromStats = 0;

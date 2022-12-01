@@ -4,6 +4,9 @@
 
 * Appenders no longer wait for writer to finish initialization.
   ([#167](https://github.com/kdgregory/log4j-aws-appenders/issues/167))
+* Synchronous-mode initialization takes place on main thread (no longer
+  starts a writer thread)
+  ([#170](https://github.com/kdgregory/log4j-aws-appenders/issues/170))
 
 
 ## 3.0.1 (2021-02-20)

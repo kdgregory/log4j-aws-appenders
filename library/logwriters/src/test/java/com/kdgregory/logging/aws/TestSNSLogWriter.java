@@ -414,6 +414,13 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
         assertEquals("mock: shutdownInvocationCount",           0,                      mock.shutdownInvocationCount);
 
         assertStatisticsTotalMessagesSent(1);
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "checking for existance of SNS topic.*",
+                        "log writer initialization complete.*");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
     }
 
 
@@ -447,6 +454,38 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
         assertSame("stats: exception",                          cause,                  stats.getLastError());
 
         assertStatisticsTotalMessagesSent(0);
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "checking for existance of SNS topic.*",
+                        "log writer initialization complete.*");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog(
+                        "failed to publish.*");
+    }
+
+
+    @Test
+    public void testBatchLogging() throws Exception
+    {
+        config.setEnableBatchLogging(true);
+        mock = new MockSNSFacade(config, TEST_TOPIC_NAME);
+
+        createWriter();
+
+        writer.addMessage(new LogMessage(0, "test message"));
+        waitForWriterThread();
+
+        assertEquals("mock: publishInvocationCount",            1,                      mock.publishInvocationCount);
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "checking for existance of SNS topic.*",
+                        "log writer initialization complete.*",
+                        "about to publish 1 message",
+                        "published 1 message");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
     }
 
 

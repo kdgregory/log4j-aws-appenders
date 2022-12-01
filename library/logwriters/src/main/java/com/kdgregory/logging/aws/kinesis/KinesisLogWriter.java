@@ -132,13 +132,18 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics>
     @Override
     protected List<LogMessage> sendBatch(List<LogMessage> currentBatch)
     {
+        if (config.getEnableBatchLogging())
+            logger.debug("about to write batch of " + currentBatch.size() + " message(s)");
         try
         {
             List<LogMessage> result = sendRetry.invoke(sendTimeout, () ->
             {
                 try
                 {
-                    return facade.putRecords(currentBatch);
+                    List<LogMessage> unsent = facade.putRecords(currentBatch);
+                    if (config.getEnableBatchLogging())
+                        logger.debug("wrote batch of " + currentBatch.size() + " message(s); " + unsent.size() + " rejected");
+                    return unsent;
                 }
                 catch (KinesisFacadeException ex)
                 {

@@ -312,4 +312,26 @@ implements AbstractAppenderConfig
     {
         return initializationTimeout;
     }
+
+
+    @PluginBuilderAttribute("enableBatchLogging")
+    private boolean enableBatchLogging = AbstractWriterConfig.DEFAULT_ENABLE_BATCH_LOGGING;
+
+    /**
+     *  Sets the <code>enableBatchLogging</code> configuration property.
+     */
+    public T setEnableBatchLogging(boolean value)
+    {
+        this.enableBatchLogging = value;
+        return (T)this;
+    }
+
+    /**
+     *  Returns the <code>enableBatchLogging</code> configuration property.
+     */
+    @Override
+    public boolean isEnableBatchLogging()
+    {
+        return enableBatchLogging;
+    }
 }

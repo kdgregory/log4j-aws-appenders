@@ -82,6 +82,7 @@ extends AbstractUnitTest<TestableSNSAppender>
         assertEquals("client region",           "us-west-1",                    appender.getClientRegion());
         assertEquals("client endpoint",         "sns.us-west-2.amazonaws.com",  appender.getClientEndpoint());
         assertEquals("initialization timeout",  40000,                          appender.getInitializationTimeout());
+        assertEquals("enable batch logging",    true,                           appender.getEnableBatchLogging());
     }
 
 
@@ -107,6 +108,7 @@ extends AbstractUnitTest<TestableSNSAppender>
         assertEquals("client region",           null,                           appender.getClientRegion());
         assertEquals("client endpoint",         null,                           appender.getClientEndpoint());
         assertEquals("initialization timeout",  30000,                          appender.getInitializationTimeout());
+        assertEquals("enable batch logging",    false,                          appender.getEnableBatchLogging());
     }
 
 

@@ -19,6 +19,7 @@
             <clientEndpoint>kinesis.us-west-2.amazonaws.com</clientEndpoint>
             <useShutdownHook>false</useShutdownHook>
             <initializationTimeout>30000</initializationTimeout>
+            <enableBatchLogging>true</enableBatchLogging>
         </TestableKinesisAppender>
     </Appenders>
 

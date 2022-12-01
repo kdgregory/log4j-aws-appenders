@@ -53,7 +53,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
     // these control the retries for PutEvents; note that sends use a duration-based timeout
     protected Duration sendTimeout = Duration.ofMillis(2000);
     protected RetryManager2 sendRetry = new RetryManager2("send", Duration.ofMillis(200), true, false);
-    
+
     // cache for sequence tokens when using a dedicated writer; also used as a flag to trigger retrieve
     private String sequenceToken = SEQUENCE_TOKEN_FLAG_VALUE;
 
@@ -127,12 +127,16 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
 
         Collections.sort(batch);
 
+        if (config.getEnableBatchLogging())
+            logger.debug("about to write batch of " + batch.size() + " message(s)");
         Instant timeoutAt = Instant.now().plus(sendTimeout);
         List<LogMessage> result = sendRetry.invoke(timeoutAt, () ->
         {
             try
             {
                 sequenceToken = facade.putEvents(retrieveSequenceToken(timeoutAt), batch);
+                if (config.getEnableBatchLogging())
+                    logger.debug("wrote batch of " + batch.size() + " message(s)");
                 return Collections.emptyList();
             }
             catch (CloudWatchFacadeException ex)
@@ -224,7 +228,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
 
         // wait for the log group to be created, throw if it never is
         String logGroupArn = describeRetry.invoke(timeoutAt, () -> facade.findLogGroup());
-        
+
         if (logGroupArn == null)
         {
             throw new RuntimeException("timed out while waiting for CloudWatch log group");
@@ -254,7 +258,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
         createRetry.invoke(timeoutAt,
                            () -> { facade.createLogStream(); return Boolean.TRUE; },
                            new DefaultExceptionHandler());
-        
+
         // wait for the log stream to be created, throw if it never happens
         describeRetry.invoke(timeoutAt, () -> facade.findLogStream());
 

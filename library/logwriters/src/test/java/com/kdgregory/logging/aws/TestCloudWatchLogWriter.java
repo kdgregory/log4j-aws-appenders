@@ -1403,6 +1403,39 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
 
     @Test
+    public void testBatchLogging() throws Exception
+    {
+        config.setEnableBatchLogging(true);
+        mock = new MockCloudWatchFacade(config);
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        waitForWriterThread();
+
+        assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message three"));
+        waitForWriterThread();
+
+        assertEquals("putEvents: last call #/messages",             2,                      mock.putEventsMessages.size());
+
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existence of CloudWatch log group: argle",
+                                              "using existing CloudWatch log group: argle",
+                                              "checking for existence of CloudWatch log stream: bargle",
+                                              "using existing CloudWatch log stream: bargle",
+                                              "log writer initialization complete.*",
+                                              "about to write batch of 1 message\\(s\\)",
+                                              "wrote batch of 1 message\\(s\\)",
+                                              "about to write batch of 2 message\\(s\\)",
+                                              "wrote batch of 2 message\\(s\\)");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
     public void testDiscardEmptyMessages() throws Exception
     {
         // note: this actually tests superclass behavior

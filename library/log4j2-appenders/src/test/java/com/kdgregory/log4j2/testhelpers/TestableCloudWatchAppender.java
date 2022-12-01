@@ -20,7 +20,6 @@ import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.Core;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 
 import com.kdgregory.log4j2.aws.CloudWatchAppender;
@@ -29,10 +28,8 @@ import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterStatistics;
 import com.kdgregory.logging.common.LogWriter;
 import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
-import com.kdgregory.logging.common.util.DefaultThreadFactory;
 import com.kdgregory.logging.common.util.ThreadFactory;
 import com.kdgregory.logging.common.util.WriterFactory;
-import com.kdgregory.logging.testhelpers.InlineThreadFactory;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
 import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriterFactory;
 
@@ -58,20 +55,10 @@ extends CloudWatchAppender
     public static class TestableCloudWatchAppenderBuilder
     extends CloudWatchAppenderBuilder
     {
-        // since Log4J2 initializes when the appender is created, we can't switch thread factories
-        // after the fact; as a work-around, this configuration parameter will use the default
-        @PluginBuilderAttribute("useDefaultThreadFactory")
-        private boolean useDefaultThreadFactory;
-
-        public void setUseDefaultThreadFactory(boolean value)
-        {
-            this.useDefaultThreadFactory = value;
-        }
-
         @Override
         public TestableCloudWatchAppender build()
         {
-            return new TestableCloudWatchAppender(getName(), this, useDefaultThreadFactory);
+            return new TestableCloudWatchAppender(getName(), this);
         }
     }
 
@@ -81,18 +68,10 @@ extends CloudWatchAppender
 
     public AtomicInteger appendInvocationCount = new AtomicInteger();
 
-    protected TestableCloudWatchAppender(String name, CloudWatchAppenderConfig config, boolean useDefaultThreadFactory)
+    protected TestableCloudWatchAppender(String name, CloudWatchAppenderConfig config)
     {
         super(name, config, new TestableLog4J2InternalLogger());
         setWriterFactory(new MockCloudWatchWriterFactory());
-        if (useDefaultThreadFactory)
-        {
-            setThreadFactory(new DefaultThreadFactory("test"));
-        }
-        else
-        {
-            setThreadFactory(new InlineThreadFactory());
-        }
     }
 
 

@@ -50,7 +50,7 @@ extends TestableCloudWatchAppender
 
     private ThrowingWriterCloudWatchAppender(String name, CloudWatchAppenderConfig config)
     {
-        super(name, config, true);
+        super(name, config);
         setWriterFactory(new ThrowingWriterFactory<CloudWatchWriterConfig,CloudWatchWriterStatistics>());
     }
 }

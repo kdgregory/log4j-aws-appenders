@@ -74,6 +74,11 @@ public abstract class AbstractLogWriterTest
     protected MessageQueue messageQueue;
 
     /**
+     *  This is set by createWriter().
+     */
+    protected Thread writerThread;
+
+    /**
      *  This is set by the writer thread's uncaught exception handler. It should
      *  be checked by tearDown() to verify no unexpcted exceptions.
      */
@@ -105,8 +110,8 @@ public abstract class AbstractLogWriterTest
         messageQueue = ClassUtil.getFieldValue(writer, "messageQueue", MessageQueue.class);
 
         new DefaultThreadFactory("test").startWriterThread(writer, defaultUncaughtExceptionHandler);
-
-        assertTrue("writer running", writer.waitUntilInitialized(startupWaitTime));
+        assertTrue("writer running", writer.waitUntilInitialized(5000));
+        writerThread = ClassUtil.getFieldValue(writer, "dispatchThread", Thread.class);
     }
 
 
@@ -130,8 +135,6 @@ public abstract class AbstractLogWriterTest
     protected void joinWriterThread()
     throws Exception
     {
-        Thread writerThread = ClassUtil.getFieldValue(writer, "dispatchThread", Thread.class);
-        assertNotNull("expeted to retrieve writer thread", writerThread);
         writerThread.join();
     }
 

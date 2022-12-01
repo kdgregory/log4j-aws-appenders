@@ -124,18 +124,4 @@ extends AbstractUnitTest<TestableKinesisAppender>
         assertEquals("writer client factory method",    "com.example.Foo.bar",              writer.config.getClientFactoryMethod());
         assertEquals("writer client endpoint",          "kinesis.us-west-1.amazonaws.com",  writer.config.getClientEndpoint());
     }
-
-
-    @Test
-    public void testWriterInitializationSynchronousMode() throws Exception
-    {
-        initialize("testWriterInitializationSynchronousMode");
-
-        logger.debug("this triggers writer creation");
-
-        MockKinesisWriter writer = appender.getMockWriter();
-
-        assertTrue("synchronous mode",                                                      writer.config.getSynchronousMode());
-        assertEquals("batch delay",                     0L,                                 writer.config.getBatchDelay());
-    }
 }

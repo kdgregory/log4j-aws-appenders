@@ -70,37 +70,30 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
     {
         initialize("testLifecycle");
 
-        assertEquals("internal logger configured with name",            appender.getName(), appenderInternalLogger.appenderName);
-
-        long initialTimestamp = System.currentTimeMillis();
-
+        assertEquals("internal logger configured with name",            appender.getName(),     appenderInternalLogger.appenderName);
         assertNull("before messages, writer is null",                   appender.getWriter());
+        
+        long initialTimestamp = System.currentTimeMillis();
 
         logger.debug("first message");
 
         MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
         MockCloudWatchWriter writer = appender.getMockWriter();
 
-        // note: we can't assert initialization and batch processing because the mock doesn't support that
-        // but as long as we can verify that the writer thread was running, we can assume writer tests
-        // have covered that functionality
+        assertEquals("after message 1, calls to writer factory",        1,                          writerFactory.invocationCount);
+        assertNotNull("after message 1, writer is initialized",                                     writer);
+        assertNotSame("writer was started on background thread",        Thread.currentThread(),     writer.writerThread);
+        assertTrue("writer was told to install shutdown hook",                                      writer.config.getUseShutdownHook());
 
-        assertEquals("after message 1, calls to writer factory",        1,              writerFactory.invocationCount);
-        assertNotNull("after message 1, writer is initialized",                         writer);
-        assertNotNull("writer was started on background thread",                        writer.writerThread);
-        assertTrue("writer was told to install shutdown hook",                          writer.config.getUseShutdownHook());
-        assertEquals("actual log-group name",                           "argle",        writer.config.getLogGroupName());
-        assertRegex("actual log-stream name",                           "20\\d{12}",    writer.config.getLogStreamName());
-
-        assertEquals("after message 1, number of messages in writer",   1,              writer.messages.size());
+        assertEquals("after message 1, number of messages in writer",   1,                          writer.messages.size());
 
         // throw in a sleep so that we can discern timestamps
         Thread.sleep(50);
 
         logger.error("test with exception", new Exception("this is a test"));
 
-        assertEquals("after message 2, calls to writer factory",        1,              writerFactory.invocationCount);
-        assertEquals("after message 2, number of messages in writer",   2,              writer.messages.size());
+        assertEquals("after message 2, calls to writer factory",        1,                          writerFactory.invocationCount);
+        assertEquals("after message 2, number of messages in writer",   2,                          writer.messages.size());
 
         long finalTimestamp = System.currentTimeMillis();
 
@@ -109,7 +102,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertTrue("message 1 timestamp <= batch timestamp",   message1.getTimestamp() <= finalTimestamp);
 
         assertRegex(
-                "message 1 follows layout: " + message1.getMessage(),
+                "message 1 follows layout (was: " + message1.getMessage() + ")",
                 "20[12][0-9] TestAbstractAppender first message",
                 message1.getMessage());
 
@@ -126,16 +119,46 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
         // finish off the life-cycle
 
-        assertFalse("appender not closed before shutdown",  appender.isClosed());
-        assertFalse("writer still running before shutdown", writer.stopped);
+        assertFalse("appender not closed before shutdown",      appender.isClosed());
+        assertFalse("writer still running before shutdown",     writer.stopped);
 
         LogManager.shutdown();
 
-        assertTrue("appender closed after shutdown",        appender.isClosed());
-        assertTrue("writer stopped after shutdown",         writer.stopped);
+        assertTrue("appender closed after shutdown",            appender.isClosed());
+        assertTrue("writer stopped after shutdown",             writer.stopped);
     }
 
 
+    @Test
+    public void testSynchronousMode() throws Exception
+    {
+        // note: with Log4J 1.x, appender is not actually initialized until first message written
+        
+        initialize("testSynchronousMode");
+
+        assertEquals("internal logger configured with name",            appender.getName(),     appenderInternalLogger.appenderName);
+        assertNull("before messages, writer is null",                   appender.getWriter());
+
+        logger.debug("first message");
+
+        MockCloudWatchWriterFactory writerFactory = appender.getWriterFactory();
+        MockCloudWatchWriter writer = appender.getMockWriter();
+
+        assertEquals("after message 1, calls to writer factory",        1,                          writerFactory.invocationCount);
+        assertNotNull("after message 1, writer is initialized",                                     writer);
+        assertSame("writer was started on main thread",                 Thread.currentThread(),     writer.writerThread);
+        assertTrue("writer was configured to install shutdown hook",                                writer.config.getUseShutdownHook());
+
+        assertEquals("after message 1, number of messages in writer",   1,                          writer.messages.size());
+        
+        String message1Text = writer.messages.get(0).getMessage();
+        assertRegex(
+                "message 1 follows layout (was: " + message1Text + ")",
+                "20[12][0-9] TestAbstractAppender first message",
+                message1Text);
+    }
+
+    
     @Test
     public void testWriteHeaderAndFooter() throws Exception
     {

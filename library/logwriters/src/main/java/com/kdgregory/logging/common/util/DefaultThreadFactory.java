@@ -21,14 +21,15 @@ import com.kdgregory.logging.common.LogWriter;
 
 
 /**
- *  The default {@link ThreadFactory} for most appenders: creates a normal-priority
- *  daemon thread and starts it running with the specified writer.
+ *  The standard {@link ThreadFactory}: launches a daemon thread to run normal
+ *  writers, runs synchronous writers inline.
  */
 public class DefaultThreadFactory implements ThreadFactory
 {
     private static AtomicInteger threadNumber = new AtomicInteger(0);
 
     private String appenderName;
+
 
     public DefaultThreadFactory(String appenderName)
     {
@@ -39,8 +40,22 @@ public class DefaultThreadFactory implements ThreadFactory
     @Override
     public void startWriterThread(final LogWriter writer, UncaughtExceptionHandler exceptionHandler)
     {
-        final Thread writerThread = createThread(writer, exceptionHandler);
-        writerThread.start();
+        if (writer.isSynchronous())
+        {
+            try
+            {
+                writer.run();
+            }
+            catch (Throwable ex)
+            {
+                exceptionHandler.uncaughtException(Thread.currentThread(), ex);
+            }
+        }
+        else
+        {
+            Thread writerThread = createThread(writer, exceptionHandler);
+            writerThread.start();
+        }
     }
 
 

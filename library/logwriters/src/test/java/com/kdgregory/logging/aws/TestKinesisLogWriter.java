@@ -144,6 +144,8 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         assertTrue("writer is running", writer.isRunning());
 
+        assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
+
         assertEquals("writer batch delay",                          123L,                       writer.getBatchDelay());
         assertEquals("message queue discard policy",                DiscardAction.newest,       messageQueue.getDiscardAction());
         assertEquals("message queue discard threshold",             456,                        messageQueue.getDiscardThreshold());
@@ -940,14 +942,24 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         mock = new MockKinesisFacade(config);
 
         createWriter();
+
+        assertTrue("writer is running",                             writer.isRunning());
+        assertTrue("writer is in synchronous mode",                 writer.isSynchronous());
+        assertSame("writer initialized on main thread",             Thread.currentThread(),     writerThread);
+
+        assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
+
         ((TestableKinesisLogWriter)writer).disableThreadSynchronization();
 
-        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
-        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+        writer.addMessage(new LogMessage(0, "message one"));
+        assertEquals("message has been removed from queue",     0,                      messageQueue.size());
 
+        writer.addMessage(new LogMessage(0, "message two"));
+        assertEquals("message has been removed from queue",     0,                      messageQueue.size());
+
+        assertEquals("messages have been removed from queue",       0,                          messageQueue.size());
         assertEquals("putRecords() invocationCount",                2,                          mock.putRecordsInvocationCount);
         assertSame("putRecords() thread",                           Thread.currentThread(),     mock.putRecordsThread);
-
         assertEquals("putRecords() batch size",                     1,                          mock.putRecordsBatch.size());
         assertEquals("putRecords() last message",                   "message two",              mock.putRecordsBatch.get(0).getMessage());
 

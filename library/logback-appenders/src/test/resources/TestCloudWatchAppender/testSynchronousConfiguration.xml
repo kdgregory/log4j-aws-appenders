@@ -6,10 +6,10 @@
     <layout class="ch.qos.logback.classic.PatternLayout">
       <pattern>%msg</pattern>
     </layout>
-    <logGroup>argle</logGroup>
-    <logStream>bargle</logStream>
+    <logGroup>Irrelevant</logGroup>
+    <logStream>Irrelevant</logStream>
     <synchronous>true</synchronous>
-    <batchDelay>9876</batchDelay>
+    <batchDelay>9876</batchDelay> <!-- note: overridden -->
   </appender>
 
   <logger name="com.kdgregory.logback.aws.TestCloudWatchAppender" level="debug">

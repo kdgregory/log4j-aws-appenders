@@ -25,7 +25,11 @@ import com.kdgregory.logging.common.util.MessageQueue.DiscardAction;
 
 
 /**
- *  Common functionality for destination-specific writer mocks.
+ *  This class exists to support testing appenders. It accepts messages and
+ *  counts invocations, but doesn't actually do anything.
+ *  <p>
+ *  Note: when launched on a thread, the {@link #run} method exits immediately
+ *  after recording its invocation.
  */
 public class MockLogWriter<T extends AbstractWriterConfig<?>>
 implements LogWriter
@@ -33,7 +37,6 @@ implements LogWriter
     public T config;
 
     public volatile Thread writerThread;
-    public Thread shutdownHook;
 
     // the actual writers use a concurrent queue
     public List<LogMessage> messages = Collections.synchronizedList(new ArrayList<LogMessage>());
@@ -41,10 +44,9 @@ implements LogWriter
 
     public boolean stopped;
 
-    public int initializeInvocationCount;
-    public int processBatchInvocationCount;
-    public long processBatchLastTimeout;
-    public int cleanupInvocationCount;
+    public int runInvocationCount;
+    public int addMessageInvocationCount;
+    public int stopInvocationCount;
     public int waitUntilStoppedInvocationCount;
 
 
@@ -54,7 +56,7 @@ implements LogWriter
     }
 
 //----------------------------------------------------------------------------
-//  LogWriter
+//  Implementation of LogWriter
 //----------------------------------------------------------------------------
 
     @Override
@@ -91,20 +93,30 @@ implements LogWriter
     {
         return config.getSynchronousMode();
     }
+    
+    
+    @Override
+    public void run()
+    {
+        runInvocationCount++;
+        writerThread = Thread.currentThread();
+    }
 
 
     @Override
     public void addMessage(LogMessage message)
     {
+        addMessageInvocationCount++;
         messages.add(message);
         lastMessage = message;
     }
 
 
-    public boolean initialize()
+    @Override
+    public void stop()
     {
-        initializeInvocationCount++;
-        return true;
+        stopInvocationCount++;
+        stopped = true;
     }
 
 
@@ -129,20 +141,6 @@ implements LogWriter
     }
 
 
-    public synchronized void processBatch(long shutdownTime)
-    {
-        processBatchInvocationCount++;
-        processBatchLastTimeout = shutdownTime;
-    }
-
-
-    @Override
-    public void stop()
-    {
-        stopped = true;
-    }
-
-
     @Override
     public void waitUntilStopped(long millisToWait)
     {
@@ -159,24 +157,7 @@ implements LogWriter
             throw new RuntimeException("unexpected interrupt");
         }
     }
-
-    public void cleanup()
-    {
-        cleanupInvocationCount++;
-    }
-
-//----------------------------------------------------------------------------
-//  Runnable
-//----------------------------------------------------------------------------
-
-    @Override
-    public void run()
-    {
-        // most of the tests don't want the writer running on a thread, but
-        // for those that do, we need to track it
-        writerThread = Thread.currentThread();
-    }
-
+    
 //----------------------------------------------------------------------------
 //  Mock-specific methods
 //----------------------------------------------------------------------------

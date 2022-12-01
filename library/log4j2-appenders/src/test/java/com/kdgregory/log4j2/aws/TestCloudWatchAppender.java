@@ -27,8 +27,8 @@ import com.kdgregory.logging.testhelpers.cloudwatch.MockCloudWatchWriter;
 
 
 /**
- *  These tests exercise appender logic specific to CloudWatchAppender, using a
- *  mock log-writer.
+ *  These tests exercise functionality speicfic to the CloudWatch appender.
+ *  They do not attempt to verify message operations.
  */
 public class TestCloudWatchAppender
 extends AbstractUnitTest<TestableCloudWatchAppender>
@@ -208,19 +208,5 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertRegex("writer log stream name",       "[0-9]{1,6}-[0-9]{1,6}",    writer.config.getLogStreamName());
 
         // no reason to think that any of the other writer config will be different from prior test
-    }
-
-
-    @Test
-    public void testWriterInitializationSynchronousMode() throws Exception
-    {
-        initialize("testWriterInitializationSynchronousMode");
-
-        logger.debug("this triggers writer creation");
-
-        MockCloudWatchWriter writer = appender.getMockWriter();
-
-        assertTrue("synchronous mode",                                                      writer.config.getSynchronousMode());
-        assertEquals("batch delay",                     0L,                                 writer.config.getBatchDelay());
     }
 }

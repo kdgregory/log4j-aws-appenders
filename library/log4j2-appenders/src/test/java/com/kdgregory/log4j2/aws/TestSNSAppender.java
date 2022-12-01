@@ -187,18 +187,4 @@ extends AbstractUnitTest<TestableSNSAppender>
         assertRegex("writer topicArn",                  "arn-[0-9]{1,6}-[0-9]{1,6}",        writer.config.getTopicArn());
         assertEquals("writer subect",                   "example",                          writer.config.getSubject());
     }
-
-
-    @Test
-    public void testWriterInitializationSynchronousMode() throws Exception
-    {
-        initialize("testWriterInitializationSynchronousMode");
-
-        logger.debug("this triggers writer creation");
-
-        MockSNSWriter writer = appender.getMockWriter();
-
-        assertTrue("synchronous mode",                                                      writer.config.getSynchronousMode());
-        assertEquals("batch delay",                     0L,                                 writer.config.getBatchDelay());
-    }
 }

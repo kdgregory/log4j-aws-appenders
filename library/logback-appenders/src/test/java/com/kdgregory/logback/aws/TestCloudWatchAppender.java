@@ -86,6 +86,18 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
 
     @Test
+    public void testSynchronousConfiguration() throws Exception
+    {
+        initialize("testSynchronousConfiguration");
+
+        // all we care about is the interaction between synchronous and batchDelay
+
+        assertEquals("synchronous mode",    true,                           appender.getSynchronous());
+        assertEquals("batch delay",         0L,                             appender.getBatchDelay());
+    }
+
+
+    @Test
     public void testInvalidRetentionPeriod() throws Exception
     {
         initialize("testInvalidRetentionPeriod");
@@ -111,18 +123,6 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
 
     @Test
-    public void testSynchronousConfiguration() throws Exception
-    {
-        initialize("testSynchronousConfiguration");
-
-        // all we care about is the interaction between synchronous and batchDelay
-
-        assertEquals("synchronous mode",    true,                           appender.getSynchronous());
-        assertEquals("batch delay",         0L,                             appender.getBatchDelay());
-    }
-
-
-    @Test
     public void testWriterInitialization() throws Exception
     {
         // property has to be set before initialization
@@ -143,19 +143,5 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("writer discard action",           DiscardAction.newest,               writer.config.getDiscardAction());
         assertEquals("writer client factory method",    "com.example.Foo.bar",              writer.config.getClientFactoryMethod());
         assertEquals("writer client endpoint",          "logs.us-west-2.amazonaws.com",     writer.config.getClientEndpoint());
-    }
-
-
-    @Test
-    public void testWriterInitializationSynchronousMode() throws Exception
-    {
-        initialize("testWriterInitializationSynchronousMode");
-
-        logger.debug("this triggers writer creation");
-
-        MockCloudWatchWriter writer = appender.getMockWriter();
-
-        assertTrue("synchronous mode",                                                      writer.config.getSynchronousMode());
-        assertEquals("batch delay",                     0L,                                 writer.config.getBatchDelay());
     }
 }

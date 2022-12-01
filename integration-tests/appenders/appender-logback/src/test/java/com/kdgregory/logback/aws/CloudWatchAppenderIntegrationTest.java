@@ -289,7 +289,6 @@ extends AbstractCloudWatchAppenderIntegrationTest
 //----------------------------------------------------------------------------
 
     @Test
-    @Ignore("FIXME - disabled until #170")
     public void testSynchronousModeSingleThread() throws Exception
     {
         init("testSynchronousModeSingleThread");
@@ -298,7 +297,6 @@ extends AbstractCloudWatchAppenderIntegrationTest
 
 
     @Test
-    @Ignore("FIXME - disabled until #170")
     public void testSynchronousModeMultiThread() throws Exception
     {
         init("testSynchronousModeMultiThread");

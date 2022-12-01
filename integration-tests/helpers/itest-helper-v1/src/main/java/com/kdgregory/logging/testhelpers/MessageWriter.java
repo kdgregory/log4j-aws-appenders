@@ -15,6 +15,7 @@
 package com.kdgregory.logging.testhelpers;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -69,7 +70,18 @@ public abstract class MessageWriter implements Runnable
     public static void runOnThreads(MessageWriter... writers)
     throws Exception
     {
-        List<Thread> threads = new ArrayList<Thread>(writers.length);
+        runOnThreads(Arrays.asList(writers));
+    }
+
+
+    /**
+     *  Helper function to take a collection of writers and invoke them on threads,
+     *  then wait for those threads to complete.
+     */
+    public static void runOnThreads(List<MessageWriter> writers)
+    throws Exception
+    {
+        List<Thread> threads = new ArrayList<Thread>(writers.size());
         for (MessageWriter writer : writers)
         {
             Thread thread = new Thread(writer);

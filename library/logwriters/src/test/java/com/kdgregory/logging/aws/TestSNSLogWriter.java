@@ -534,15 +534,20 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
         mock = new MockSNSFacade(config, TEST_TOPIC_NAME);
 
         createWriter();
-        assertTrue("writer is running", writer.isRunning());
+
+        assertTrue("writer is running",                             writer.isRunning());
+        assertTrue("writer is in synchronous mode",                 writer.isSynchronous());
+        assertSame("writer initialized on main thread",             Thread.currentThread(),     writerThread);
+
         ((TestableSNSLogWriter)writer).disableThreadSynchronization();
 
         writer.addMessage(new LogMessage(0, "message one"));
+        assertEquals("message has been removed from queue",     0,                      messageQueue.size());
+
         writer.addMessage(new LogMessage(0, "message two"));
+        assertEquals("message has been removed from queue",     0,                      messageQueue.size());
 
-        assertEquals("messages have been removed from queue",   0,                      messageQueue.size());
-
-        assertSame("mock: thread",                              Thread.currentThread(), mock.publishThread);
+        assertSame("mock: publish thread",                      Thread.currentThread(), mock.publishThread);
         assertEquals("mock: publish ARN",                       TEST_TOPIC_ARN,         mock.publishArn);
         assertEquals("mock: publish subject",                   TEST_SUBJECT,           mock.publishSubject);
         assertEquals("mock: last message written",              "message two",          mock.publishMessage.getMessage());

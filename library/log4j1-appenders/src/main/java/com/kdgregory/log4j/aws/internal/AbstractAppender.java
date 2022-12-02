@@ -340,6 +340,24 @@ extends AppenderSkeleton
         return appenderConfig.getInitializationTimeout();
     }
 
+
+    /**
+     *  Sets the <code>enableBatchLogging</code> configuration property.
+     */
+    public void setEnableBatchLogging(boolean value)
+    {
+        appenderConfig.setEnableBatchLogging(value);
+    }
+
+
+    /**
+     *  Returns the <code>enableBatchLogging</code> configuration property.
+     */
+    public boolean getEnableBatchLogging()
+    {
+        return appenderConfig.getEnableBatchLogging();
+    }
+
 //----------------------------------------------------------------------------
 //  Other accessors
 //----------------------------------------------------------------------------

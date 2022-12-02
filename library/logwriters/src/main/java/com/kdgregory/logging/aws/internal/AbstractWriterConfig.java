@@ -33,6 +33,7 @@ implements Cloneable
     public final static int             DEFAULT_DISCARD_THRESHOLD       = 10000;
     public final static DiscardAction   DEFAULT_DISCARD_ACTION          = DiscardAction.oldest;
     public final static boolean         DEFAULT_USE_SHUTDOWN_HOOK       = true;
+    public final static boolean         DEFAULT_ENABLE_BATCH_LOGGING    = false;
 
 
     private boolean                     truncateOversizeMessages        = DEFAULT_TRUNCATE_OVERSIZE;
@@ -45,7 +46,8 @@ implements Cloneable
     private String                      clientRegion;
     private String                      clientEndpoint;
     private boolean                     useShutdownHook                 = DEFAULT_USE_SHUTDOWN_HOOK;
-    private long                        initializationTimeout;
+    private long                        initializationTimeout;          // default is per destination
+    private boolean                     enableBatchLogging              = DEFAULT_ENABLE_BATCH_LOGGING;
 
 
     protected AbstractWriterConfig(long initializationTimeout)
@@ -212,5 +214,16 @@ implements Cloneable
     {
         initializationTimeout = value;
         return (T)this;
+    }
+
+
+    public boolean getEnableBatchLogging()
+    {
+        return enableBatchLogging;
+    }
+
+    public void setEnableBatchLogging(boolean value)
+    {
+        enableBatchLogging = value;
     }
 }

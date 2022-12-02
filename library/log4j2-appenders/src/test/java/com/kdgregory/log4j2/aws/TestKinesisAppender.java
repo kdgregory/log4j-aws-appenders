@@ -63,6 +63,7 @@ extends AbstractUnitTest<TestableKinesisAppender>
         assertEquals("client region",           "us-west-1",                        appender.getConfig().getClientRegion());
         assertEquals("client endpoint",         "kinesis.us-west-2.amazonaws.com",  appender.getConfig().getClientEndpoint());
         assertEquals("initialization timeout",  30000,                              appender.getConfig().getInitializationTimeout());
+        assertEquals("enable batch logging",    true,                               appender.getConfig().isEnableBatchLogging());
     }
 
 
@@ -87,6 +88,7 @@ extends AbstractUnitTest<TestableKinesisAppender>
         assertEquals("client region",           null,                               appender.getConfig().getClientRegion());
         assertEquals("client endpoint",         null,                               appender.getConfig().getClientEndpoint());
         assertEquals("initialization timeout",  120000,                             appender.getConfig().getInitializationTimeout());
+        assertEquals("enable batch logging",    false,                              appender.getConfig().isEnableBatchLogging());
     }
 
 

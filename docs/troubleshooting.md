@@ -350,3 +350,26 @@ Caused by: java.lang.ClassNotFoundException: com.amazonaws.services.logs.model.I
 	at sun.misc.Launcher$AppClassLoader.loadClass(Launcher.java:349)
 	at java.lang.ClassLoader.loadClass(ClassLoader.java:357)
 ```
+
+
+# Batch Logging
+
+After initialization, the log-writers don't normally log their activity unless there's an error.
+However, you can configure them to log every batch, by setting the `enableBatchLogging` property
+to `true`. When you do this, and turn on the logging framework's debug logging, you'll see
+output like this:
+
+```
+06:38:08,584 |-INFO in com.kdgregory.logback.aws.CloudWatchAppender[CLOUDWATCH] - log writer initialization complete (thread: com-kdgregory-aws-logwriter-logback-cloudwatch-1)
+...
+06:38:10,585 |-INFO in com.kdgregory.logback.aws.CloudWatchAppender[CLOUDWATCH] - about to write batch of 6 message(s)
+06:38:10,636 |-INFO in com.kdgregory.logback.aws.CloudWatchAppender[CLOUDWATCH] - wrote batch of 6 message(s)
+```
+
+In the case of the Kinesis log-writer, this logging also tells you if any messages in a batch
+were rejected by the stream (indicating high contention on a particular partition key):
+
+```
+06:45:14,548 |-INFO in com.kdgregory.logback.aws.KinesisAppender[KINESIS] - about to write batch of 16 message(s)
+06:45:14,659 |-INFO in com.kdgregory.logback.aws.KinesisAppender[KINESIS] - wrote batch of 16 message(s); 0 rejected
+```

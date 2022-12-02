@@ -763,6 +763,79 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
 
     @Test
+    public void testBatchLogging() throws Exception
+    {
+        config.setEnableBatchLogging(true);
+        mock = new MockKinesisFacade(config);
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        waitForWriterThread();
+
+        assertEquals("putRecords() batch size",                     1,                          mock.putRecordsBatch.size());
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message three"));
+        waitForWriterThread();
+
+        assertEquals("putRecords() batch size",                     2,                          mock.putRecordsBatch.size());
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
+                        "log writer initialization complete.*",
+                        "about to write batch of 1 message\\(s\\)",
+                        "wrote batch of 1 message\\(s\\); 0 rejected",
+                        "about to write batch of 2 message\\(s\\)",
+                        "wrote batch of 2 message\\(s\\); 0 rejected");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testBatchLoggingPartial() throws Exception
+    {
+        config.setEnableBatchLogging(true);
+        mock = new MockKinesisFacade(config)
+        {
+            @Override
+            public List<LogMessage> putRecords(List<LogMessage> batch)
+            {
+                return (batch.size() < 2)
+                     ? Collections.emptyList()
+                     : batch.subList(2, batch.size());
+            }
+        };
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message two"));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message three"));
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message four"));
+
+        waitForWriterThread();
+
+        assertEquals("putRecords() batch size",                     4,                          mock.putRecordsBatch.size());
+
+        waitForWriterThread();
+
+        assertEquals("putRecords() batch size",                     2,                          mock.putRecordsBatch.size());
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
+                        "log writer initialization complete.*",
+                        "about to write batch of 4 message\\(s\\)",
+                        "wrote batch of 4 message\\(s\\); 2 rejected",
+                        "about to write batch of 2 message\\(s\\)",
+                        "wrote batch of 2 message\\(s\\); 0 rejected");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
     public void testDiscardEmptyMessage() throws Exception
     {
         mock = new MockKinesisFacade(config);

@@ -80,6 +80,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("synchronous mode",        false,                          appender.getSynchronous());
         assertEquals("use shutdown hook",       true,                           appender.getUseShutdownHook());
         assertEquals("initialization timeout",  20000,                          appender.getInitializationTimeout());
+        assertEquals("enable batch logging",    true,                           appender.getEnableBatchLogging());
     }
 
 
@@ -105,6 +106,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("client region",           null,                           appender.getClientRegion());
         assertEquals("client endpoint",         null,                           appender.getClientEndpoint());
         assertEquals("initialization timeout",  60000,                          appender.getInitializationTimeout());
+        assertEquals("enable batch logging",    false,                          appender.getEnableBatchLogging());
     }
 
 

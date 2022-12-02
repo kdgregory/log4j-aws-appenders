@@ -122,12 +122,16 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics>
         {
             try
             {
+                if (config.getEnableBatchLogging())
+                    logger.debug("about to publish 1 message");
                 // don't retry; just let messages accumulate
                 facade.publish(message);
+                if (config.getEnableBatchLogging())
+                    logger.debug("published 1 message");
             }
             catch (Exception ex)
             {
-                stats.setLastError("failed to publish: " + ex.getMessage(), ex);
+                reportError("failed to publish: " + ex.getMessage(), ex);
                 failures.add(message);
             }
         }

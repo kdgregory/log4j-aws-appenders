@@ -58,6 +58,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("client region",           "us-west-1",                    appender.getConfig().getClientRegion());
         assertEquals("client endpoint",         "logs.us-west-2.amazonaws.com", appender.getConfig().getClientEndpoint());
         assertEquals("initialization timeout",  20000,                          appender.getConfig().getInitializationTimeout());
+        assertEquals("enable batch logging",    true,                           appender.getConfig().isEnableBatchLogging());
 
         // this appender holds retention period separate from configuration, so check it separately
 
@@ -86,6 +87,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertEquals("client region",           null,                           appender.getConfig().getClientRegion());
         assertEquals("client endpoint",         null,                           appender.getConfig().getClientEndpoint());
         assertEquals("initialization timeout",  60000,                          appender.getConfig().getInitializationTimeout());
+        assertEquals("enable batch logging",    false,                          appender.getConfig().isEnableBatchLogging());
 
         // the appender holds retention period separate from configuration, so check it separately
 

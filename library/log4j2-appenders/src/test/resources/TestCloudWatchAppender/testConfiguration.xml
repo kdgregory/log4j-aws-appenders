@@ -18,6 +18,7 @@
             <clientEndpoint>logs.us-west-2.amazonaws.com</clientEndpoint>
             <useShutdownHook>false</useShutdownHook>
             <initializationTimeout>20000</initializationTimeout>
+            <enableBatchLogging>true</enableBatchLogging>
         </TestableCloudWatchAppender>
     </Appenders>
 

@@ -117,13 +117,18 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics>
     protected List<LogMessage> sendBatch(List<LogMessage> currentBatch)
     {
         stats.setLastBatchSize(currentBatch.size());
+        if (config.getEnableBatchLogging())
+            logger.debug("about to write batch of " + currentBatch.size() + " message(s)");
+
+        // this should never happen (we wait for at least one message in queue)
+        if (currentBatch.isEmpty())
+            return currentBatch;
+
         List<LogMessage> failures = new ArrayList<LogMessage>();
         for (LogMessage message : currentBatch)
         {
             try
             {
-                if (config.getEnableBatchLogging())
-                    logger.debug("about to publish 1 message");
                 // don't retry; just let messages accumulate
                 facade.publish(message);
                 if (config.getEnableBatchLogging())

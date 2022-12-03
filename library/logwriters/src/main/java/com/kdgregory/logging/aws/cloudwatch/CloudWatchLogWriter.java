@@ -123,13 +123,16 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
     protected List<LogMessage> sendBatch(List<LogMessage> batch)
     {
         stats.setLastBatchSize(batch.size());
+        if (config.getEnableBatchLogging())
+            logger.debug("about to write batch of " + batch.size() + " message(s)");
+
+        // this should never happen (we wait for at least one message in queue)
         if (batch.isEmpty())
             return batch;
 
+        // CloudWatch wants all messages to be sorted by timestamp
         Collections.sort(batch);
 
-        if (config.getEnableBatchLogging())
-            logger.debug("about to write batch of " + batch.size() + " message(s)");
         Instant timeoutAt = Instant.now().plus(sendTimeout);
         List<LogMessage> result = sendRetry.invoke(timeoutAt, () ->
         {

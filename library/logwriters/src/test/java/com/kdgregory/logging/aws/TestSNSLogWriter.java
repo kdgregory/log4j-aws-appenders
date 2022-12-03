@@ -488,7 +488,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
                         "log writer starting.*",
                         "checking for existence of SNS topic.*",
                         "log writer initialization complete.*",
-                        "about to publish 1 message",
+                        "about to write batch of 1 message\\(s\\)",
                         "published 1 message");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();

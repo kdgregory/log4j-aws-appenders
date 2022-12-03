@@ -56,6 +56,8 @@ public class TestJsonAccessLayout
     private ServerAdapter serverAdapter;
     private IAccessEvent event;
 
+    // these are assigned by applyLayoutAndParse()
+    private long layoutTime;
     private String json;
     private Document dom;
 
@@ -127,6 +129,7 @@ public class TestJsonAccessLayout
     private void applyLayoutAndParse(JsonAccessLayout layout)
     throws Exception
     {
+        layoutTime = System.currentTimeMillis();
         event = new AccessEvent(request, response, serverAdapter);
         layout.start();
         json = layout.doLayout(event);
@@ -143,8 +146,8 @@ public class TestJsonAccessLayout
         SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         parser.setTimeZone(TimeZone.getTimeZone("UTC"));
         Date timestamp = parser.parse(timestampAsString);
-        assertTrue("timestamp > now - 1s", timestamp.getTime() > System.currentTimeMillis() - 1000);
-        assertTrue("timestamp < now + 1s", timestamp.getTime() < System.currentTimeMillis() + 1000);
+        assertTrue("timestamp > now - 1s", timestamp.getTime() > layoutTime - 1000);
+        assertTrue("timestamp < now + 1s", timestamp.getTime() < layoutTime + 1000);
 
         Number elapsedTime = new XPathWrapper("/data/elapsedTime").evaluateAsNumber(dom);
         NumericAsserts.assertInRange("elapsed time", EXPECTED_ELAPSED_TIME - 20, EXPECTED_ELAPSED_TIME + 20, elapsedTime.longValue());

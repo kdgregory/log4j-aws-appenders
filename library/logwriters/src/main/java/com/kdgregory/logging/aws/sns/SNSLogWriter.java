@@ -85,7 +85,7 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics>
 
         try
         {
-            logger.debug("checking for existance of SNS topic: " +
+            logger.debug("checking for existence of SNS topic: " +
                          (config.getTopicArn() != null ? config.getTopicArn() : config.getTopicName()));
             String topicArn = facade.lookupTopic();
             if (topicArn == null)

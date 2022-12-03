@@ -116,7 +116,7 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics>
     @Override
     protected List<LogMessage> sendBatch(List<LogMessage> currentBatch)
     {
-        // we process this as a list because we may be recovering from failures
+        stats.setLastBatchSize(currentBatch.size());
         List<LogMessage> failures = new ArrayList<LogMessage>();
         for (LogMessage message : currentBatch)
         {

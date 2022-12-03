@@ -414,6 +414,9 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
         assertEquals("mock: shutdownInvocationCount",           0,                      mock.shutdownInvocationCount);
 
         assertStatisticsTotalMessagesSent(1);
+        assertEquals("stats: last batch size",                  1,                      stats.getLastBatchSize());
+        assertEquals("stats: last batch messages sent",         1,                      stats.getMessagesSentLastBatch());
+        assertEquals("stats: last batch messages requued",      0,                      stats.getMessagesRequeuedLastBatch());
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
@@ -450,6 +453,9 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
         assertEquals("mock: publishInvocationCount",            1,                      mock.publishInvocationCount);
         assertEquals("mock: shutdownInvocationCount",           0,                      mock.shutdownInvocationCount);
 
+        assertEquals("stats: last batch size",                  1,                      stats.getLastBatchSize());
+        assertEquals("stats: last batch messages sent",         0,                      stats.getMessagesSentLastBatch());
+        assertEquals("stats: last batch messages requued",      1,                      stats.getMessagesRequeuedLastBatch());
         assertRegex("stats: error message",                     "failed to publish.*",  stats.getLastErrorMessage());
         assertSame("stats: exception",                          cause,                  stats.getLastError());
 

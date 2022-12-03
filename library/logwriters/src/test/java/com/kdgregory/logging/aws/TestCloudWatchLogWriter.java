@@ -820,7 +820,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
 
     @Test
-    public void testWriteDedicatedWriterHappyPath() throws Exception
+    public void testWriteHappyPathDedicatedWriter() throws Exception
     {
         mock = new MockCloudWatchFacade(config);
         createWriter();
@@ -847,6 +847,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("message has been removed from queue",         0,                      messageQueue.size());
 
         assertStatisticsTotalMessagesSent(1);
+        assertEquals("statistics: last batch size",                 1,                      stats.getLastBatchSize());
         assertEquals("statistics: last batch messages sent",        1,                      stats.getMessagesSentLastBatch());
 
         expectedToken = mock.nextSequenceToken;
@@ -869,6 +870,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putEvents: last call second message",         "message three",        mock.putEventsMessages.get(1).getMessage());
 
         assertStatisticsTotalMessagesSent(3);
+        assertEquals("statistics: last batch size",                 2,                      stats.getLastBatchSize());
         assertEquals("statistics: last batch messages sent",        2,                      stats.getMessagesSentLastBatch());
 
         assertEquals("all messages processed", Arrays.asList("message one", "message two", "message three"), mock.allMessagesSent);
@@ -885,7 +887,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
 
     @Test
-    public void testWriteNonDedicatedWriter() throws Exception
+    public void testWriteHappyPathSharedWriter() throws Exception
     {
         config.setDedicatedWriter(false);
         mock = new MockCloudWatchFacade(config);
@@ -913,6 +915,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("message has been removed from queue",         0,                      messageQueue.size());
 
         assertStatisticsTotalMessagesSent(1);
+        assertEquals("statistics: last batch size",                 1,                      stats.getLastBatchSize());
         assertEquals("statistics: last batch messages sent",        1,                      stats.getMessagesSentLastBatch());
 
         expectedToken = mock.nextSequenceToken;
@@ -934,6 +937,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putEvents: last call second message",         "message three",        mock.putEventsMessages.get(1).getMessage());
 
         assertStatisticsTotalMessagesSent(3);
+        assertEquals("statistics: last batch size",                 2,                      stats.getLastBatchSize());
         assertEquals("statistics: last batch messages sent",        2,                      stats.getMessagesSentLastBatch());
 
         assertEquals("all messages processed", Arrays.asList("message one", "message two", "message three"), mock.allMessagesSent);
@@ -999,6 +1003,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("message has been removed from queue",         0,                      messageQueue.size());
 
         assertStatisticsTotalMessagesSent(1);
+        assertEquals("statistics: last batch size",                 1,                      stats.getLastBatchSize());
         assertEquals("statistics: last batch messages sent",        1,                      stats.getMessagesSentLastBatch());
 
         String expectedToken = mock.nextSequenceToken;
@@ -1017,6 +1022,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putEvents: last call second message",         "message three",        mock.putEventsMessages.get(1).getMessage());
 
         assertStatisticsTotalMessagesSent(3);
+        assertEquals("statistics: last batch size",                 2,                      stats.getLastBatchSize());
         assertEquals("statistics: last batch messages sent",        2,                      stats.getMessagesSentLastBatch());
 
         assertEquals("all messages processed", Arrays.asList("message one", "message two", "message three"), mock.allMessagesSent);
@@ -1062,6 +1068,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         assertEquals("message has been removed from queue",         0,                      messageQueue.size());
 
+        assertEquals("statistics: last batch size",                 1,                      stats.getLastBatchSize());
         assertEquals("statistics: last batch messages sent",        1,                      stats.getMessagesSentLastBatch());
         assertEquals("stats: throttling has been recorded",         1,                      stats.getThrottledWrites());
 
@@ -1164,6 +1171,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("message has been removed from queue",         0,                      messageQueue.size());
 
         assertStatisticsTotalMessagesSent(1);
+        assertEquals("statistics: last batch size",                 1,                      stats.getLastBatchSize());
         assertEquals("statistics: last batch messages sent",        1,                      stats.getMessagesSentLastBatch());
 
         internalLogger.assertInternalDebugLog("log writer starting.*",
@@ -1203,6 +1211,9 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         assertEquals("message has been returned to queue",          1,                      messageQueue.size());
 
+        assertEquals("stats: last batch size",                      1,                      stats.getLastBatchSize());
+        assertEquals("stats: last batch sent",                      0,                      stats.getMessagesSentLastBatch());
+        assertEquals("stats: last batch requeued",                  1,                      stats.getMessagesRequeuedLastBatch());
         assertInRange("stats: reported sequence token race",        3, 4,                   stats.getWriterRaceRetries());  // this is dependent on timing
         assertEquals("stats: reported sequence token race failure", 1,                      stats.getUnrecoveredWriterRaceRetries());
 
@@ -1298,6 +1309,11 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("putEvents: last call message",                "message one",          mock.putEventsMessages.get(0).getMessage());
 
         assertEquals("message has been returned to queue",          1,                      messageQueue.size());
+
+        assertEquals("stats: total messages sent",                  0,                      stats.getMessagesSent());
+        assertEquals("stats: last batch size",                      1,                      stats.getLastBatchSize());
+        assertEquals("stats: last batch sent",                      0,                      stats.getMessagesSentLastBatch());
+        assertEquals("stats: last batch requeued",                  1,                      stats.getMessagesRequeuedLastBatch());
 
         // let writer try again
 

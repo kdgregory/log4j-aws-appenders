@@ -75,6 +75,12 @@ public interface KinesisWriterStatisticsMXBean
 
 
     /**
+     *  Returns the number of messages in the most recent batch.
+     */
+    int getLastBatchSize();
+
+
+    /**
      *  Returns the number of messages successfully sent to the stream in the last
      *  batch. This should be at least 1; higher values indicate how many messages
      *  will be lost if the program shuts down unexpectedly.

@@ -122,6 +122,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
     @Override
     protected List<LogMessage> sendBatch(List<LogMessage> batch)
     {
+        stats.setLastBatchSize(batch.size());
         if (batch.isEmpty())
             return batch;
 

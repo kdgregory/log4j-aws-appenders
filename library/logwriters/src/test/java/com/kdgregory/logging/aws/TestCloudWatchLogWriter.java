@@ -1650,6 +1650,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
         assertEquals("createLogGroup: invocation count",            0,                          mock.createLogGroupInvocationCount);
         assertEquals("createLogStream: invocation count",           0,                          mock.createLogStreamInvocationCount);
 
+        // this is needed because we have no way of releasing the processBatch() semaphore
+        // when we invoke that method on the main thread
         ((TestableCloudWatchLogWriter)writer).disableThreadSynchronization();
 
         writer.addMessage(new LogMessage(0, "message one"));

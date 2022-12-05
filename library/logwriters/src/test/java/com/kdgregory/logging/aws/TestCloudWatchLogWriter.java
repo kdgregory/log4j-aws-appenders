@@ -112,6 +112,7 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
                  .setBatchDelay(100)
                  .setDiscardThreshold(10000)
                  .setDiscardAction(DiscardAction.oldest)
+                 .setUseShutdownHook(false)
                  .setInitializationTimeout(300);
 
         stats = new CloudWatchWriterStatistics();
@@ -119,9 +120,15 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
 
     @After
-    public void checkUncaughtExceptions()
+    public void tearDown()
     throws Throwable
     {
+        if (writer != null)
+        {
+            writer.stop();
+            ((TestableCloudWatchLogWriter)writer).releaseWriterThread();
+        }
+
         if (uncaughtException != null)
             throw uncaughtException;
     }

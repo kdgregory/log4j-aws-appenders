@@ -61,6 +61,9 @@ extends CloudWatchLogWriter
     @Override
     public synchronized void processBatch(long waitUntil)
     {
+        if (!isRunning())
+            return;
+
         try
         {
             allowWriterThread.acquire();
@@ -86,6 +89,16 @@ extends CloudWatchLogWriter
         allowWriterThread.release();
         Thread.sleep(100);
         allowMainThread.acquire();
+    }
+
+
+    /**
+     *  Allows the writer thread to proceed, without waiting (this is used in test teardown).
+     */
+    public void releaseWriterThread()
+    throws Exception
+    {
+        allowWriterThread.release();
     }
 
 

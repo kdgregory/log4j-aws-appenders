@@ -111,6 +111,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
                  .setBatchDelay(100)
                  .setDiscardThreshold(10000)
                  .setDiscardAction(DiscardAction.oldest)
+                 .setUseShutdownHook(false)
                  .setInitializationTimeout(250);
 
         stats = new KinesisWriterStatistics();
@@ -118,9 +119,15 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
 
     @After
-    public void checkUncaughtExceptions()
+    public void tearDown()
     throws Throwable
     {
+        if (writer != null)
+        {
+            writer.stop();
+            ((TestableKinesisLogWriter)writer).releaseWriterThread();
+        }
+
         if (uncaughtException != null)
             throw uncaughtException;
     }

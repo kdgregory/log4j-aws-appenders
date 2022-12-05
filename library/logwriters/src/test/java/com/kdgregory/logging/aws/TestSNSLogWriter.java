@@ -110,6 +110,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
                  .setSubject(TEST_SUBJECT)
                  .setDiscardThreshold(10000)
                  .setDiscardAction(DiscardAction.oldest)
+                 .setUseShutdownHook(false)
                  .setInitializationTimeout(250);
 
         stats = new SNSWriterStatistics();
@@ -117,9 +118,15 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 
 
     @After
-    public void checkUncaughtExceptions()
+    public void tearDown()
     throws Throwable
     {
+        if (writer != null)
+        {
+            writer.stop();
+            ((TestableSNSLogWriter)writer).releaseWriterThread();
+        }
+
         if (uncaughtException != null)
             throw uncaughtException;
     }

@@ -53,38 +53,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- there should be no direct dependencies on SDK jars -->
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-core</artifactId>
-            <version>${aws-sdk-v1.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-kinesis</artifactId>
-            <version>${aws-sdk-v1.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-logs</artifactId>
-            <version>${aws-sdk-v1.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-sns</artifactId>
-            <version>${aws-sdk-v1.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-sts</artifactId>
-            <version>${aws-sdk-v1.version}</version>
-            <scope>test</scope>
-        </dependency>
-
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
             <artifactId>logwriters</artifactId>
@@ -93,7 +61,6 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

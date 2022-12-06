@@ -24,22 +24,6 @@
             <artifactId>logwriters</artifactId>
             <version>${project.version}</version>
         </dependency>
-        
-        <!-- this is needed for testing account ID lookup -->
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-sts</artifactId>
-            <version>${aws-sdk-v1.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- this is needed for testing EC2 instance ID lookup -->
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-core</artifactId>
-            <version>${aws-sdk-v1.version}</version>
-            <scope>provided</scope>
-        </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>

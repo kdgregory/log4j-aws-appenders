@@ -13,7 +13,6 @@
     <appender name="CLOUDWATCH" class="com.kdgregory.logback.aws.CloudWatchAppender">
         <logGroup>AppenderExample</logGroup>
         <logStream>Logback-Example-{date}-{hostname}-{pid}</logStream>
-        <dedicatedWriter>true</dedicatedWriter>
         <layout class="ch.qos.logback.classic.PatternLayout">
             <pattern>%d{ISO8601} %-5level [%thread] %logger{24} - %msg%n</pattern>
         </layout>
@@ -21,6 +20,7 @@
 
     <appender name="KINESIS" class="com.kdgregory.logback.aws.KinesisAppender">
         <streamName>AppenderExample</streamName>
+        <autoCreate>true</autoCreate>
         <layout class="com.kdgregory.logback.aws.JsonLayout">
             <appendNewlines>true</appendNewlines>
             <enableHostname>true</enableHostname>

@@ -10,12 +10,12 @@
         <CloudWatchAppender name="CLOUDWATCH">
             <logGroup>AppenderExample</logGroup>
             <logStream>Log4J2-Webapp-{date}-{hostname}-${awslogs:pid}</logStream>
-            <dedicatedWriter>true</dedicatedWriter>
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t] %c - %X{requestUUID} - %m%n" />
         </CloudWatchAppender>
 
         <KinesisAppender name="KINESIS">
             <streamName>AppenderExample</streamName>
+            <autoCreate>true</autoCreate>
             <JsonLayout complete="false" compact="true" eventEol="true" properties="true" locationInfo="true">
                 <KeyValuePair key="applicationName" value="Log4J2-Webapp" />
                 <KeyValuePair key="environment" value="${env:ENVIRONMENT:-dev}" />

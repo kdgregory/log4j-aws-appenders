@@ -916,8 +916,6 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         mock = new MockKinesisFacade(config);
         createWriter();
 
-        // send discarded message first, OK-size message to trigger batch-builidng
-
         writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
         writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));
         waitForWriterThread();

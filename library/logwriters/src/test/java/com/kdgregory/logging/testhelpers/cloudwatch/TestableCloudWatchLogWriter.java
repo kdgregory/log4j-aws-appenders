@@ -71,7 +71,7 @@ extends CloudWatchLogWriter
         }
         catch (InterruptedException ex)
         {
-            // this should happen during forced shutdown
+            // this will happen when main thread calls stop()
         }
         finally
         {

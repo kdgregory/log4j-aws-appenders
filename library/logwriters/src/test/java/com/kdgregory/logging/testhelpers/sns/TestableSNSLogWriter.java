@@ -61,7 +61,7 @@ extends SNSLogWriter
         }
         catch (InterruptedException ex)
         {
-            throw new RuntimeException("could not acquire semaphore");
+            // this will happen when main thread calls stop()
         }
         finally
         {

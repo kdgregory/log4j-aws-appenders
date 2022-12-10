@@ -12,7 +12,7 @@
     <artifactId>logwriters</artifactId>
     <packaging>jar</packaging>
 
-    <name>Shared Components</name>
+    <name>Log-Writers and Shared Components</name>
 
     <description>
         Contains the log-writers, along with utility classes used by both facades and appenders.

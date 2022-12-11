@@ -163,8 +163,8 @@ public class RetryManager2
             return false;
         }
     }
-    
-    
+
+
     /**
      *  This exception is thrown by the RetryManager on timeout.
      */
@@ -172,25 +172,25 @@ public class RetryManager2
     extends RuntimeException
     {
         private static final long serialVersionUID = 1L;
-        
+
         private String operation;
         private Instant expectedTimeout;
         private Instant actualTimeout;
-    
+
         public TimeoutException(String operation, Instant expectedTimeout, Instant actualTimeout)
         {
             this.operation = operation;
             this.expectedTimeout = expectedTimeout;
             this.actualTimeout = actualTimeout;
         }
-    
+
         @Override
         public String getMessage()
         {
             return operation + " did not complete by " + expectedTimeout + " (now " + actualTimeout + ")";
         }
-    
-        
+
+
         /**
          *  Returns the name of the operation that timed out. May be null.
          */
@@ -198,8 +198,8 @@ public class RetryManager2
         {
             return operation;
         }
-    
-        
+
+
         /**
          *  Returns the instant provided to the RetryManager as a timeout limit.
          */
@@ -207,8 +207,8 @@ public class RetryManager2
         {
             return expectedTimeout;
         }
-    
-        
+
+
         /**
          *  Returns the instant when the RetryManager decided to abort the operation.
          */

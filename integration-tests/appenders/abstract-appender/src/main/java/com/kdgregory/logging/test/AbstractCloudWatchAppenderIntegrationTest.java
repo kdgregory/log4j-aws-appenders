@@ -242,7 +242,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
     {
         final int messagesPerThread = 1000;     // configured value; must be the same for all frameworks
         final int threadsPerAccessor = 4;
-        
+
         List<MessageWriter> messageWriters = new ArrayList<>();
         for (int ii = 0 ; ii < threadsPerAccessor ; ii++)
         {

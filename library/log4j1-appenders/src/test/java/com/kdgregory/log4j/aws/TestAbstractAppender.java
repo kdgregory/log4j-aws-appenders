@@ -72,7 +72,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
 
         assertEquals("internal logger configured with name",            appender.getName(),     appenderInternalLogger.appenderName);
         assertNull("before messages, writer is null",                   appender.getWriter());
-        
+
         long initialTimestamp = System.currentTimeMillis();
 
         logger.debug("first message");
@@ -133,7 +133,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
     public void testSynchronousMode() throws Exception
     {
         // note: with Log4J 1.x, appender is not actually initialized until first message written
-        
+
         initialize("testSynchronousMode");
 
         assertEquals("internal logger configured with name",            appender.getName(),     appenderInternalLogger.appenderName);
@@ -150,7 +150,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
         assertTrue("writer was configured to install shutdown hook",                                writer.config.getUseShutdownHook());
 
         assertEquals("after message 1, number of messages in writer",   1,                          writer.messages.size());
-        
+
         String message1Text = writer.messages.get(0).getMessage();
         assertRegex(
                 "message 1 follows layout (was: " + message1Text + ")",
@@ -158,7 +158,7 @@ extends AbstractUnitTest<TestableCloudWatchAppender>
                 message1Text);
     }
 
-    
+
     @Test
     public void testWriteHeaderAndFooter() throws Exception
     {

@@ -93,8 +93,8 @@ implements LogWriter
     {
         return config.getSynchronousMode();
     }
-    
-    
+
+
     @Override
     public void run()
     {
@@ -157,7 +157,7 @@ implements LogWriter
             throw new RuntimeException("unexpected interrupt");
         }
     }
-    
+
 //----------------------------------------------------------------------------
 //  Mock-specific methods
 //----------------------------------------------------------------------------

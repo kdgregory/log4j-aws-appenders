@@ -236,7 +236,7 @@ public class CloudWatchLogWriterIntegrationTest
 
         new MessageWriter(writer, numMessages).run();
 
-        CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
+        CommonTestHelper.waitUntilMessagesSent(stats, numMessages);
         testHelper.assertMessages(logStreamName, numMessages);
 
         assertNull("static factory method not called", factoryClient);
@@ -262,7 +262,7 @@ public class CloudWatchLogWriterIntegrationTest
 
         new MessageWriter(writer, numMessages).run();
 
-        CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
+        CommonTestHelper.waitUntilMessagesSent(stats, numMessages);
         testHelper.assertMessages(logStreamName, numMessages);
 
         assertNotNull("factory method was called", factoryClient);
@@ -293,7 +293,7 @@ public class CloudWatchLogWriterIntegrationTest
 
         new MessageWriter(writer, numMessages).run();
 
-        CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
+        CommonTestHelper.waitUntilMessagesSent(stats, numMessages);
         testHelper.assertMessages(logStreamName, numMessages);
 
         assertFalse("stream does not exist in default region",
@@ -324,7 +324,7 @@ public class CloudWatchLogWriterIntegrationTest
 
         new MessageWriter(writer, numMessages).run();
 
-        CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
+        CommonTestHelper.waitUntilMessagesSent(stats, numMessages);
         testHelper.assertMessages(logStreamName, numMessages);
 
         assertFalse("stream does not exist in default region",
@@ -348,7 +348,7 @@ public class CloudWatchLogWriterIntegrationTest
 
         // will write a single message so that we have something to wait for
         new MessageWriter(writer, 1).run();
-        CommonTestHelper.waitUntilMessagesSent(stats, 1, 30000);
+        CommonTestHelper.waitUntilMessagesSent(stats, 1);
 
         assertEquals("retention period", 3, testHelper.describeLogGroup().retentionInDays().intValue());
 
@@ -389,7 +389,7 @@ public class CloudWatchLogWriterIntegrationTest
             }
         }
 
-        CommonTestHelper.waitUntilMessagesSent(stats, numWriters * numReps, 30000);
+        CommonTestHelper.waitUntilMessagesSent(stats, numWriters * numReps);
 
         assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
 
@@ -423,7 +423,7 @@ public class CloudWatchLogWriterIntegrationTest
             }
         }.run();
 
-        CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
+        CommonTestHelper.waitUntilMessagesSent(stats, numMessages);
         List<OutputLogEvent> logEvents = testHelper.retrieveAllMessages(logStreamName, numMessages);
 
         Set<String> messages = new HashSet<>();

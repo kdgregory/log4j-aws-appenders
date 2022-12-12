@@ -435,25 +435,29 @@ implements LogWriter
      */
     private void optAddShutdownHook()
     {
-        if (config.getUseShutdownHook())
+        if (config.getUseShutdownHook() && !config.getSynchronousMode())
         {
             shutdownHook = new Thread(new Runnable()
             {
                 @Override
                 public void run()
                 {
-                    logger.debug("shutdown hook invoked");
+                    logger.debug("shutdown hook " + Thread.currentThread().getName() + " invoked");
                     setBatchDelay(1);
                     AbstractLogWriter.this.stop();
                     try
                     {
                         if (dispatchThread != null)
+                        {
+                            logger.debug("shutdown hook " + Thread.currentThread().getName() + " waiting on writer thread");
                             dispatchThread.join();
+                        }
                     }
                     catch (InterruptedException e)
                     {
                         // we've done our best, que sera sera
                     }
+                    logger.debug("shutdown hook " + Thread.currentThread().getName() + " complete");
                 }
             });
             shutdownHook.setName(Thread.currentThread().getName() + "-shutdownHook");

@@ -1780,14 +1780,18 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
         // this will never return if the shutdown hook hasn't run
         shutdownHook.join();
+
+        // these assertions may be timing-dependent: shutdown hook could log wait before or after writer shutdown
         internalLogger.assertInternalDebugLog("log writer starting.*",
                                               "checking for existence of CloudWatch log group: argle",
                                               "using existing CloudWatch log group: argle",
                                               "checking for existence of CloudWatch log stream: bargle",
                                               "using existing CloudWatch log stream: bargle",
                                               "log writer initialization complete.*",
-                                              "shutdown hook invoked",
-                                              "log.writer shut down.*");
+                                              "shutdown hook .* invoked",
+                                              "shutdown hook .* waiting on writer thread",
+                                              "log.writer shut down.*",
+                                              "shutdown hook .* complete");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
     }

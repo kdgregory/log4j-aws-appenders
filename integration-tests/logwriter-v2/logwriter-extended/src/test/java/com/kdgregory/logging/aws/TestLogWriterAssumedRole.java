@@ -163,7 +163,7 @@ public class TestLogWriterAssumedRole
                 writer.addMessage(new LogMessage(System.currentTimeMillis(), "message " + ii));
             }
 
-            CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
+            CommonTestHelper.waitUntilMessagesSent(stats, numMessages);
 
             // we don't care about message content, just that we actually wrote something
             List<OutputLogEvent> messages = testHelper.retrieveAllMessages(testName, numMessages);
@@ -225,7 +225,7 @@ public class TestLogWriterAssumedRole
                 writer.addMessage(new LogMessage(System.currentTimeMillis(), "message " + ii));
             }
 
-            CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
+            CommonTestHelper.waitUntilMessagesSent(stats, numMessages);
 
             // we don't care about message content, just that we actually wrote something
             List<KinesisTestHelper.RetrievedRecord> messages = testHelper.retrieveAllMessages(numMessages);
@@ -289,7 +289,7 @@ public class TestLogWriterAssumedRole
                 writer.addMessage(new LogMessage(System.currentTimeMillis(), "message " + ii));
             }
 
-            CommonTestHelper.waitUntilMessagesSent(stats, numMessages, 30000);
+            CommonTestHelper.waitUntilMessagesSent(stats, numMessages);
 
             // we don't care about message content, just that we actually wrote something
             List<Map<String,Object>> messages = testHelper.retrieveMessages(numMessages);

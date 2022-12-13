@@ -166,7 +166,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         messageWriter.run();
 
         localLogger.info("waiting for logger");
-        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
+        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages);
 
         assertEquals("stats: actual log group name",    "AppenderIntegrationTest-smoketest",    accessor.getStats().getActualLogGroupName());
         assertRegex("stats: actual log stream name",    LOGSTREAM_BASE + "-\\d{12}",            accessor.getStats().getActualLogStreamName());
@@ -205,7 +205,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         MessageWriter.runOnThreads(messageWriters);
 
         localLogger.info("waiting for logger");
-        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
+        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages);
 
         testHelper.assertMessages(LOGSTREAM_BASE, numMessages);
 
@@ -224,9 +224,9 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
             accessors[2].newMessageWriter(messagesPerThread));
 
         localLogger.info("waiting for loggers");
-        CommonTestHelper.waitUntilMessagesSent(accessors[0].getStats(), messagesPerThread, 30000);
-        CommonTestHelper.waitUntilMessagesSent(accessors[1].getStats(), messagesPerThread, 30000);
-        CommonTestHelper.waitUntilMessagesSent(accessors[2].getStats(), messagesPerThread, 30000);
+        CommonTestHelper.waitUntilMessagesSent(accessors[0].getStats(), messagesPerThread);
+        CommonTestHelper.waitUntilMessagesSent(accessors[1].getStats(), messagesPerThread);
+        CommonTestHelper.waitUntilMessagesSent(accessors[2].getStats(), messagesPerThread);
 
         testHelper.assertMessages(LOGSTREAM_BASE + "-1", messagesPerThread);
         testHelper.assertMessages(LOGSTREAM_BASE + "-2", messagesPerThread);
@@ -242,7 +242,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
     {
         final int messagesPerThread = 1000;     // configured value; must be the same for all frameworks
         final int threadsPerAccessor = 4;
-        
+
         List<MessageWriter> messageWriters = new ArrayList<>();
         for (int ii = 0 ; ii < threadsPerAccessor ; ii++)
         {
@@ -256,7 +256,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         localLogger.info("waiting for loggers");
         for (LoggerAccessor accessor : accessors)
         {
-            CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), messagesPerThread * threadsPerAccessor, 30000);
+            CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), messagesPerThread * threadsPerAccessor);
         }
 
         // even after waiting until the stats say we've written everything, the read won't succeed
@@ -312,7 +312,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         localLogger.info("writing first batch");
         accessor.newMessageWriter(numMessages).run();
 
-        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
+        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages);
         testHelper.assertMessages(streamName, numMessages);
 
         localLogger.info("deleting stream");
@@ -324,7 +324,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         // the original batch of messages will be gone, so we can assert the new batch was written
         // however, the writer doesn't change so the stats will keep increasing
 
-        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages * 2, 30000);
+        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages * 2);
         testHelper.assertMessages(streamName, numMessages);
 
         assertEquals("all messages reported in stats",  numMessages * 2, accessor.getStats().getMessagesSent());
@@ -342,7 +342,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("waiting for logger");
-        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
+        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages);
 
         testHelper.assertMessages(LOGSTREAM_BASE, numMessages);
 
@@ -363,7 +363,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("waiting for logger");
-        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
+        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages);
 
         altTestHelper.assertMessages(LOGSTREAM_BASE, numMessages);
         assertFalse("logstream does not exist in default region", testHelper.isLogStreamAvailable(LOGSTREAM_BASE));
@@ -381,7 +381,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("waiting for logger");
-        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
+        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages);
 
         altTestHelper.assertMessages(LOGSTREAM_BASE, numMessages);
         assertFalse("logstream does not exist in default region", testHelper.isLogStreamAvailable(LOGSTREAM_BASE));
@@ -399,7 +399,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         accessor.newMessageWriter(numMessages).run();
 
         localLogger.info("waiting for logger");
-        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
+        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages);
 
         testHelper.assertMessages(LOGSTREAM_BASE, numMessages);
         assertEquals("credentials provider",

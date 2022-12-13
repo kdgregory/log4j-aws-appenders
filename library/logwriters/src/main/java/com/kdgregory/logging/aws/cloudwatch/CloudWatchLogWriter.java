@@ -122,13 +122,17 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
     @Override
     protected List<LogMessage> sendBatch(List<LogMessage> batch)
     {
+        stats.setLastBatchSize(batch.size());
+        if (config.getEnableBatchLogging())
+            logger.debug("about to write batch of " + batch.size() + " message(s)");
+
+        // this should never happen (we wait for at least one message in queue)
         if (batch.isEmpty())
             return batch;
 
+        // CloudWatch wants all messages to be sorted by timestamp
         Collections.sort(batch);
 
-        if (config.getEnableBatchLogging())
-            logger.debug("about to write batch of " + batch.size() + " message(s)");
         Instant timeoutAt = Instant.now().plus(sendTimeout);
         List<LogMessage> result = sendRetry.invoke(timeoutAt, () ->
         {
@@ -171,7 +175,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
             return result;
 
         // if we get here we timed-out, need to figure out cause
-        if (sequenceToken == SEQUENCE_TOKEN_FLAG_VALUE)
+        if (sequenceToken.equals(SEQUENCE_TOKEN_FLAG_VALUE))
         {
             logger.warn("batch failed: unrecovered sequence token race");
             stats.updateUnrecoveredWriterRaceRetries();
@@ -262,14 +266,14 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
         // wait for the log stream to be created, throw if it never happens
         describeRetry.invoke(timeoutAt, () -> facade.findLogStream());
 
-        // new log streams return a null sequence token
+        // new log streams use a null sequence token
         sequenceToken = null;
     }
 
 
     private String retrieveSequenceToken(Instant timeoutAt)
     {
-        if ((! config.getDedicatedWriter()) || (sequenceToken == SEQUENCE_TOKEN_FLAG_VALUE))
+        if ((! config.getDedicatedWriter()) || (SEQUENCE_TOKEN_FLAG_VALUE.equals(sequenceToken)))
         {
             sequenceToken = describeRetry.invoke(timeoutAt, () -> facade.retrieveSequenceToken());
         }

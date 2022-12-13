@@ -352,6 +352,16 @@ Caused by: java.lang.ClassNotFoundException: com.amazonaws.services.logs.model.I
 ```
 
 
+## "Unable to unmarshall exception response with the unmarshallers provided" error
+
+   You're probably using the AWS v1 SDK on Java 17 or later. This SDK [does not support Java 17
+   or later](https://github.com/aws/aws-sdk-java#maintenance-and-support-for-java-versions), so
+   you will need to upgrade to the v2 SDK.
+
+   The reason that you might see this in the appenders and not your own code is that the appenders
+   library performs some operations with the expectation that AWS will report an error. However,
+   [it does affect everyone](https://github.com/aws/aws-sdk-java/issues/2795).
+
 # Batch Logging
 
 After initialization, the log-writers don't normally log their activity unless there's an error.
@@ -373,3 +383,6 @@ were rejected by the stream (indicating high contention on a particular partitio
 06:45:14,548 |-INFO in com.kdgregory.logback.aws.KinesisAppender[KINESIS] - about to write batch of 16 message(s)
 06:45:14,659 |-INFO in com.kdgregory.logback.aws.KinesisAppender[KINESIS] - wrote batch of 16 message(s); 0 rejected
 ```
+
+You should _not_ enable this parameter for normal usage, as you will see these messages every
+few seconds for as long as your program runs.

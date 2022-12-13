@@ -56,10 +56,10 @@ public class CommonTestHelper
     /**
      *  Waits until the passed statistics object shows that the desired number of messages have been sent.
      */
-    public static void waitUntilMessagesSent(AbstractWriterStatistics stats, int expectedMessages, long timeoutMillis)
+    public static void waitUntilMessagesSent(AbstractWriterStatistics stats, int expectedMessages)
     throws Exception
     {
-        long timeoutAt = System.currentTimeMillis() + timeoutMillis;
+        long timeoutAt = System.currentTimeMillis() + 60000;
 
         while (System.currentTimeMillis() < timeoutAt)
         {

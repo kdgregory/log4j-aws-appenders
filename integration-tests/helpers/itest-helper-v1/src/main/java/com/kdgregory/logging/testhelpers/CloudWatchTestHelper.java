@@ -40,7 +40,7 @@ public class CloudWatchTestHelper
     private final static long WAIT_FOR_READY_TIMEOUT_MS     = 60000;
     private final static long WAIT_FOR_DELETED_TIMEOUT_MS   = 60000;
 
-    private final static int RETRIEVE_RETRY_COUNT           = 5;
+    private final static int RETRIEVE_RETRY_COUNT           = 10;
 
     private Logger localLogger = LoggerFactory.getLogger(getClass());
 

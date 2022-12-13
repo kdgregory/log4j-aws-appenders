@@ -87,10 +87,11 @@
 
 ## I'm running on Lambda, why don't I see any log messages?
 
-   This happens because the appenders use a background thread to batch messages, and [Lambda
-   doesn't give that thread a chance to run](https://blog.kdgregory.com/2019/01/multi-threaded-programming-with-aws.html).
+   This happens because the appenders use a background thread to batch messages, and Lambda
+   [doesn't give that thread a chance to run](https://blog.kdgregory.com/2019/01/multi-threaded-programming-with-aws.html).
    You can enable [synchronous mode](docs/design.md#synchronous-mode) to mitigate this, but
-   be aware that it will slow down foreground execution and does not guarantee delivery.
+   be aware that it will slow down foreground execution and still does not guarantee delivery
+   (because any problems will cause messages to be requeued).
 
    When running on Lambda, I think that the best approach is to use the built-in logging
    support, which writes logs to CloudWatch. If you use a JSON layout, they will be easily
@@ -98,23 +99,40 @@
    logs to Elasticsearch](https://blog.kdgregory.com/2019/09/streaming-cloudwatch-logs-to.html).
 
 
+## It takes a long time to start my application, and if I enable debugging I see the message
+   "writer initialization timed out".
+
+   This was a bug in versions prior to 3.1.0: the appender would wait up to 60 seconds for
+   the writer to signal that it was live. This happened on the main thread, and blocked the
+   logging framework's initialization. Since the appender was unable to signal the logging
+   framework that the logwriter was having problems, this was an unnecessary wait. And
+   since it did not shut down the logwriter either, it was a misleading error message.
+
+   In version 3.1.0, the appender no longer waits for the logwriter to initialize (unless
+   you've enabled synchronous mode). Log-writers now initialize themselves independently of
+   the appender, and have a configurable initialization timeout. If a writer fails to
+   initialize it will shut itself down.
+
+   Summary: if you see this message, update to version >= 3.1.0.
+
+
 ## How is this library affected by CVE-2021-44228?
 
   [CVE-2021-44228](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-44228) is a vulnerability
-  in Log4J 2.x in which (1) layout plugins use the Log4J2 "lookup" facility to perform string
+  in Log4J 2.x in which (1) the pattern layout uses the Log4J2 "lookup" facility to perform string
   interpolation on log messages, and (2) the JNDI plugin allows execution of code from a remote
-  source. As a result, if you log unsanitized user input, your application is at risk. In my
-  experiments, the issue affected `PatternLayout` but not `JsonLayout`.
+  source. As a result, if you log unsanitized user input, your application is at risk.
 
   Since this is an issue with layout managers, this library is not directly affected. Unless, of
   course, you use unsanitized user input to configure your logger (if you do, please stop).
 
-  The best solution is to upgrade to version 2.15.0 or later. You can also set the system property
-  `log4j2.formatMsgNoLookups` to true.
+  The best solution is to upgrade to the latest Log4J 2.x version. You can also set the system
+  property `log4j2.formatMsgNoLookups` to true. Or switch to the JSON layout manager, which was
+  not affected.
 
-  The Log4J2 examples have been updated to use version 2.15.0. The main library dependency remains
-  set at 2.10.0, _but this does not cause a transitive dependency relationship._ You must provide
-  your own Log4J2 dependency specification to use this library.
+  All use the latest framework dependency versions. The Log4J2 version in the library itself
+  remains set at 2.10.0, _but this does not cause a transitive dependency relationship_ since
+  you must provide your own Log4J2 dependency to use the library.
 
 
 ## [Dependabot](https://dependabot.com/) says you have dependencies with critical vulnerabilities!

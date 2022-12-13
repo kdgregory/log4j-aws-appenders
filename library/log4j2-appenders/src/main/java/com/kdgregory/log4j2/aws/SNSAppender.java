@@ -305,10 +305,6 @@ extends AbstractAppender
 //  Appender
 //----------------------------------------------------------------------------
 
-    // this is extracted from config so that we can validate
-
-    protected Integer retentionPeriod;
-
     protected SNSAppender(String name, SNSAppenderConfig config, InternalLogger internalLogger)
     {
         super(

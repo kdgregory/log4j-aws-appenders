@@ -227,7 +227,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
 
         // no queue attached to this topic so we can't read messages directly
 
-        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
+        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages);
 
         testHelper.deleteTopicAndQueue();
     }
@@ -343,7 +343,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
         accessor.newMessageWriter(numMessages).run();
 
         // no queue attached to this topic so we can't read messages directly
-        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
+        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages);
 
         assertNotEmpty("topic was created",                  altTestHelper.lookupTopic());
         assertNull("topic does not exist in default region", testHelper.lookupTopic());
@@ -371,7 +371,7 @@ public abstract class AbstractSNSAppenderIntegrationTest
         accessor.newMessageWriter(numMessages).run();
 
         // no queue attached to this topic so we can't read messages directly
-        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages, 30000);
+        CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), numMessages);
 
         assertNotEmpty("topic was created",                  altTestHelper.lookupTopic());
         assertNull("topic does not exist in default region", testHelper.lookupTopic());

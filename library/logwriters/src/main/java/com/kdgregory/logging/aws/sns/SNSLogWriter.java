@@ -85,7 +85,7 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics>
 
         try
         {
-            logger.debug("checking for existance of SNS topic: " +
+            logger.debug("checking for existence of SNS topic: " +
                          (config.getTopicArn() != null ? config.getTopicArn() : config.getTopicName()));
             String topicArn = facade.lookupTopic();
             if (topicArn == null)
@@ -116,14 +116,19 @@ extends AbstractLogWriter<SNSWriterConfig,SNSWriterStatistics>
     @Override
     protected List<LogMessage> sendBatch(List<LogMessage> currentBatch)
     {
-        // we process this as a list because we may be recovering from failures
+        stats.setLastBatchSize(currentBatch.size());
+        if (config.getEnableBatchLogging())
+            logger.debug("about to write batch of " + currentBatch.size() + " message(s)");
+
+        // this should never happen (we wait for at least one message in queue)
+        if (currentBatch.isEmpty())
+            return currentBatch;
+
         List<LogMessage> failures = new ArrayList<LogMessage>();
         for (LogMessage message : currentBatch)
         {
             try
             {
-                if (config.getEnableBatchLogging())
-                    logger.debug("about to publish 1 message");
                 // don't retry; just let messages accumulate
                 facade.publish(message);
                 if (config.getEnableBatchLogging())

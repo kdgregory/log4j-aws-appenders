@@ -110,6 +110,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
                  .setSubject(TEST_SUBJECT)
                  .setDiscardThreshold(10000)
                  .setDiscardAction(DiscardAction.oldest)
+                 .setUseShutdownHook(false)
                  .setInitializationTimeout(250);
 
         stats = new SNSWriterStatistics();
@@ -117,9 +118,15 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 
 
     @After
-    public void checkUncaughtExceptions()
+    public void tearDown()
     throws Throwable
     {
+        if (writer != null)
+        {
+            writer.stop();
+            ((TestableSNSLogWriter)writer).releaseWriterThread();
+        }
+
         if (uncaughtException != null)
             throw uncaughtException;
     }
@@ -165,7 +172,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
-                        "checking for existance of SNS topic: " + TEST_TOPIC_NAME,
+                        "checking for existence of SNS topic: " + TEST_TOPIC_NAME,
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
@@ -208,7 +215,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
-                        "checking for existance of SNS topic: " + TEST_TOPIC_ARN,
+                        "checking for existence of SNS topic: " + TEST_TOPIC_ARN,
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
@@ -272,7 +279,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
-                        "checking for existance of SNS topic.*");
+                        "checking for existence of SNS topic.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
                         "exception during initialization",
@@ -310,7 +317,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
-                        "checking for existance of SNS topic.*");
+                        "checking for existence of SNS topic.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
                         "topic .* does not exist and auto-create not enabled",
@@ -341,7 +348,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
-                        "checking for existance of SNS topic.*",
+                        "checking for existence of SNS topic.*",
                         "creating topic: " + TEST_TOPIC_NAME,
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
@@ -381,7 +388,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
-                        "checking for existance of SNS topic.*",
+                        "checking for existence of SNS topic.*",
                         "creating topic: " + TEST_TOPIC_NAME);
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
@@ -414,10 +421,13 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
         assertEquals("mock: shutdownInvocationCount",           0,                      mock.shutdownInvocationCount);
 
         assertStatisticsTotalMessagesSent(1);
+        assertEquals("stats: last batch size",                  1,                      stats.getLastBatchSize());
+        assertEquals("stats: last batch messages sent",         1,                      stats.getMessagesSentLastBatch());
+        assertEquals("stats: last batch messages requued",      0,                      stats.getMessagesRequeuedLastBatch());
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
-                        "checking for existance of SNS topic.*",
+                        "checking for existence of SNS topic.*",
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();
@@ -450,6 +460,9 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
         assertEquals("mock: publishInvocationCount",            1,                      mock.publishInvocationCount);
         assertEquals("mock: shutdownInvocationCount",           0,                      mock.shutdownInvocationCount);
 
+        assertEquals("stats: last batch size",                  1,                      stats.getLastBatchSize());
+        assertEquals("stats: last batch messages sent",         0,                      stats.getMessagesSentLastBatch());
+        assertEquals("stats: last batch messages requued",      1,                      stats.getMessagesRequeuedLastBatch());
         assertRegex("stats: error message",                     "failed to publish.*",  stats.getLastErrorMessage());
         assertSame("stats: exception",                          cause,                  stats.getLastError());
 
@@ -457,7 +470,7 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
-                        "checking for existance of SNS topic.*",
+                        "checking for existence of SNS topic.*",
                         "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog(
@@ -480,9 +493,9 @@ extends AbstractLogWriterTest<SNSLogWriter,SNSWriterConfig,SNSWriterStatistics>
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
-                        "checking for existance of SNS topic.*",
+                        "checking for existence of SNS topic.*",
                         "log writer initialization complete.*",
-                        "about to publish 1 message",
+                        "about to write batch of 1 message\\(s\\)",
                         "published 1 message");
         internalLogger.assertInternalWarningLog();
         internalLogger.assertInternalErrorLog();

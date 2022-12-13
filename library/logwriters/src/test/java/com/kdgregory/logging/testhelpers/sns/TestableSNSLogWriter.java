@@ -51,6 +51,9 @@ extends SNSLogWriter
     @Override
     public synchronized void processBatch(long waitUntil)
     {
+        if (!isRunning())
+            return;
+
         try
         {
             allowWriterThread.acquire();
@@ -58,7 +61,7 @@ extends SNSLogWriter
         }
         catch (InterruptedException ex)
         {
-            throw new RuntimeException("could not acquire semaphore");
+            // this will happen when main thread calls stop()
         }
         finally
         {
@@ -76,6 +79,16 @@ extends SNSLogWriter
         allowWriterThread.release();
         Thread.sleep(100);
         allowMainThread.acquire();
+    }
+
+
+    /**
+     *  Allows the writer thread to proceed, without waiting (this is used in test teardown).
+     */
+    public void releaseWriterThread()
+    throws Exception
+    {
+        allowWriterThread.release();
     }
 
 

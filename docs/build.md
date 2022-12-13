@@ -63,13 +63,26 @@ updated every day), and the most recent versions of all other dependencies.
 
 ## Automated Tests
 
-The "library" modules are heavily tested using mock objects. Since these mocks are only as good
-as my understanding of how the actual SDK works, there's also a full suite of integration tests
-that exercise the appenders using actual AWS resources.
+Integration tests are the "gold standard" tests for this library: if they pass, then it's good.
+However, there are some situations that can't be easily tested using integration tests, such as
+throttling or exceptions in the AWS SDK. For that, I make extensive use of mock objects.
+
+Each "layer" of the library -- facade, logwriter, and appender -- mocks out the layer below it.
+The assumption is that each layer has a well-defined interface, and will handle any problems in
+a way consistent with that interface.
+
+One recurring problem with the automated tests is that many of them are timing-dependent. This
+means that a test that consistently passes on my i7 development machine might fail when run on
+a less capable platform (such as an EC2 instance). I have tried to avoid timing-based tests if
+possible: for example, the logwriter tests use semaphores to control interaction between the
+main (test) thread and the writer thread. And tests that assert on elapsed time generally use
+ranges. However, it's possible that tests will fail due to timing; in that case, I rerun and
+if there's a consistent failure I try to work-around it. The library doesn't get release unless
+all tests (unit and integration) run to completion at least once.
 
 The library builds are configured to use the Jacoco code coverage tool. However, I do not run
 it as part of every build: its on-the-fly instrumentation was causing some timing-dependent
-unit tests to fail. Instead, I run manually with the following command:
+tests to fail. Instead, I run manually with the following command:
 
 ```
 mvn jacoco:prepare-agent test site
@@ -292,3 +305,23 @@ the output from the script above):
 * SQS Queues
 
   `aws sqs delete-queue --region REGION --queue-url QUEUE_URL`
+
+
+## Known Problems
+
+### Building on Java 14+
+
+Java introduced the `java.lang.Record` class in Java 14. This conflicts with a wildcard
+import of the Kinesis model classes, which also defines a `Record` class, and causes the
+following compilation error:
+
+> reference to Record is ambiguous
+> both class com.amazonaws.services.kinesis.model.Record in com.amazonaws.services.kinesis.model and class java.lang.Record in java.lang match
+
+Since the library supports Java 8 as a minimum version, I use OpenJDK 8 to build the
+library to ensure that I don't accidentally add a dependency on a later version. As a
+result, I don't see this error and have no plans to fix it. It's a compile-time error,
+so does not affect the operation of the library.
+
+If you want to build your own version on a later JDK, you will need to replace the
+wildcard imports with explicit imports.

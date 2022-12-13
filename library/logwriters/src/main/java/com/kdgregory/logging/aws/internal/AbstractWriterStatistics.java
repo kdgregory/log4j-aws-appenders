@@ -52,6 +52,7 @@ public abstract class AbstractWriterStatistics
     private volatile int messagesSent;
     private volatile int messagesSentLastBatch;
     private volatile int messagesRequeuedLastBatch;
+    private volatile int lastBatchSize;
 
     private AtomicInteger throttledWrites = new AtomicInteger();
 
@@ -149,9 +150,18 @@ public abstract class AbstractWriterStatistics
     }
 
 
-    /**
-     *  Sets the number of messages sent in the last batch.
-     */
+    public void setLastBatchSize(int count)
+    {
+        lastBatchSize = count;
+    }
+
+
+    public int getLastBatchSize()
+    {
+        return lastBatchSize;
+    }
+
+
     public void setMessagesSentLastBatch(int count)
     {
         messagesSentLastBatch = count;
@@ -164,9 +174,6 @@ public abstract class AbstractWriterStatistics
     }
 
 
-    /**
-     *  Sets the number of messages requeued in the last batch.
-     */
     public void setMessagesRequeuedLastBatch(int count)
     {
         messagesRequeuedLastBatch = count;
@@ -179,27 +186,18 @@ public abstract class AbstractWriterStatistics
     }
 
 
-    /**
-     *  Returns the number of messages discarded by the current writer's message queue.
-     */
     public int getMessagesDiscarded()
     {
         return messageQueue.getDroppedMessageCount();
     }
 
 
-    /**
-     *  Returns the number of writes that have been retried due to throttling.
-     */
     public int getThrottledWrites()
     {
         return throttledWrites.get();
     }
 
 
-    /**
-     *  Increments the number of writes that have been throttled.
-     */
     public void incrementThrottledWrites()
     {
         throttledWrites.incrementAndGet();

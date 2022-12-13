@@ -111,6 +111,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
                  .setBatchDelay(100)
                  .setDiscardThreshold(10000)
                  .setDiscardAction(DiscardAction.oldest)
+                 .setUseShutdownHook(false)
                  .setInitializationTimeout(250);
 
         stats = new KinesisWriterStatistics();
@@ -118,9 +119,15 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
 
     @After
-    public void checkUncaughtExceptions()
+    public void tearDown()
     throws Throwable
     {
+        if (writer != null)
+        {
+            writer.stop();
+            ((TestableKinesisLogWriter)writer).releaseWriterThread();
+        }
+
         if (uncaughtException != null)
             throw uncaughtException;
     }
@@ -565,13 +572,14 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
         assertEquals("putRecords() invocationCount",                1,                          mock.putRecordsInvocationCount);
         assertNotSame("putRecords() thread",                        Thread.currentThread(),     mock.putRecordsThread);
-
         assertEquals("putRecords() batch size",                     2,                          mock.putRecordsBatch.size());
         assertEquals("putRecords() first message",                  "message one",              mock.putRecordsBatch.get(0).getMessage());
         assertEquals("putRecords() second message",                 "message two",              mock.putRecordsBatch.get(1).getMessage());
 
         assertStatisticsTotalMessagesSent(2);
+        assertEquals("statistics: last batch size",                 2,                          stats.getLastBatchSize());
         assertEquals("statistics: last batch messages sent",        2,                          stats.getMessagesSentLastBatch());
+        assertEquals("statistics: last batch messages requeued",    0,                          stats.getMessagesRequeuedLastBatch());
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
@@ -614,7 +622,9 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords() second message",                 "message two",              mock.putRecordsBatch.get(1).getMessage());
 
         assertStatisticsTotalMessagesSent(2);
+        assertEquals("statistics: last batch size",                 4,                          stats.getLastBatchSize());
         assertEquals("statistics: last batch messages sent",        2,                          stats.getMessagesSentLastBatch());
+        assertEquals("statistics: last batch messages requeued",    2,                          stats.getMessagesRequeuedLastBatch());
 
         waitForWriterThread();
 
@@ -628,7 +638,9 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords() second message",                 "message four",             mock.putRecordsBatch.get(1).getMessage());
 
         assertStatisticsTotalMessagesSent(4);
+        assertEquals("statistics: last batch size",                 2,                          stats.getLastBatchSize());
         assertEquals("statistics: last batch messages sent",        2,                          stats.getMessagesSentLastBatch());
+        assertEquals("statistics: last batch messages requeued",    0,                          stats.getMessagesRequeuedLastBatch());
 
         internalLogger.assertInternalDebugLog(
                         "log writer starting.*",
@@ -669,8 +681,9 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords() second message",                 "message two",              mock.putRecordsBatch.get(1).getMessage());
 
         assertStatisticsTotalMessagesSent(2);
-
+        assertEquals("statistics: last batch size",                 2,                          stats.getLastBatchSize());
         assertEquals("statistics: last batch messages sent",        2,                          stats.getMessagesSentLastBatch());
+        assertEquals("statistics: last batch messages requeued",    0,                          stats.getMessagesRequeuedLastBatch());
         assertEquals("statistics: number of throttles",             1,                          stats.getThrottledWrites());
 
         internalLogger.assertInternalDebugLog(
@@ -707,7 +720,9 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords() invocationCount",                4,                          mock.putRecordsInvocationCount);
 
         assertStatisticsTotalMessagesSent(0);
+        assertEquals("statistics: last batch size",                 2,                          stats.getLastBatchSize());
         assertEquals("statistics: last batch messages sent",        0,                          stats.getMessagesSentLastBatch());
+        assertEquals("statistics: last batch messages requeued",    2,                          stats.getMessagesRequeuedLastBatch());
         assertEquals("statistics: number of throttles",             4,                          stats.getThrottledWrites());
 
         assertEquals("messages remain on message queuue",           2,                          messageQueue.size());
@@ -746,7 +761,9 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("putRecords() invocationCount",                1,                          mock.putRecordsInvocationCount);
 
         assertStatisticsTotalMessagesSent(0);
+        assertEquals("statistics: last batch size",                 2,                          stats.getLastBatchSize());
         assertEquals("statistics: last batch messages sent",        0,                          stats.getMessagesSentLastBatch());
+        assertEquals("statistics: last batch messages requeued",    2,                          stats.getMessagesRequeuedLastBatch());
 
         assertEquals("messages remain on message queuue",           2,                          messageQueue.size());
 
@@ -898,8 +915,6 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
 
         mock = new MockKinesisFacade(config);
         createWriter();
-
-        // send discarded message first, OK-size message to trigger batch-builidng
 
         writer.addMessage(new LogMessage(System.currentTimeMillis(), bigMessage));
         writer.addMessage(new LogMessage(System.currentTimeMillis(), biggerMessage));

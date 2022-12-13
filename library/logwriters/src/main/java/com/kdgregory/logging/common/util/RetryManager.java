@@ -27,7 +27,7 @@ import java.util.function.Supplier;
  *  The function must be a Java8 <code>Supplier</code>, which returns a value. Use
  *  a lambda to wrap calls that don't return a value (to retry operations that may
  *  throw a non-fatal exception).
- *  
+ *
  *  @deprecated use {@linkRetryManager2}
  */
 @Deprecated()

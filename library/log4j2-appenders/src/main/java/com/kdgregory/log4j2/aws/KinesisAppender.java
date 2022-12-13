@@ -334,10 +334,6 @@ extends AbstractAppender
 //  Appender
 //----------------------------------------------------------------------------
 
-    // this is extracted from config so that we can validate
-
-    protected Integer retentionPeriod;
-
     protected KinesisAppender(String name, KinesisAppenderConfig config, InternalLogger internalLogger)
     {
         super(

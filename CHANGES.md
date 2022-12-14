@@ -1,6 +1,6 @@
 # Change History
 
-## 3.1.0 (TBD)
+## 3.1.0 (2022-12-14)
 
 * Appenders no longer wait for writer to finish initialization.
   ([#167](https://github.com/kdgregory/log4j-aws-appenders/issues/167))

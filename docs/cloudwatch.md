@@ -17,7 +17,6 @@ Name                        | Description
 `logGroup`                  | Name of the CloudWatch log group where messages are sent; may use [substitutions](substitutions.md). If this group doesn't exist it will be created. No default.
 `logStream`                 | Name of the CloudWatch log stream where messages are sent; may use [substitutions](substitutions.md). If this stream doesn't exist it will be created. Defaults to `{startupTimestamp}`.
 `retentionPeriod`           | (optional) Specifies a non-default retention period for created CloudWatch log groups.
-`dedicatedWriter`           | If `true` (the default), the appender assumes that it is the only writer using the log stream, and will not retrieve a sequence token before each write. See [below](#invalidsequencetokenexception-and-logstream-throttling) for more information.
 `synchronous`               | If `true`, the appender will operate in [synchronous mode](design.md#synchronous-mode), sending messages from the invoking thread on every call to `append()`. This is _extremely_ inefficient.
 `batchDelay`                | The time, in milliseconds, that the writer will wait to accumulate messages for a batch. See the [design doc](design.md#message-batches) for more information.
 `truncateOversizeMessages`  | If `true` (the default), truncate any messages that are too large for CloudWatch; if `false`, it discards them. See [below](#oversize-messages) for more information.
@@ -106,44 +105,6 @@ If you don't have permission to set the retention policy, that will also be logg
 an error and the setting ignored.
 
 
-## InvalidSequenceTokenException and Logstream Throttling
-
-When writing a batch of events to CloudWatch Logs, you must provide a sequence token. You
-get this token from either the response to the previous call to `PutLogEvents`, or by calling
-`DescribeLogStreams`. If possible, you want to avoid the latter, because it's limited to five
-calls per second. However, if you have multiple appenders writing to the same stream, it's the
-only way to ensure that you get the latest token.
-
-The original (pre-2.2.2) implementation of this appender would always call `DescribeLogStreams`,
-because it assumed that another appender might be writing to the same log stream. However, if
-you _did_ give each appender its own stream, this was unnecessary, and could result in throttling,
-especially when deploying a large cluster.
-
-To resolve that problem, the `dedicatedWriter` configuration parameter was introduced in the
-2.2.2 release. It defaults to `true`, which tells the appender to cache the sequence token from
-the previous request, rather than describing the stream prior to each write.
-
-> The appender continues to work properly with this default even if there are multiple writers:
-  it will try to write using the cached sequence token (which fails), then retrieve the current
-  sequence token and retry.
-
-If you do have multiple writers, however, the two-step process is still necessary. And it has
-the possibility of a race condition: if two appenders write batches at the same time they might
-both get the same sequence token, but only one of the writes will succeed. As with any batch-level
-error, the appender will try again; there will be no message loss unless the error happens so
-frequently that the appender fills its message queue (which is extremely unlikely, as the chance
-of winning this race is the same for all appenders).
-
-In releases prior to 2.0.1, the appender would report this situation as an error, which was
-distracting. Retries are now transparent, unless they happen repeatedly, in which case they'll
-be reported as a warning using the logging framework's internal logger (again, the batch is
-retried, so the messages won't be lost). Race retries and batches required due to repeated
-retries are also reported as logger statistics, available via JMX.
-
-If you do have a large number of writer races, you can either switch to a single stream per
-appender (preferred), or increase the batch delay so that writes happen less frequently.
-
-
 ## Oversize Messages
 
 CloudWatch has a maximum message size of 262,118 bytes (the 
@@ -159,3 +120,26 @@ this depends on the `truncateOversizeMessages` configuration setting:
 
 In either case, the oversize message is logged in the framework's internal status logger. The number
 of oversize messages is available through the JMX `oversizeMessages` attribute.
+
+
+## Sequence Tokens
+
+Prior to January 2023, the `PutLogEvents` API call required a sequence token. You would get
+the initial token from `DescribeLogStreams`, and subsequent tokens from the `PutLogEvents`
+response. If two (or more) writers wrote to the same log stream, they would need to constantly
+call `DescribeLogStreams` to refresh their tokens, and be prepared for `InvalidSequenceTokenException`
+in the event that another writer managed to write its batch between the first writer's describe
+and put.
+
+The original version of this library performed such checks on every write. This was a performance
+hit in the common case, where each appender wrote to its own stream. In release 2.2.2, the
+`dedicatedWriter` configuration property was added: if `true`, the writer would assume that
+it was the only writer on a stream, and only retrieve a new sequence token if it received an
+exception (ie, it was not actually the only writer). In that release, the default value was
+`false` for consistency with earlier behavior; in release 3.0.0 the default value was set to
+`true`.
+
+At this point in time, you no longer need to use the `dedicatedWriter` property. However,
+**if you are running version 2.x you should upgrade to version 3.x**. If you don't, then
+you'll get the (now completely pointless) behavior of retrieving a sequence token before
+each write.

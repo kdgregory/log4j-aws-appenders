@@ -168,6 +168,11 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
                         return batch;
                 }
             }
+            catch (Exception ex)
+            {
+                logger.error("unexpected exception in sendBatch()", ex);
+                return batch;
+            }
         });
 
         // either success or an exception

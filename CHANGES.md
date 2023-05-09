@@ -1,5 +1,12 @@
 # Change History
 
+## 3.1.1 (2023-05-09)
+
+* CloudWatchLogWriter no longer retries retrieving sequence token for
+  send, and now has an "unexpected exception" handler.
+  ([#180](https://github.com/kdgregory/log4j-aws-appenders/issues/180))
+
+
 ## 3.1.0 (2022-12-14)
 
 * Appenders no longer wait for writer to finish initialization.

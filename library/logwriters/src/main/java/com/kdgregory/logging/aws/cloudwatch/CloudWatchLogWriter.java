@@ -168,6 +168,11 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
                         return batch;
                 }
             }
+            catch (Exception ex)
+            {
+                logger.error("unexpected exception in sendBatch()", ex);
+                return batch;
+            }
         });
 
         // either success or an exception
@@ -275,9 +280,9 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
     {
         if ((! config.getDedicatedWriter()) || (SEQUENCE_TOKEN_FLAG_VALUE.equals(sequenceToken)))
         {
-            sequenceToken = describeRetry.invoke(timeoutAt, () -> facade.retrieveSequenceToken());
+            // this might throw a facade exception, which will be caught by sendBatch()
+            sequenceToken = facade.retrieveSequenceToken();
         }
-
         return sequenceToken;
     }
 

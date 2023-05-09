@@ -1293,14 +1293,14 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
     @Test
     public void testWriteUnexpectedException() throws Exception
     {
-        RuntimeException cause = new RuntimeException("that call never works");
+        RuntimeException cause = new RuntimeException("I'm the exception you never expected");
         mock = new MockCloudWatchFacade(config)
         {
             @Override
             public String sendMessages(String sequenceToken, List<LogMessage> messages)
             throws CloudWatchFacadeException
             {
-                throw new CloudWatchFacadeException(ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
+                throw cause;
             }
         };
 
@@ -1342,8 +1342,8 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
                                               "using existing CloudWatch log stream: bargle",
                                               "log writer initialization complete.*");
         internalLogger.assertInternalWarningLog();
-        internalLogger.assertInternalErrorLog("failed to send: use for testing only",
-                                              "failed to send: use for testing only");
+        internalLogger.assertInternalErrorLog("unexpected exception in sendBatch.*",
+                                              "unexpected exception in sendBatch.*");
 
         assertUltimateCause("original exception reported, first try",  cause, internalLogger.errorExceptions.get(0));
         assertUltimateCause("original exception reported, second try", cause, internalLogger.errorExceptions.get(1));

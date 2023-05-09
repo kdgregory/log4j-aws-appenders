@@ -439,4 +439,31 @@ public class CloudWatchLogWriterIntegrationTest
 
         testHelper.deleteLogGroupIfExists();
     }
+
+
+    @Test
+    // test for issue #180: will log exception immediately, then eventually time-out
+    public void testExistingEmptyLogStream() throws Exception
+    {
+        final int numMessages = 1001;
+
+        init("testExistingEmptyLogStream", helperClient);
+        testHelper.createLogGroup();
+        testHelper.createLogStream(logStreamName);
+
+        CloudWatchWriterConfig config = defaultConfig();
+        config.setLogStreamName(logStreamName);
+
+        CloudWatchLogWriter writer = createWriter(config);
+
+        new MessageWriter(writer, numMessages).run();
+
+        CommonTestHelper.waitUntilMessagesSent(stats, numMessages);
+        testHelper.assertMessages(logStreamName, numMessages);
+
+        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
+
+        testHelper.deleteLogGroupIfExists();
+    }
+
 }

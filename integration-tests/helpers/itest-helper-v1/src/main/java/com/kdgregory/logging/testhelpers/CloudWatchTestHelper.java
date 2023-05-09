@@ -154,24 +154,56 @@ public class CloudWatchTestHelper
 
 
     /**
-     *  Waits until the named logstream is available, throwing if it isn't available
-     *  after one minute. If the log group isn't available, that's considered equal
-     *  to the stream not being ready.
+     *  Returns a description of the log group (which must exist).
      */
-    public void ensureLogStreamAvailable(String logStreamName)
+    public LogGroup describeLogGroup()
+    {
+        LogGroup group = describeLogGroupIfAvailable();
+        if (group != null)
+            return group;
+        else
+            throw new IllegalStateException("log group does not exist: " + logGroupName);
+    }
+
+
+    /**
+     *  Returns a description of the log group, null if it does not exist.
+     */
+    public LogGroup describeLogGroupIfAvailable()
+    {
+        DescribeLogGroupsRequest request = new DescribeLogGroupsRequest()
+                                           .withLogGroupNamePrefix(logGroupName);
+        DescribeLogGroupsResult response = client.describeLogGroups(request);
+        for (LogGroup group : response.getLogGroups())
+        {
+            if (group.getLogGroupName().equals(logGroupName))
+                return group;
+        }
+        return null;
+    }
+
+
+    /**
+     *  Creates the log group, waiting for it to be available.
+     */
+    public void createLogGroup()
     throws Exception
     {
-        localLogger.debug("waiting for stream {} to be available", logStreamName);
+        localLogger.debug("creating log group {}", logGroupName);
+
+        client.createLogGroup(new CreateLogGroupRequest().withLogGroupName(logGroupName));
+
+        localLogger.debug("waiting for group {} to be available", logGroupName);
 
         long timeoutAt = System.currentTimeMillis() + WAIT_FOR_READY_TIMEOUT_MS;
         while (System.currentTimeMillis() < timeoutAt)
         {
-            if (isLogStreamAvailable(logStreamName))
+            LogGroup group = describeLogGroupIfAvailable();
+            if (group != null)
                 return;
-
-            Thread.sleep(1000);
+            Thread.sleep(100);
         }
-        fail("stream \"" + logGroupName + "/" + logStreamName + "\" wasn't ready within " + WAIT_FOR_READY_TIMEOUT_MS/1000 + " seconds");
+        fail("group \"" + logGroupName + "\" wasn't ready within " + WAIT_FOR_READY_TIMEOUT_MS/1000 + " seconds");
     }
 
 
@@ -210,26 +242,6 @@ public class CloudWatchTestHelper
 
 
     /**
-     *  Deletes the log stream, waiting for it to be gone.
-     */
-    public void deleteLogStream(String logStreamName)
-    throws Exception
-    {
-        localLogger.debug("deleting log stream {}", logStreamName);
-
-        client.deleteLogStream(new DeleteLogStreamRequest().withLogGroupName(logGroupName).withLogStreamName(logStreamName));
-
-        boolean stillExists = true;
-        long timeoutAt = System.currentTimeMillis() + WAIT_FOR_DELETED_TIMEOUT_MS;
-        while (stillExists && (System.currentTimeMillis() < timeoutAt))
-        {
-            stillExists = isLogStreamAvailable(logStreamName);
-        }
-        assertFalse("stream was removed", stillExists);
-    }
-
-
-    /**
      *  Determines whether the named log stream is available.
      */
     public boolean isLogStreamAvailable(String logStreamName)
@@ -253,18 +265,59 @@ public class CloudWatchTestHelper
 
 
     /**
-     *  Returns a description of the log group.
+     *  Waits until the named log stream is available, throwing if it isn't available
+     *  after one minute. If the log group isn't available, that's considered equal
+     *  to the stream not being ready.
      */
-    public LogGroup describeLogGroup()
+    public void ensureLogStreamAvailable(String logStreamName)
+    throws Exception
     {
-        DescribeLogGroupsRequest request = new DescribeLogGroupsRequest()
-                                           .withLogGroupNamePrefix(logGroupName);
-        DescribeLogGroupsResult response = client.describeLogGroups(request);
-        for (LogGroup group : response.getLogGroups())
+        localLogger.debug("waiting for stream {} to be available", logStreamName);
+
+        long timeoutAt = System.currentTimeMillis() + WAIT_FOR_READY_TIMEOUT_MS;
+        while (System.currentTimeMillis() < timeoutAt)
         {
-            if (group.getLogGroupName().equals(logGroupName))
-                return group;
+            if (isLogStreamAvailable(logStreamName))
+                return;
+
+            Thread.sleep(1000);
         }
-        throw new IllegalStateException("log group does not exist: " + logGroupName);
+        fail("stream \"" + logGroupName + "/" + logStreamName + "\" wasn't ready within " + WAIT_FOR_READY_TIMEOUT_MS/1000 + " seconds");
+    }
+
+
+    /**
+     *  Creates the named log stream, waiting for it to be available.
+     */
+    public void createLogStream(String logStreamName)
+    throws Exception
+    {
+        localLogger.debug("creating log stream {}", logStreamName);
+
+        CreateLogStreamRequest request = new CreateLogStreamRequest()
+                                         .withLogGroupName(logGroupName)
+                                         .withLogStreamName(logStreamName);
+        client.createLogStream(request);
+        ensureLogStreamAvailable(logStreamName);
+    }
+
+
+    /**
+     *  Deletes the log stream, waiting for it to be gone.
+     */
+    public void deleteLogStream(String logStreamName)
+    throws Exception
+    {
+        localLogger.debug("deleting log stream {}", logStreamName);
+
+        client.deleteLogStream(new DeleteLogStreamRequest().withLogGroupName(logGroupName).withLogStreamName(logStreamName));
+
+        boolean stillExists = true;
+        long timeoutAt = System.currentTimeMillis() + WAIT_FOR_DELETED_TIMEOUT_MS;
+        while (stillExists && (System.currentTimeMillis() < timeoutAt))
+        {
+            stillExists = isLogStreamAvailable(logStreamName);
+        }
+        assertFalse("stream was removed", stillExists);
     }
 }

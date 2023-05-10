@@ -842,30 +842,6 @@ public class TestCloudWatchFacadeImpl
 
 
     @Test
-    public void testPutEventsInvalidSequenceToken() throws Exception
-    {
-        String sequenceToken = CloudWatchClientMock.INVALID_SEQUENCE_TOKEN;
-        List<LogMessage> messages = Arrays.asList(new LogMessage(0, "doesn't matter"));
-
-        try
-        {
-            facade.putEvents(sequenceToken, messages);
-            fail("should have thrown");
-        }
-        catch (CloudWatchFacadeException ex)
-        {
-            // in the real world, sequence tokens aren't numbers, but it makes our testing easier
-            assertException(ex, "putEvents", "invalid sequence token: \\d+", ReasonCode.INVALID_SEQUENCE_TOKEN, false, null);
-        }
-
-        assertEquals("calls to putLogEvents",                   1,                          mock.putLogEventsInvocationCount);
-        assertEquals("group name passed to putLogEvents",       config.getLogGroupName(),   mock.putLogEventsGroupName);
-        assertEquals("stream name passed to putLogEvents",      config.getLogStreamName(),  mock.putLogEventsStreamName);
-        assertEquals("number of events passed to putLogEvents", 1,                          mock.putLogEventsEvents.size());
-    }
-
-
-    @Test
     public void testPutEventsMissingLogGroup() throws Exception
     {
         mock = new CloudWatchClientMock();

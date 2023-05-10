@@ -51,9 +51,6 @@ import software.amazon.awssdk.services.cloudwatchlogs.paginators.*;
 public class CloudWatchClientMock
 implements InvocationHandler
 {
-    /** This sequence token should never be reached. */
-    public final static String  INVALID_SEQUENCE_TOKEN = String.valueOf(Integer.MAX_VALUE);
-
     // the actual list of names used by this instance
     public List<String> logGroupNames;
     public List<String> logStreamNames;
@@ -64,10 +61,6 @@ implements InvocationHandler
 
     // this is retained, because paginator requests will use it
     private CloudWatchLogsClient client;
-
-    // the sequence token used for putLogEvents(); start with arbitrary value to
-    // verify that we're actually retrieving it from describe
-    public int nextSequenceToken = (int)(System.currentTimeMillis() % 143);
 
     // invocation counts for each function that we support
     public int describeLogGroupsInvocationCount;
@@ -299,7 +292,6 @@ implements InvocationHandler
                 LogStream stream = LogStream.builder()
                                    .logStreamName(name)
                                    .arn("arn:aws:logs:us-east-1:123456789012:log-group:" + request.logGroupName() + ":log-stream:" + name)
-                                   .uploadSequenceToken(String.valueOf(nextSequenceToken))
                                    .build();
                 logStreams.add(stream);
             }
@@ -376,15 +368,7 @@ implements InvocationHandler
                   .message("no such log stream: " + request.logStreamName())
                   .build();
         }
-        if (Integer.parseInt(request.sequenceToken()) != nextSequenceToken)
-        {
-            throw InvalidSequenceTokenException.builder()
-                  .message("was " + request.sequenceToken() + " expected " + nextSequenceToken)
-                  .build();
-        }
 
-        return PutLogEventsResponse.builder()
-               .nextSequenceToken(String.valueOf(++nextSequenceToken))
-               .build();
+        return PutLogEventsResponse.builder().build();
     }
 }

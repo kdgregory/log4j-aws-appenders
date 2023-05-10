@@ -141,15 +141,6 @@ implements InvocationHandler
         return client;
     }
 
-
-    /**
-     *  Retrieves the current sequence token, for testing PutLogEvents.
-     */
-    public String getCurrentSequenceToken()
-    {
-        return String.valueOf(nextSequenceToken);
-    }
-
 //----------------------------------------------------------------------------
 //  Invocation Handler
 //----------------------------------------------------------------------------

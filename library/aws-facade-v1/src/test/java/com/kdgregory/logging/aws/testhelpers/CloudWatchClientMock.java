@@ -133,15 +133,6 @@ implements InvocationHandler
                             CloudWatchClientMock.this);
     }
 
-
-    /**
-     *  Retrieves the current sequence token, for testing PutLogEvents.
-     */
-    public String getCurrentSequenceToken()
-    {
-        return String.valueOf(nextSequenceToken);
-    }
-
 //----------------------------------------------------------------------------
 //  Invocation Handler
 //----------------------------------------------------------------------------

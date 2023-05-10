@@ -769,22 +769,6 @@ public class TestCloudWatchFacadeImpl
         assertEquals("calls to createLogStreams",       1,  mock.createLogStreamInvocationCount);
     }
 
-    // since retrieveSequenceToken() uses the same underlying code as findLogStream(), we'll just do a happy-path test
-
-    @Test
-    public void testRetrieveSequenceTokenHappyPath() throws Exception
-    {
-        assertNotEmpty("returned sequence token",       facade.retrieveSequenceToken());
-
-        assertEquals("group name passed to create",     TEST_LOG_GROUP,     mock.describeLogStreamsGroupName);
-        assertEquals("stream name passed to create",    TEST_LOG_STREAM,    mock.describeLogStreamsStreamPrefix);
-
-        assertEquals("calls to describeLogGroups",      0,  mock.describeLogGroupsInvocationCount);
-        assertEquals("calls to describeLogStreams",     1,  mock.describeLogStreamsInvocationCount);
-        assertEquals("calls to createLogGroups",        0,  mock.createLogGroupInvocationCount);
-        assertEquals("calls to createLogStreams",       0,  mock.createLogStreamInvocationCount);
-    }
-
 
     @Test
     public void testPutEventsHappyPath() throws Exception
@@ -795,10 +779,9 @@ public class TestCloudWatchFacadeImpl
         LogMessage msg2 = new LogMessage(now,      "message 2");
         LogMessage msg3 = new LogMessage(now + 10, "message 3");
 
-        String sequenceToken = mock.getCurrentSequenceToken();
         List<LogMessage> messages = Arrays.asList(msg1, msg2, msg3);
 
-        String newSequenceToken = facade.putEvents(sequenceToken, messages);
+        facade.putEvents(messages);
 
         assertEquals("calls to putLogEvents",                   1,                          mock.putLogEventsInvocationCount);
         assertEquals("group name passed to putLogEvents",       config.getLogGroupName(),   mock.putLogEventsGroupName);
@@ -811,21 +794,17 @@ public class TestCloudWatchFacadeImpl
         assertEquals("event 1 message",                         "message 2",                mock.putLogEventsEvents.get(1).message());
         assertEquals("event 2 timestamp",                       now + 10,                   mock.putLogEventsEvents.get(2).timestamp().longValue());
         assertEquals("event 2 message",                         "message 3",                mock.putLogEventsEvents.get(2).message());
-
-        assertNotNull("returned sequence token",                                            newSequenceToken);
     }
 
 
     @Test
     public void testPutEventsEmptyBatch() throws Exception
     {
-        String sequenceToken = mock.getCurrentSequenceToken();
         List<LogMessage> messages = Arrays.asList();
 
-        String newSequenceToken = facade.putEvents(sequenceToken, messages);
+        facade.putEvents(messages);
 
         assertEquals("calls to putLogEvents",               0,                          mock.putLogEventsInvocationCount);
-        assertEquals("returned sequence token",             sequenceToken,              newSequenceToken);
     }
 
 
@@ -841,12 +820,11 @@ public class TestCloudWatchFacadeImpl
             }
         };
 
-        String sequenceToken = mock.getCurrentSequenceToken();
         List<LogMessage> messages = Arrays.asList(new LogMessage(0, "doesn't matter"));
 
         try
         {
-            facade.putEvents(sequenceToken, messages);
+            facade.putEvents(messages);
             fail("should have thrown");
         }
         catch (CloudWatchFacadeException ex)
@@ -866,12 +844,11 @@ public class TestCloudWatchFacadeImpl
     {
         mock = new CloudWatchClientMock();
 
-        String sequenceToken = mock.getCurrentSequenceToken();
         List<LogMessage> messages = Arrays.asList(new LogMessage(0, "doesn't matter"));
 
         try
         {
-            facade.putEvents(sequenceToken, messages);
+            facade.putEvents(messages);
             fail("should have thrown");
         }
         catch (CloudWatchFacadeException ex)
@@ -887,6 +864,7 @@ public class TestCloudWatchFacadeImpl
 
 
     @Test
+    // TODO - remove this test
     public void testPutEventsDataAlreadyAccepted() throws Exception
     {
         mock = new CloudWatchClientMock(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS)
@@ -898,12 +876,11 @@ public class TestCloudWatchFacadeImpl
             }
         };
 
-        String sequenceToken = mock.getCurrentSequenceToken();
         List<LogMessage> messages = Arrays.asList(new LogMessage(0, "doesn't matter"));
 
         try
         {
-            facade.putEvents(sequenceToken, messages);
+            facade.putEvents(messages);
             fail("should have thrown");
         }
         catch (CloudWatchFacadeException ex)
@@ -931,12 +908,11 @@ public class TestCloudWatchFacadeImpl
             }
         };
 
-        String sequenceToken = mock.getCurrentSequenceToken();
         List<LogMessage> messages = Arrays.asList(new LogMessage(0, "doesn't matter"));
 
         try
         {
-            facade.putEvents(sequenceToken, messages);
+            facade.putEvents(messages);
             fail("should have thrown");
         }
         catch (CloudWatchFacadeException ex)

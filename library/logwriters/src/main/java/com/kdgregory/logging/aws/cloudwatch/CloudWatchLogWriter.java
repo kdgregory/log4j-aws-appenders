@@ -138,7 +138,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
         {
             try
             {
-                sequenceToken = facade.putEvents(retrieveSequenceToken(timeoutAt), batch);
+                facade.putEvents(batch);
                 if (config.getEnableBatchLogging())
                     logger.debug("wrote batch of " + batch.size() + " message(s)");
                 return Collections.emptyList();
@@ -273,17 +273,6 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
 
         // new log streams use a null sequence token
         sequenceToken = null;
-    }
-
-
-    private String retrieveSequenceToken(Instant timeoutAt)
-    {
-        if ((! config.getDedicatedWriter()) || (SEQUENCE_TOKEN_FLAG_VALUE.equals(sequenceToken)))
-        {
-            // this might throw a facade exception, which will be caught by sendBatch()
-            sequenceToken = facade.retrieveSequenceToken();
-        }
-        return sequenceToken;
     }
 
 

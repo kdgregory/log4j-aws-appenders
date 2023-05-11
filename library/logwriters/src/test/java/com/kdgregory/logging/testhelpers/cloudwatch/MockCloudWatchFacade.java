@@ -18,7 +18,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 
 import com.kdgregory.logging.aws.cloudwatch.CloudWatchWriterConfig;
@@ -46,12 +45,10 @@ implements InvocationHandler
     public int createLogGroupInvocationCount;
     public int setLogGroupRetentionInvocationCount;
     public int createLogStreamInvocationCount;
-    public int retrieveSequenceTokenInvocationCount;
     public int putEventsInvocationCount;
     public int shutdownInvocationCount;
 
     // recorded arguments for methods that have them
-    public String putEventsSequenceToken;
     public List<LogMessage> putEventsMessages;
     public Thread putEventsThread;
 
@@ -59,14 +56,10 @@ implements InvocationHandler
     // it just contains the messages themselves, so can be asserted easily
     public List<String> allMessagesSent = new ArrayList<>();
 
-    // this is an arbitrary value, updated by each call to sendMessages()
-    public String nextSequenceToken;
-
 
     public MockCloudWatchFacade(CloudWatchWriterConfig config)
     {
         this.config = config;
-        nextSequenceToken = generateSequenceToken(config.getLogStreamName());
     }
 
 
@@ -102,15 +95,12 @@ implements InvocationHandler
                 createLogStreamInvocationCount++;
                 createLogStream();
                 return null;
-            case "retrieveSequenceToken":
-                retrieveSequenceTokenInvocationCount++;
-                return retrieveSequenceToken();
             case "putEvents":
                 putEventsInvocationCount++;
                 putEventsThread = Thread.currentThread();
-                putEventsSequenceToken = (String)args[0];
-                putEventsMessages = (List<LogMessage>)args[1];
-                return sendMessages(putEventsSequenceToken, putEventsMessages);
+                putEventsMessages = (List<LogMessage>)args[0];
+                sendMessages(putEventsMessages);
+                return null;
             case "shutdown":
                 shutdownInvocationCount++;
                 shutdown();
@@ -154,38 +144,15 @@ implements InvocationHandler
     }
 
 
-    public String retrieveSequenceToken() throws CloudWatchFacadeException
-    {
-        return nextSequenceToken;
-    }
-
-
-    public String sendMessages(String sequenceToken, List<LogMessage> messages)
+    public void sendMessages(List<LogMessage> messages)
     throws CloudWatchFacadeException
     {
         messages.stream().forEach(m -> allMessagesSent.add(m.getMessage()));
-
-        nextSequenceToken = generateSequenceToken(nextSequenceToken);
-        return nextSequenceToken;
     }
 
 
     public void shutdown() throws CloudWatchFacadeException
     {
         // nothing special here
-    }
-
-//----------------------------------------------------------------------------
-//  Internals
-//----------------------------------------------------------------------------
-
-    /**
-     *  Creates a new sequence token from a base string. The goal is to make
-     *  sequence tokens at least theoretically re-creatable.
-     */
-    private static String generateSequenceToken(String source)
-    {
-        // I don't think that this will converge
-        return Base64.getEncoder().encodeToString(source.getBytes());
     }
 }

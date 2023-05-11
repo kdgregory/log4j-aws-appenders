@@ -38,9 +38,6 @@ import com.kdgregory.logging.common.util.RetryManager2;
 public class CloudWatchLogWriter
 extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
 {
-    // setting the sequence token to this value triggers retrieval
-    private final static String SEQUENCE_TOKEN_FLAG_VALUE = "";
-
     // passed into constructor
     private CloudWatchFacade facade;
 
@@ -53,9 +50,6 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
     // these control the retries for PutEvents; note that sends use a duration-based timeout
     protected Duration sendTimeout = Duration.ofMillis(2000);
     protected RetryManager2 sendRetry = new RetryManager2("send", Duration.ofMillis(200), true, false);
-
-    // cache for sequence tokens when using a dedicated writer; also used as a flag to trigger retrieve
-    private String sequenceToken = SEQUENCE_TOKEN_FLAG_VALUE;
 
 
     public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger logger, CloudWatchFacade facade)
@@ -151,8 +145,6 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
                         stats.incrementThrottledWrites();
                         return null;
                     case INVALID_SEQUENCE_TOKEN:
-                        // force the token to be fetched next time through
-                        sequenceToken = SEQUENCE_TOKEN_FLAG_VALUE;
                         stats.updateWriterRaceRetries();
                         return null;
                     case ALREADY_PROCESSED:
@@ -175,22 +167,14 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
             }
         });
 
-        // either success or an exception
+        // empty list on success, original batch on failure
         if (result != null)
+        {
             return result;
-
-        // if we get here we timed-out, need to figure out cause
-        if (sequenceToken.equals(SEQUENCE_TOKEN_FLAG_VALUE))
-        {
-            logger.warn("batch failed: unrecovered sequence token race");
-            stats.updateUnrecoveredWriterRaceRetries();
-        }
-        else
-        {
-            logger.warn("batch failed: repeated throttling");
         }
 
-        // in either case, return the original batch for reprocessing
+        // if we got here, we dropped out of the retry loop
+        logger.warn("batch failed: repeated throttling");
         return batch;
     }
 
@@ -270,9 +254,6 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
 
         // wait for the log stream to be created, throw if it never happens
         describeRetry.invoke(timeoutAt, () -> facade.findLogStream());
-
-        // new log streams use a null sequence token
-        sequenceToken = null;
     }
 
 

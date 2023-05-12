@@ -357,45 +357,6 @@ public class CloudWatchLogWriterIntegrationTest
 
 
     @Test
-    public void testDedicatedWriter() throws Exception
-    {
-        final int numWriters = 10;
-        final int numReps = 50;
-
-        init("testDedicatedWriter", helperClient);
-
-        for (int ii = 0 ; ii < numWriters ; ii++)
-        {
-            localLogger.debug("creating writer {}", ii);
-            CloudWatchWriterConfig config = defaultConfig();
-            config.setLogStreamName("testDedicatedWriter-" + ii);
-            config.setDedicatedWriter(true);
-            createWriter(config);
-        }
-
-        for (int ii = 0 ; ii < numReps ; ii++)
-        {
-            localLogger.debug("writing message {}", ii);
-            LogMessage message = new LogMessage(System.currentTimeMillis(), String.format("message %d", ii));
-            for (CloudWatchLogWriter w : writers)
-            {
-                // the sleep is intended to ensure that the messages will end up
-                // in separate batches; in practice, with the background threads
-                // all runnable, it won't come back for three seconds or more
-                w.addMessage(message);
-                Thread.sleep(100);
-            }
-        }
-
-        CommonTestHelper.waitUntilMessagesSent(stats, numWriters * numReps);
-
-        assertEquals("internal error log", Collections.emptyList(), internalLogger.errorMessages);
-
-        testHelper.deleteLogGroupIfExists();
-    }
-
-
-    @Test
     public void testOversizeMessageTruncation() throws Exception
     {
         final int numMessages = 10;
@@ -440,7 +401,7 @@ public class CloudWatchLogWriterIntegrationTest
 
 
     @Test
-    // test for issue #180: will log exception immediately, then eventually time-out
+    // test for issue #180: with 3.1.0 would log message immediately then time out; succeeds with 3.1.1
     public void testExistingEmptyLogStream() throws Exception
     {
         final int numMessages = 1001;

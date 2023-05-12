@@ -240,7 +240,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
     protected void testMultipleThreadsMultipleAppendersSameDestination(LoggerAccessor... accessors)
     throws Exception
     {
-        final int messagesPerThread = 1000;     // configured value; must be the same for all frameworks
+        final int messagesPerThread = 1000;
         final int threadsPerAccessor = 4;
 
         List<MessageWriter> messageWriters = new ArrayList<>();
@@ -267,37 +267,20 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
 
         int messageCountFromStats = 0;
         int messagesDiscardedFromStats = 0;
-        int raceRetriesFromStats = 0;
-        int unrecoveredRaceRetriesFromStats = 0;
-        boolean raceReportedInStats = false;
-        String lastNonRaceErrorFromStats = null;
+        String lastErrorMessage = null;
 
         for (LoggerAccessor accessor : accessors)
         {
             CloudWatchWriterStatistics stats = accessor.getStats();
             messageCountFromStats           += stats.getMessagesSent();
             messagesDiscardedFromStats      += stats.getMessagesDiscarded();
-            raceRetriesFromStats            += stats.getWriterRaceRetries();
-            unrecoveredRaceRetriesFromStats += stats.getUnrecoveredWriterRaceRetries();
 
-            String lastErrorMessage = stats.getLastErrorMessage();
-            if (lastErrorMessage != null)
-            {
-                if (lastErrorMessage.contains("InvalidSequenceTokenException"))
-                    raceReportedInStats = true;
-                else
-                    lastNonRaceErrorFromStats = lastErrorMessage;
-            }
+            lastErrorMessage = stats.getLastErrorMessage();
         }
 
         assertEquals("stats: message count",        messagesPerThread * 20, messageCountFromStats);
         assertEquals("stats: messages discarded",   0,                      messagesDiscardedFromStats);
-
-// manually enable these two assertions -- this test does not reliably create a race retry since 2.0.2
-//        assertTrue("stats: race retries",                       raceRetriesFromStats > 0);
-//        assertEquals("stats: all race retries recovered",   0,  unrecoveredRaceRetriesFromStats);
-
-        assertNull("stats: last error (was: " + lastNonRaceErrorFromStats + ")", lastNonRaceErrorFromStats);
+        assertNull("stats: last error (was: " + lastErrorMessage + ")",    lastErrorMessage);
 
         testHelper.deleteLogGroupIfExists();
     }

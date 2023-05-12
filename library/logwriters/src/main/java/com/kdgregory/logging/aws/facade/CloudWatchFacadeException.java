@@ -66,22 +66,7 @@ extends FacadeException
         /**
          *  The API call was throttled; caller should retry.
          */
-        THROTTLING,
-
-
-        /**
-         *  Sequence token passed to PutLogEvents is invalid; retrieve another one and
-         *  retry.
-         */
-        INVALID_SEQUENCE_TOKEN,
-
-
-        /**
-         *  CloudWatch already received these events. Unclear how this happens, although
-         *  it seems to be tied to sequence number collisions. Can discard messages and
-         *  go on with life.
-         */
-        ALREADY_PROCESSED
+        THROTTLING
     }
 
 //----------------------------------------------------------------------------

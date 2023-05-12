@@ -105,22 +105,13 @@ public interface CloudWatchWriterStatisticsMXBean
 
 
     /**
-     *  Returns the number of retries due to <code>InvalidSequenceTokenException</code>
-     *  response from <code>PutLogEvents</code>. This exception will be thrown when
-     *  there is a race between two writers: both get the same sequence token but only
-     *  once can use it. This may happen when there are many instances that are started
-     *  at the same time or have a low batch delay.
+     *  No longer used; will always return 0.
      */
     int getWriterRaceRetries();
 
 
     /**
-     *  Returns the times that the writer had to requeue a batch after receiving and
-     *  repeated <code>InvalidSequenceTokenException</code> errors. This number should
-     *  remain 0; if it is non-zero, and particularly if it is a noticeable percentage
-     *  of <code>WriterRaceRetries</code>, it indicates that you have too many writers
-     *  concurrently accessing the same stream. Either increase batch delay or (better)
-     *  direct output to different streams.
+     *  No longer used; will always return 0.
      */
     int getUnrecoveredWriterRaceRetries();
 }

@@ -144,12 +144,6 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
                     case THROTTLING:
                         stats.incrementThrottledWrites();
                         return null;
-                    case INVALID_SEQUENCE_TOKEN:
-                        stats.updateWriterRaceRetries();
-                        return null;
-                    case ALREADY_PROCESSED:
-                        logger.warn("received DataAlreadyAcceptedException, dropping batch");
-                        return Collections.emptyList();
                     case MISSING_LOG_GROUP:
                     case MISSING_LOG_STREAM:
                         reportError(ex.getMessage(), ex);

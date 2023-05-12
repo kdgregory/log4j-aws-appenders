@@ -844,38 +844,6 @@ public class TestCloudWatchFacadeImpl
 
 
     @Test
-    // TODO - remove this test; per docs this exception will never be thrown
-    public void testPutEventsDataAlreadyAccepted() throws Exception
-    {
-        mock = new CloudWatchClientMock(KNOWN_LOG_GROUPS, KNOWN_LOG_STREAMS)
-        {
-            @Override
-            protected PutLogEventsResult putLogEvents(PutLogEventsRequest request)
-            {
-                throw new DataAlreadyAcceptedException("message irrelevant");
-            }
-        };
-
-        List<LogMessage> messages = Arrays.asList(new LogMessage(0, "doesn't matter"));
-
-        try
-        {
-            facade.putEvents(messages);
-            fail("should have thrown");
-        }
-        catch (CloudWatchFacadeException ex)
-        {
-            assertException(ex, "putEvents", "already processed", ReasonCode.ALREADY_PROCESSED, false, null);
-        }
-
-        assertEquals("calls to putLogEvents",                   1,                          mock.putLogEventsInvocationCount);
-        assertEquals("group name passed to putLogEvents",       config.getLogGroupName(),   mock.putLogEventsGroupName);
-        assertEquals("stream name passed to putLogEvents",      config.getLogStreamName(),  mock.putLogEventsStreamName);
-        assertEquals("number of events passed to putLogEvents", 1,                          mock.putLogEventsEvents.size());
-    }
-
-
-    @Test
     public void testPutEventsUnexpectedException() throws Exception
     {
         final RuntimeException cause = new RuntimeException("test");

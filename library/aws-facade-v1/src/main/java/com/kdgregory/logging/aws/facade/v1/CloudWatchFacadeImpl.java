@@ -234,14 +234,6 @@ implements CloudWatchFacade
                     false,
                     "putEvents", config.getLogGroupName(), config.getLogStreamName());
         }
-        catch (DataAlreadyAcceptedException ex)
-        {
-            throw new CloudWatchFacadeException(
-                    "already processed",
-                    ReasonCode.ALREADY_PROCESSED,
-                    false,
-                    "putEvents", config.getLogGroupName(), config.getLogStreamName());
-        }
         catch (Exception ex)
         {
             throw transformException("putEvents", ex);

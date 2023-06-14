@@ -88,12 +88,9 @@ All log writers support the following attributes:
 * `ActualLogStreamName`  
   The actual destination log stream name, after subsitutions have been applied to the configured name.
 * `WriterRaceRetries`  
-  The number of batches that retried due to `InvalidSequenceTokenException`. See
-  [this](cloudwatch.md#invalidsequencetokenexception-and-logstream-throttling) for more information.
+  *No longer used.* Previously, the number of batches that were retried due to an invalid sequence token.
 * `UnrecoveredWriterRaceRetries`  
-  The number of batches that were requeued due to repeated `InvalidSequenceTokenException` responses.
-  This value should be zero; if it is a significant fraction of `WriterRaceRetries` this indicates
-  that you have too many appenders writing to the same stream.
+  *No longer used.* Previously, the number of batches that were requeued due to repeated invalid sequence tokens.
 * `throttledWrites`: the number of times that a batch had to be retried because it was throttled. This
   should normally be 0. CloudWatch imposes a limit of 5 transactions per second per log stream, and an
   overall limit of either 800 or 1500 (depending on region) transactions per second across streams. The

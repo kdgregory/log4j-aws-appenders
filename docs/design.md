@@ -94,7 +94,7 @@ using the invoking thread.
 While useful for specific situations, _synchronous mode is not intended as the default_. In addition
 to slowing down the invoking thread (perhaps significantly), it _does not guarantee delivery_. There
 is still the possibility of an exception during the send, which will requeue the message(s) for later
-deliver (which might never happen).
+delivery, which might never happen.
 
 
 ## Initialization
@@ -146,12 +146,11 @@ when they start the writer thread. This hook calls the writer's `stop()` method,
 joins to the writer thread, delaying shutdown until that thread finishes (which will take
 `batchDelay` milliseconds).
 
-> Note: Log4J2 has its own shutdown hook, and the appenders leverage it. While the configuration
-  option is retained for consistency, it is ignored.
+Note: Log4J2 has its own shutdown hook, and the appenders leverage it. While the configuration
+option is retained for consistency, it is ignored.
 
 When the shutdown hook is enabled, the JVM will not shut down until the final batch is sent (or it's
-hard-killed). This means that the main thread can continue running unexpectedly (ie, it's in a loop
-and the program was killed with `kill -15` or Ctrl-C).
+hard-killed). This means that the main thread can continue running unexpectedly.
 
 If you do not want this shutdown hook, you can set the `useShutdownHook` configuration parameter
 to `false`. Beware that doing so means you might lose messages.

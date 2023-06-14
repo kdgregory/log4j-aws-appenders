@@ -116,13 +116,14 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
     @Override
     protected List<LogMessage> sendBatch(List<LogMessage> batch)
     {
-        stats.setLastBatchSize(batch.size());
-        if (config.getEnableBatchLogging())
-            logger.debug("about to write batch of " + batch.size() + " message(s)");
-
         // this should never happen (we wait for at least one message in queue)
         if (batch.isEmpty())
             return batch;
+
+        // note to self: batch size is not messages sent
+        stats.setLastBatchSize(batch.size());
+        if (config.getEnableBatchLogging())
+            logger.debug("about to write batch of " + batch.size() + " message(s)");
 
         // CloudWatch wants all messages to be sorted by timestamp
         Collections.sort(batch);

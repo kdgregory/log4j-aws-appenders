@@ -39,8 +39,7 @@ public class CloudWatchTestHelper
 {
     private final static long WAIT_FOR_READY_TIMEOUT_MS     = 60000;
     private final static long WAIT_FOR_DELETED_TIMEOUT_MS   = 60000;
-
-    private final static int RETRIEVE_RETRY_COUNT           = 10;
+    private final static long RETRIEVE_TIMEOUT_MS           = 60000;
 
     private Logger localLogger = LoggerFactory.getLogger(getClass());
 
@@ -113,20 +112,21 @@ public class CloudWatchTestHelper
     public List<OutputLogEvent> retrieveAllMessages(String logStreamName, int expectedMessageCount)
     throws Exception
     {
-        List<OutputLogEvent> result = new ArrayList<OutputLogEvent>();
+        ensureLogStreamAvailable(logStreamName);
 
         localLogger.debug("retrieving messages from {}", logStreamName);
 
-        ensureLogStreamAvailable(logStreamName);
-
-        for (int retry = 0 ; retry < RETRIEVE_RETRY_COUNT ; retry++)
+        List<OutputLogEvent> result = new ArrayList<OutputLogEvent>();
+        long timeout = System.currentTimeMillis() + RETRIEVE_TIMEOUT_MS;
+        while (System.currentTimeMillis() < timeout)
         {
             result.clear();
 
             GetLogEventsRequest request = new GetLogEventsRequest()
                                   .withLogGroupName(logGroupName)
                                   .withLogStreamName(logStreamName)
-                                  .withStartFromHead(Boolean.TRUE);
+                                  .withStartFromHead(Boolean.TRUE)
+                                  .withStartTime(Long.valueOf(0));
 
             // sequence tokens stop changing when we're at the end of the stream
             String prevToken = "";
@@ -145,7 +145,7 @@ public class CloudWatchTestHelper
             if ((expectedMessageCount == 0) || (result.size() >= expectedMessageCount))
                 break;
 
-            Thread.sleep(2000);
+            Thread.sleep(10000);
         }
 
         localLogger.debug("retrieved {} messages from {}", result.size(), logStreamName);
@@ -184,14 +184,23 @@ public class CloudWatchTestHelper
 
 
     /**
-     *  Creates the log group, waiting for it to be available.
+     *  Creates the log group, waiting for it to be available. Returns immediately
+     *  if the group already exists.
      */
     public void createLogGroup()
     throws Exception
     {
         localLogger.debug("creating log group {}", logGroupName);
 
-        client.createLogGroup(new CreateLogGroupRequest().withLogGroupName(logGroupName));
+        try
+        {
+            client.createLogGroup(new CreateLogGroupRequest().withLogGroupName(logGroupName));
+        }
+        catch (ResourceAlreadyExistsException ex)
+        {
+            localLogger.debug("group {} already exists", logGroupName);
+            return;
+        }
 
         localLogger.debug("waiting for group {} to be available", logGroupName);
 
@@ -203,13 +212,14 @@ public class CloudWatchTestHelper
                 return;
             Thread.sleep(100);
         }
+
         fail("group \"" + logGroupName + "\" wasn't ready within " + WAIT_FOR_READY_TIMEOUT_MS/1000 + " seconds");
     }
 
 
     /**
-     *  We leave the log group for post-mortem analysis, but want to ensure
-     *  that it's gone before starting a new test.
+     *  Deletes the log group, in case it was left behind by a previous test run
+     *  for post-mortem analysis.
      */
     public void deleteLogGroupIfExists()
     throws Exception

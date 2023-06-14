@@ -216,7 +216,7 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
     protected void testMultipleThreadsMultipleAppendersDifferentDestinations(LoggerAccessor... accessors)
     throws Exception
     {
-        final int messagesPerThread = 1000;     // configured value; must be the same for all frameworks
+        final int messagesPerThread = 1000;
 
         MessageWriter.runOnThreads(
             accessors[0].newMessageWriter(messagesPerThread),
@@ -258,10 +258,6 @@ public abstract class AbstractCloudWatchAppenderIntegrationTest
         {
             CommonTestHelper.waitUntilMessagesSent(accessor.getStats(), messagesPerThread * threadsPerAccessor);
         }
-
-        // even after waiting until the stats say we've written everything, the read won't succeed
-        // if we try it immediately ... so we sleep, while CloudWatch puts everything in its place
-        Thread.sleep(15000);
 
         testHelper.assertMessages(LOGSTREAM_BASE, messagesPerThread * accessors.length * threadsPerAccessor);
 

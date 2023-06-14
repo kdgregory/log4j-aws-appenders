@@ -17,6 +17,7 @@ package com.kdgregory.logging.testhelpers;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,28 +32,31 @@ import org.slf4j.LoggerFactory;
 public abstract class MessageWriter implements Runnable
 {
     // these are useful for other test code, so are public
-    public final static String  REGEX   = ".*message on thread (\\d+): (\\d+)";
+    public final static String  REGEX   = ".*message from writer (\\d+): (\\d+)";
     public final static Pattern PATTERN = Pattern.compile(REGEX);
 
-    private Logger logger = LoggerFactory.getLogger(getClass());
+    private final static AtomicInteger idGenerator = new AtomicInteger();
+
+    private Logger localLogger = LoggerFactory.getLogger(getClass());
 
     private int numMessages;
+    private int writerId;
 
 
     public MessageWriter(int numMessages)
     {
         this.numMessages = numMessages;
+        this.writerId = idGenerator.addAndGet(1);
     }
 
 
     @Override
     public void run()
     {
-        long threadId = Thread.currentThread().getId();
-        logger.debug("writing {} messages on thread {}", numMessages, threadId);
+        localLogger.debug("writer {} writing {} messages", writerId, numMessages);
         for (int ii = 0 ; ii < numMessages ; ii++)
         {
-            writeLogMessage("message on thread " + threadId + ": " + ii);
+            writeLogMessage("message from writer " + writerId + ": " + ii);
         }
     }
 

@@ -222,8 +222,9 @@ implements Cloneable
         return enableBatchLogging;
     }
 
-    public void setEnableBatchLogging(boolean value)
+    public T setEnableBatchLogging(boolean value)
     {
         enableBatchLogging = value;
+        return (T)this;
     }
 }

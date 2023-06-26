@@ -4,7 +4,7 @@
 
     <groupId>com.kdgregory.logging</groupId>
     <artifactId>parent</artifactId>
-    <version>3.1.2-SNAPSHOT</version>
+    <version>3.1.2</version>
     <packaging>pom</packaging>
 
     <name>Parent POM</name>

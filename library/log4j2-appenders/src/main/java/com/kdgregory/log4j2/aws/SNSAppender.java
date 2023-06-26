@@ -324,7 +324,7 @@ extends AbstractAppender
     @Override
     protected SNSWriterConfig generateWriterConfig()
     {
-        // note to future me: Log4J2 does its own thing with configuration
+        // note to future me: look in AbstractAppender for common configuration settings
 
         StrSubstitutor l4jsubs  = appenderConfig.getConfiguration().getStrSubstitutor();
         Substitutions subs      = new Substitutions(new Date(), 0);

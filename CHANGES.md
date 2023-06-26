@@ -1,5 +1,13 @@
 # Change History
 
+## 3.1.2 (2023-06-26)
+
+* Updated minimum versions, after discovering that the library could not
+  retrieve credentials/region information from an EC2 instance with IMDSv2.
+  ([#186](https://github.com/kdgregory/log4j-aws-appenders/issues/186))
+* Log4J2 now supports batch logging.
+  ([#187](https://github.com/kdgregory/log4j-aws-appenders/issues/187))
+
 ## 3.1.1 (2023-05-09)
 
 * CloudWatchLogWriter no longer retries retrieving sequence token for

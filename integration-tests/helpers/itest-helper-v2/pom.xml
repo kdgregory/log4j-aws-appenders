@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.kdgregory.logging</groupId>
         <artifactId>parent</artifactId>
-        <version>3.1.1</version>
+        <version>3.1.2</version>
         <relativePath>../../../library/parent</relativePath>
     </parent>
 
@@ -22,8 +22,8 @@
 
 
     <properties>
-        <!-- we reference ObjectMapper directly, but get it from AWS dependencies in use -->
-        <jackson.version>2.10.4</jackson.version>
+        <!-- latest version of Jackson; we don't need to keep in sync with v2 SDK -->
+        <jackson.version>2.15.2</jackson.version>
     </properties>
 
 

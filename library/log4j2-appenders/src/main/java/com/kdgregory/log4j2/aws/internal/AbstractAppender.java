@@ -256,7 +256,8 @@ extends org.apache.logging.log4j.core.appender.AbstractAppender
                 .setAssumedRole(appenderConfig.getAssumedRole())
                 .setClientRegion(appenderConfig.getClientRegion())
                 .setClientEndpoint(appenderConfig.getClientEndpoint())
-                .setInitializationTimeout(appenderConfig.getInitializationTimeout());
+                .setInitializationTimeout(appenderConfig.getInitializationTimeout())
+                .setEnableBatchLogging(appenderConfig.isEnableBatchLogging());
 
         synchronized (initializationLock)
         {

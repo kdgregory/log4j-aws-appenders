@@ -4,7 +4,7 @@
 
     <groupId>com.kdgregory.logging</groupId>
     <artifactId>logback-aws-appenders-webapp</artifactId>
-    <version>3.1.1</version>
+    <version>3.1.2</version>
     <packaging>war</packaging>
 
     <name>Logback Webapp Example</name>
@@ -23,7 +23,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <aws-sdk.version>1.12.359</aws-sdk.version>
+        <aws-sdk.version>1.12.490</aws-sdk.version>
 
         <!-- these must be kept in sync -->
         <logback.version>1.2.11</logback.version>
@@ -37,6 +37,8 @@
 
 
     <dependencies>
+
+        <!-- appenders library -->
         <dependency>
             <groupId>com.kdgregory.logging</groupId>
             <artifactId>logback-aws-appenders</artifactId>
@@ -48,19 +50,11 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- Logback -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
-        </dependency>
-
-        <!-- this is here to retrieve the dependency so that it can be manually copied into the app-server lib directory
-             it's not actually used by the example -->
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-access</artifactId>
-            <version>${logback.version}</version>
-            <scope>provided</scope>
         </dependency>
 
         <!-- use the SLF4J bridge for commons-logging -->
@@ -70,19 +64,15 @@
             <version>${slf4j.version}</version>
         </dependency>
 
-        <!-- don't let the SDK pull in commons-logging transitively -->
+        <!-- Logback access log writer; this must be copied into the app-server lib directory if you choose to use it -->
         <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-core</artifactId>
-            <version>${aws-sdk.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions> 
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-access</artifactId>
+            <version>${logback.version}</version>
+            <scope>provided</scope>
         </dependency>
 
+        <!-- AWS SDK -->
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-logs</artifactId>
@@ -104,6 +94,20 @@
             <version>${aws-sdk.version}</version>
         </dependency>
 
+        <!-- don't let the SDK pull in commons-logging transitively -->
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-core</artifactId>
+            <version>${aws-sdk.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions> 
+        </dependency>
+
+        <!-- Servlet -->
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>

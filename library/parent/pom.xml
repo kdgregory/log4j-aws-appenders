@@ -4,7 +4,7 @@
 
     <groupId>com.kdgregory.logging</groupId>
     <artifactId>parent</artifactId>
-    <version>3.1.1</version>
+    <version>3.1.2</version>
     <packaging>pom</packaging>
 
     <name>Parent POM</name>
@@ -44,15 +44,18 @@
 
         <!-- version properties for all "top-level" projects, whether or not they use the dependency -->
 
-        <!-- these are the lowest AWS versions that we support -->
-        <aws-sdk-v1.version>1.11.233</aws-sdk-v1.version>
-        <aws-sdk-v2.version>2.10.0</aws-sdk-v2.version>
+        <!-- these are the minimum AWS SDK versions that we support -->
+        <aws-sdk-v1.version>1.11.716</aws-sdk-v1.version>
+        <aws-sdk-v2.version>2.10.43</aws-sdk-v2.version>
 
-        <junit.version>4.10</junit.version>
-        <kdgcommons.version>1.0.16</kdgcommons.version>
+        <!-- these are the minimum logging framework versions we support -->
         <log4j1.version>1.2.16</log4j1.version>
         <log4j2.version>2.8</log4j2.version>
         <logback.version>1.2.0</logback.version>
+        
+        <!--  the following are used for tests/examples, and are not dependencies of the library -->
+        <junit.version>4.10</junit.version>
+        <kdgcommons.version>1.0.16</kdgcommons.version>
         <practicalxml.version>1.1.18</practicalxml.version>
         <servlet-api.version>3.0.1</servlet-api.version>
         <slf4j.version>1.7.25</slf4j.version>

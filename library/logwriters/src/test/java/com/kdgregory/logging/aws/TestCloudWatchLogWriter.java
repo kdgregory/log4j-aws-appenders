@@ -1207,6 +1207,59 @@ extends AbstractLogWriterTest<CloudWatchLogWriter,CloudWatchWriterConfig,CloudWa
 
 
     @Test
+    public void testWriteAborted() throws Exception
+    {
+        mock = new MockCloudWatchFacade(config)
+        {
+            @Override
+            public void sendMessages(List<LogMessage> messages)
+            throws CloudWatchFacadeException
+            {
+                // first batch throws, subsequent succeed
+                if (putEventsInvocationCount == 1)
+                    throw new CloudWatchFacadeException(ReasonCode.ABORTED, true, null);
+
+                super.sendMessages(messages);
+            }
+        };
+
+        createWriter();
+
+        writer.addMessage(new LogMessage(System.currentTimeMillis(), "message one"));
+        waitForWriterThread();
+
+        // first write will fail
+
+        assertEquals("putEvents: invocation count",                 1,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
+        assertEquals("putEvents: last call message",                "message one",          mock.putEventsMessages.get(0).getMessage());
+
+        assertEquals("message has been removed from queue",         1,                      messageQueue.size());
+
+        // second should succeed
+
+        waitForWriterThread();
+
+        assertEquals("putEvents: invocation count",                 2,                      mock.putEventsInvocationCount);
+        assertEquals("putEvents: last call #/messages",             1,                      mock.putEventsMessages.size());
+        assertEquals("putEvents: last call message",                "message one",          mock.putEventsMessages.get(0).getMessage());
+
+        assertEquals("message has been removed from queue",         0,                      messageQueue.size());
+
+        assertEquals("all messages processed", Arrays.asList("message one"), mock.allMessagesSent);
+
+        internalLogger.assertInternalDebugLog("log writer starting.*",
+                                              "checking for existence of CloudWatch log group: argle",
+                                              "using existing CloudWatch log group: argle",
+                                              "checking for existence of CloudWatch log stream: bargle",
+                                              "using existing CloudWatch log stream: bargle",
+                                              "log writer initialization complete.*");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
     public void testBatchLogging() throws Exception
     {
         config.setEnableBatchLogging(true);

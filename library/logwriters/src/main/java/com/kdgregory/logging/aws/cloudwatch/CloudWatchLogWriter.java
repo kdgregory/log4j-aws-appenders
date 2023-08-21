@@ -145,6 +145,10 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
                     case THROTTLING:
                         stats.incrementThrottledWrites();
                         return null;
+                    case ABORTED:
+                        // my understanding of this exception is that it happens due to Thread.interrupt()
+                        // as such, I don't see a reason to log, will just return the batch for reprocesssing
+                        return batch;
                     case MISSING_LOG_GROUP:
                     case MISSING_LOG_STREAM:
                         reportError(ex.getMessage(), ex);

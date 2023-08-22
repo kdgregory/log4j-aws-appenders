@@ -38,9 +38,6 @@ import com.kdgregory.logging.common.util.RetryManager2;
 public class CloudWatchLogWriter
 extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
 {
-    // setting the sequence token to this value triggers retrieval
-    private final static String SEQUENCE_TOKEN_FLAG_VALUE = "";
-
     // passed into constructor
     private CloudWatchFacade facade;
 
@@ -53,9 +50,6 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
     // these control the retries for PutEvents; note that sends use a duration-based timeout
     protected Duration sendTimeout = Duration.ofMillis(2000);
     protected RetryManager2 sendRetry = new RetryManager2("send", Duration.ofMillis(200), true, false);
-
-    // cache for sequence tokens when using a dedicated writer; also used as a flag to trigger retrieve
-    private String sequenceToken = SEQUENCE_TOKEN_FLAG_VALUE;
 
 
     public CloudWatchLogWriter(CloudWatchWriterConfig config, CloudWatchWriterStatistics stats, InternalLogger logger, CloudWatchFacade facade)
@@ -122,13 +116,14 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
     @Override
     protected List<LogMessage> sendBatch(List<LogMessage> batch)
     {
-        stats.setLastBatchSize(batch.size());
-        if (config.getEnableBatchLogging())
-            logger.debug("about to write batch of " + batch.size() + " message(s)");
-
         // this should never happen (we wait for at least one message in queue)
         if (batch.isEmpty())
             return batch;
+
+        // note to self: batch size is not messages sent
+        stats.setLastBatchSize(batch.size());
+        if (config.getEnableBatchLogging())
+            logger.debug("about to write batch of " + batch.size() + " message(s)");
 
         // CloudWatch wants all messages to be sorted by timestamp
         Collections.sort(batch);
@@ -138,7 +133,7 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
         {
             try
             {
-                sequenceToken = facade.putEvents(retrieveSequenceToken(timeoutAt), batch);
+                facade.putEvents(batch);
                 if (config.getEnableBatchLogging())
                     logger.debug("wrote batch of " + batch.size() + " message(s)");
                 return Collections.emptyList();
@@ -150,14 +145,10 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
                     case THROTTLING:
                         stats.incrementThrottledWrites();
                         return null;
-                    case INVALID_SEQUENCE_TOKEN:
-                        // force the token to be fetched next time through
-                        sequenceToken = SEQUENCE_TOKEN_FLAG_VALUE;
-                        stats.updateWriterRaceRetries();
-                        return null;
-                    case ALREADY_PROCESSED:
-                        logger.warn("received DataAlreadyAcceptedException, dropping batch");
-                        return Collections.emptyList();
+                    case ABORTED:
+                        // my understanding of this exception is that it happens due to Thread.interrupt()
+                        // as such, I don't see a reason to log, will just return the batch for reprocesssing
+                        return batch;
                     case MISSING_LOG_GROUP:
                     case MISSING_LOG_STREAM:
                         reportError(ex.getMessage(), ex);
@@ -175,22 +166,14 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
             }
         });
 
-        // either success or an exception
+        // empty list on success, original batch on failure
         if (result != null)
+        {
             return result;
-
-        // if we get here we timed-out, need to figure out cause
-        if (sequenceToken.equals(SEQUENCE_TOKEN_FLAG_VALUE))
-        {
-            logger.warn("batch failed: unrecovered sequence token race");
-            stats.updateUnrecoveredWriterRaceRetries();
-        }
-        else
-        {
-            logger.warn("batch failed: repeated throttling");
         }
 
-        // in either case, return the original batch for reprocessing
+        // if we got here, we dropped out of the retry loop
+        logger.warn("batch failed: repeated throttling");
         return batch;
     }
 
@@ -270,20 +253,6 @@ extends AbstractLogWriter<CloudWatchWriterConfig,CloudWatchWriterStatistics>
 
         // wait for the log stream to be created, throw if it never happens
         describeRetry.invoke(timeoutAt, () -> facade.findLogStream());
-
-        // new log streams use a null sequence token
-        sequenceToken = null;
-    }
-
-
-    private String retrieveSequenceToken(Instant timeoutAt)
-    {
-        if ((! config.getDedicatedWriter()) || (SEQUENCE_TOKEN_FLAG_VALUE.equals(sequenceToken)))
-        {
-            // this might throw a facade exception, which will be caught by sendBatch()
-            sequenceToken = facade.retrieveSequenceToken();
-        }
-        return sequenceToken;
     }
 
 

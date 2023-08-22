@@ -17,14 +17,13 @@ Name                        | Description
 `logGroup`                  | Name of the CloudWatch log group where messages are sent; may use [substitutions](substitutions.md). If this group doesn't exist it will be created. No default.
 `logStream`                 | Name of the CloudWatch log stream where messages are sent; may use [substitutions](substitutions.md). If this stream doesn't exist it will be created. Defaults to `{startupTimestamp}`.
 `retentionPeriod`           | Specifies a non-default retention period for auto-created CloudWatch log groups. If omitted, the groups retain messages forever. See [below](#retention-policy) for more information.
-`dedicatedWriter`           | Obsolete. See [below](#sequence-tokens) for details.
+`dedicatedWriter`           | _Not used_; retained for backwards compatibility.
 `synchronous`               | If `true`, the appender operates in [synchronous mode](design.md#synchronous-mode), sending messages from the invoking thread on every call to `append()`. This is _extremely_ inefficient.
 `batchDelay`                | The time, in milliseconds, that the writer will wait to accumulate messages for a batch. See the [design doc](design.md#message-batches) for more information.
-`truncateOversizeMessages`  | If `true` (the default), truncate any messages that are too large for CloudWatch; if `false`, it discards them. See [below](#oversize-messages) for more information.
+`truncateOversizeMessages`  | If `true` (the default), truncate any messages that are too large for CloudWatch; if `false`, discard them. See [below](#oversize-messages) for more information.
 `discardThreshold`          | The maximum number of messages that can remain queued before they're discarded; default is 10,000. See the [design doc](design.md#message-discard) for more information.
 `discardAction`             | Which messages will be discarded once the threshold is passed: `oldest` (the default), `newest`, or `none`.
 `useShutdownHook`           | Controls whether the appender uses a shutdown hook to attempt to process outstanding messages when the JVM exits. This is `true` by default; set to `false` to disable. Ignored for Log4J2, which has its own shutdown hook. See [docs](design.md#shutdown) for more information.
-`initializationTimeout`     | The number of milliseconds to wait for initialization; default is 60000 (60 seconds). See [docs](design.md#initialization) for more information.
 
 
 ### Example: Log4J 1.x
@@ -146,17 +145,10 @@ tokens from `PutLogEvents`. If there were concurrent writers, then only one woul
 succeed; the others would receive `InvalidSequenceTokenException`, and would have
 to call `DescribeLogStreams` (which was rate limited) to get a new token.
 
-The initial versions of this library retrieved sequence tokens before every write,
-which was inefficient (and could fail due to rate limits). In version 2.2.2, it
-introduced the `dedicatedWriter` parameter: if `true`, then the appender would reuse
-the value from `PutLogEvents`; if `false`, it would retrieve a new value for each
-write. To maintain backwards compatibility, the default value was `false`; in
-release 3.0.0, the default value became `true`.
-
 In January 2023, AWS changed their API so that it no longer used sequence tokens;
 any token provided in the request would be ignored.
 
-This libary has not yet been updated, due to [observed issues](https://github.com/kdgregory/log4j-aws-appenders/issues/184)
-with concurrent writes. However, if you're explicitly setting `dedicatedWriter`
-to `false` you can remove it from your logging config. And if you're using an
-old version of the appender, you should upgrade to the latest 3.x version.
+This version of the library is fully compliant with the new API, and does not
+retain or attempt to retrieve sequence tokens. As a result, the `dedicatedWriter`
+parameter, which was formerly used to control token retrieve, is now ignored. It
+may be removed from your logging configuration.

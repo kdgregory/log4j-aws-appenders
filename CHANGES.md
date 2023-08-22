@@ -1,5 +1,14 @@
 # Change History
 
+## 3.2.0 (2023-08-22)
+
+* CloudWatchLogWriter no longer uses sequence tokens. This did not cause
+  a user-visible change, but is a signficiant change in operation, so got
+  a minor version bump.
+  ([#181](https://github.com/kdgregory/log4j-aws-appenders/issues/181))
+* CloudWatchLogWriter now expects AbortedException from PutLogEvents.
+  ([#189](https://github.com/kdgregory/log4j-aws-appenders/issues/189))
+
 ## 3.1.2 (2023-06-26)
 
 * Updated minimum versions, after discovering that the library could not

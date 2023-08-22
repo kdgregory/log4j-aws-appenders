@@ -4,7 +4,7 @@
 
     <groupId>com.kdgregory.logging</groupId>
     <artifactId>log4j2-aws-appenders-example</artifactId>
-    <version>3.1.2</version>
+    <version>3.2.0</version>
     <packaging>jar</packaging>
 
     <name>Log4J 2.x Example</name>

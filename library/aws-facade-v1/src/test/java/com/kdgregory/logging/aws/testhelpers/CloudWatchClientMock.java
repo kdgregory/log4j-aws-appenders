@@ -50,9 +50,6 @@ import com.amazonaws.services.logs.model.*;
 public class CloudWatchClientMock
 implements InvocationHandler
 {
-    /** This sequence token should never be reached. */
-    public final static String  INVALID_SEQUENCE_TOKEN = String.valueOf(Integer.MAX_VALUE);
-
     // the actual list of names used by this instance
     public List<String> logGroupNames;
     public List<String> logStreamNames;
@@ -60,10 +57,6 @@ implements InvocationHandler
     // the maximum number of names that will be returned in a single describe call
     private int maxLogGroupNamesInBatch;
     private int maxLogStreamNamesInBatch;
-
-    // the sequence token used for putLogEvents(); start with arbitrary value to
-    // verify that we're actually retrieving it from describe
-    public int nextSequenceToken = (int)(System.currentTimeMillis() % 143);
 
     // invocation counts for each function that we support
     public int describeLogGroupsInvocationCount;
@@ -138,15 +131,6 @@ implements InvocationHandler
                             getClass().getClassLoader(),
                             new Class<?>[] { AWSLogs.class },
                             CloudWatchClientMock.this);
-    }
-
-
-    /**
-     *  Retrieves the current sequence token, for testing PutLogEvents.
-     */
-    public String getCurrentSequenceToken()
-    {
-        return String.valueOf(nextSequenceToken);
     }
 
 //----------------------------------------------------------------------------
@@ -270,7 +254,7 @@ implements InvocationHandler
                 logStreams.add(new LogStream()
                                .withLogStreamName(name)
                                .withArn("arn:aws:logs:us-east-1:123456789012:log-group:" + request.getLogGroupName() + ":log-stream:" + name)
-                               .withUploadSequenceToken(String.valueOf(nextSequenceToken)));
+                               );
         }
 
         String nextToken = (max == logStreamNames.size()) ? null : String.valueOf(max);
@@ -333,10 +317,7 @@ implements InvocationHandler
             throw new ResourceNotFoundException("no such log group: " + request.getLogGroupName());
         if (! logStreamNames.contains(request.getLogStreamName()))
             throw new ResourceNotFoundException("no such log stream: " + request.getLogStreamName());
-        if (Integer.parseInt(request.getSequenceToken()) != nextSequenceToken)
-            throw new InvalidSequenceTokenException("was " + request.getSequenceToken() + " expected " + nextSequenceToken);
 
-        return new PutLogEventsResult()
-               .withNextSequenceToken(String.valueOf(++nextSequenceToken));
+        return new PutLogEventsResult();
     }
 }

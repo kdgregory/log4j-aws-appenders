@@ -21,7 +21,6 @@ import junit.framework.AssertionFailedError;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -105,15 +104,37 @@ extends AbstractCloudWatchAppenderIntegrationTest
 
 
     /**
-     *  Loads the test-specific Log4J configuration and resets the environment.
+     *  Loads the test-specific logging configuration and resets the environment.
      */
-    public void init(String testName) throws Exception
+    public void init(String testName, boolean preCreateLogGroup, String... preCreateLogStreams)
+    throws Exception
     {
         MDC.put("testName", testName);
         localLogger.info("starting");
 
         testHelper = new CloudWatchTestHelper(helperClient, BASE_LOGGROUP_NAME, testName);
+
+        // clean up after any previous failure
         testHelper.deleteLogGroupIfExists();
+
+        if (preCreateLogGroup)
+        {
+            // Insights won't read messages with timestamps before log group creation,
+            // so we pre-create the group unless we want to explicitly test auto-create
+            localLogger.debug("pre-creating log group");
+            testHelper.createLogGroup();
+        }
+        
+        if (preCreateLogStreams.length > 0)
+        {
+            // this is an attempt to avoid the CloudWatch Logs bug described in #184
+            localLogger.debug("pre-creating log streams");
+            for (String logStreamName : preCreateLogStreams)
+            {
+                testHelper.createLogStream(logStreamName);
+            }
+            Thread.sleep(100);
+        }
 
         String propertiesName = "CloudWatchAppenderIntegrationTest/" + testName + ".properties";
         URL config = ClassLoader.getSystemResource(propertiesName);
@@ -162,7 +183,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
     @Test
     public void smoketest() throws Exception
     {
-        init("smoketest");
+        init("smoketest", false);
         super.smoketest(new LoggerInfo("TestLogger", "test"));
     }
 
@@ -170,7 +191,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
     @Test
     public void testMultipleThreadsSingleAppender() throws Exception
     {
-        init("testMultipleThreadsSingleAppender");
+        init("testMultipleThreadsSingleAppender", true);
         super.testMultipleThreadsSingleAppender(new LoggerInfo("TestLogger", "test"));
     }
 
@@ -178,7 +199,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
     @Test
     public void testMultipleThreadsMultipleAppendersDifferentDestinations() throws Exception
     {
-        init("testMultipleThreadsMultipleAppendersDifferentDestinations");
+        init("testMultipleThreadsMultipleAppendersDifferentDestinations", true);
         super.testMultipleThreadsMultipleAppendersDifferentDestinations(
             new LoggerInfo("TestLogger1", "test1"),
             new LoggerInfo("TestLogger2", "test2"),
@@ -189,7 +210,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
     @Test
     public void testMultipleThreadsMultipleAppendersSameDestination() throws Exception
     {
-        init("testMultipleThreadsMultipleAppendersSameDestination");
+        init("testMultipleThreadsMultipleAppendersSameDestination", true, "AppenderTest");
         super.testMultipleThreadsMultipleAppendersSameDestination(
             new LoggerInfo("TestLogger1", "test1"),
             new LoggerInfo("TestLogger2", "test2"),
@@ -202,7 +223,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
     @Test
     public void testLogstreamDeletionAndRecreation() throws Exception
     {
-        init("testLogstreamDeletionAndRecreation");
+        init("testLogstreamDeletionAndRecreation", true);
         super.testLogstreamDeletionAndRecreation(new LoggerInfo("TestLogger", "test"));
     }
 
@@ -210,7 +231,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
     @Test
     public void testFactoryMethod() throws Exception
     {
-        init("testFactoryMethod");
+        init("testFactoryMethod", false);
         super.testFactoryMethod(new LoggerInfo("TestLogger", "test"));
     }
 
@@ -226,7 +247,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
         // must delete existing group before logger initialization to avoid race condition
         altTestHelper.deleteLogGroupIfExists();
 
-        init("testAlternateRegion");
+        init("testAlternateRegion", false);
         super.testAlternateRegion(new LoggerInfo("TestLogger", "test"), altTestHelper);
     }
 
@@ -242,7 +263,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
         // must delete existing group before logger initialization to avoid race condition
         altTestHelper.deleteLogGroupIfExists();
 
-        init("testAlternateEndpoint");
+        init("testAlternateEndpoint", false);
         super.testAlternateRegion(new LoggerInfo("TestLogger", "test"), altTestHelper);
     }
 
@@ -259,7 +280,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
         {
             Role role = roleHelper.createRole(roleName, "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess");
             roleHelper.waitUntilRoleAssumable(role.getArn(), 60);
-            init("testAssumedRole");
+            init("testAssumedRole", false);
             super.testAssumedRole(new LoggerInfo("TestLogger", "test"));
         }
         catch (AssertionFailedError ex)
@@ -287,7 +308,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
     @Test
     public void testSynchronousModeSingleThread() throws Exception
     {
-        init("testSynchronousModeSingleThread");
+        init("testSynchronousModeSingleThread", false);
         super.testSynchronousModeSingleThread(new LoggerInfo("TestLogger", "test"));
     }
 
@@ -295,7 +316,7 @@ extends AbstractCloudWatchAppenderIntegrationTest
     @Test
     public void testSynchronousModeMultiThread() throws Exception
     {
-        init("testSynchronousModeMultiThread");
+        init("testSynchronousModeMultiThread", false);
         super.testSynchronousModeMultiThread(new LoggerInfo("TestLogger", "test"));
     }
 }

@@ -68,36 +68,21 @@ public interface CloudWatchFacade
      *  Attempts to create the configured log stream.
      *  <p>
      *  Stream creation is an asynchronous operation: the stream may not be available for
-     *  several seconds after creation. You should call {@link #retrieveSequenceToken} in
-     *  a loop (with delays) until it returns a value.
+     *  several seconds after creation. You should call {@link #findLogStream} in a loop
+     * (with delays) until it returns a value.
      */
     void createLogStream();
 
 
     /**
-     *  If the configured stream exists, returns the sequence token needed to write to it.
-     *  Returns <code>null</code> if the stream does not exist or the retrieve operation
-     *  is thottled.
-     *  <p>
-     *  Note: if the log group does not exist, this is treated as if the stream does not
-     *        exist. The log-writer must use other mechanism (eg, failed write) to determine
-     *        that it needs to recreate the log group.
-     */
-    String retrieveSequenceToken();
-
-
-    /**
-     *  Attempts to send a batch of messages. If successful, returns the next sequence token
-     *  for the stream. If unsuccessful, throws an exception that should determine caller's
-     *  next steps.
+     *  Attempts to send a batch of messages. If unsuccessful, throws an exception that should
+     *  determine caller's next steps.
      *
-     *  @param  sequenceToken   Sequence token from a prior call to this method or an explicit
-     *                          call to {@link #retrieveSequenceToken}.
      *  @param  messages        The messages to send. These messages must meet all of the
      *                          requirements for <code>PutLogEvents</code> (sorted by
      *                          timestamp, and within acceptable timestamp ranges).
      */
-    String putEvents(String sequenceToken, List<LogMessage> messages);
+    void putEvents(List<LogMessage> messages);
 
 
     /**

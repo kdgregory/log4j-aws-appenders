@@ -36,14 +36,14 @@ To use these appenders, you must add the following libraries to your build:
 
 * The facade library for whatever version of the AWs SDK you're using.
 
-  * [1.11.x](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.kdgregory.logging%22%20AND%20a%3A%22aws-facade-v1%22)
-  * [2.x](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.kdgregory.logging%22%20AND%20a%3A%22aws-facade-v2%22)
+  * [1.x](https://central.sonatype.com/artifact/com.kdgregory.logging/aws-facade-v1)
+  * [2.x](https://central.sonatype.com/artifact/com.kdgregory.logging/aws-facade-v2)
 
 * The appenders library for your logging framework
 
-  * [Log4J 1.x](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.kdgregory.logging%22%20AND%20a%3A%22log4j1-aws-appenders%22)
-  * [Log4J 2.x](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.kdgregory.logging%22%20AND%20a%3A%22log4j2-aws-appenders%22)
-  * [Logback](https://search.maven.org/classic/#search%7Cga%7C1%7Cg%3A%22com.kdgregory.logging%22%20AND%20a%3A%22logback-aws-appenders%22)
+  * [Log4J 1.x](https://central.sonatype.com/artifact/com.kdgregory.logging/log4j1-aws-appenders)
+  * [Log4J 2.x](https://central.sonatype.com/artifact/com.kdgregory.logging/log4j2-aws-appenders)
+  * [Logback](https://central.sonatype.com/artifact/com.kdgregory.logging/logback-aws-appenders)
 
 Then grant your program the [IAM permissions](docs/permissions.md) required by your
 chosen destination(s) and features.

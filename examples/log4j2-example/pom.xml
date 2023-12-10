@@ -22,9 +22,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <aws-sdk-v2.version>2.20.86</aws-sdk-v2.version>
-        <log4j2.version>2.20.0</log4j2.version>
-        <jackson.version>2.15.2</jackson.version>
+        <aws-sdk-v2.version>2.21.42</aws-sdk-v2.version>
+        <log4j2.version>2.21.0</log4j2.version>
+        <jackson.version>2.16.0</jackson.version>
 
         <plugin.compiler.version>3.1</plugin.compiler.version>
         <plugin.shade.version>3.1.1</plugin.shade.version>

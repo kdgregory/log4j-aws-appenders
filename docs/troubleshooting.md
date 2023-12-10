@@ -68,7 +68,7 @@ properties for one appender before Log4J configures the next.
 For Log4J 2.x, you set the level of internal logging in the configuration file:
 
 ```
-<Configuration status="debug" packages="com.kdgregory.log4j2.aws">
+<Configuration status="debug">
 
     <!-- configuration omitted -->
 
@@ -352,6 +352,50 @@ Caused by: java.lang.ClassNotFoundException: com.amazonaws.services.logs.model.I
 ```
 
 
+## Log4J2 Configuration Warnings/Errors
+
+Log4J2 uses simple names to refer to appenders and other plugins. As a result, it needs some way to identify
+the actual classes for these plugins. Historically, it used classpath scanning, using the `packages` element
+of the configuration file to specify packages to search. Now, it prefers using the `Log4j2Plugins.dat` file.
+However there are several things that can go wrong:
+
+* Deprecation warning
+
+  If you use the `packages` element to specify your plugin packages, you will see the message below:
+
+  ```
+  WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+  ```
+
+  This is, as indicated, a warning; the logging library still works (at least for now) if you use this
+  configuration element.
+
+* Unable to find classes
+
+  If you don't have a `Log4j2Plugins.dat` that references this library's plugins, you will see a
+  message like this:
+
+  ```
+  ERROR StatusConsoleListener Error processing element CloudWatchAppender ([Appenders: null]): CLASS_NOT_FOUND
+  ```
+
+* Unable to configure anything
+
+  If you don't properly merge this library's `Log4j2Plugins.dat` file with the one provided by Log4J itself,
+  you will see multiple messages that look like this, and logging simply won't work:
+
+  ```
+  ERROR StatusLogger Unrecognized format specifier [d]
+  ERROR StatusLogger Unrecognized conversion specifier [d] starting at position 16 in conversion pattern.
+  ```
+
+  Note: if you only see one or two "Unrecognized format specifier" messages, it's more likely that you
+  have an incorrect `PatternLayout` configuration.
+
+See [the Log4J2 example](../examples/log4j2-example/) for more information on this file, and how to use
+Maven to create an UberJar that merges these files.
+
+
 ## "Unable to unmarshall exception response with the unmarshallers provided" error
 
    You're probably using the AWS v1 SDK on Java 17 or later. This SDK [does not support Java 17
@@ -361,6 +405,7 @@ Caused by: java.lang.ClassNotFoundException: com.amazonaws.services.logs.model.I
    The reason that you might see this in the appenders and not your own code is that the appenders
    library performs some operations with the expectation that AWS will report an error. However,
    [it does affect everyone](https://github.com/aws/aws-sdk-java/issues/2795).
+
 
 # Batch Logging
 

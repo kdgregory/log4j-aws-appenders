@@ -1,4 +1,4 @@
-<Configuration status="warn" packages="com.kdgregory.log4j2.aws">
+<Configuration status="warn">
 
     <Appenders>
 

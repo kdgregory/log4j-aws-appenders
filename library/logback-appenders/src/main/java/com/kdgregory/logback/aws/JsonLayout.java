@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import com.kdgregory.logback.aws.internal.AbstractJsonLayout;
+import com.kdgregory.logback.aws.internal.JsonLayoutKeyValueHandler;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
@@ -84,12 +85,14 @@ import ch.qos.logback.classic.spi.StackTraceElementProxy;
 public class JsonLayout
 extends AbstractJsonLayout<ILoggingEvent>
 {
+    private JsonLayoutKeyValueHandler keyValueHandler = null;
 
 //----------------------------------------------------------------------------
 //  Configuration
 //----------------------------------------------------------------------------
 
     private boolean enableLocation;
+    private boolean enableKeyValue;
 
 
     public void setEnableLocation(boolean value)
@@ -101,6 +104,19 @@ extends AbstractJsonLayout<ILoggingEvent>
     public boolean getEnableLocation()
     {
         return enableLocation;
+    }
+
+
+    public void setEnableKeyValue(boolean value)
+    {
+        enableKeyValue = value;
+        keyValueHandler = value ? new JsonLayoutKeyValueHandler() : null;
+    }
+
+
+    public boolean getEnableKeyValue()
+    {
+        return enableKeyValue;
     }
 
 //----------------------------------------------------------------------------
@@ -141,6 +157,11 @@ extends AbstractJsonLayout<ILoggingEvent>
                 location.put("lineNumber", info.getLineNumber());
                 map.put("locationInfo", location);
             }
+        }
+        
+        if (enableKeyValue)
+        {
+            keyValueHandler.appendKeyValuePairs(event, map);
         }
 
         return addCommonAttributesAndConvert(map);

@@ -92,7 +92,7 @@ extends AbstractJsonLayout<ILoggingEvent>
 //----------------------------------------------------------------------------
 
     private boolean enableLocation;
-    private boolean enableKeyValue;
+    private boolean enableKeyValuePairs;
 
 
     public void setEnableLocation(boolean value)
@@ -107,16 +107,16 @@ extends AbstractJsonLayout<ILoggingEvent>
     }
 
 
-    public void setEnableKeyValue(boolean value)
+    public void setEnableKeyValuePairs(boolean value)
     {
-        enableKeyValue = value;
+        enableKeyValuePairs = value;
         keyValueHandler = value ? new JsonLayoutKeyValueHandler() : null;
     }
 
 
-    public boolean getEnableKeyValue()
+    public boolean getEnableKeyValuePairs()
     {
-        return enableKeyValue;
+        return enableKeyValuePairs;
     }
 
 //----------------------------------------------------------------------------
@@ -158,8 +158,8 @@ extends AbstractJsonLayout<ILoggingEvent>
                 map.put("locationInfo", location);
             }
         }
-        
-        if (enableKeyValue)
+
+        if (enableKeyValuePairs)
         {
             keyValueHandler.appendKeyValuePairs(event, map);
         }

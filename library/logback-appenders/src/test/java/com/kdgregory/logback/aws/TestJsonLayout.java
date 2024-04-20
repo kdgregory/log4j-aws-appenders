@@ -149,6 +149,7 @@ public class TestJsonLayout
         DomAsserts.assertCount("no location",   0,  dom, "/data/locationInfo");
         DomAsserts.assertCount("no instanceId", 0,  dom, "/data/instanceId");
         DomAsserts.assertCount("no tags",       0,  dom, "/data/tags");
+        DomAsserts.assertCount("no extra",      0,  dom, "/data/extra");
     }
 
 
@@ -276,6 +277,18 @@ public class TestJsonLayout
         assertCommonElements(TEST_MESSAGE);
 
         DomAsserts.assertCount("tags not present",  0, dom, "/data/tag");
+    }
+
+
+    @Test
+    public void testKeyValuePairs() throws Exception
+    {
+        initialize("testKeyValuePairs");
+
+        logger.debug(TEST_MESSAGE);
+
+        captureLoggingOutputAndParse();
+        assertCommonElements(TEST_MESSAGE);
     }
 
 

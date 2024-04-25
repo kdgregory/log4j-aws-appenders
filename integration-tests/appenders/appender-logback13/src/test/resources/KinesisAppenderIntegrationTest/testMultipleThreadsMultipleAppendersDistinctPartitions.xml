@@ -1,0 +1,60 @@
+<configuration debug="false">
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level - %mdc{testName}: %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="test1" class="com.kdgregory.logback.aws.KinesisAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
+        </layout>
+        <streamName>AppenderIntegrationTest-testMultipleThreadsMultipleAppendersDistinctPartitions</streamName>
+        <partitionKey>test1</partitionKey>
+        <batchDelay>500</batchDelay>
+        <autoCreate>true</autoCreate>
+        <shardCount>2</shardCount>
+    </appender>
+
+    <appender name="test2" class="com.kdgregory.logback.aws.KinesisAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
+        </layout>
+        <streamName>AppenderIntegrationTest-testMultipleThreadsMultipleAppendersDistinctPartitions</streamName>
+        <partitionKey>test2</partitionKey>
+        <batchDelay>500</batchDelay>
+        <autoCreate>true</autoCreate>
+        <shardCount>2</shardCount>
+    </appender>
+
+    <appender name="test3" class="com.kdgregory.logback.aws.KinesisAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%d [%thread] %-5level %logger{0} - %msg%n</pattern>
+        </layout>
+        <streamName>AppenderIntegrationTest-testMultipleThreadsMultipleAppendersDistinctPartitions</streamName>
+        <partitionKey>test3</partitionKey>
+        <batchDelay>500</batchDelay>
+        <autoCreate>true</autoCreate>
+        <shardCount>2</shardCount>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="console" />
+    </root>
+
+    <logger name="com.kdgregory" level="debug"/>
+
+    <logger name="TestLogger1" level="debug" additivity="false">
+        <appender-ref ref="test1" />
+    </logger>
+
+    <logger name="TestLogger2" level="debug" additivity="false">
+        <appender-ref ref="test2" />
+    </logger>
+
+    <logger name="TestLogger3" level="debug" additivity="false">
+        <appender-ref ref="test3" />
+    </logger>
+
+</configuration>

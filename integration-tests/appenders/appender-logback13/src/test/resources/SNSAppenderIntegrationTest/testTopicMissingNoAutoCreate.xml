@@ -1,0 +1,26 @@
+<configuration debug="false">
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level - %mdc{testName}: %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="test" class="com.kdgregory.logback.aws.SNSAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%msg</pattern>
+        </layout>
+        <topicName>{sysprop:SNSAppenderIntegrationTest.resourceName}</topicName>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="console" />
+    </root>
+
+    <logger name="com.kdgregory" level="debug"/>
+
+    <logger name="TestLogger" level="debug" additivity="false">
+        <appender-ref ref="test" />
+    </logger>
+
+</configuration>

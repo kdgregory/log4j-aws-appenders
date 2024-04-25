@@ -1,0 +1,20 @@
+<configuration debug="false">
+    <!-- default logging configuration, to handle the time from test start to first init()  -->
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level - %mdc{testName}: %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="console" />
+    </root>
+
+    <root level="info">
+        <appender-ref ref="console" />
+    </root>
+
+    <logger name="com.kdgregory" level="debug"/>
+
+</configuration>

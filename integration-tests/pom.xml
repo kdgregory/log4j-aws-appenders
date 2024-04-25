@@ -25,6 +25,7 @@
         <module>appenders/appender-log4j1</module>
         <module>appenders/appender-log4j2</module>
         <module>appenders/appender-logback</module>
+        <module>appenders/appender-logback13</module>
     </modules>
 
 </project>

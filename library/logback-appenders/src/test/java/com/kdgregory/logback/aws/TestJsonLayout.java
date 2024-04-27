@@ -81,6 +81,7 @@ public class TestJsonLayout
         appender.setOutputStream(out);
     }
 
+
     private void captureLoggingOutput()
     throws Exception
     {

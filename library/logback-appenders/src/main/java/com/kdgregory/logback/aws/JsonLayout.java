@@ -14,6 +14,8 @@
 
 package com.kdgregory.logback.aws;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -21,7 +23,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import com.kdgregory.logback.aws.internal.AbstractJsonLayout;
-import com.kdgregory.logback.aws.internal.JsonLayoutKeyValueHandler;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
@@ -85,7 +86,7 @@ import ch.qos.logback.classic.spi.StackTraceElementProxy;
 public class JsonLayout
 extends AbstractJsonLayout<ILoggingEvent>
 {
-    private JsonLayoutKeyValueHandler keyValueHandler = null;
+    private KeyValueHandler keyValueHandler = null;
 
 //----------------------------------------------------------------------------
 //  Configuration
@@ -110,7 +111,7 @@ extends AbstractJsonLayout<ILoggingEvent>
     public void setEnableKeyValuePairs(boolean value)
     {
         enableKeyValuePairs = value;
-        keyValueHandler = value ? new JsonLayoutKeyValueHandler() : null;
+        keyValueHandler = value ? new KeyValueHandler() : null;
     }
 
 
@@ -198,5 +199,74 @@ extends AbstractJsonLayout<ILoggingEvent>
         return (throwable.getCause() == null)
              ? entries
              : appendThrowable(entries, throwable.getCause());
+    }
+
+
+//----------------------------------------------------------------------------
+//  Helper classes
+//----------------------------------------------------------------------------
+
+    /**
+     *  Handles the key-value pairs added to <code>ILoggingEvent</code> with
+     *  Logback version 1.3. This class uses reflection to access these fields,
+     *  so is compatible with earlier versions; if the fields don't exist, it
+     *  acts as a no-op.
+     *
+     *  Implementation note: I compared the performance of direct access, method
+     *  handles, and traditional reflection. Reflection and method handles were
+     *  about the same, and about 20% slower than direct access. Since the latter
+     *  would have required changing this module's dependency version, and would
+     *  have required other code changes due to backwards-incompatible changes, I
+     *  decided to stick with reflection.
+     */
+    private static class KeyValueHandler
+    {
+        private boolean isConfigured;
+        private Method mGetKeyValuePairs;
+        private Field kvpKey;
+        private Field kvpValue;
+
+        public KeyValueHandler()
+        {
+            try
+            {
+                mGetKeyValuePairs = ILoggingEvent.class.getMethod("getKeyValuePairs");
+                Class<?> kvpKlass = Class.forName("org.slf4j.event.KeyValuePair");
+                kvpKey = kvpKlass.getField("key");
+                kvpValue = kvpKlass.getField("value");
+                isConfigured = true;
+            }
+            catch (Exception ex)
+            {
+                // we fail silently; there's no way for a layout to report errors
+            }
+        }
+
+
+        public void appendKeyValuePairs(ILoggingEvent event, Map<String,Object> eventMap)
+        {
+            // always create the holder; this will give us something to test using 1.2
+            Map<String,Object> pairMap = new TreeMap<>();
+            eventMap.put("extra", pairMap);
+
+            if (!isConfigured)
+                return;
+
+            try
+            {
+                List<? extends Object> pairs = (List<?>)mGetKeyValuePairs.invoke(event);
+                if (pairs == null)
+                    return;
+
+                for (Object pair : pairs)
+                {
+                    pairMap.put((String)kvpKey.get(pair), kvpValue.get(pair));
+                }
+            }
+            catch (Exception ex)
+            {
+                // we fail silently; there's no way for a layout to report errors
+            }
+        }
     }
 }

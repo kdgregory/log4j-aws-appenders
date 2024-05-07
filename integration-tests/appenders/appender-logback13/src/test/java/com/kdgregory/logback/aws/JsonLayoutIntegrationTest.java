@@ -31,9 +31,12 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
 import net.sf.kdgcommons.lang.StringUtil;
+import net.sf.kdgcommons.test.StringAsserts;
 import net.sf.practicalxml.converter.JsonConverter;
 import net.sf.practicalxml.junit.DomAsserts;
 import net.sf.practicalxml.xpath.XPathWrapper;
+
+import com.amazonaws.util.XpathUtils;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
@@ -187,4 +190,29 @@ public class JsonLayoutIntegrationTest
         DomAsserts.assertEquals("extra 2",      "123",      dom, "/data/extra/foo");
     }
 
+
+    @Test
+    public void testTagsWithSubstitutions() throws Exception
+    {
+        initialize("testTagsWithSubstitutions");
+
+        logger.debug(TEST_MESSAGE);
+
+        captureLoggingOutputAndParse();
+        assertCommonElements(TEST_MESSAGE);
+
+        String hostname = new XPathWrapper("/data/hostname").evaluateAsString(dom);
+        assertFalse("hostname", StringUtil.isBlank(hostname));
+
+        DomAsserts.assertCount("no exception",  0,  dom, "/data/exception");
+        DomAsserts.assertCount("no NDC",        0,  dom, "/data/ndc");
+        DomAsserts.assertCount("no MDC",        0,  dom, "/data/mdc");
+        DomAsserts.assertCount("no location",   0,  dom, "/data/locationInfo");
+        DomAsserts.assertCount("no instanceId", 0,  dom, "/data/instanceId");
+
+        DomAsserts.assertCount("tags",          1,  dom, "/data/tags");
+
+        String actualTag = XpathUtils.asString("/data/tags/account", dom);
+        StringAsserts.assertRegex("tag value (was: " + actualTag + ")", "\\d{12}", actualTag);
+    }
 }

@@ -1,5 +1,11 @@
 # Change History
 
+## 3.2.1 (TBD)
+
+* Logback `JsonLayout` now supports key-value pairs from Logback 1.3.x.
+  ([#202](https://github.com/kdgregory/log4j-aws-appenders/issues/202))
+
+
 ## 3.2.0 (2023-08-22)
 
 * CloudWatchLogWriter no longer uses sequence tokens. This did not cause

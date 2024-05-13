@@ -26,6 +26,7 @@ value "false", and default to "false" unless otherwise noted.
 `enableAccountId`       | Boolean   | If "true", the JSON will include the AWS account ID that the application is running under.
 `enableHostname`        | Boolean   | Defaults to "true", including the logging server's hostname in the output; may be disabled by setting to "false".
 `enableInstanceId`      | Boolean   | If "true", the JSON will include the EC2 instance ID where the application is running. *WARNING*: This is retrieved from EC2 metadata, and will delay application startup if you're not running on EC2.
+`enableKeyValuePairs`   | Boolean   | (Logback only, version >= 1.3.0) If "true", the JSON will include a sub-object named "extra" that contains key-value pairs that were added to event by application.
 `enableLocation`        | Boolean   | If "true", the JSON will include a sub-object that holds the location (class, source file, and line number) where the log message was written. This adds to the cost of every logging message so should not be enabled in production.
 `tags`                  | String    | If present, the JSON will include a sub-object with specified user metadata. See [below](#metadata) for more information.
 

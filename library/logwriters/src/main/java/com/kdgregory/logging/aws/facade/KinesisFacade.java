@@ -40,6 +40,13 @@ public interface KinesisFacade
 
 
     /**
+     *  Retrieves the stream's ARN, null if it cannot be determined due to a
+     *  retryable condition.
+     */
+    String retrieveStreamArn();
+
+
+    /**
      *  Creates the stream. Note that the stream will not be active for up to 60
      *  seconds after this call returns. Caller must be prepared to retry if the
      *  call is throttled.

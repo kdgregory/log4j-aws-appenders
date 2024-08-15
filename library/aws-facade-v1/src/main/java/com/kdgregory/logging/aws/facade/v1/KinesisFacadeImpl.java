@@ -66,23 +66,25 @@ implements KinesisFacade
     {
         try
         {
-            DescribeStreamSummaryRequest request = new DescribeStreamSummaryRequest().withStreamName(config.getStreamName());
-            DescribeStreamSummaryResult response = client().describeStreamSummary(request);
-            return STATUS_LOOKUP.get(response.getStreamDescriptionSummary().getStreamStatus());
+            StreamDescriptionSummary description = retrieveStreamDescription("retrieveStreamStatus", true);
+            return (description == null)
+                 ? null
+                 : STATUS_LOOKUP.get(description.getStreamStatus());
         }
         catch (ResourceNotFoundException ex)
         {
             return StreamStatus.DOES_NOT_EXIST;
         }
-        catch (LimitExceededException ex)
-        {
-            // the caller will retry on null, so no need to make them catch
-            return null;
-        }
-        catch (Exception ex)
-        {
-            throw transformException("retrieveStreamStatus", ex);
-        }
+    }
+
+
+    @Override
+    public String retrieveStreamArn()
+    {
+        StreamDescriptionSummary description = retrieveStreamDescription("retrieveStreamArn", false);
+        return (description == null)
+             ? null
+             : description.getStreamARN();
     }
 
 
@@ -170,6 +172,32 @@ implements KinesisFacade
         }
 
         return client;
+    }
+
+
+    /**
+     *  Retrieves the stream description, handling common errors.
+     */
+    private StreamDescriptionSummary retrieveStreamDescription(String caller, boolean rethrowResourceNotFound)
+    {
+        try
+        {
+            DescribeStreamSummaryRequest request = new DescribeStreamSummaryRequest().withStreamName(config.getStreamName());
+            DescribeStreamSummaryResult response = client().describeStreamSummary(request);
+            return response.getStreamDescriptionSummary();
+        }
+        catch (LimitExceededException ex)
+        {
+            // the caller will retry on null, so no need to make them catch
+            return null;
+        }
+        catch (Exception ex)
+        {
+            if (rethrowResourceNotFound && (ex instanceof ResourceNotFoundException))
+                throw ex;
+            else
+                throw transformException(caller, ex);
+        }
     }
 
 

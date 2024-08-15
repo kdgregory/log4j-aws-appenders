@@ -39,7 +39,11 @@ import com.kdgregory.logging.common.LogMessage;
 
 public class TestKinesisFacadeImpl
 {
-    private final static String DEFAULT_STREAM_NAME = "biff";
+    private final static String DEFAULT_STREAM_NAME   = "biff";
+    private final static String DEFAULT_STREAM_ARN    = "arn:aws:kinesis:" + KinesisClientMock.DEFAULT_REGION
+                                                      + ":" + KinesisClientMock.DEFAULT_ACCOUNT_NUMBER
+                                                      + ":stream/" + DEFAULT_STREAM_NAME;
+
     private final static String DEFAULT_PARTITION_KEY = "fixed";
 
     // need to explicitly configure for each test
@@ -202,7 +206,108 @@ public class TestKinesisFacadeImpl
 
 
     @Test
-    public void tesCreateHappyPath() throws Exception
+    public void testRetrieveArnHappyPath() throws Exception
+    {
+        mock = new KinesisClientMock(DEFAULT_STREAM_NAME);
+        config.setStreamName(DEFAULT_STREAM_NAME);
+
+        assertEquals("retrieved ARN", DEFAULT_STREAM_ARN, facade.retrieveStreamArn());
+
+        // a standard set of assertions to verify the APIs that we've called
+
+        assertEquals("describeStream invocation count",             1,      mock.describeStreamSummaryInvocationCount);
+        assertEquals("createStream invocation count",               0,      mock.createStreamInvocationCount);
+        assertEquals("increaseRetentionPeriod invocation count",    0,      mock.increaseRetentionPeriodInvocationCount);
+        assertEquals("putRecords invocation count",                 0,      mock.putRecordsInvocationCount);
+        assertEquals("shutdown invocation count",                   0,      mock.closeInvocationCount);
+    }
+
+
+    @Test
+    public void testRetrieveArnNoStream() throws Exception
+    {
+        mock = new KinesisClientMock();
+        config.setStreamName(DEFAULT_STREAM_NAME);
+
+        try
+        {
+            facade.retrieveStreamArn();
+            fail("should have thrown");
+        }
+        catch (KinesisFacadeException ex)
+        {
+            assertEquals(ReasonCode.UNEXPECTED_EXCEPTION, ex.getReason());
+            assertEquals("retrieveStreamArn", ex.getFunctionName());
+            assertTrue(ex.getMessage().contains("stream not found"));
+            assertFalse(ex.isRetryable());
+            assertEquals(ResourceNotFoundException.class, ex.getCause().getClass());
+        }
+
+        assertEquals("describeStream invocation count",             1,      mock.describeStreamSummaryInvocationCount);
+        assertEquals("createStream invocation count",               0,      mock.createStreamInvocationCount);
+        assertEquals("increaseRetentionPeriod invocation count",    0,      mock.increaseRetentionPeriodInvocationCount);
+        assertEquals("putRecords invocation count",                 0,      mock.putRecordsInvocationCount);
+        assertEquals("shutdown invocation count",                   0,      mock.closeInvocationCount);
+    }
+
+
+    @Test
+    public void testRetrieveArnThrottling() throws Exception
+    {
+        mock = new KinesisClientMock()
+        {
+            @Override
+            protected DescribeStreamSummaryResponse describeStreamSummary(DescribeStreamSummaryRequest request)
+            {
+                throw LimitExceededException.builder().message("message irrelevant").build();
+            }
+        };
+        config.setStreamName(DEFAULT_STREAM_NAME);
+
+        assertEquals("retrieved status",                            null,   facade.retrieveStreamStatus());
+
+        assertEquals("describeStream invocation count",             1,      mock.describeStreamSummaryInvocationCount);
+        assertEquals("createStream invocation count",               0,      mock.createStreamInvocationCount);
+        assertEquals("increaseRetentionPeriod invocation count",    0,      mock.increaseRetentionPeriodInvocationCount);
+        assertEquals("putRecords invocation count",                 0,      mock.putRecordsInvocationCount);
+        assertEquals("shutdown invocation count",                   0,      mock.closeInvocationCount);
+    }
+
+
+    @Test
+    public void testRetrieveArnUnexpectedException() throws Exception
+    {
+        final RuntimeException cause = new RuntimeException("test");
+        mock = new KinesisClientMock()
+        {
+            @Override
+            protected DescribeStreamSummaryResponse describeStreamSummary(DescribeStreamSummaryRequest request)
+            {
+                throw cause;
+            }
+        };
+        config.setStreamName(DEFAULT_STREAM_NAME);
+
+        try
+        {
+            facade.retrieveStreamStatus();
+            fail("should have thrown");
+        }
+        catch (KinesisFacadeException ex)
+        {
+            assertException(ex, "retrieveStreamStatus", "unexpected exception: test", ReasonCode.UNEXPECTED_EXCEPTION, false, cause);
+        }
+
+        assertEquals("describeStream invocation count",             1,      mock.describeStreamSummaryInvocationCount);
+        assertEquals("createStream invocation count",               0,      mock.createStreamInvocationCount);
+        assertEquals("increaseRetentionPeriod invocation count",    0,      mock.increaseRetentionPeriodInvocationCount);
+        assertEquals("putRecords invocation count",                 0,      mock.putRecordsInvocationCount);
+        assertEquals("shutdown invocation count",                   0,      mock.closeInvocationCount);
+    }
+
+
+    @Test
+    public void testCreateHappyPath() throws Exception
     {
         mock = new KinesisClientMock();
         config.setStreamName(DEFAULT_STREAM_NAME).setShardCount(3);

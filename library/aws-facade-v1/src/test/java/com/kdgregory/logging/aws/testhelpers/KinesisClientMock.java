@@ -50,6 +50,12 @@ import com.amazonaws.services.kinesis.model.*;
 public class KinesisClientMock
 implements InvocationHandler
 {
+    // the account number used for constructing ARNs
+    public final static String DEFAULT_ACCOUNT_NUMBER = "123456789012";
+
+    // the region used for constructing ARNs
+    public final static String DEFAULT_REGION = "us-east-2";
+
     // the list of known streams, initialized by the constructor
     public List<String> knownStreams = new ArrayList<String>();
 
@@ -171,6 +177,8 @@ implements InvocationHandler
         if (knownStreams.contains(request.getStreamName()))
         {
             StreamDescriptionSummary desc = new StreamDescriptionSummary()
+                                           .withStreamName(request.getStreamName())
+                                           .withStreamARN(generateStreamArn(request.getStreamName()))
                                            .withStreamStatus(StreamStatus.ACTIVE);
             return new DescribeStreamSummaryResult().withStreamDescriptionSummary(desc);
         }
@@ -216,5 +224,11 @@ implements InvocationHandler
     protected PutRecordsResultEntry processRequestEntry(int index, PutRecordsRequestEntry entry)
     {
         return new PutRecordsResultEntry().withSequenceNumber(String.valueOf(index));
+    }
+
+
+    protected String generateStreamArn(String streamName)
+    {
+        return "arn:aws:kinesis:" + DEFAULT_REGION + ":" + DEFAULT_ACCOUNT_NUMBER + ":stream/" + streamName;
     }
 }

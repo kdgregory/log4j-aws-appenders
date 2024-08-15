@@ -66,25 +66,25 @@ implements KinesisFacade
     {
         try
         {
-            DescribeStreamSummaryRequest request = DescribeStreamSummaryRequest.builder()
-                                                   .streamName(config.getStreamName())
-                                                   .build();
-            DescribeStreamSummaryResponse response = client().describeStreamSummary(request);
-            return STATUS_LOOKUP.get(response.streamDescriptionSummary().streamStatusAsString());
+            StreamDescriptionSummary description = retrieveStreamDescription("retrieveStreamStatus", true);
+            return (description == null)
+                 ? null
+                 : STATUS_LOOKUP.get(description.streamStatusAsString());
         }
         catch (ResourceNotFoundException ex)
         {
             return StreamStatus.DOES_NOT_EXIST;
         }
-        catch (LimitExceededException ex)
-        {
-            // the caller will retry on null, so no need to make them catch
-            return null;
-        }
-        catch (Exception ex)
-        {
-            throw transformException("retrieveStreamStatus", ex);
-        }
+    }
+
+
+    @Override
+    public String retrieveStreamArn()
+    {
+        StreamDescriptionSummary description = retrieveStreamDescription("retrieveStreamArn", false);
+        return (description == null)
+             ? null
+             : description.streamARN();
     }
 
 
@@ -174,6 +174,33 @@ implements KinesisFacade
         }
 
         return client;
+    }
+
+
+    /**
+     *  Retrieves the stream description, handling common errors.
+     */
+    private StreamDescriptionSummary retrieveStreamDescription(String caller, boolean rethrowResourceNotFound)
+    {
+        try
+        {
+            DescribeStreamSummaryRequest request = DescribeStreamSummaryRequest.builder()
+                                                   .streamName(config.getStreamName())
+                                                   .build();
+            return client().describeStreamSummary(request).streamDescriptionSummary();
+        }
+        catch (LimitExceededException ex)
+        {
+            // the caller will retry on null, so no need to make them catch
+            return null;
+        }
+        catch (Exception ex)
+        {
+            if (rethrowResourceNotFound && (ex instanceof ResourceNotFoundException))
+                throw ex;
+            else
+                throw transformException(caller, ex);
+        }
     }
 
 

@@ -23,6 +23,10 @@ import com.kdgregory.logging.aws.internal.AbstractWriterConfig;
 
 /**
  *  Configuration for KinesisLogWriter.
+ *  
+ *  Note: currently manages both stream name and stream ARN. The former is set from
+ *  config, the latter as part of ensuring stream is ready. At the present time,
+ *  ARN is not exposed at the user level.
  */
 public class KinesisWriterConfig
 extends AbstractWriterConfig<KinesisWriterConfig>
@@ -35,6 +39,7 @@ extends AbstractWriterConfig<KinesisWriterConfig>
 
 
     private String                      streamName;
+    private String                      streamArn;
     private String                      partitionKey            = DEFAULT_PARTITION_KEY;
     private boolean                     autoCreate              = DEFAULT_AUTO_CREATE;
     private int                         shardCount              = DEFAULT_SHARD_COUNT;
@@ -61,6 +66,18 @@ extends AbstractWriterConfig<KinesisWriterConfig>
     public KinesisWriterConfig setStreamName(String value)
     {
         streamName = value;
+        return this;
+    }
+    
+    
+    public String getStreamArn()
+    {
+        return streamArn;
+    }
+
+    public KinesisWriterConfig setStreamArn(String value)
+    {
+        streamArn = value;
         return this;
     }
 

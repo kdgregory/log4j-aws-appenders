@@ -96,36 +96,19 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics>
         }
 
         Instant timeoutAt = Instant.now().plusMillis(config.getInitializationTimeout());
-
-        try
+        boolean isAvailable = ensureDestinationAvailable0(timeoutAt);
+        if (isAvailable)
         {
-            // see if the stream already exists and short-circuit if yes
-            logger.debug("checking status of stream: " + config.getStreamName());
-            StreamStatus status = describeRetry.invoke(timeoutAt, () -> facade.retrieveStreamStatus());
-            if (status == StreamStatus.ACTIVE)
-                return true;
-
-            if (status == StreamStatus.DOES_NOT_EXIST)
+            String streamArn = describeRetry.invoke(timeoutAt, () -> facade.retrieveStreamArn());
+            if (streamArn != null)
+                config.setStreamArn(streamArn);
+            else
             {
-                if (config.getAutoCreate())
-                {
-                    return createStream(timeoutAt) && setRetentionPeriod(timeoutAt);
-                }
-                else
-                {
-                    reportError("stream \"" + config.getStreamName() + "\" does not exist and auto-create not enabled", null);
-                    return false;
-                }
+                reportError("timeout retrieving ARN for active stream", null);
+                isAvailable = false;
             }
-
-            // this is here to catch the case where somebody else created the stream
-            return waitForStreamToBeActive(timeoutAt);
         }
-        catch (Exception ex)
-        {
-            reportError("exception during initialization", ex);
-            return false;
-        }
+        return isAvailable;
     }
 
 
@@ -205,6 +188,40 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics>
 //----------------------------------------------------------------------------
 //  Internals
 //----------------------------------------------------------------------------
+
+    protected boolean ensureDestinationAvailable0(Instant timeoutAt)
+    {
+        try
+        {
+            // see if the stream already exists and short-circuit if yes
+            logger.debug("checking status of stream: " + config.getStreamName());
+            StreamStatus status = describeRetry.invoke(timeoutAt, () -> facade.retrieveStreamStatus());
+            if (status == StreamStatus.ACTIVE)
+                return true;
+
+            if (status == StreamStatus.DOES_NOT_EXIST)
+            {
+                if (config.getAutoCreate())
+                {
+                    return createStream(timeoutAt) && setRetentionPeriod(timeoutAt);
+                }
+                else
+                {
+                    reportError("stream \"" + config.getStreamName() + "\" does not exist and auto-create not enabled", null);
+                    return false;
+                }
+            }
+
+            // this is here to catch the case where somebody else created the stream
+            return waitForStreamToBeActive(timeoutAt);
+        }
+        catch (Exception ex)
+        {
+            reportError("exception during initialization", ex);
+            return false;
+        }
+    }
+
 
     /**
      *  Attempts to create the stream and waits for it to become ready, returning

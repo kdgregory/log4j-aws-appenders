@@ -42,11 +42,19 @@ import com.kdgregory.logging.common.LogMessage;
 public class MockKinesisFacade
 implements InvocationHandler
 {
+    // the account number used for constructing ARNs
+    public final static String DEFAULT_ACCOUNT_NUMBER = "123456789012";
+
+    // the region used for constructing ARNs
+    public final static String DEFAULT_REGION = "us-east-2";
+
     // these are set by constructor
+    private KinesisWriterConfig config;
     private Iterator<StreamStatus> statusItx;
 
     // invocation counters
     public int retrieveStreamStatusInvocationCount;
+    public int retrieveStreamArnInvocationCount;
     public int createStreamInvocationCount;
     public int setRetentionPeriodInvocationCount;
     public int putRecordsInvocationCount;
@@ -64,7 +72,8 @@ implements InvocationHandler
     // note: we pass config even though we don't (currently) use it
     public MockKinesisFacade(KinesisWriterConfig config, StreamStatus... statusReturns)
     {
-        statusItx = Arrays.asList(statusReturns).iterator();
+        this.config = config;
+        this.statusItx = Arrays.asList(statusReturns).iterator();
     }
 
 
@@ -85,6 +94,9 @@ implements InvocationHandler
             case "retrieveStreamStatus":
                 retrieveStreamStatusInvocationCount++;
                 return retrieveStreamStatus();
+            case "retrieveStreamArn":
+                retrieveStreamArnInvocationCount++;
+                return retrieveStreamArn();
             case "createStream":
                 createStreamInvocationCount++;
                 createStream();
@@ -120,6 +132,13 @@ implements InvocationHandler
         }
 
         return defaultStatus;
+    }
+
+    public String retrieveStreamArn()
+    {
+        return "arn:aws:kinesis:" + DEFAULT_REGION + ":" + DEFAULT_ACCOUNT_NUMBER
+               + ":stream/" + config.getStreamName();
+
     }
 
     public void createStream()

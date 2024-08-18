@@ -152,6 +152,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertTrue("writer is running", writer.isRunning());
 
         assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         1,                          mock.retrieveStreamArnInvocationCount);
 
         assertEquals("writer batch delay",                          123L,                       writer.getBatchDelay());
         assertEquals("message queue discard policy",                DiscardAction.newest,       messageQueue.getDiscardAction());
@@ -180,6 +181,8 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         createWriter();
 
         assertFalse("writer is running", writer.isRunning());
+
+        assertEquals("retrieveStreamStatus() invocationCount",      0,                          mock.retrieveStreamStatusInvocationCount);
 
         internalLogger.assertInternalDebugLog(
                             "log writer starting.*");
@@ -221,6 +224,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("retrieveStreamStatus() invocationCount",      3,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         1,                          mock.retrieveStreamArnInvocationCount);
         assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
         internalLogger.assertInternalDebugLog(
@@ -246,6 +250,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("retrieveStreamStatus() invocationCount",      6,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         0,                          mock.retrieveStreamArnInvocationCount);
         assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
         internalLogger.assertInternalDebugLog(
@@ -277,6 +282,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         0,                          mock.retrieveStreamArnInvocationCount);
         assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
         assertEquals("message queue discard threshold reduced",     0,                          messageQueue.getDiscardThreshold());
@@ -290,6 +296,107 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
                         "log writer failed to initialize.*");
     }
 
+
+    @Test
+    public void testRetrieveArnThrottled() throws Exception
+    {
+        mock = new MockKinesisFacade(config)
+        {
+            @Override
+            public String retrieveStreamArn()
+            {
+                if (retrieveStreamArnInvocationCount < 2)
+                    return null;
+                else
+                    return super.retrieveStreamArn();
+            }
+        };
+        createWriter();
+
+        assertTrue("writer is running", writer.isRunning());
+
+        // initial status check, plus 5 until timeout
+
+        assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         2,                          mock.retrieveStreamArnInvocationCount);
+        assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME,
+                        "log writer initialization complete.*");
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog();
+    }
+
+
+    @Test
+    public void testRetrieveArnTimeout() throws Exception
+    {        
+        mock = new MockKinesisFacade(config)
+        {
+            @Override
+            public String retrieveStreamArn()
+            {
+                return null;
+            }
+        };
+        createWriter();
+
+        assertFalse("writer is running", writer.isRunning());
+
+        // count for ARN retrieve is based on timeout; may change on different architecture
+
+        assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         5,                          mock.retrieveStreamArnInvocationCount);
+        assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME);
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog(
+                        "timeout retrieving ARN for active stream",
+                        "log writer failed to initialize.*");
+    }
+
+
+    @Test
+    public void testRetrieveArnException() throws Exception
+    {        
+        mock = new MockKinesisFacade(config)
+        {
+            @Override
+            public String retrieveStreamArn()
+            {
+                throw new RuntimeException("stand-in for actual exception");
+            }
+        };
+        createWriter();
+
+        assertFalse("writer is running", writer.isRunning());
+
+        // count for ARN retrieve is based on timeout; may change on different architecture
+
+        assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
+        assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         1,                          mock.retrieveStreamArnInvocationCount);
+        assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
+
+        internalLogger.assertInternalDebugLog(
+                        "log writer starting.*",
+                        "checking status of stream: " + DEFAULT_STREAM_NAME);
+        internalLogger.assertInternalWarningLog();
+        internalLogger.assertInternalErrorLog(
+                        "exception in initializer",
+                        "log writer failed to initialize.*");
+    }
+    
 
     @Test
     public void testCreateStream() throws Exception
@@ -309,6 +416,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("retrieveStreamStatus() invocationCount",      3,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              1,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         1,                          mock.retrieveStreamArnInvocationCount);
         assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
         internalLogger.assertInternalDebugLog(
@@ -337,6 +445,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("retrieveStreamStatus() invocationCount",      6,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              1,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         0,                          mock.retrieveStreamArnInvocationCount);
         assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
         internalLogger.assertInternalDebugLog(
@@ -374,6 +483,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              1,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         0,                          mock.retrieveStreamArnInvocationCount);
         assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
         assertEquals("message queue discard threshold reduced",     0,                          messageQueue.getDiscardThreshold());
@@ -407,6 +517,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("retrieveStreamStatus() invocationCount",      5,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              1,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        1,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         1,                          mock.retrieveStreamArnInvocationCount);
         assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
         internalLogger.assertInternalDebugLog(
@@ -438,6 +549,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("retrieveStreamStatus() invocationCount",      7,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              1,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        1,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         0,                          mock.retrieveStreamArnInvocationCount);
         assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
         internalLogger.assertInternalDebugLog(
@@ -478,6 +590,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("retrieveStreamStatus() invocationCount",      3,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              1,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        1,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         0,                          mock.retrieveStreamArnInvocationCount);
         assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
         assertEquals("message queue discard threshold reduced",     0,                          messageQueue.getDiscardThreshold());
@@ -515,6 +628,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("retrieveStreamStatus() invocationCount",      6,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              1,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         0,                          mock.retrieveStreamArnInvocationCount);
         assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
         internalLogger.assertInternalDebugLog(
@@ -543,6 +657,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         0,                          mock.retrieveStreamArnInvocationCount);
         assertEquals("putRecords() invocationCount",                0,                          mock.putRecordsInvocationCount);
 
         internalLogger.assertInternalDebugLog(
@@ -570,6 +685,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         1,                          mock.retrieveStreamArnInvocationCount);
         assertEquals("putRecords() invocationCount",                1,                          mock.putRecordsInvocationCount);
         assertNotSame("putRecords() thread",                        Thread.currentThread(),     mock.putRecordsThread);
         assertEquals("putRecords() batch size",                     2,                          mock.putRecordsBatch.size());
@@ -615,6 +731,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         1,                          mock.retrieveStreamArnInvocationCount);
         assertEquals("putRecords() invocationCount",                1,                          mock.putRecordsInvocationCount);
 
         assertEquals("putRecords() batch size",                     4,                          mock.putRecordsBatch.size());
@@ -674,6 +791,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         1,                          mock.retrieveStreamArnInvocationCount);
         assertEquals("putRecords() invocationCount",                2,                          mock.putRecordsInvocationCount);
 
         assertEquals("putRecords() batch size",                     2,                          mock.putRecordsBatch.size());
@@ -717,6 +835,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         1,                          mock.retrieveStreamArnInvocationCount);
         assertEquals("putRecords() invocationCount",                4,                          mock.putRecordsInvocationCount);
 
         assertStatisticsTotalMessagesSent(0);
@@ -758,6 +877,7 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
         assertEquals("createStream() invocationCount",              0,                          mock.createStreamInvocationCount);
         assertEquals("setRetentionPeriod() invocationCount",        0,                          mock.setRetentionPeriodInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         1,                          mock.retrieveStreamArnInvocationCount);
         assertEquals("putRecords() invocationCount",                1,                          mock.putRecordsInvocationCount);
 
         assertStatisticsTotalMessagesSent(0);
@@ -1036,14 +1156,15 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
         assertSame("writer initialized on main thread",             Thread.currentThread(),     writerThread);
 
         assertEquals("retrieveStreamStatus() invocationCount",      1,                          mock.retrieveStreamStatusInvocationCount);
+        assertEquals("retrieveStreamArn() invocationCount",         1,                          mock.retrieveStreamArnInvocationCount);
 
         ((TestableKinesisLogWriter)writer).disableThreadSynchronization();
 
         writer.addMessage(new LogMessage(0, "message one"));
-        assertEquals("message has been removed from queue",     0,                      messageQueue.size());
+        assertEquals("message has been removed from queue",         0,                          messageQueue.size());
 
         writer.addMessage(new LogMessage(0, "message two"));
-        assertEquals("message has been removed from queue",     0,                      messageQueue.size());
+        assertEquals("message has been removed from queue",         0,                          messageQueue.size());
 
         assertEquals("messages have been removed from queue",       0,                          messageQueue.size());
         assertEquals("putRecords() invocationCount",                2,                          mock.putRecordsInvocationCount);

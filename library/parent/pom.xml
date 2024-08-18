@@ -45,8 +45,8 @@
         <!-- version properties for all "top-level" projects, whether or not they use the dependency -->
 
         <!-- these are the minimum AWS SDK versions that we support -->
-        <aws-sdk-v1.version>1.11.716</aws-sdk-v1.version>
-        <aws-sdk-v2.version>2.10.43</aws-sdk-v2.version>
+        <aws-sdk-v1.version>1.12.366</aws-sdk-v1.version>
+        <aws-sdk-v2.version>2.18.40</aws-sdk-v2.version>
 
         <!-- these are the minimum logging framework versions we support -->
         <log4j1.version>1.2.16</log4j1.version>

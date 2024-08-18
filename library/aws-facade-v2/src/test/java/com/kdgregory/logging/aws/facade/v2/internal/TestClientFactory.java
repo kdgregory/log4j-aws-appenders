@@ -130,6 +130,24 @@ public class TestClientFactory
             this.region = value;
             return this;
         }
+
+        @Override
+        public ClientOverrideConfiguration overrideConfiguration()
+        {
+            throw new UnsupportedOperationException("not used by this library");
+        }
+
+        @Override
+        public TestableAwsClientBuilder dualstackEnabled(Boolean dualstackEndpointEnabled)
+        {
+            throw new UnsupportedOperationException("not used by this library");
+        }
+
+        @Override
+        public TestableAwsClientBuilder fipsEnabled(Boolean fipsEndpointEnabled)
+        {
+            throw new UnsupportedOperationException("not used by this library");
+        }
     }
 
 //----------------------------------------------------------------------------

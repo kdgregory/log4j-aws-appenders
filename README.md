@@ -95,15 +95,17 @@ The minimum supported dependency versions are:
   This version is required to support `JsonAccessLayout`. If you don't use that,
   version 1.0.0 will work.
 
-* **AWS v1 SDK**: 1.11.716
+* **AWS v1 SDK**: 1.12.366
 
-  This is the version that I have tested with. You can use an earlier version,
-  but not all features may be available.
+  This version added `streamARN` to `PutRecordsRequest`, which is required to avoid
+  a race condition when writing to a newly-created stream. If you do not use Kinesis,
+  you can use versions going back at least to 1.12.1.
 
-* **AWS v2 SDK**: 2.10.43
+* **AWS v2 SDK**: 2.18.40
 
-  This is the version that I have tested with. You can use an earlier version,
-  but not all features may be available.
+  This version added `streamARN` to `PutRecordsRequest`, which is required to avoid
+  a race condition when writing to a newly-created stream. If you do not use Kinesis,
+  you can use versions going back at least to 2.11.1.
 
 
 ## Contributions

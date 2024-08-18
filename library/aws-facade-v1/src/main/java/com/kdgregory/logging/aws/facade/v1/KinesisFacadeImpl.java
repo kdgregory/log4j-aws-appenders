@@ -252,7 +252,7 @@ implements KinesisFacade
         }
 
         return new PutRecordsRequest()
-                   .withStreamName(config.getStreamName())
+                   .withStreamARN(config.getStreamArn())
                    .withRecords(requestRecords);
     }
 

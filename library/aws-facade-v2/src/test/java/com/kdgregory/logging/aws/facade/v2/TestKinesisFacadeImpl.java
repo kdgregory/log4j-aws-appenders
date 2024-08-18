@@ -521,7 +521,8 @@ public class TestKinesisFacadeImpl
         final String message2 = "message \u0392";   // verifies UTF-8 translation
 
         mock = new KinesisClientMock(DEFAULT_STREAM_NAME);
-        config.setStreamName(DEFAULT_STREAM_NAME).setPartitionKey(DEFAULT_PARTITION_KEY);
+        config.setStreamArn(DEFAULT_STREAM_ARN)
+              .setPartitionKey(DEFAULT_PARTITION_KEY);
 
         long now = System.currentTimeMillis();
         List<LogMessage> batch = Arrays.asList(
@@ -530,7 +531,8 @@ public class TestKinesisFacadeImpl
 
         List<LogMessage> remaining = facade.putRecords(batch);
 
-        assertEquals("passed stream name to client",                DEFAULT_STREAM_NAME,    mock.putRecordsStreamName);
+        assertEquals("passed stream ARN to client",                 DEFAULT_STREAM_ARN,     mock.putRecordsStreamArn);
+        assertNull("should not pass stream name to client",                                 mock.putRecordsStreamName);
         assertEquals("number of records passed to client",          batch.size(),           mock.putRecordsSourceRecords.size());
 
         assertPutRecordsRequestEntry("first record",    DEFAULT_PARTITION_KEY, message1,    mock.putRecordsSourceRecords.get(0));
@@ -560,7 +562,8 @@ public class TestKinesisFacadeImpl
                     return super.processRequestEntry(index, entry);
             }
         };
-        config.setStreamName(DEFAULT_STREAM_NAME).setPartitionKey(DEFAULT_PARTITION_KEY);
+        config.setStreamArn(DEFAULT_STREAM_ARN)
+              .setPartitionKey(DEFAULT_PARTITION_KEY);
 
         long now = System.currentTimeMillis();
         List<LogMessage> batch = Arrays.asList(
@@ -593,7 +596,8 @@ public class TestKinesisFacadeImpl
     public void testPutRecordsRandomPartitionKeys() throws Exception
     {
         mock = new KinesisClientMock(DEFAULT_STREAM_NAME);
-        config.setStreamName(DEFAULT_STREAM_NAME).setPartitionKey("");
+        config.setStreamArn(DEFAULT_STREAM_ARN)
+              .setPartitionKey("");
 
         long now = System.currentTimeMillis();
         List<LogMessage> batch = Arrays.asList(
@@ -602,7 +606,8 @@ public class TestKinesisFacadeImpl
 
         List<LogMessage> remaining = facade.putRecords(batch);
 
-        assertEquals("passed stream name to client",                DEFAULT_STREAM_NAME,    mock.putRecordsStreamName);
+        assertEquals("passed stream ARN to client",                 DEFAULT_STREAM_ARN,     mock.putRecordsStreamArn);
+        assertNull("should not pass stream name to client",                                 mock.putRecordsStreamName);
         assertEquals("number of records passed to client",          batch.size(),           mock.putRecordsSourceRecords.size());
 
         assertPutRecordsRequestEntry("first record",                "\\d{6}", "message 1",  mock.putRecordsSourceRecords.get(0));
@@ -635,7 +640,8 @@ public class TestKinesisFacadeImpl
                 throw ProvisionedThroughputExceededException.builder().message("message irrelevant").build();
             }
         };
-        config.setStreamName(DEFAULT_STREAM_NAME).setPartitionKey(DEFAULT_PARTITION_KEY);
+        config.setStreamArn(DEFAULT_STREAM_ARN)
+              .setPartitionKey("");
 
         long now = System.currentTimeMillis();
         List<LogMessage> batch = Arrays.asList(
@@ -672,7 +678,8 @@ public class TestKinesisFacadeImpl
                 throw cause;
             }
         };
-        config.setStreamName(DEFAULT_STREAM_NAME).setPartitionKey(DEFAULT_PARTITION_KEY);
+        config.setStreamArn(DEFAULT_STREAM_ARN)
+              .setPartitionKey("");
 
         long now = System.currentTimeMillis();
         List<LogMessage> batch = Arrays.asList(

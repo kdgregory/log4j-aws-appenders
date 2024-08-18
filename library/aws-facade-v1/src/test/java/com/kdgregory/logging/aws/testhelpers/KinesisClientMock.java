@@ -83,6 +83,7 @@ implements InvocationHandler
 
     // arguments passed to the last putRecords call
     public volatile String putRecordsStreamName;
+    public volatile String putRecordsStreamArn;
     public volatile List<PutRecordsRequestEntry> putRecordsSourceRecords = new ArrayList<PutRecordsRequestEntry>();
 
 
@@ -154,6 +155,7 @@ implements InvocationHandler
             putRecordsInvocationCount++;
             PutRecordsRequest request = (PutRecordsRequest)args[0];
             putRecordsStreamName    = request.getStreamName();
+            putRecordsStreamArn     = request.getStreamARN();
             putRecordsSourceRecords = request.getRecords();
             return putRecords(request);
         }

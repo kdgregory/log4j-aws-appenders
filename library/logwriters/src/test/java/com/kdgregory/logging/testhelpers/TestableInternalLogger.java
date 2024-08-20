@@ -38,6 +38,8 @@ implements InternalLogger
     public List<String> debugMessages = new ArrayList<String>();
     public List<String> warnMessages = new ArrayList<String>();
     public List<String> errorMessages = new ArrayList<String>();
+
+    public List<Throwable> warnExceptions = new ArrayList<Throwable>();
     public List<Throwable> errorExceptions = new ArrayList<Throwable>();
 
 
@@ -48,13 +50,20 @@ implements InternalLogger
     }
 
 
-
     @Override
     public synchronized void warn(String message)
     {
         warnMessages.add(message);
+        warnExceptions.add(null);
     }
 
+
+    @Override
+    public synchronized void warn(String message, Throwable ex)
+    {
+        warnMessages.add(message);
+        warnExceptions.add(ex);
+    }
 
 
     @Override

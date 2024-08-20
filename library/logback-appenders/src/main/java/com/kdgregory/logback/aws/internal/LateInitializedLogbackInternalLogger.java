@@ -89,6 +89,19 @@ implements InternalLogger
 
 
     @Override
+    public void warn(String message, Throwable ex)
+    {
+        Status status = (ex != null)
+                      ? new WarnStatus(message, origin, ex)
+                      : new WarnStatus(message, origin);
+        if (destination == null)
+            deferredMessages.add(status);
+        else
+            destination.addStatus(status);
+    }
+
+
+    @Override
     public void error(String message, Throwable ex)
     {
         Status status = (ex != null)

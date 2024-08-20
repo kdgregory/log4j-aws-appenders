@@ -70,6 +70,13 @@ implements InternalLogger
 
 
     @Override
+    public void warn(String message, Throwable ex)
+    {
+        LogLog.warn(messagePrefix + message, ex);
+    }
+
+
+    @Override
     public void error(String message, Throwable ex)
     {
         if (ex != null)

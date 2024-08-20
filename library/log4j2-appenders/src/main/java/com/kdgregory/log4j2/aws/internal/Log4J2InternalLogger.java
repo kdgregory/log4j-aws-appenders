@@ -54,6 +54,13 @@ implements InternalLogger
 
 
     @Override
+    public void warn(String message, Throwable ex)
+    {
+        StatusLogger.getLogger().warn(message, ex);
+    }
+
+
+    @Override
     public void error(String message, Throwable ex)
     {
         if (appender != null)   appender.error(message, ex);

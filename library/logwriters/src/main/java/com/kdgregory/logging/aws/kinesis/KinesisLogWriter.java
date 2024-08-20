@@ -175,7 +175,7 @@ extends AbstractLogWriter<KinesisWriterConfig,KinesisWriterStatistics>
         }
         catch (Exception ex)
         {
-            logger.error("exception while sending batch", ex);
+            logger.warn("exception while sending batch", ex);
             return currentBatch;
         }
     }

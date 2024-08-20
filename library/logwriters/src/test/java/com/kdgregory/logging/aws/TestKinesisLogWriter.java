@@ -771,11 +771,11 @@ extends AbstractLogWriterTest<KinesisLogWriter,KinesisWriterConfig,KinesisWriter
                         "log writer starting.*",
                         "checking status of stream: " + DEFAULT_STREAM_NAME,
                         "log writer initialization complete.*");
-        internalLogger.assertInternalWarningLog();
-        internalLogger.assertInternalErrorLog(
+        internalLogger.assertInternalWarningLog(
                         "exception while sending batch");
+        internalLogger.assertInternalErrorLog();
 
-        assertUltimateCause("reported underlying exception", cause, internalLogger.errorExceptions.get(0));
+        assertUltimateCause("reported underlying exception", cause, internalLogger.warnExceptions.get(0));
     }
 
 
